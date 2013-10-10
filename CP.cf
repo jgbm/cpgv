@@ -1,0 +1,64 @@
+token UIdent (upper (letter | digit | '_')*);
+separator UIdent ",";
+
+Exists.   Type1 ::= "exists" UIdent "." Type1;
+ForAll.   Type1 ::= "forall" UIdent "." Type1;
+Times.    Type2 ::= Type3 "*" Type3;
+Par.      Type2 ::= Type3 "||" Type3;
+Plus.     Type2 ::= Type3 "+" Type3;
+With.     Type2 ::= Type3 "&" Type3;
+OfCourse. Type3 ::= "!" Type3;
+WhyNot.   Type3 ::= "?" Type3;
+Var.      Type4 ::= UIdent;
+VarArgs.  Type4 ::= UIdent "(" [Type] ")";
+Dual.     Type4 ::= "~" Type4;
+internal Neg. Type4 ::= "~" UIdent;
+One.      Type4 ::= "1";
+Bottom.   Type4 ::= "bot";
+Zero.     Type4 ::= "0";
+Top.      Type4 ::= "top";
+
+coercions Type 4;
+separator Type ",";
+
+Typing. Typing ::= LIdent ":" Type;
+separator nonempty Typing ",";
+
+token LIdent (lower (letter | digit | '_')*);
+separator LIdent ",";
+
+ProcVar.       Proc ::= UIdent;
+ProcVarArgs.   Proc ::= UIdent "(" [ProcArg] ")";
+Link.          Proc ::= LIdent "<->" LIdent;
+Comp.          Proc ::= "nu" LIdent ":" Type "." "(" Proc "|" Proc ")";
+Out.           Proc ::= LIdent "[" LIdent "]" "." "(" Proc "|" Proc ")";
+In.            Proc ::= LIdent "(" LIdent ")" "." Proc;
+Inl.           Proc ::= LIdent "[inl]" "." Proc;
+Inr.           Proc ::= LIdent "[inr]" "." Proc;
+Case.          Proc ::= LIdent "." "case" "(" Proc "," Proc ")";
+ServerAccept.  Proc ::= "!" LIdent "(" LIdent ")" "." Proc;
+ClientRequest. Proc ::= "?" LIdent "[" LIdent "]" "." Proc;
+SendType.      Proc ::= LIdent "[" Type "]" "." Proc;
+ReceiveType.   Proc ::= LIdent "(" UIdent ")" "." Proc;
+EmptyOut.      Proc ::= LIdent "[" "]" "." "0";
+EmptyIn.       Proc ::= LIdent "(" ")" "." Proc;
+EmptyCase.     Proc ::= LIdent "." "case" "{" [LIdent] "}" "(" ")";
+
+ProcParam.     ProcParam ::= UIdent;
+NameParam.     ProcParam ::= LIdent;
+ProcArg.       ProcArg   ::= Proc;
+NameArg.       ProcArg   ::= LIdent;
+
+separator nonempty ProcParam ",";
+separator nonempty ProcArg ",";
+
+DefnNoArgs.     Defn ::= "def" UIdent "=" Proc;
+DefnArgs.       Defn ::= "def" UIdent "(" [ProcParam] ")" "=" Proc;
+TypeDefnNoArgs. Defn ::= "type" UIdent "=" Type;
+TypeDefnArgs.   Defn ::= "type" UIdent "(" [UIdent] ")" "=" Type;
+Assert.         Assertion ::= Proc "|-" [Typing];
+
+TDef.           Top ::= Defn;
+TAss.           Top ::= Assertion;
+
+entrypoints Proc, Type, Assertion, Top;

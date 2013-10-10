@@ -1,0 +1,70 @@
+--------------------------------------------------------------------------------
+--                    Interpreter for Wadler's language CP                    --
+--------------------------------------------------------------------------------
+
+This provides a small interpreter for Wadler's language CP (although see last
+section for notes on syntax and differences.)
+
+Building
+--------
+
+Building the tool requires the compiler tool bnfc[1], a recent version of GHC,
+and the readline package.  Try commands like the following:
+
+$ bnfc -m -haskell -p Syntax CP.cf
+$ make
+$ ghc --make -o cpi -O2 Main
+
+[1] http://bnfc.digitalgrammars.com/, or cabal install bnfc
+
+Using
+-----
+
+The tool is primarily interactive (although you can, of course, redirect stdin
+to avoid retyping long commands).  Commands can be any of the following, where
+words in all upper-case are placeholders.
+
+> type NAME = TYPE
+> type NAME(VARS) = TYPE
+
+Defines NAME to be an abbreviation for TYPE.  In the second case, if the VARS
+are X1,X2,..., then NAME(T1,T2,...) abbreviates TYPE{T1/X1, T2/X2, ...}.
+Variables must begin with an uppercase letter.
+
+> def NAME = PROC
+> def NAME(VARS) = PROC
+
+Defines NAME to be an appreciation for process expression PROC.  In the second
+case, substitution is as for types.  Variables can be either begin with an
+uppercase letter, in which case they stand in for entire expressions, or a
+lowercase letter, in which case they stand in for a name.
+
+> PROC |- x1:TYPE, x2:TYPE, ...
+
+Checks whether process expression PROC has the behavior given by x1:TYPE, ...,
+and, if it does, attempts to find the normal form of PROC.
+
+> :q
+
+Exits the interpreter
+
+An example session:
+$ ./cpi
+> type Church = forall X.?(X * ~X) || (~X || X)
+> def Zero(x) = x(X).x(s).x(z).z<->x
+> def Ping(x,y,w) = x[1].x[s].(!s(f).f(a).a().?y[u].u().f[].0 | x[z].(z[].0 | x().w[].0))
+> nu x:Church. (Zero(x) | Ping(x,y,w)) |- y:?bot,w:1
+w [] . 0
+> :q
+$
+
+Differences from Wadler's language
+----------------------------------
+
+The notation for linear duals and the par combinator is difficult to type.
+Instead, the tool uses "~A" to indicate the dual of A, and "P || Q" for P par Q.
+
+The form "x.case()" is not sufficient to determine the structure of a proof, as
+the top rule allows arbitrary further linear assumptions to be discharged.
+Instead, the form must be written "x.case{x1,x2,...}()", where the x_i are the
+names of the additional assumptions to be discharged.
