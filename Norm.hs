@@ -72,7 +72,7 @@ replace x y = replace'
               | otherwise = Out (var z) w (replace' p) (replace' q)
           replace' (In z w p)
               | x == w = In (var z) w p
-              | otherwise = In z w (replace' p)
+              | otherwise = In (var z) w (replace' p)
           replace' (Inl z p) = Inl (var z) (replace' p)
           replace' (Inr z p) = Inr (var z) (replace' p)
           replace' (Case z p q) = Case (var z) (replace' p) (replace' q)
@@ -129,6 +129,15 @@ stepPrincipal p =
       Nothing      -> Nothing
     where trace x y = y
 
+renameBoundVariable :: LIdent -> Proc -> LIdent -> Proc -> (LIdent, Proc, Proc)
+renameBoundVariable x p x' p'
+    | x == x' = (x, p, p')
+    | x `notElem` fn p' = (x, p, replace x' x p')
+    | x' `notElem` fn p = (x', replace x x' p, p')
+    | otherwise = (n, replace x n p, replace x' n p')
+    where (n:_)    = filter (\i -> i `notElem` fn p && i `notElem` fn p') newNames
+          newNames = [LIdent (s ++ show i) | i <- [0..], LIdent s <- [x, x']]
+
 stepPrincipal1 :: Proc -> Maybe (String, Proc)
 -- AxCut:
 stepPrincipal1 (Comp x a (Link y z) p)
@@ -136,7 +145,8 @@ stepPrincipal1 (Comp x a (Link y z) p)
     | x == z = Just ("AxCut", replace x y p)
 -- beta_times-par:
 stepPrincipal1 (Comp x (a `Times` b) (Out z y p q) (In z' y' r))
-    | x == z && x == z' && y == y' = Just ("beta_times-par", Comp y a p (Comp x b q r))
+    | x == z && x == z' = Just ("beta_times-par", Comp y'' a p' (Comp x b q r'))
+    where (y'', p', r') = renameBoundVariable y p y' r
 -- beta_plus-with (left):
 stepPrincipal1 (Comp x (a `Plus` b) (Inl y p) (Case z q r))
     |  x == y && x == z = Just ("beta_plus-with (l)", Comp x a p q)
@@ -145,10 +155,12 @@ stepPrincipal1 (Comp x (a `Plus` b) (Inr y p) (Case z q r))
     | x == y && x == z = Just ("beta_plus-with (r)", Comp x b p r)
 -- beta_!C?:
 stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
-    | x == z && x == z' && w == w' && x `elem` fn q = Just ("beta_!C?", Comp x (OfCourse a) (ServerAccept z w p) (Comp w a p q))
+    | x == z && x == z' && x `elem` fn q = Just ("beta_!C?", Comp x (OfCourse a) (ServerAccept z w p) (Comp w'' a p' q'))
+    where (w'', p', q') = renameBoundVariable w p w' q
 -- beta_!?:
 stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
-    | x == z && x == z' && w == w' = Just ("beta_!?", Comp w a p q)
+    | x == z && x == z' = Just ("beta_!?", Comp w'' a p' q')
+    where (w'', p', q') = renameBoundVariable w p w' q
 -- beta_!W:
 stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) q)
     | x == z && z `notElem` fn q = Just ("beta_!W", q)
@@ -160,9 +172,10 @@ stepPrincipal1 (Comp x One (EmptyOut z) (EmptyIn z' p))
     | x == z && x == z' = Just ("beta_1-bottom", p)
 -- reduction under cut:
 stepPrincipal1 (Comp x a p q) =
-    case (stepPrincipal p, stepPrincipal q) of
+    case (stepPrincipal1 p, stepPrincipal1 q) of
       (Nothing, Nothing) -> Nothing
-      (p', q')           -> Just ("Reduction under cut", Comp x a (fromMaybe p p') (fromMaybe q q'))
+      (Just (s, p'), _)  -> Just (s ++ " (under cut)", Comp x a p' q)
+      (Nothing, Just (s, q')) -> Just (s ++ " (under cut)", Comp x a p q')
 stepPrincipal1 p = Nothing
 
 -- Commuting conversions.
@@ -237,14 +250,14 @@ equiv p = [p]
 
 normalize :: Proc -> Behavior -> Proc
 normalize p b =
-    case msum (map stepPrincipal ps) of
+    case msum (map stepPrincipal1 ps) of
       Nothing -> fromMaybe p (msum (map stepCommuting ps))
-      Just p' -> case runCheck (check p') b of
-                   Left err -> error (unlines ["Normalization went wrong! Last good step was:",
-                                               "   " ++ printTree p,
-                                               "and first bad step was:",
-                                               "   " ++ printTree p'])
-                   Right _ -> normalize p' b
+      Just (s, p') -> case runCheck (check p') b of
+                        Left err -> error (unlines ["Normalization went wrong! Last good step was:",
+                                                    "   " ++ printTree p,
+                                                    "and first bad step (after " ++ s ++ ") was:",
+                                                    "   " ++ printTree p'])
+                        Right _ -> normalize p' b
     where ps = equiv p
 
 -- As a thin layer of verification, this applies the checking operation both
