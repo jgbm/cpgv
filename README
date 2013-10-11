@@ -9,13 +9,13 @@ Building
 --------
 
 Building the tool requires the compiler tool bnfc[1], a recent version of GHC,
-and the readline package.  Try commands like the following:
+and the readline package.  'make' should build an executable 'cpi' in the
+current directory; 'make clean' should remove it.  You may need to update the
+Makefile to point to wherever you've installed bnfc, if you haven't gotten it by
+'cabal install --user bnfc'
 
-$ bnfc -m -haskell -p Syntax CP.cf
-$ make
-$ ghc --make -o cpi -O2 Main
+[1] http://bnfc.digitalgrammars.com/
 
-[1] http://bnfc.digitalgrammars.com/, or cabal install bnfc
 
 Using
 -----
