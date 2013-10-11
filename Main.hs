@@ -24,9 +24,7 @@ chk s = case runCheck (check p) b of
           _        -> putStrLn "ok"
     where Assert p b = ass s
 
-n s   = case ncheck p b of
-          Left err -> putStrLn err
-          Right p  -> putStrLn (printTree p)
+n s   = normalize p b
     where Assert p b = ass s
 
 interp :: Defns -> String -> IO Defns
@@ -40,11 +38,17 @@ interp ds s =
       Ok (TAss (Assert p b)) ->
           case do p' <- expandP ds p
                   b' <- expandB ds b
-                  ncheck p' b' of
-            Left err -> do putStrLn err
-                           return ds
-            Right p' -> do putStrLn (printTree p')
-                           return ds
+                  runCheck (check p') b'
+                  return (normalize p' b') of
+            Left err ->
+                do putStrLn err
+                   return ds
+            Right (executed, simplified) ->
+                do putStrLn (unlines ["Execution results in:",
+                                      printTree executed,
+                                      "which can be further simplified to:",
+                                      printTree simplified])
+                   return ds
 
 repl ds = do s <- readline "> "
              case trim `fmap` s of

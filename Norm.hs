@@ -118,17 +118,6 @@ instance HasTyVars Proc
 -- Normalization steps
 --------------------------------------------------------------------------------
 
--- Principal cut reductions; "stepPrincipal p" returns "Just p'" if it was able
--- to eliminate a cut, and Nothing otherwise.
-
-stepPrincipal :: Proc -> Maybe Proc
-stepPrincipal p =
-    case stepPrincipal1 p of
-      Just (s, p') -> trace ("Reduced " ++ printTree p ++ "\nto " ++ printTree p' ++ "\nby " ++ s)
-                            (Just p')
-      Nothing      -> Nothing
-    where trace x y = y
-
 renameBoundVariable :: LIdent -> Proc -> LIdent -> Proc -> (LIdent, Proc, Proc)
 renameBoundVariable x p x' p'
     | x == x' = (x, p, p')
@@ -138,45 +127,48 @@ renameBoundVariable x p x' p'
     where (n:_)    = filter (\i -> i `notElem` fn p && i `notElem` fn p') newNames
           newNames = [LIdent (s ++ show i) | i <- [0..], LIdent s <- [x, x']]
 
-stepPrincipal1 :: Proc -> Maybe (String, Proc)
+-- Principal cut reductions; "stepPrincipal p" returns "Just p'" if it was able
+-- to eliminate a cut, and Nothing otherwise.
+
+stepPrincipal :: Proc -> Maybe Proc
 -- AxCut:
-stepPrincipal1 (Comp x a (Link y z) p)
-    | x == y = Just ("AxCut", replace x z p)
-    | x == z = Just ("AxCut", replace x y p)
+stepPrincipal (Comp x a (Link y z) p)
+    | x == y = Just (replace x z p)
+    | x == z = Just (replace x y p)
 -- beta_times-par:
-stepPrincipal1 (Comp x (a `Times` b) (Out z y p q) (In z' y' r))
-    | x == z && x == z' = Just ("beta_times-par", Comp y'' a p' (Comp x b q r'))
+stepPrincipal (Comp x (a `Times` b) (Out z y p q) (In z' y' r))
+    | x == z && x == z' = Just (Comp y'' a p' (Comp x b q r'))
     where (y'', p', r') = renameBoundVariable y p y' r
 -- beta_plus-with (left):
-stepPrincipal1 (Comp x (a `Plus` b) (Inl y p) (Case z q r))
-    |  x == y && x == z = Just ("beta_plus-with (l)", Comp x a p q)
+stepPrincipal (Comp x (a `Plus` b) (Inl y p) (Case z q r))
+    |  x == y && x == z = Just (Comp x a p q)
 -- beta_plus-with (right):
-stepPrincipal1 (Comp x (a `Plus` b) (Inr y p) (Case z q r))
-    | x == y && x == z = Just ("beta_plus-with (r)", Comp x b p r)
+stepPrincipal (Comp x (a `Plus` b) (Inr y p) (Case z q r))
+    | x == y && x == z = Just (Comp x b p r)
 -- beta_!C?:
-stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
-    | x == z && x == z' && x `elem` fn q = Just ("beta_!C?", Comp x (OfCourse a) (ServerAccept z w p) (Comp w'' a p' q'))
+stepPrincipal (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
+    | x == z && x == z' && x `elem` fn q = Just (Comp x (OfCourse a) (ServerAccept z w p) (Comp w'' a p' q'))
     where (w'', p', q') = renameBoundVariable w p w' q
 -- beta_!?:
-stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
-    | x == z && x == z' = Just ("beta_!?", Comp w'' a p' q')
+stepPrincipal (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
+    | x == z && x == z' = Just (Comp w'' a p' q')
     where (w'', p', q') = renameBoundVariable w p w' q
 -- beta_!W:
-stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) q)
-    | x == z && z `notElem` fn q = Just ("beta_!W", q)
+stepPrincipal (Comp x (OfCourse a) (ServerAccept z w p) q)
+    | x == z && z `notElem` fn q = Just q
 -- beta_exists-forall:
-stepPrincipal1 (Comp x (Exists z b) (SendType y a p) (ReceiveType y' a' q))
-    | x == y && x == y' = Just ("beta_exists-forall", Comp x (inst a' a b) p (inst a' a q))
+stepPrincipal (Comp x (Exists z b) (SendType y a p) (ReceiveType y' a' q))
+    | x == y && x == y' = Just (Comp x (inst a' a b) p (inst a' a q))
 -- beta_1-bottom:
-stepPrincipal1 (Comp x One (EmptyOut z) (EmptyIn z' p))
-    | x == z && x == z' = Just ("beta_1-bottom", p)
+stepPrincipal (Comp x One (EmptyOut z) (EmptyIn z' p))
+    | x == z && x == z' = Just p
 -- reduction under cut:
-stepPrincipal1 (Comp x a p q) =
-    case (stepPrincipal1 p, stepPrincipal1 q) of
+stepPrincipal (Comp x a p q) =
+    case (stepPrincipal p, stepPrincipal q) of
       (Nothing, Nothing) -> Nothing
-      (Just (s, p'), _)  -> Just (s ++ " (under cut)", Comp x a p' q)
-      (Nothing, Just (s, q')) -> Just (s ++ " (under cut)", Comp x a p q')
-stepPrincipal1 p = Nothing
+      (Just p', _)  -> Just (Comp x a p' q)
+      (Nothing, Just q') -> Just (Comp x a p q')
+stepPrincipal p = Nothing
 
 -- Commuting conversions.
 
@@ -242,35 +234,72 @@ equiv p@Comp{} = nub (ps ++ concatMap (expandOne (ps ++ ps')) ps')
                           _                       -> []
 equiv p = [p]
 
+equivUnder r@Comp{}              = [ Comp x a p' q' | Comp x a p q <- equiv r, p' <- equivUnder p, q' <- equivUnder q]
+equivUnder (Out x y p q)         = [Out x y p' q' | p' <- equivUnder p, q' <- equivUnder q]
+equivUnder (In x y p)            = In x y `fmap` equivUnder p
+equivUnder (Inl x p)             = Inl x `fmap` equivUnder p
+equivUnder (Inr x p)             = Inr x `fmap` equivUnder p
+equivUnder (Case x p q)          = [Case x p' q' | p' <- equivUnder p, q' <- equivUnder q]
+equivUnder (ServerAccept x y p)  = ServerAccept x y `fmap` equivUnder p
+equivUnder (ClientRequest x y p) = ClientRequest x y `fmap` equivUnder p
+equivUnder (SendType x a p)      = SendType x a `fmap` equivUnder p
+equivUnder (ReceiveType x a p)   = ReceiveType x a `fmap` equivUnder p
+equivUnder (EmptyIn x p)         = EmptyIn x `fmap` equivUnder p
+equivUnder p                     = [p]
+
+(f `orElse` g) x = case f x of
+                     Nothing -> g x
+                     Just v  -> Just v
+
+stepUnder :: (Proc -> Maybe Proc) -> Proc -> Maybe Proc
+stepUnder stepper = stepper `orElse` into
+    where firstOf f p q =
+              case (stepUnder stepper p, stepUnder stepper q) of
+                (Just p', _) -> Just (f p' q)
+                (_, Just q') -> Just (f p q')
+                _            -> Nothing
+
+          into (Link w x) = Nothing
+          into (Comp x a p q) = firstOf (Comp x a) p q
+          into (Out x y p q) = firstOf (Out x y) p q
+          into (In x y p) = In x y `fmap` stepUnder stepper p
+          into (Inl x p)  = Inl x `fmap` stepUnder stepper p
+          into (Inr x p)  = Inr x `fmap` stepUnder stepper p
+          into (Case x p q) = firstOf (Case x) p q
+          into (ServerAccept x y p) = ServerAccept x y `fmap` stepUnder stepper p
+          into (ClientRequest x y p) = ClientRequest x y `fmap` stepUnder stepper p
+          into (SendType x a p) = SendType x a `fmap` stepUnder stepper p
+          into (ReceiveType x a p) = ReceiveType x a `fmap` stepUnder stepper p
+          into (EmptyOut x) = Nothing
+          into (EmptyIn x p) = EmptyIn x `fmap` stepUnder stepper p
+          into (EmptyCase x ys) = Nothing
+
 
 -- Normalization is implemented as a simple loop.  As long as one of the
 -- principal cut reductions applies to the input expression, or to any
 -- expression equivalent to the input expression, normalization loops on the
 -- result.  Otherwise, it attempts to apply commuting conversions and finishes.
+-- a thin layer of verification, this applies the checking operation both before
+-- and after normalization, assuring that the normalized expression has the same
+-- behavior as the un-normalized one.
 
-normalize :: Proc -> Behavior -> Proc
-normalize p b =
-    case msum (map stepPrincipal1 ps) of
-      Nothing -> fromMaybe p (msum (map stepCommuting ps))
-      Just (s, p') -> case runCheck (check p') b of
-                        Left err -> error (unlines ["Normalization went wrong! Last good step was:",
-                                                    "   " ++ printTree p,
-                                                    "and first bad step (after " ++ s ++ ") was:",
-                                                    "   " ++ printTree p'])
-                        Right _ -> normalize p' b
-    where ps = equiv p
+normalize :: Proc -> Behavior -> (Proc, Proc)
+normalize p b = let p' = execute p in (p', simplify p')
+    where execute p = case msum (map stepPrincipal ps) of
+                        Nothing -> fromMaybe p (msum (map stepCommuting ps))
+                        Just p' -> case runCheck (check p') b of
+                                     Left err -> error (unlines ["Execution went wrong! Last good step was:",
+                                                                 "   " ++ printTree p,
+                                                                 "and first bad step was:",
+                                                                 "   " ++ printTree p'])
+                                     Right _ -> execute p'
+              where ps = equiv p
 
--- As a thin layer of verification, this applies the checking operation both
--- before and after normalization, assuring that the normalized expression has
--- the same behavior as the un-normalized one.
-
-ncheck :: Proc -> Behavior -> Either String Proc
-ncheck p b =
-    case runCheck (check p) b of
-      Left err -> Left err
-      Right _  -> let p' = normalize p b
-                  in  case runCheck (check p') b of
-                        Left err -> Left ("Error introduced by normalization:\n" ++ err ++
-                                          "\nPre-normalization term was: " ++ printTree p ++
-                                          "\nand post-normalization term was: " ++ printTree p')
-                        Right _  -> Right p'
+          simplify p = case msum (map (stepUnder stepPrincipal `orElse` stepUnder stepCommuting) (equivUnder p)) of
+                         Nothing -> p
+                         Just p' -> case runCheck (check p') b of
+                                      Left err -> error (unlines ["Simplification went wrong! Last good step was:",
+                                                                  "   " ++ printTree p,
+                                                                  "and first bad step was:",
+                                                                  "   " ++ printTree p'])
+                                      Right _ -> simplify p'
