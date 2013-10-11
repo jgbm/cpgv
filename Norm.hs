@@ -143,11 +143,14 @@ stepPrincipal1 (Comp x (a `Plus` b) (Inl y p) (Case z q r))
 -- beta_plus-with (right):
 stepPrincipal1 (Comp x (a `Plus` b) (Inr y p) (Case z q r))
     | x == y && x == z = Just ("beta_plus-with (r)", Comp x b p r)
+-- beta_!C?:
+stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
+    | x == z && x == z' && w == w' && x `elem` fn q = Just ("beta_!C?", Comp x (OfCourse a) (ServerAccept z w p) (Comp w a p q))
 -- beta_!?:
 stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
     | x == z && x == z' && w == w' = Just ("beta_!?", Comp w a p q)
 -- beta_!W:
-stepPrincipal1 r@(Comp x (OfCourse a) (ServerAccept z w p) q)
+stepPrincipal1 (Comp x (OfCourse a) (ServerAccept z w p) q)
     | x == z && z `notElem` fn q = Just ("beta_!W", q)
 -- beta_exists-forall:
 stepPrincipal1 (Comp x (Exists z b) (SendType y a p) (ReceiveType y' a' q))
