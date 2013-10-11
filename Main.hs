@@ -1,5 +1,6 @@
 import Check
 import Control.Monad.Error
+import Data.Char (isSpace)
 import Expand
 import Norm
 import Syntax.ErrM
@@ -46,10 +47,13 @@ interp ds s =
                            return ds
 
 repl ds = do s <- readline "> "
-             case s of
+             case trim `fmap` s of
                Nothing   -> return ()
                Just ":q" -> return ()
+               Just ""   -> repl ds
                Just s'   -> interp ds s' >>= repl
+    where trim = f . f
+              where f = reverse . dropWhile isSpace
 
 main = repl emptyDefns
 
