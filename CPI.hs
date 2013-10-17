@@ -55,7 +55,7 @@ repl ds = do s <- readline "> "
                Nothing   -> return ()
                Just ":q" -> return ()
                Just ""   -> repl ds
-               Just s'   -> interp ds s' >>= repl
+               Just s'   -> addHistory s' >> interp ds s' >>= repl
     where trim = f . f
               where f = reverse . dropWhile isSpace
 

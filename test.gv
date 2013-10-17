@@ -1,0 +1,1 @@
+|- with c connect case c of { frog: d. send unit d; goat: d. send unit (send unit d) } to let (x, c) = receive (select goat c) in terminate (receive c) : Unit

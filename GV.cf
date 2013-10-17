@@ -1,0 +1,48 @@
+token UIdent (upper (letter | digit | '_')*);
+token LIdent (lower (letter | digit | '_')*);
+
+Label. LabeledSession ::= LIdent ":" Session;
+separator LabeledSession ",";
+
+Output.  Session ::= "!" Type "." Session;
+Input.   Session ::= "?" Type "." Session;
+Sum.     Session ::= "+" "{" [LabeledSession] "}";
+Choice.  Session ::= "&" "{" [LabeledSession] "}";
+OutTerm. Session ::= "end!";
+InTerm.  Session ::= "end?";
+internal Dual. Session ::= "~" Session;
+internal SVar. Session ::= LIdent;
+
+LinFun.  Type1    ::= Type2 "-@" Type1;
+UnlFun.  Type1    ::= Type2 "->" Type1;
+Tensor.  Type2    ::= Type3 "*" Type2;
+Lift.    Type3    ::= Session;
+UnitType.Type3    ::= "Unit";
+internal TVar. Type3 ::= LIdent;
+coercions Type 3;
+
+BindName. Pattern ::= LIdent;
+BindPair. Pattern ::= "(" LIdent "," LIdent ")";
+
+Branch.   Branch ::= LIdent ":" LIdent "." Term1;
+separator Branch ";";
+
+Var.     Term2 ::= LIdent;
+Unit.    Term2 ::= "unit";
+Fun.     Term1 ::= "\\" LIdent "." Term;
+App.     Term1 ::= Term2 Term1;
+Pair.    Term2 ::= "(" Term1 "," Term1 ")";
+Let.     Term1 ::= "let" Pattern "=" Term1 "in" Term1;
+Send.    Term1 ::= "send" Term2 Term1;
+Receive. Term1 ::= "receive" Term2;
+Select.  Term1 ::= "select" LIdent Term1;
+Case.    Term1 ::= "case" Term1 "of" "{" [Branch] "}";
+With.    Term1 ::= "with" LIdent "connect" Term1 "to" Term1;
+End.     Term1 ::= "terminate" Term1;
+coercions Term 2;
+
+Typing.  Typing ::= LIdent ":" Type;
+separator Typing ",";
+Assert.  Assertion ::= [Typing] "|-" Term ":" Type;
+
+entrypoints Type,Assertion;
