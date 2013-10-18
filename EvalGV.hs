@@ -63,7 +63,8 @@ evalThread env e = evalThread' env e where
   et = evalThread' env
   evalThread' env (Var x)   = return (fromJust (lookup x env))
   evalThread' env Unit      = return VUnit
-  evalThread' env (Fun x e) = return (VFun x e)
+  evalThread' env (LinLam x _ e) = return (VFun x e)
+  evalThread' env (UnlLam x _ e) = return (VFun x e)
   evalThread' env (App f a) =
     do VFun x e <- et f
        v <- et a
@@ -75,7 +76,7 @@ evalThread env e = evalThread' env e where
   evalThread' env (Let (BindName x) e1 e2) =
     do v <- et e1
        evalThread' (extend env (x, v)) e2
-  evalThread' env (With x e1 e2) =
+  evalThread' env (With x _ e1 e2) =
     swith (\(c1, c2) -> (evalThread' (extend env (x, VChannel (c1, c2))) e1,
                          evalThread' (extend env (x, VChannel (c2, c1))) e2))
   evalThread' env (End e)        = et e
