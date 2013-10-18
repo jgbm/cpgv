@@ -1,3 +1,5 @@
+module EvalGV where
+
 import Syntax.AbsGV
 import Syntax.PrintGV
 
@@ -60,27 +62,33 @@ extend = flip (:)
 -- evaluate as much as possible in a single thread
 evalThread :: VEnv -> Term -> Susp Value
 evalThread env e = evalThread' env e where
-  et = evalThread' env
-  evalThread' env (Var x)   = return (fromJust (lookup x env))
-  evalThread' env Unit      = return VUnit
+  et = evalThread env
+  evalThread' env (Var x)   =
+    case lookup x env of
+      Nothing -> error ("Unbound variable: " ++ show x)
+      Just v -> return v
+  evalThread' env Unit = return VUnit
   evalThread' env (LinLam x _ e) = return (VFun x e)
   evalThread' env (UnlLam x _ e) = return (VFun x e)
   evalThread' env (App f a) =
     do VFun x e <- et f
        v <- et a
-       evalThread' (extend env (x, v)) e
+       evalThread (extend env (x, v)) e
   evalThread' env (Pair e1 e2) =
     do v1 <- et e1
        v2 <- et e2
        return (VPair v1 v2)
-  evalThread' env (Let (BindName x) e1 e2) =
-    do v <- et e1
-       evalThread' (extend env (x, v)) e2
+  evalThread' env (Let (BindName x) e e') =
+    do v <- et e
+       evalThread (extend env (x, v)) e'
+  evalThread' env (Let (BindPair x1 x2) e e') =
+    do (VPair v1 v2) <- et e
+       evalThread (extend (extend env (x1, v1)) (x2, v2)) e'
   evalThread' env (With x _ e1 e2) =
-    swith (\(c1, c2) -> (evalThread' (extend env (x, VChannel (c1, c2))) e1,
-                         evalThread' (extend env (x, VChannel (c2, c1))) e2))
-  evalThread' env (End e)        = et e
-  evalThread' env (Send m n)     =
+    swith (\(c1, c2) -> (evalThread (extend env (x, VChannel (c1, c2))) e1,
+                         evalThread (extend env (x, VChannel (c2, c1))) e2))
+  evalThread' env (End e) = et e
+  evalThread' env (Send m n) =
     do v <- et m
        (VChannel c) <- et n
        ssend v c
@@ -92,7 +100,7 @@ evalThread env e = evalThread' env e where
        sselect l c
   evalThread' env (Case e bs) =
     do (VChannel c) <- et e
-       let bs' = map (\(Branch l x e) -> (l, \v -> evalThread' (extend env (x, v)) e)) bs
+       let bs' = map (\(Branch l x e) -> (l, \v -> evalThread (extend env (x, v)) e)) bs
        scase c bs'
 
 -- perform up to one concurrency step
@@ -127,11 +135,13 @@ sendLabel l (p, _) = map (\(q, vs) -> if p == q then (q, vs ++ [VLabel l])
 
 receiveLabel :: Chan -> Env Label (Value -> Susp Value) -> [Buffer] -> Maybe (Susp Value, [Buffer])
 receiveLabel c@(_, p) bs ((q, []):cs) | p == q = Nothing
-receiveLabel c@(_, p) bs ((q, (VLabel l):vs):cs) | p == q = Just (v, (q, vs):cs)
+receiveLabel c@(_, p) bs ((q, (VLabel l):vs):cs) | p == q =
+  do v <- matchLabel c l bs
+     return (v, (q, vs):cs)
   where
-    v = matchLabel c l bs
-    matchLabel c l bs = f (VChannel c)
-      where f = fromJust (lookup l bs)
+    matchLabel c l bs =
+      do f <- lookup l bs
+         return $ f (VChannel c)
 receiveLabel c        bs (c':cs) =
   do (t, cs') <- receiveLabel c bs cs
      return (t, c':cs')
@@ -147,5 +157,6 @@ evalConfig conf = evalConfig' 0 conf
         Nothing -> evalConfig' (n+1) (cs, ts ++ [t], next)
         Just conf -> evalConfig conf
 
-evalProgram :: Term -> Susp Value
-evalProgram e = last (evalConfig ([], [evalThread [] e], 0))
+evalProgram :: Term -> Value
+evalProgram e = case last (evalConfig ([], [evalThread [] e], 0)) of
+                  Return v -> v
