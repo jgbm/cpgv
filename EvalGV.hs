@@ -1,3 +1,10 @@
+{- TODO:
+
+   * Keep track of the top-level thread. It isn't necessarly the last
+one in the configuration as we keep changing the order!
+
+-}
+
 module EvalGV where
 
 import Syntax.AbsGV
@@ -106,9 +113,8 @@ evalThread env e = evalThread' env e where
 -- perform up to one concurrency step
 step :: Susp Value -> [Buffer] -> [Susp Value] -> Port -> Maybe Configuration
 step (Return _) _ _ _ = Nothing
-step (SWith f k) cs ts next = Just ((next+1, []):(next, []):cs, ts ++ [t1, t2 >>= k], next+2)
-  where
-    (t1, t2) = f (next, next+1)
+step (SWith f k) cs ts next = Just ((next+1, []):(next, []):cs, ts ++ [t1, t2 >>= k], next+2) where
+  (t1, t2) = f (next, next+1)
 step (SSend v c k) cs ts next = Just (sendValue v c cs, ts ++ [k (VChannel c)], next)
 step (SReceive c k) cs ts next =
   do (v, cs') <- receiveValue c cs 
@@ -147,15 +153,14 @@ receiveLabel c        bs (c':cs) =
      return (t, c':cs')
 
 evalConfig :: Configuration -> [Susp Value]
-evalConfig conf = evalConfig' 0 conf
-  where
-    -- keep going until all threads are blocked
-    evalConfig' :: Int -> Configuration -> [Susp Value]
-    evalConfig' n (cs, ts, next) | n >= length ts = ts
-    evalConfig' n (cs, t:ts, next) =
-      case step t cs ts next of
-        Nothing -> evalConfig' (n+1) (cs, ts ++ [t], next)
-        Just conf -> evalConfig conf
+evalConfig conf = evalConfig' 0 conf where
+  -- keep going until all threads are blocked
+  evalConfig' :: Int -> Configuration -> [Susp Value]
+  evalConfig' n (cs, ts, next) | n >= length ts = ts
+  evalConfig' n (cs, t:ts, next) =
+    case step t cs ts next of
+      Nothing -> evalConfig' (n+1) (cs, ts ++ [t], next)
+      Just conf -> evalConfig conf
 
 evalProgram :: Term -> Value
 evalProgram e = case last (evalConfig ([], [evalThread [] e], 0)) of
