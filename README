@@ -1,9 +1,12 @@
 --------------------------------------------------------------------------------
---                    Interpreter for Wadler's language CP                    --
+--              Interpreters for Wadler's language's CP and GV                --
 --------------------------------------------------------------------------------
 
-This provides a small interpreter for Wadler's language CP (although see last
-section for notes on syntax and differences.)
+This provides a small interpreter for Wadler's language CP and GV (although see later notes on
+syntax and differences.)
+
+CP
+==
 
 Building
 --------
@@ -68,3 +71,59 @@ The form "x.case()" is not sufficient to determine the structure of a proof, as
 the top rule allows arbitrary further linear assumptions to be discharged.
 Instead, the form must be written "x.case{x1,x2,...}()", where the x_i are the
 names of the additional assumptions to be discharged.
+
+GV
+==
+
+Differences from Wadler's language
+----------------------------------
+
+The current implementation of GV modifies the sepcified syntax to be more
+explicit about linearity and types.  This avoids the need to do much type
+inference, and clarifies several edge cases.  Such cases include (in the
+original syntax):
+
+ |- let f = \x.x in f unit : Unit
+
+There are (at least) two typings of this, one that assigns f the type Unit ->
+Unit, and one that assigns it the type Unit -@ Unit.
+
+ |- let f = \x.x in f (f unit) : Unit
+
+There is only one typing of this, assigning f the type Unit -> Unit, but the
+need for f to be unlimited is not apparent until its usage.
+
+ |- let f = \x.x in \y. f y : Unit -> Unit
+
+Again, there is only one typing.  Here, the need is expressed not by f being
+used multiple times, but by '\y. f y' having an unlimited type, and thus only
+have access to the unlimited environment.
+
+Similar conundrums arise from the channel in 'with..connect..to'.  For example:
+
+ |- with c connect
+      let (f, c) = receive c in send (f unit) c
+    to
+      terminate (receive (send (\x.x) c))
+  : Unit
+
+Again, this types either with f having linear or unlimited type.
+
+For the time being, I've avoided this problem by adding a number of annotations
+to the syntax.  They are:
+
+  Original
+  --------
+    \x.M    (either linear or unlimited functions, type of 'x' implicit)
+  Modified
+  --------
+    \x:t.M  (linear, type of 'x' given by 't')
+    !\x:t.M (unlimited, type of 'x' given by 't')
+
+  Original
+  --------
+    with c connect M to N    (type of 'c' implicit)
+  Modified
+  --------
+    with c:t connect M to N  (type of 'c' given by 't'; as in the original c has
+                              type '~t' in N)
