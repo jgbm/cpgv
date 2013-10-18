@@ -11,7 +11,7 @@ import System.Console.Readline
 interp s = case pAssertion (myLexer s) of
              Bad err -> putStrLn err
              Ok (Assert gamma m t) ->
-                 case runCheck (check m t) (empty, gamma, 1) of
+                 case runCheck (checkAgainst m t) gamma of
                    Left err -> putStrLn err
                    Right _  -> putStrLn "ok"
 
