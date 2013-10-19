@@ -6,7 +6,7 @@ import Syntax.LexGV
 import Syntax.ParGV
 import Syntax.PrintGV
 
-import EvalGV
+import RunGV
 
 import System.Console.Readline
 
@@ -16,7 +16,7 @@ interp s = case pAssertion (myLexer s) of
                  case runCheck (checkAgainst m t) gamma of
                    Left err -> putStrLn err
                    Right _  -> 
-                     putStrLn (show $ evalProgram m)
+                     putStrLn (show $ runProgram m)
 
 repl = do s <- readline "> "
           case trim `fmap` s of
