@@ -4,6 +4,7 @@ import Syntax.AbsGV
 import Syntax.PrintGV
 
 import Control.Monad
+import Control.Monad.Error
 import Data.Maybe
 
 data Value =
