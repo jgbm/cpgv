@@ -4,6 +4,8 @@ import Data.List
 import Syntax.AbsCP
 import Syntax.PrintCP
 
+import Debug.Trace
+
 --------------------------------------------------------------------------------
 -- Utility operations on types
 --------------------------------------------------------------------------------
@@ -137,11 +139,12 @@ provide :: LIdent -> Type -> Check t -> Check t
 provide x t c = Check (\b -> let (included, excluded) = partition ((x /=) . name) b
                              in  case runCheck c (Typing x t : included) of
                                    Left err -> Left err
-                                   Right (v, b') ->
-                                        if any ((x ==) . name) b' && not (isWhyNot t)
-                                        then Left ("Failed to consume binding " ++ printTree x ++ ": " ++ printTree t)
-                                        else Right (v, b' ++ excluded))
-
+                                   Right (v, b')
+                                       | null excluded -> Right (v, b')
+                                       | otherwise -> let (xs, b'') = partition ((x ==) . name) b'
+                                                      in  if any (not . isWhyNot . typ) xs
+                                                          then Left ("Failed to consume bindings " ++ intercalate "," [printTree x ++ ": " ++ printTree t | Typing x t <- xs])
+                                                          else Right (v, b'' ++ excluded))
 
 -- Restricts the assumptions for the purposes of the subcomputation.
 
