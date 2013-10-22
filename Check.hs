@@ -172,7 +172,7 @@ andAlso c c' =
                    (Left err, _) -> Left err
                    (_, Left err) -> Left err
                    (Right (_, b), Right (_, b'))
-                       | same b b' -> Right ((), b)
+                       | same (filterUnlimited b) (filterUnlimited b') -> Right ((), b)
                        | otherwise -> let leftOver = filter (`notElem` b') b ++ filter (`notElem` b) b'
                                       in  Left (unlines ("Failed to consume bindings:" :
                                                          ["    " ++ printTree x ++ ": " ++ printTree t | Typing x t <- leftOver])))
@@ -181,6 +181,7 @@ andAlso c c' =
           getBinding x b = case partition ((x ==) . name) b of
                              ([Typing _ t], _) -> t
                              _                 -> error "getBinding"
+          filterUnlimited e = [Typing v t | Typing v t <- e, not (isWhyNot t)]
           same b b' = equalAsSet (domain b) (domain b') && and [getBinding x b == getBinding x b' | x <- domain b]
 
 isWhyNot (WhyNot _) = True
