@@ -129,7 +129,9 @@ typ (Typing _ t) = t
 consume :: LIdent -> Check Type
 consume x = Check (\b -> case partition ((x ==) . name) b of
                            ([], _) -> Left ("No type for " ++ printTree x)
-                           ([Typing _ t], b') -> Right (t, b')
+                           ([Typing _ t], b')
+                               | isWhyNot t -> Right (t, b)
+                               | otherwise  -> Right (t, b')
                            _ -> error ("Internal failure: multiple bindings of " ++ printTree x ++ " in behavior."))
 
 -- Adds a binding to the assumption list for the purposes of the subcomputation.
@@ -260,7 +262,8 @@ check p = check' p >> empty
               do c <- consume x
                  case c of
                    WhyNot a ->
-                       provide x (WhyNot a) (provide y a (check' p))
+                       provide y a (check' p)
+                   _ -> unexpectedType x c (ClientRequest x y p)
           check' (SendType x a p) =
               do c <- consume x
                  case c of
