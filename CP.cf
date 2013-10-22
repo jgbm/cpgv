@@ -1,12 +1,15 @@
 token UIdent (upper (letter | digit | '_')*);
 separator UIdent ",";
 
+Label.    LabeledType ::= LIdent ":" Type;
+separator LabeledType ",";
+
 Exists.   Type1 ::= "exists" UIdent "." Type1;
 ForAll.   Type1 ::= "forall" UIdent "." Type1;
 Times.    Type2 ::= Type3 "*" Type3;
 Par.      Type2 ::= Type3 "||" Type3;
-Plus.     Type2 ::= Type3 "+" Type3;
-With.     Type2 ::= Type3 "&" Type3;
+Plus.     Type2 ::= "+" "{" [LabeledType] "}";
+With.     Type2 ::= "&" "{" [LabeledType] "}";
 OfCourse. Type3 ::= "!" Type3;
 WhyNot.   Type3 ::= "?" Type3;
 Var.      Type4 ::= UIdent;
@@ -27,22 +30,24 @@ separator nonempty Typing ",";
 token LIdent (lower (letter | digit | '_')*);
 separator LIdent ",";
 
+Branch.        Branch ::= LIdent ":" Proc;
+separator Branch ";";
+
 ProcVar.       Proc ::= UIdent;
 ProcVarArgs.   Proc ::= UIdent "(" [ProcArg] ")";
 Link.          Proc ::= LIdent "<->" LIdent;
 Comp.          Proc ::= "nu" LIdent ":" Type "." "(" Proc "|" Proc ")";
 Out.           Proc ::= LIdent "[" LIdent "]" "." "(" Proc "|" Proc ")";
 In.            Proc ::= LIdent "(" LIdent ")" "." Proc;
-Inl.           Proc ::= LIdent "[inl]" "." Proc;
-Inr.           Proc ::= LIdent "[inr]" "." Proc;
-Case.          Proc ::= LIdent "." "case" "(" Proc "," Proc ")";
+Inj.           Proc ::= LIdent "." "in" "[" LIdent "]" "." Proc;
+Case.          Proc ::= LIdent "." "case" "{" [Branch] "}";
 ServerAccept.  Proc ::= "!" LIdent "(" LIdent ")" "." Proc;
 ClientRequest. Proc ::= "?" LIdent "[" LIdent "]" "." Proc;
 SendType.      Proc ::= LIdent "[" Type "]" "." Proc;
 ReceiveType.   Proc ::= LIdent "(" UIdent ")" "." Proc;
 EmptyOut.      Proc ::= LIdent "[" "]" "." "0";
 EmptyIn.       Proc ::= LIdent "(" ")" "." Proc;
-EmptyCase.     Proc ::= LIdent "." "case" "{" [LIdent] "}" "(" ")";
+EmptyCase.     Proc ::= LIdent "." "case" "(" [LIdent] ")" "{" "}";
 
 ProcParam.     ProcParam ::= UIdent;
 NameParam.     ProcParam ::= LIdent;

@@ -1,5 +1,6 @@
 module Check where
 
+import Control.Monad
 import Data.List
 import Syntax.AbsCP
 import Syntax.PrintCP
@@ -12,6 +13,7 @@ import Debug.Trace
 
 --------------------------------------------------------------------------------
 -- Negating types
+
 dual :: Type -> Type
 -- Variables
 dual (Var s) = Neg s
@@ -22,8 +24,8 @@ dual (a `Par` b) = dual a `Times` dual b
 dual One = Bottom
 dual Bottom = One
 -- Additive combinators
-dual (a `Plus` b) = dual a `With` dual b
-dual (a `With` b) = dual a `Plus` dual b
+dual (Plus lts) = With (map dualL lts)
+dual (With lts) = Plus (map dualL lts)
 dual Zero = Top
 dual Top = Zero
 -- Exponentials
@@ -34,6 +36,9 @@ dual (ForAll x a) = Exists x (dual a)
 dual (Exists x a) = ForAll x (dual a)
 -- Oops
 dual t            = error ("Encountered " ++ printTree t ++ " in dual.")
+
+dualL :: LabeledType -> LabeledType
+dualL (Label l t) = Label l (dual t)
 
 --------------------------------------------------------------------------------
 -- Free type variables
@@ -47,8 +52,8 @@ ftv (a `Par` b) = concatMap ftv [a,b]
 ftv One = []
 ftv Bottom = []
 -- Additive combinators
-ftv (a `Plus` b) = concatMap ftv [a,b]
-ftv (a `With` b) = concatMap ftv [a,b]
+ftv (Plus ls) = concat [ftv t | Label _ t <- ls]
+ftv (With ls) = concat [ftv t | Label _ t <- ls]
 ftv Zero = []
 ftv Top = []
 -- Exponentials
@@ -75,8 +80,8 @@ instance HasTyVars Type
           inst _ _ One = One
           inst _ _ Bottom = Bottom
           -- Additive combinators
-          inst x c (a `Plus` b) = inst x c a `Plus` inst x c b
-          inst x c (a `With` b) = inst x c a `With` inst x c b
+          inst x c (Plus lts) = Plus [Label l (inst x c t) | Label l t <- lts]
+          inst x c (With lts) = With [Label l (inst x c t) | Label l t <- lts]
           inst x c Zero = Zero
           inst x c Top = Top
           -- Exponentials
@@ -221,25 +226,30 @@ check p = check' p >> empty
                    a `Par` b ->
                        provide y a (provide x b (check' p))
                    _ -> unexpectedType x c (In x y p)
-          check' (Inl x p) =
+          check' (Inj x l p) =
               do c <- consume x
                  case c of
-                   a `Plus` b ->
-                       provide x a (check' p)
-                   _ -> unexpectedType x c (Inl x p)
-          check' (Inr x p) =
+                   Plus lts
+                       | Just a <- lookupLabel lts -> provide x a (check' p)
+                       | otherwise -> fail ("Sum " ++ printTree (Plus lts) ++ " does not contain label " ++ printTree l)
+                   _ -> unexpectedType x c (Inj x l p)
+              where lookupLabel [] = Nothing
+                    lookupLabel (Label l' a : lts)
+                        | l == l' = Just a
+                        | otherwise = lookupLabel lts
+          check' (Case x (b:bs)) =
               do c <- consume x
                  case c of
-                   a `Plus` b ->
-                       provide x b (check' p)
-                   _ -> unexpectedType x c (Inr x p)
-          check' (Case x p q) =
-              do c <- consume x
-                 case c of
-                   a `With` b ->
-                       provide x a (check' p) `andAlso`
-                       provide x b (check' q)
-                   _ -> unexpectedType x c (Case x p q)
+                   With lts ->
+                       foldl andAlso (checkBranch lts b) (map (checkBranch lts) bs)
+                   _ -> unexpectedType x c (Case x (b:bs))
+              where checkBranch lts (Branch l p)
+                        | Just a <- lookupLabel l lts = provide x a (check' p)
+                        | otherwise = fail ("Choice " ++ printTree (With lts) ++ " does not contain label " ++ printTree l)
+                    lookupLabel l [] = Nothing
+                    lookupLabel l (Label l' a : lts)
+                        | l == l' = Just a
+                        | otherwise = lookupLabel l lts
           check' (ServerAccept x y p) =
               do c <- consume x
                  case c of

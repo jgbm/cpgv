@@ -6,6 +6,11 @@ import Data.List
 import Syntax.AbsGV
 import Syntax.PrintGV
 
+import CPBuilder
+import qualified Check as CP (dual)
+import qualified Syntax.AbsCP as CP
+
+
 --------------------------------------------------------------------------------
 -- Types, substitutions, and unifications
 
@@ -111,66 +116,95 @@ addErrorContext s c = C (\e -> case runCheck c e of
                                  Right r  -> Right r)
 
 --------------------------------------------------------------------------------
+-- Translating types
+
+xSession :: Session -> CP.Type
+xSession (Output t s) = CP.dual (xType t) `CP.Par` xSession s
+xSession (Input t s)  = xType t `CP.Times` xSession s
+xSession (Sum cs)     = CP.With [CP.Label (xId l) (xSession st) | Label l st <- cs]
+xSession (Choice cs)  = CP.Plus [CP.Label (xId l) (xSession st) | Label l st <- cs]
+xSession OutTerm      = CP.Bottom
+xSession InTerm       = CP.One
+
+xType :: Type -> CP.Type
+xType (Lift s)     = xSession s
+xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
+xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
+xType (Tensor t u) = xType t `CP.Times` xType u
+xType UnitType     = CP.OfCourse CP.Top
+
+xId (LIdent s) = CP.LIdent s
+
+--------------------------------------------------------------------------------
 -- With all that out of the way, type checking itself can be implemented
 -- directly.
 
-check :: Term -> Check Type
+check :: Term -> Check (Type, Builder CP.LIdent -> Builder CP.Proc)
 check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
-    where check' (Var x)   = consume x
-          check' Unit      = return UnitType
+    where check' (Var x)   = do ty <- consume x
+                                return (ty, \z -> fmap (CP.Link (xId x)) z)
+          check' Unit      = return (UnitType, \z -> accept z "y" (emptyCase "y"))
           check' (UnlLam x t m) =
-              do u <- restrict (unlimited . typeFrom) (provide x t (check m))
-                 return (UnlFun t t)
+              do (u, m') <- restrict (unlimited . typeFrom) (provide x t (check m))
+                 return (UnlFun t t, \z -> accept z "y" (in_ "y" (xId x) (m' (reference "y"))))
           check' (LinLam x t m) =
-              do u <- provide x t (check m)
-                 return (LinFun t t)
+              do (u, m') <- provide x t (check m)
+                 return (LinFun t u, \z -> in_ z (xId x) (m' z))
           check' (App m n) =
-              do mty <- check m
-                 nty <- check n
+              do (mty, m') <- check m
+                 (nty, n') <- check n
                  case mty of
                    v `LinFun` w
-                       | v == nty -> return w
+                       | v == nty -> return (w, \z -> nu "w" (xType mty) (m' (reference "w")) (out "w" "x" (n' (reference "x")) (link "w" z)))
                        | otherwise -> fail ("   Argument has type " ++ printTree nty ++ " but expected " ++ printTree v)
                    v `UnlFun` w
-                       | v == nty -> return w
+                       | v == nty -> return (w, \z -> nu "y" (xType (v `LinFun` w))
+                                                         (nu "w" (xType (v `UnlFun` w)) (m' (reference "w")) (in_ "w" "x" (link "x" "y")))
+                                                         (out "y" "x" (n' (reference "x")) (link "y" z)))
                        | otherwise -> fail ("   Argument has type " ++ printTree nty ++ " but expected " ++ printTree v)
                    _ -> fail ("   Application of non-function of type " ++ printTree mty)
           check' (Pair m n) =
-              liftM2 Tensor (check m) (check n)
+              do (mty, m') <- check m
+                 (nty, n') <- check n
+                 return (Tensor mty nty, \z -> out z "y" (m' (reference "y")) (n' z))
           check' (Let (BindName x) m n) =
-              do t <- check m
-                 provide x t (check n)
+              do (t, m') <- check m
+                 (u, n') <- provide x t (check n)
+                 return (u, \z -> liftM2 (CP.Comp (xId x) (xType t)) (m' (return (xId x))) (n' z))
           check' (Let (BindPair x y) m n) =
-              do mty <- check m
+              do (mty, m') <- check m
                  case mty of
-                   Tensor xty yty -> provide x xty (provide y yty (check n))
+                   Tensor xty yty -> do (nty, n') <- provide x xty (provide y yty (check n))
+                                        return (nty, \z -> liftM2 (CP.Comp (xId y) (xType mty)) (m' (return (xId y))) (liftM (CP.In (xId y) (xId x)) (n' z)))
                    _              -> fail ("    Attempted to pattern-match non-pair of type " ++ printTree mty)
           check' (Send m n) =
-              do mty <- check m
-                 nty <- check n
+              do (mty, m') <- check m
+                 (nty, n') <- check n
                  case nty of
                    Lift (Output v w)
-                        | mty == v -> return (Lift w)
+                        | mty == v -> return (Lift w, \z -> nu "x" (xType v `CP.Times` CP.dual (xSession w))
+                                                                   (out "x" "y" (m' (reference "y")) (link "x" z)) (n' (reference "x")))
                         | otherwise -> fail ("    Sent value has type " ++ printTree mty ++ " but expected " ++ printTree v)
                    _ -> fail ("    Channel of send operation has unexpected type " ++ printTree nty)
           check' (Receive m) =
-              do mty <- check m
+              do (mty, m') <- check m
                  case mty of
-                   Lift (Input v w) -> return (v `Tensor` Lift w)
+                   Lift (Input v w) -> return (v `Tensor` Lift w, m')
                    _ -> fail ("    Channel of receive operation has unexpected type " ++ printTree mty)
           check' (Select l m) =
-              do mty <- check m
+              do (mty, m') <- check m
                  case mty of
-                   Lift (Sum cs) -> Lift `fmap` lookupLabel l cs
+                   Lift (Sum cs) -> do st <- lookupLabel l cs
+                                       return (Lift st, \z -> nu "x" (xType mty) (m' (reference "x")) (inj "x" (xId l) (link "x" z)))
                    _             -> fail ("    Channel of select operation has unexepcted type " ++ printTree mty)
               where
           check' (Case m bs)
               | Just l <- duplicated bs = fail ("    Duplicated case label " ++ printTree l)
-              | otherwise = do mty <- check m
+              | otherwise = do (mty, m') <- check m
                                case mty of
-                                 Lift (Choice cs) -> do (t:ts) <- mapPar (checkBranch cs) bs
+                                 Lift (Choice cs) -> do (t:ts, bs') <- unzip `fmap` mapPar (checkBranch cs) bs
                                                         if all (t ==) ts
-                                                        then return t
+                                                        then return (t, \z -> nu "x" (xType mty) (m' (reference "x")) (case_ "x" (sequence [b' z | b' <- bs'])))
                                                         else fail ("   Divergent results of case branches:" ++ intercalate ", " (map printTree (nub (t:ts))))
                                  _                -> fail ("    Channel of case operation has unexpected type " ++ printTree mty)
               where duplicated [] = Nothing
@@ -179,16 +213,22 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                         | otherwise = duplicated bs
                     checkBranch cs (Branch l x n) =
                         do s <- lookupLabel l cs
-                           provide x (Lift s) (check n)
+                           provide x (Lift s) (do (t, n') <- check n
+                                                  return (t, \z -> CP.Branch (xId l) `fmap` (n' z)))
           check' (With l st m n) =
-              do mty <- provide l (Lift st) (check m)
+              do (mty, m') <- provide l (Lift st) (check m)
                  case mty of
-                   Lift OutTerm -> provide l (Lift (dual st)) (check n)
+                   Lift OutTerm -> do (nty, n') <- provide l (Lift (dual st)) (check n)
+                                      return (nty, \z -> nu (xId l) (CP.dual (xSession st))
+                                                            (nu "y" CP.Bottom (m' (reference "y")) (emptyOut "y"))
+                                                            (n' z))
                    _            -> fail ("    Unexpected type of left channel " ++ printTree mty)
           check' (End m) =
-              do mty <- check m
+              do (mty, m') <- check m
                  case mty of
-                   ty `Tensor` Lift InTerm -> return ty
+                   ty `Tensor` Lift InTerm -> return (ty, \z -> nu "y" (xType ty `CP.Times` CP.One)
+                                                                   (m' (reference "y"))
+                                                                   (in_ "y" "x" (emptyIn "y" (link z "x"))))
                    _                       -> fail ("    Unexpected type of right channel " ++ printTree mty)
 
 
@@ -198,8 +238,8 @@ lookupLabel l (Label l' s : rest)
     |  l == l'   = return s
     | otherwise  = lookupLabel l rest
 
-checkAgainst :: Term -> Type -> Check ()
-checkAgainst te ty = do ty' <- check te
+checkAgainst :: Term -> Type -> Check (Builder CP.Proc)
+checkAgainst te ty = do (ty', b) <- check te
                         if ty == ty'
-                        then return ()
+                        then return (binder "z" (b . return))
                         else fail ("Expected type " ++ printTree ty ++ " but actual type is " ++ printTree ty')

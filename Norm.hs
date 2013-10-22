@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 module Norm where
 
 import Check
@@ -22,9 +23,8 @@ fn (Link x w)            = [x,w]
 fn (Comp x _ p q)        = filter (x /=) (concatMap fn [p,q])
 fn (Out x y p q)         = x : filter (y /=) (fn p) ++ fn q
 fn (In x y p)            = x : filter (y /=) (fn p)
-fn (Inl x p)             = x : fn p
-fn (Inr x p)             = x : fn p
-fn (Case x p q)          = x : concatMap fn [p,q]
+fn (Inj x l p)           = x : fn p
+fn (Case x bs)           = x : concat [fn p | Branch l p <- bs]
 fn (ServerAccept x y p)  = x : filter (y /=) (fn p)
 fn (ClientRequest x y p) = x : filter (y /=) (fn p)
 fn (SendType x a p)      = x : fn p
@@ -43,9 +43,8 @@ fln (Link x w)            = [x,w]
 fln (Comp x _ p q)        = filter (x /=) (concatMap fln [p,q])
 fln (Out x y p q)         = x : filter (y /=) (fln p) ++ fln q
 fln (In x y p)            = x : filter (y /=) (fln p)
-fln (Inl x p)             = x : fln p
-fln (Inr x p)             = x : fln p
-fln (Case x p q)          = x : concatMap fln [p,q]
+fln (Inj x l p)           = x : fln p
+fln (Case x bs)           = x : concat [fn p | Branch l p <- bs]
 fln (ServerAccept x y p)  = x : filter (y /=) (fln p)
 fln (ClientRequest x y p) = filter (y /=) (fln p)
 fln (SendType x a p)      = x : fln p
@@ -73,9 +72,8 @@ replace x y = replace'
           replace' (In z w p)
               | x == w = In (var z) w p
               | otherwise = In (var z) w (replace' p)
-          replace' (Inl z p) = Inl (var z) (replace' p)
-          replace' (Inr z p) = Inr (var z) (replace' p)
-          replace' (Case z p q) = Case (var z) (replace' p) (replace' q)
+          replace' (Inj z l p) = Inj (var z) l (replace' p)
+          replace' (Case z bs) = Case (var z) [Branch l (replace' p) | Branch l p <- bs]
           replace' (ServerAccept z w p)
               | x == w = ServerAccept (var z) w p
               | otherwise = ServerAccept (var z) w (replace' p)
@@ -101,9 +99,8 @@ instance HasTyVars Proc
                     go (Comp z a p q) = Comp z (inst x b a) (go p) (go q)
                     go (Out z y p q) = Out z y (go p) (go q)
                     go (In z y p) = In z y (go p)
-                    go (Inl z p) = Inl z (go p)
-                    go (Inr z p) = Inr z (go p)
-                    go (Case z p q) = Case z (go p) (go q)
+                    go (Inj x l p) = Inj x l (go p)
+                    go (Case z bs) = Case z [Branch l (go p) | Branch l p <- bs]
                     go (ServerAccept z y p) = ServerAccept z y (go p)
                     go (ClientRequest z y p) = ClientRequest z y (go p)
                     go (SendType z a p) = SendType z (inst x b a) (go p)
@@ -139,12 +136,17 @@ stepPrincipal (Comp x a (Link y z) p)
 stepPrincipal (Comp x (a `Times` b) (Out z y p q) (In z' y' r))
     | x == z && x == z' = Just (Comp y'' a p' (Comp x b q r'))
     where (y'', p', r') = renameBoundVariable y p y' r
--- beta_plus-with (left):
-stepPrincipal (Comp x (a `Plus` b) (Inl y p) (Case z q r))
-    |  x == y && x == z = Just (Comp x a p q)
--- beta_plus-with (right):
-stepPrincipal (Comp x (a `Plus` b) (Inr y p) (Case z q r))
-    | x == y && x == z = Just (Comp x b p r)
+--beta_plus-with (labelled):
+stepPrincipal (Comp x (Plus lts) (Inj y l p) (Case z bs))
+    | x == y, x == z, Just a <- lookupType lts, Just q <- lookupBranch bs = Just (Comp x a p q)
+    where lookupType [] = Nothing
+          lookupType (Label l' a : rest)
+              | l == l' = Just a
+              | otherwise = lookupType rest
+          lookupBranch [] = Nothing
+          lookupBranch (Branch l' q : rest)
+              | l == l' = Just q
+              | otherwise = lookupBranch rest
 -- beta_!C?:
 stepPrincipal (Comp x (OfCourse a) (ServerAccept z w p) (ClientRequest z' w' q))
     | x == z && x == z' && x `elem` fn q = Just (Comp x (OfCourse a) (ServerAccept z w p) (Comp w'' a p' q'))
@@ -182,15 +184,12 @@ stepCommuting (Comp z a (Out x y p q) r)
 -- kappa_par
 stepCommuting (Comp z a (In x y p) q)
     | z /= x = Just (In x y (Comp z a p q))
--- kappa_plus-1
-stepCommuting (Comp z a (Inl x p) q)
-    | z /= x = Just (Inl x (Comp z a p q))
--- kapppa_plus-2
-stepCommuting (Comp z a (Inr x p) q)
-    | z /= x = Just (Inr x (Comp z a p q))
--- kappa_with
-stepCommuting (Comp z a (Case x p q) r)
-    | z /= x = Just (Case x (Comp z a p r) (Comp z a q r))
+-- kappa_plus-labelled
+stepCommuting (Comp z a (Inj x l p) q)
+    | z /= x = Just (Inj x l (Comp z a p q))
+-- kappa_with-labelled
+stepCommuting (Comp z a (Case x bs) r)
+    | z /= x = Just (Case x [Branch l (Comp z a p r) | Branch l p <- bs])
 -- kappa_bang
 stepCommuting (Comp z a (ServerAccept x y p) q)
     | z /= x = Just (ServerAccept x y (Comp z a p q))
@@ -234,12 +233,13 @@ equiv p@Comp{} = nub (ps ++ concatMap (expandOne (ps ++ ps')) ps')
                           _                       -> []
 equiv p = [p]
 
-equivUnder r@Comp{}              = [ Comp x a p' q' | Comp x a p q <- equiv r, p' <- equivUnder p, q' <- equivUnder q]
+equivUnder r@Comp{}              = [Comp x a p' q' | Comp x a p q <- equiv r, p' <- equivUnder p, q' <- equivUnder q]
 equivUnder (Out x y p q)         = [Out x y p' q' | p' <- equivUnder p, q' <- equivUnder q]
 equivUnder (In x y p)            = In x y `fmap` equivUnder p
-equivUnder (Inl x p)             = Inl x `fmap` equivUnder p
-equivUnder (Inr x p)             = Inr x `fmap` equivUnder p
-equivUnder (Case x p q)          = [Case x p' q' | p' <- equivUnder p, q' <- equivUnder q]
+equivUnder (Inj x l p)           = Inj x l `fmap` equivUnder p
+equivUnder (Case x bs)           = [Case x bs' | bs' <- equivBranches bs]
+    where equivBranches [] = [[]]
+          equivBranches (Branch l p : rest) = [Branch l p' : rest' | p' <- equivUnder p, rest' <- equivBranches rest]
 equivUnder (ServerAccept x y p)  = ServerAccept x y `fmap` equivUnder p
 equivUnder (ClientRequest x y p) = ClientRequest x y `fmap` equivUnder p
 equivUnder (SendType x a p)      = SendType x a `fmap` equivUnder p
@@ -263,9 +263,13 @@ stepUnder stepper = stepper `orElse` into
           into (Comp x a p q) = firstOf (Comp x a) p q
           into (Out x y p q) = firstOf (Out x y) p q
           into (In x y p) = In x y `fmap` stepUnder stepper p
-          into (Inl x p)  = Inl x `fmap` stepUnder stepper p
-          into (Inr x p)  = Inr x `fmap` stepUnder stepper p
-          into (Case x p q) = firstOf (Case x) p q
+          into (Inj x l p) = Inj x l `fmap` stepUnder stepper p
+          into (Case x bs) = Case x `fmap` intoBranches bs
+              where intoBranches [] = Nothing
+                    intoBranches (Branch l p : rest) =
+                        case stepUnder stepper p of
+                          Just p' -> Just (Branch l p' : rest)
+                          Nothing -> (Branch l p :) `fmap` intoBranches rest
           into (ServerAccept x y p) = ServerAccept x y `fmap` stepUnder stepper p
           into (ClientRequest x y p) = ClientRequest x y `fmap` stepUnder stepper p
           into (SendType x a p) = SendType x a `fmap` stepUnder stepper p
