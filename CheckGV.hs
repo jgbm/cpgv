@@ -146,6 +146,19 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
           check' (Var x)   = do ty <- consume x
                                 return (ty, \z -> link (xId x) z)
           check' Unit      = return (UnitType, \z -> accept z "y" (emptyCase "y"))
+          check' (Link m n) =
+              do (t, m') <- check m
+                 (t', n') <- check n
+                 case (t, t') of
+                   (Lift s, Lift s')
+                       | s == dual s' -> return (Lift OutTerm,
+                                                 \z -> nu "x" (xSession s)
+                                                          (m' =<< reference "x")
+                                                          (nu "y" (xSession s')
+                                                              (n' =<< reference "y")
+                                                              (emptyIn z (link "x" "y"))))
+                       | otherwise -> fail ("    Sessions in link are not dual: " ++ printTree s ++ " and " ++ printTree s')
+                   _ -> fail ("    Non-session arguments to link: " ++ printTree t ++ " and " ++ printTree t')
           check' (UnlLam x t m) =
               do (u, m') <- restrict (unlimited . typeFrom) (provide x t (check m))
                  return (UnlFun t t, \z -> accept z "y" (in_ "y" (xId x) (m' =<< reference "y")))
