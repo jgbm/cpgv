@@ -22,7 +22,7 @@ type Chan = (Port, Port)
 type Var = LIdent
 type Label = LIdent
 
-type Buffer = (Port, [Value])
+type Buffer = (Port, [Value], Maybe Port)
 type Env k v = [(k, v)]
 type VEnv = Env Var Value
 
@@ -37,6 +37,7 @@ data Susp a =
    Return a
  | SExit Value
  | SWith (Chan -> (Thread, Thread)) (Value -> Susp a)
+ | SLink Chan Chan (Value -> Susp a)
  | SSend Value Chan (Value -> Susp a)
  | SReceive Chan (Value -> Susp a)
  | SSelect Label Chan (Value -> Susp a)
@@ -49,6 +50,7 @@ instance Monad Susp where
   Return v       >>= k = k v
   SExit v        >>= k = SExit v
   SWith f k'     >>= k = SWith f     (k' >=> k)
+  SLink c1 c2 k' >>= k = SLink c1 c2 (k' >=> k)
   SSend v c k'   >>= k = SSend v c   (k' >=> k)
   SReceive c k'  >>= k = SReceive c  (k' >=> k)
   SSelect l c k' >>= k = SSelect l c (k' >=> k)
@@ -56,6 +58,7 @@ instance Monad Susp where
 
 sexit       = SExit
 swith f     = SWith f return
+slink c1 c2 = SLink c1 c2 return
 ssend v c   = SSend v c return
 sreceive c  = SReceive c return
 sselect l c = SSelect l c return
@@ -72,6 +75,10 @@ runPure env e = runPure' env e where
       Nothing -> error ("Unbound variable: " ++ show x)
       Just v -> return v
   runPure' env Unit = return VUnit
+  runPure' env (Link e1 e2) =
+    do (VChannel c1) <- rp e1
+       (VChannel c2) <- rp e2
+       slink c1 c2
   runPure' env (LinLam x _ e) = return (VFun x e)
   runPure' env (UnlLam x _ e) = return (VFun x e)
   runPure' env (App f a) =
@@ -110,12 +117,16 @@ runPure env e = runPure' env e where
 blocked = Left Nothing
 exit v = Left (Just v)
 
+emptyBuffer :: Port -> Buffer
+emptyBuffer p = (p, [], Nothing)
+
 -- run the next command in the current thread
 runCommand :: Thread -> [Buffer] -> [Thread] -> Port -> Either (Maybe Value) Configuration
 runCommand (Return _) _ _ _ = blocked -- this is actually a finished thread rather than a blocked thread
 runCommand (SExit v) _ _ _ = exit v
-runCommand (SWith f k) cs ts next = return ((next+1, []):(next, []):cs, ts ++ [t1, t2 >>= k], next+2) where
+runCommand (SWith f k) cs ts next = return ((emptyBuffer (next+1)):(emptyBuffer next):cs, ts ++ [t1, t2 >>= k], next+2) where
   (t1, t2) = f (next, next+1)
+runCommand (SLink c1 c2 k) cs ts next = return (linkChannels c1 c2 cs, ts ++ [k (VChannel c1)], next)
 runCommand (SSend v c k) cs ts next = return (sendValue v c cs, ts ++ [k (VChannel c)], next)
 runCommand (SReceive c k) cs ts next =
   do (v, cs') <- receiveValue c cs 
@@ -125,26 +136,32 @@ runCommand (SCase c bs k) cs ts next =
   do (s, cs') <- receiveLabel c bs cs 
      return (cs', ts ++ [s >>= k], next)
 
+linkChannels :: Chan -> Chan -> [Buffer] -> [Buffer]
+linkChannels (p1, q1) (p2, q2) cs = map (\(p, vs, f) ->
+  if      p == p1 then (p1, vs, Just p2)
+  else if p == q2 then (q2, vs, Just q1)
+  else                 (p,  vs, f)) cs
+
 sendValue :: Value -> Chan -> [Buffer] -> [Buffer]
-sendValue v (p, _) = map (\(q, vs) -> if p == q then (q, vs ++ [v])
-                                      else (q, vs))
+sendValue v (p, _) = map (\(q, vs, Nothing) -> if p == q then (q, vs ++ [v], Nothing)
+                                               else (q, vs, Nothing))
 
 receiveValue :: Chan -> [Buffer] -> Either (Maybe Value) (Value, [Buffer])
-receiveValue (_, p) ((q, []):cs) | p == q = blocked
-receiveValue (_, p) ((q, v:vs):cs) | p == q = return (v, (q, vs):cs)
+receiveValue (_, p) ((q, [], _):cs)   | p == q = blocked
+receiveValue (_, p) ((q, v:vs, f):cs) | p == q = return (v, (q, vs, f):cs)
 receiveValue c      (c':cs) =
   do (v, cs') <- receiveValue c cs
      return (v, c':cs')
 
 sendLabel :: Label -> Chan -> [Buffer] -> [Buffer]
-sendLabel l (p, _) = map (\(q, vs) -> if p == q then (q, vs ++ [VLabel l])
-                                        else (q, vs))
+sendLabel l (p, _) = map (\(q, vs, Nothing) -> if p == q then (q, vs ++ [VLabel l], Nothing)
+                                               else (q, vs, Nothing))
 
 receiveLabel :: Chan -> Env Label (Value -> Thread) -> [Buffer] -> Either (Maybe Value) (Thread, [Buffer])
-receiveLabel c@(_, p) bs ((q, []):cs) | p == q = blocked
-receiveLabel c@(_, p) bs ((q, (VLabel l):vs):cs) | p == q =
+receiveLabel c@(_, p) bs ((q, [], _):cs) | p == q = blocked
+receiveLabel c@(_, p) bs ((q, (VLabel l):vs, f):cs) | p == q =
   do v <- matchLabel c l bs
-     return (v, (q, vs):cs)
+     return (v, (q, vs, f):cs)
   where
     matchLabel c l bs =
       case lookup l bs of
