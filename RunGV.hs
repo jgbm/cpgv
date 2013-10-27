@@ -22,25 +22,26 @@ type Chan = (Port, Port)
 type Var = LIdent
 type Label = LIdent
 
-type Buffer = (Port, [Value], Maybe Port)
+type Buffer = (Port, [Value])
 type Env k v = [(k, v)]
 type VEnv = Env Var Value
+type PEnv = Env Port Port
 
-type Configuration = ([Buffer], [Thread], Port)
+type Configuration = (PEnv, [Buffer], [Thread], Port)
 
 -- a possibly suspended value
 --
--- We always instantiate the parameter to the type Value. The
--- parameter is only there to allow us to declare Susp to be a monad
--- and hence use do notation!
+-- We always instantiate the type parameter to the type Value. The
+-- type parameter is only there to allow us to declare Susp to be a
+-- monad and hence use do notation!
 data Susp a =
    Return a
  | SExit Value
- | SWith (Chan -> (Thread, Thread)) (Value -> Susp a)
- | SLink Chan Chan (Value -> Susp a)
- | SSend Value Chan (Value -> Susp a)
- | SReceive Chan (Value -> Susp a)
- | SSelect Label Chan (Value -> Susp a)
+ | SWith (Chan -> (Thread, Thread))         (Value -> Susp a)
+ | SLink Chan Chan                          (Value -> Susp a)
+ | SSend Value Chan                         (Value -> Susp a)
+ | SReceive Chan                            (Value -> Susp a)
+ | SSelect Label Chan                       (Value -> Susp a)
  | SCase Chan (Env Label (Value -> Thread)) (Value -> Susp a)
 
 type Thread = Susp Value
@@ -64,7 +65,12 @@ sreceive c  = SReceive c return
 sselect l c = SSelect l c return
 scase v bs  = SCase v bs return
 
+emptyEnv :: Env k a
+emptyEnv = []
+
+extend :: Env k a -> (k, a) -> Env k a
 extend = flip (:)
+
 
 -- run as much pure computation as possible in a single thread
 runPure :: VEnv -> Term -> Thread
@@ -118,58 +124,78 @@ blocked = Left Nothing
 exit v = Left (Just v)
 
 emptyBuffer :: Port -> Buffer
-emptyBuffer p = (p, [], Nothing)
+emptyBuffer p = (p, [])
 
 -- run the next command in the current thread
-runCommand :: Thread -> [Buffer] -> [Thread] -> Port -> Either (Maybe Value) Configuration
-runCommand (Return _) _ _ _ = blocked -- this is actually a finished thread rather than a blocked thread
-runCommand (SExit v) _ _ _ = exit v
-runCommand (SWith f k) cs ts next = return ((emptyBuffer (next+1)):(emptyBuffer next):cs, ts ++ [t1, t2 >>= k], next+2) where
-  (t1, t2) = f (next, next+1)
-runCommand (SLink c1 c2 k) cs ts next = return (linkChannels c1 c2 cs, ts ++ [k (VChannel c1)], next)
-runCommand (SSend v c k) cs ts next = return (sendValue v c cs, ts ++ [k (VChannel c)], next)
-runCommand (SReceive c k) cs ts next =
-  do (v, cs') <- receiveValue c cs 
-     return (cs', ts ++ [k (VPair v (VChannel c))], next)  
-runCommand (SSelect l c k) cs ts next = return (sendLabel l c cs, ts ++ [k (VChannel c)], next)
-runCommand (SCase c bs k) cs ts next =
-  do (s, cs') <- receiveLabel c bs cs 
-     return (cs', ts ++ [s >>= k], next)
+runCommand :: Thread -> Configuration -> Either (Maybe Value) Configuration
+runCommand (Return _) _ = blocked -- this is actually a finished thread rather than a blocked thread
+runCommand (SExit v)  _ = exit v
+runCommand (SWith f k) (penv, bufs, ts, next) =
+  return (penv, (emptyBuffer (next+1)):(emptyBuffer next):bufs, ts ++ [t1, t2 >>= k], next+2)
+  where
+    (t1, t2) = f (next, next+1)
+runCommand (SLink c1 c2 k) (penv, bufs, ts, next) =
+  return (linkChannels c1 c2 penv, bufs, ts ++ [k (VChannel c2)], next)
+runCommand (SSend v c@(p, _) k) conf@(penv, bufs, ts, next) =
+  return (penv, sendValue v penv bufs p, ts ++ [k (VChannel c)], next)
+runCommand (SReceive c@(_, p) k) (penv, bufs, ts, next) =
+  do (v, bufs') <- receiveValue penv bufs p 
+     return (penv, bufs', ts ++ [k (VPair v (VChannel c))], next)  
+runCommand (SSelect l c@(p, _) k) (penv, bufs, ts, next) =
+  return (penv, sendLabel l penv bufs p, ts ++ [k (VChannel c)], next)
+runCommand (SCase c@(_, p) bs k) (penv, bufs, ts, next) =
+  do (s, bufs') <- receiveLabel c bs penv bufs p
+     return (penv, bufs', ts ++ [s >>= k], next)
 
-linkChannels :: Chan -> Chan -> [Buffer] -> [Buffer]
-linkChannels (p1, q1) (p2, q2) cs = map (\(p, vs, f) ->
-  if      p == p1 then (p1, vs, Just p2)
-  else if p == q2 then (q2, vs, Just q1)
-  else                 (p,  vs, f)) cs
+--  p1 <==> q1
+--  |       |
+--  |       |
+-- \|/     \|/
+--  p2 <==> q2
+linkChannels :: Chan -> Chan -> PEnv -> PEnv
+linkChannels (p1, q1) (p2, q2) penv = extend (extend penv (q1, q2)) (p1, p2)
 
-sendValue :: Value -> Chan -> [Buffer] -> [Buffer]
-sendValue v (p, _) = map (\(q, vs, Nothing) -> if p == q then (q, vs ++ [v], Nothing)
-                                               else (q, vs, Nothing))
+sendValue :: Value -> PEnv -> [Buffer] -> Port -> [Buffer]
+sendValue v penv bufs p =
+  case lookup p penv of
+    Nothing ->
+      map (\(q, vs) -> if p == q then (q, vs ++ [v])
+                       else (q, vs)) bufs
+    Just q ->
+      -- follow the link to the next buffer
+      sendValue v penv bufs q
 
-receiveValue :: Chan -> [Buffer] -> Either (Maybe Value) (Value, [Buffer])
-receiveValue (_, p) ((q, [], _):cs)   | p == q = blocked
-receiveValue (_, p) ((q, v:vs, f):cs) | p == q = return (v, (q, vs, f):cs)
-receiveValue c      (c':cs) =
-  do (v, cs') <- receiveValue c cs
-     return (v, c':cs')
+sendLabel :: Label -> PEnv -> [Buffer] -> Port -> [Buffer]
+sendLabel l = sendValue (VLabel l) 
 
-sendLabel :: Label -> Chan -> [Buffer] -> [Buffer]
-sendLabel l (p, _) = map (\(q, vs, Nothing) -> if p == q then (q, vs ++ [VLabel l], Nothing)
-                                               else (q, vs, Nothing))
+receiveValue :: PEnv ->  [Buffer] -> Port -> Either (Maybe Value) (Value, [Buffer])
+receiveValue penv bufs p =
+  case focus p bufs of
+    (_, [], _) ->
+      case lookup p penv of
+        Nothing -> blocked
+        Just q  ->
+          -- if this port's buffer is exhausted then follow the link
+          -- to the next one
+          receiveValue penv bufs q
+    (xs, v:vs, ys) ->
+      return (v, defocus p (xs, vs, ys))
+  where
+    focus p bufs = focus' p [] bufs where
+      focus' p lbufs ((q, vs):rbufs) | p == q = (lbufs, vs, rbufs)
+      focus' p lbufs (buf:rbufs)              = focus' p (buf:lbufs) rbufs
+    defocus p (lbufs, vs, rbufs) = reverse lbufs ++ extend rbufs (p, vs)
 
-receiveLabel :: Chan -> Env Label (Value -> Thread) -> [Buffer] -> Either (Maybe Value) (Thread, [Buffer])
-receiveLabel c@(_, p) bs ((q, [], _):cs) | p == q = blocked
-receiveLabel c@(_, p) bs ((q, (VLabel l):vs, f):cs) | p == q =
-  do v <- matchLabel c l bs
-     return (v, (q, vs, f):cs)
+receiveLabel :: Chan -> Env Label (Value -> Thread) -> PEnv ->  [Buffer] -> Port -> Either (Maybe Value) (Thread, [Buffer])
+receiveLabel c bs penv bufs p =
+  do (VLabel l, bufs) <- receiveValue penv bufs p
+     v <- matchLabel c l bs
+     return (v, bufs)
   where
     matchLabel c l bs =
       case lookup l bs of
         Nothing -> blocked  -- really this is a type error so should never occur
-        Just f -> return $ f (VChannel c)
-receiveLabel c bs (c':cs) =
-  do (t, cs') <- receiveLabel c bs cs
-     return (t, c':cs')
+        Just f  -> return $ f (VChannel c)
 
 -- run the current configuration until either
 --   * deadlock occurs (guaranteed never to happen by the GV type system)
@@ -178,16 +204,16 @@ runConfig :: Configuration -> Configuration
 runConfig conf = runConfig' 0 conf where
   -- keep going until all threads are blocked
   runConfig' :: Int -> Configuration -> Configuration
-  runConfig' n conf@(cs, ts, next) | n >= length ts = conf
-  runConfig' n conf@(cs, t:ts, next) =
-    case runCommand t cs ts next of
-      Left Nothing  -> runConfig' (n+1) (cs, ts ++ [t], next)
+  runConfig' n conf@(penv, bufs, ts, next) | n >= length ts = conf
+  runConfig' n conf@(penv, bufs, t:ts, next) =
+    case runCommand t (penv, bufs, ts, next) of
+      Left Nothing  -> runConfig' (n+1) (penv, bufs, ts ++ [t], next)
       Left (Just v) -> conf
       Right conf    -> runConfig conf
 
 runProgram :: Term -> Value
 runProgram e =
-  let (cs, t:ts, next) = runConfig ([], [runPure [] e >>= sexit], 0) in
+  let (penv, bufs, t:ts, next) = runConfig (emptyEnv, [], [runPure [] e >>= sexit], 0) in
   case t of
     SExit v -> v
     _       -> error ("Deadlock!")
