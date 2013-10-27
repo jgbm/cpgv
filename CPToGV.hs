@@ -25,7 +25,7 @@ xId (CP.LIdent s) = GV.LIdent s
 xTerm :: CP.Proc -> GV.Term
 xTerm (CP.ProcVar _)       = error ("xTerm (ProcVar _) unimplemented")
 xTerm (CP.ProcVarArgs _ _) = error ("xTerm (ProcVarArgs _ _) unimplemented")
-xTerm (CP.Link x y)        = error ("xTerm (Link _ _) unimplemented")
+xTerm (CP.Link x y)        = GV.Link (GV.Var (xId x)) (GV.Var (xId y))
 xTerm (CP.Comp x t p q)    = GV.With (xId x) (xSession t) (xTerm p) (xTerm q)
 xTerm (CP.Out x y p q) =
   GV.With y' undefined
