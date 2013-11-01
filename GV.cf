@@ -12,6 +12,8 @@ separator LabeledSession ",";
          InTerm.  Session ::= "end?";
 internal Dual.    Session ::= "~" Session;
 internal SVar.    Session ::= LIdent;
+         Server.  Session ::= "$" Session;
+         Service. Session ::= "#" Session; 
 
          LinFun.   Type1 ::= Type2 "-@" Type1;
          UnlFun.   Type1 ::= Type2 "->" Type1;
@@ -41,6 +43,8 @@ Select.  Term1 ::= "select" LIdent Term1;
 Case.    Term1 ::= "case" Term1 "of" "{" [Branch] "}";
 With.    Term1 ::= "with" LIdent ":" Session "connect" Term1 "to" Term1;
 End.     Term1 ::= "terminate" Term1;
+Serve.   Term1 ::= "serve" LIdent "(" LIdent ")" "=" Term1;
+Request. Term1 ::= "request" LIdent;
 coercions Term 2;
 
 Typing.  Typing ::= LIdent ":" Type;
