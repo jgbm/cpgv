@@ -12,6 +12,8 @@ xSession (CP.Plus cs) = GV.Sum (map (\(CP.Label x a) -> GV.Label (xId x) (xSessi
 xSession (CP.With cs) = GV.Choice (map (\(CP.Label x a) -> GV.Label (xId x) (xSession a)) cs)
 xSession (CP.One) = GV.InTerm
 xSession (CP.Bottom) = GV.OutTerm 
+xSession (CP.OfCourse a) = GV.Server (xSession a)
+xSession (CP.WhyNot a) = GV.Service (xSession a)
 
 xType :: CP.Type -> GV.Type
 xType = GV.Lift . xSession
@@ -49,8 +51,12 @@ xTerm (CP.Case x cs) =
     (map (\(CP.Branch l p) -> GV.Branch (xId l) x' (xTerm p)) cs)
   where
     x' = xId x
-xTerm (CP.ServerAccept _ _ _)  = error ("xTerm (ServerAccept _ _ _) unimplemented")
-xTerm (CP.ClientRequest _ _ _) = error ("xTerm (ClientRequest _ _ _) unimplemented")
+xTerm (CP.ServerAccept s x p)  =
+  GV.Serve (xId s) (xId x) (xTerm p)
+xTerm (CP.ClientRequest s x p) =
+  GV.With (xId x) undefined
+          (GV.Link (GV.Request (xId s)) (GV.Var (xId x)))
+          (xTerm p)
 xTerm (CP.SendType _ _ _)      = error ("xTerm (SendType _ _ _) unimplemented")
 xTerm (CP.ReceiveType _ _ _)   = error ("xTerm (ReceiveType _ _ _) unimplemented")
 xTerm (CP.EmptyOut x)          = GV.Var (xId x)
