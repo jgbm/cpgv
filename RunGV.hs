@@ -27,6 +27,7 @@ type Env k v = [(k, v)]
 type VEnv = Env Var Value
 type PEnv = Env Port Port
 
+-- (port forwarding, buffers, threads, next port name)
 type Configuration = (PEnv, [Buffer], [Thread], Port)
 
 -- a possibly suspended value
@@ -43,6 +44,9 @@ data Susp a =
  | SReceive Chan                            (Value -> Susp a)
  | SSelect Label Chan                       (Value -> Susp a)
  | SCase Chan (Env Label (Value -> Thread)) (Value -> Susp a)
+ | SServe Chan (Chan -> Thread)             (Value -> Susp a)
+ | SRequest Chan                            (Value -> Susp a)
+ | SServeMore Chan (Chan -> Thread)
 
 type Thread = Susp Value
 
@@ -56,6 +60,10 @@ instance Monad Susp where
   SReceive c k'  >>= k = SReceive c  (k' >=> k)
   SSelect l c k' >>= k = SSelect l c (k' >=> k)
   SCase c bs k'  >>= k = SCase c bs  (k' >=> k)
+  SServe c f k'  >>= k = SServe c f  (k' >=> k)
+  SRequest c k'  >>= k = SRequest c  (k' >=> k)
+  SServeMore c f >>= k = SServeMore c f
+
 
 sexit       = SExit
 swith f     = SWith f return
@@ -64,6 +72,8 @@ ssend v c   = SSend v c return
 sreceive c  = SReceive c return
 sselect l c = SSelect l c return
 scase v bs  = SCase v bs return
+sserve c f  = SServe c f return
+srequest c  = SRequest c return
 
 emptyEnv :: Env k a
 emptyEnv = []
@@ -76,7 +86,7 @@ extend = flip (:)
 runPure :: VEnv -> Term -> Thread
 runPure env e = runPure' env e where
   rp = runPure env
-  runPure' env (Var x)   =
+  runPure' env (Var x) =
     case lookup x env of
       Nothing -> error ("Unbound variable: " ++ show x)
       Just v -> return v
@@ -102,8 +112,8 @@ runPure env e = runPure' env e where
     do (VPair v1 v2) <- rp e
        runPure (extend (extend env (x1, v1)) (x2, v2)) e'
   runPure' env (With x _ e1 e2) =
-    swith (\(c1, c2) -> (runPure (extend env (x, VChannel (c1, c2))) e1,
-                         runPure (extend env (x, VChannel (c2, c1))) e2))
+    swith (\(p1, p2) -> (runPure (extend env (x, VChannel (p1, p2))) e1,
+                         runPure (extend env (x, VChannel (p2, p1))) e2))
   runPure' env (End e) = rp e
   runPure' env (Send m n) =
     do v <- rp m
@@ -119,6 +129,12 @@ runPure env e = runPure' env e where
     do (VChannel c) <- rp e
        let bs' = map (\(Branch l x e) -> (l, \v -> runPure (extend env (x, v)) e)) bs
        scase c bs'
+  runPure' env (Serve s x e) =
+    do VChannel s' <- rp (Var s)
+       sserve s' (\c -> runPure (extend env (x, VChannel c)) e)
+  runPure' env (Request s) =
+    do VChannel s' <- rp (Var s)
+       srequest s'
 
 blocked = Left Nothing
 exit v = Left (Just v)
@@ -140,12 +156,25 @@ runCommand (SSend v c@(p, _) k) conf@(penv, bufs, ts, next) =
   return (penv, sendValue v penv bufs p, ts ++ [k (VChannel c)], next)
 runCommand (SReceive c@(_, p) k) (penv, bufs, ts, next) =
   do (v, bufs') <- receiveValue penv bufs p 
-     return (penv, bufs', ts ++ [k (VPair v (VChannel c))], next)  
+     return (penv, bufs', ts ++ [k (VPair v (VChannel c))], next)
 runCommand (SSelect l c@(p, _) k) (penv, bufs, ts, next) =
   return (penv, sendLabel l penv bufs p, ts ++ [k (VChannel c)], next)
 runCommand (SCase c@(_, p) bs k) (penv, bufs, ts, next) =
   do (s, bufs') <- receiveLabel c bs penv bufs p
      return (penv, bufs', ts ++ [s >>= k], next)
+runCommand (SServe c@(_, p) f k) (penv, bufs, ts, next) =
+  -- the continuation expects a channel of type end!, so it can never
+  -- use its argument, so the current channel will do as a value to
+  -- send (undefined should work just as well)
+  return (penv, bufs, ts ++ [k (VChannel c)], next)
+runCommand (SServeMore c@(_, p) f) (penv, bufs, ts, next) =
+  do (VChannel c, bufs') <- receiveValue penv bufs p
+     return (penv, bufs', ts ++ [f c, SServeMore c f], next)
+runCommand (SRequest c@(p, _) k) (penv, bufs, ts, next) =
+  return (penv, bufs', ts ++ [k v], next+2)
+  where
+    v = (VChannel (next, next+1))
+    bufs' = sendValue v penv ((emptyBuffer (next+1)):(emptyBuffer next):bufs) p
 
 --  p1 <==> q1
 --  |       |
