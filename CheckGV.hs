@@ -24,12 +24,15 @@ dual (Sum cs)     = Choice [Label l (dual s) | Label l s <- cs]
 dual (Choice cs)  = Sum [Label l (dual s) | Label l s <- cs]
 dual InTerm       = OutTerm
 dual OutTerm      = InTerm
+dual (Server s)   = Service (dual s)
+dual (Service s)  = Server (dual s)
 
 linear :: Type -> Bool
-linear (LinFun _ _) = True
-linear (Tensor _ _) = True
-linear (Lift _)     = True
-linear _            = False
+linear (LinFun _ _)       = True
+linear (Tensor _ _)       = True
+linear (Lift (Service _)) = False
+linear (Lift _)           = True
+linear _                  = False
 
 unlimited :: Type -> Bool
 unlimited = not . linear
@@ -245,7 +248,9 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                                                                    (m' =<< reference "y")
                                                                    (in_ "y" "x" (emptyIn "y" (link "x" z))))
                    _                       -> fail ("    Unexpected type of right channel " ++ printTree mty)
-
+          check' (Serve s x m) = undefined
+          check' (Request s) = undefined
+              
 
 lookupLabel :: LIdent -> [LabeledSession] -> Check Session
 lookupLabel l [] = fail ("    Unable to find label " ++ printTree l)
