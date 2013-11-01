@@ -248,9 +248,19 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                                                                    (m' =<< reference "y")
                                                                    (in_ "y" "x" (emptyIn "y" (link "x" z))))
                    _                       -> fail ("    Unexpected type of right channel " ++ printTree mty)
-          check' (Serve s x m) = undefined
-          check' (Request s) = undefined
-              
+          check' (Serve s x m) =
+              do sty <- consume s
+                 case sty of
+                   Lift (Server ty) -> 
+                     do (u', m') <- provide x (Lift ty) (check m)
+                        return (Lift OutTerm, \z -> accept (xId s) (xId x) (m' z))
+                   _                -> fail ("    Unexpected type of server channel " ++ printTree sty)
+          check' (Request s) =
+              do sty <- consume s
+                 case sty of
+                   Lift (Service ty) ->
+                     return (Lift ty, \z -> request (xId s) "x" (link "x" z))
+                   _                 -> fail("    Unexpected type of service channel " ++ printTree sty)
 
 lookupLabel :: LIdent -> [LabeledSession] -> Check Session
 lookupLabel l [] = fail ("    Unable to find label " ++ printTree l)
