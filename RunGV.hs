@@ -131,7 +131,7 @@ runPure env e = runPure' env e where
        scase c bs'
   runPure' env (Serve s x e) =
     do VChannel s' <- rp (Var s)
-       sserve s' (\c -> runPure (extend env (x, VChannel c)) e)
+       sserve s' (\(p1, p2) -> runPure (extend env (x, VChannel (p2, p1))) e)
   runPure' env (Request s) =
     do VChannel s' <- rp (Var s)
        srequest s'
@@ -162,18 +162,18 @@ runCommand (SSelect l c@(p, _) k) (penv, bufs, ts, next) =
 runCommand (SCase c@(_, p) bs k) (penv, bufs, ts, next) =
   do (s, bufs') <- receiveLabel c bs penv bufs p
      return (penv, bufs', ts ++ [s >>= k], next)
-runCommand (SServe c@(_, p) f k) (penv, bufs, ts, next) =
+runCommand (SServe s f k) (penv, bufs, ts, next) =
   -- the continuation expects a channel of type end!, so it can never
   -- use its argument, so the current channel will do as a value to
   -- send (undefined should work just as well)
-  return (penv, bufs, ts ++ [k (VChannel c)], next)
-runCommand (SServeMore c@(_, p) f) (penv, bufs, ts, next) =
+  return (penv, bufs, ts ++ [k (VChannel s), SServeMore s f], next)
+runCommand (SServeMore s@(_, p) f) (penv, bufs, ts, next) =
   do (VChannel c, bufs') <- receiveValue penv bufs p
-     return (penv, bufs', ts ++ [f c, SServeMore c f], next)
-runCommand (SRequest c@(p, _) k) (penv, bufs, ts, next) =
+     return (penv, bufs', ts ++ [f c, SServeMore s f], next)
+runCommand (SRequest (p, _) k) (penv, bufs, ts, next) =
   return (penv, bufs', ts ++ [k v], next+2)
   where
-    v = (VChannel (next, next+1))
+    v = VChannel (next, next+1)
     bufs' = sendValue v penv ((emptyBuffer (next+1)):(emptyBuffer next):bufs) p
 
 --  p1 <==> q1
@@ -242,7 +242,40 @@ runConfig conf = runConfig' 0 conf where
 
 runProgram :: Term -> Value
 runProgram e =
-  let (penv, bufs, t:ts, next) = runConfig (emptyEnv, [], [runPure [] e >>= sexit], 0) in
+  let conf@(penv, bufs, t:ts, next) = runConfig (emptyEnv, [], [runPure [] e >>= sexit], 0) in
   case t of
     SExit v -> v
-    _       -> error ("Deadlock!")
+    _       -> error ("Deadlock! " ++ show (penv, bufs, map threadHead (t:ts), next))
+
+-- debugging stuff
+
+-- this gives us the head of a thread which we can easily show for
+-- debugging
+data ThreadHead =
+   THReturn Value
+ | THExit Value
+ | THWith 
+ | THLink Chan Chan
+ | THSend Value Chan
+ | THReceive Chan
+ | THSelect Label Chan
+ | THCase Chan
+ | THServe Chan
+ | THRequest Chan
+ | THServeMore Chan
+ deriving Show
+
+threadHead :: Thread -> ThreadHead
+threadHead (Return v)       = THReturn v
+threadHead (SExit v)        = THExit v
+threadHead (SWith _ _)      = THWith
+threadHead (SLink c d _)    = THLink c d
+threadHead (SSend v c _)    = THSend v c
+threadHead (SReceive c _)   = THReceive c
+threadHead (SSelect l c _)  = THSelect l c
+threadHead (SCase c _ _)    = THCase c
+threadHead (SServe c _ _)   = THServe c
+threadHead (SRequest c _)   = THRequest c
+threadHead (SServeMore c _) = THServeMore c
+
+
