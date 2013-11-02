@@ -129,6 +129,8 @@ xSession (Sum cs)     = CP.With [CP.Label (xId l) (xSession st) | Label l st <- 
 xSession (Choice cs)  = CP.Plus [CP.Label (xId l) (xSession st) | Label l st <- cs]
 xSession OutTerm      = CP.Bottom
 xSession InTerm       = CP.One
+xSession (Server s)   = CP.WhyNot (xSession s)
+xSession (Service s)  = CP.OfCourse (xSession s)
 
 xType :: Type -> CP.Type
 xType (Lift s)     = xSession s
