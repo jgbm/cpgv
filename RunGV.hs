@@ -114,7 +114,9 @@ runPure env e = runPure' env e where
   runPure' env (With x _ e1 e2) =
     swith (\(p1, p2) -> (runPure (extend env (x, VChannel (p1, p2))) e1,
                          runPure (extend env (x, VChannel (p2, p1))) e2))
-  runPure' env (End e) = rp e
+  runPure' env (End e) =
+    do (VPair v _) <- rp e
+       return v
   runPure' env (Send m n) =
     do v <- rp m
        (VChannel c) <- rp n
