@@ -138,6 +138,7 @@ xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
 xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
 xType (Tensor t u) = xType t `CP.Times` xType u
 xType UnitType     = CP.OfCourse CP.Top
+xType (Const (UIdent s)) = CP.Var (CP.UIdent s)
 
 xId (LIdent s) = CP.LIdent s
 
@@ -253,7 +254,7 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
           check' (Serve s x m) =
               do sty <- consume s
                  case sty of
-                   Lift (Server ty) -> 
+                   Lift (Server ty) ->
                      do (u', m') <- provide x (Lift ty) (check m)
                         return (Lift OutTerm, \z -> accept (xId s) (xId x) (m' z))
                    _                -> fail ("    Unexpected type of server channel " ++ printTree sty)

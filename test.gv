@@ -1,4 +1,4 @@
-|- with c:?Unit->Unit.!Unit.end! connect let (f,c) = receive c in send (f unit) c to terminate (receive (send (!\x:Unit.x) c)) : Unit
+|- with c:?Unit->Unit.!Unit.end! connect let (f,d) = receive c in send (f unit) d to terminate (receive (send (!\x:Unit.x) c)) : Unit
 |- with c:+{frog:?Unit->Unit.!Unit.end!, goat:end!} connect let d = select frog c in let (f,e) = receive d in send (f unit) e to case c of {frog:c. terminate(receive (send (!\x:Unit.x) c)); goat:c.terminate (unit, c)} : Unit
 zed : Unit * Unit |- with c:+{frog:?Unit->Unit.!Unit.end!, goat:end!} connect let d = select frog c in let (f,e) = receive d in send (f unit) e to case c of {frog:c. terminate(receive (send (let (a,b) = zed in !\x:Unit.x) c)); goat:c.terminate (let (a,b) = zed in a, c)} : Unit
 |- with c:&{gimme:+{tenner:end!}} connect case c of {gimme:d.select tenner d} to let d = select gimme c in case d of {tenner:e.terminate (unit, e)} : Unit

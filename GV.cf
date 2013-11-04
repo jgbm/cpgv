@@ -13,13 +13,14 @@ separator LabeledSession ",";
 internal Dual.    Session ::= "~" Session;
 internal SVar.    Session ::= LIdent;
          Server.  Session ::= "$" Session;
-         Service. Session ::= "#" Session; 
+         Service. Session ::= "#" Session;
 
          LinFun.   Type1 ::= Type2 "-@" Type1;
          UnlFun.   Type1 ::= Type2 "->" Type1;
          Tensor.   Type2 ::= Type3 "*" Type2;
          Lift.     Type3 ::= Session;
          UnitType. Type3 ::= "Unit";
+         Const.    Type3 ::= UIdent;
 internal TVar.     Type3 ::= LIdent;
 coercions Type 3;
 
