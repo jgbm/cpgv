@@ -256,7 +256,11 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                  case sty of
                    Lift (Server ty) ->
                      do (u', m') <- provide x (Lift ty) (check m)
-                        return (Lift OutTerm, \z -> accept (xId s) (xId x) (m' z))
+                        return (Lift OutTerm, \z ->
+                                     emptyIn z
+                                       (accept (xId s) (xId x)
+                                          (nu "y" CP.One (emptyOut "y") 
+                                              (m' =<< reference "y"))))
                    _                -> fail ("    Unexpected type of server channel " ++ printTree sty)
           check' (Request s) =
               do sty <- consume s
