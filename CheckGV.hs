@@ -225,7 +225,9 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                                case mty of
                                  Lift (Choice cs) -> do (t:ts, bs') <- unzip `fmap` mapPar (checkBranch cs) bs
                                                         if all (t ==) ts
-                                                        then return (t, \z -> nu "x" (xType mty) (m' =<< reference "x") (case_ "x" (sequence [reference "x" >>= flip b' z | b' <- bs'])))
+                                                        then return (t, \z -> nu "x" (xType mty)
+                                                                                     (m' =<< reference "x")
+                                                                                     (case_ "x" (sequence [reference "x" >>= flip b' z | b' <- bs'])))
                                                         else fail ("   Divergent results of case branches:" ++ intercalate ", " (map printTree (nub (t:ts))))
                                  _                -> fail ("    Channel of case operation has unexpected type " ++ printTree mty)
               where duplicated [] = Nothing
@@ -259,7 +261,7 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                         return (Lift OutTerm, \z ->
                                      emptyIn z
                                        (accept (xId s) (xId x)
-                                          (nu "y" CP.One (emptyOut "y") 
+                                          (nu "y" CP.One (emptyOut "y")
                                               (m' =<< reference "y"))))
                    _                -> fail ("    Unexpected type of server channel " ++ printTree sty)
           check' (Request s) =

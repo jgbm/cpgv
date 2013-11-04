@@ -1,6 +1,7 @@
 import CheckGV
-import Data.Char (isSpace)
 import CPBuilder
+import Data.Char (isSpace)
+import ScopeGV
 import Syntax.AbsGV
 import Syntax.ErrM
 import Syntax.LexGV
@@ -18,7 +19,7 @@ import System.Console.Readline
 interp s = case pAssertion (myLexer s) of
              Bad err -> putStrLn err
              Ok (Assert gamma m t) ->
-                 case runCheck (checkAgainst m t) gamma of
+                 case runCheck (checkAgainst (renameTerm m) t) gamma of
                    Left err -> putStrLn err
                    Right (p, _) -> let p' = build p
                                        cpBehavior = CP.Typing (CP.LIdent "z'0") (xType t) :
