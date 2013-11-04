@@ -5,9 +5,16 @@ Terms:
 
   M, N ::= ... | link M N | serve s(x)=M | request s
 
+link is like <-> in CP
+serve is like server input in CP
+request is like server output in CP
+
 Session types:
 
   S ::= ... | $S | #S
+
+$ is like ! in CP
+# is like ? in CP
 
 Duality (~):
 
@@ -38,4 +45,3 @@ Translation from GV to CP:
   [[link M N]]z     = nu x.([[M]]x | nu y.([[N]]y | z().x <-> y))
   [[serve s(x)=M]]z = z().!s(x).nu y.(y[].0 | [[M]]y)
   [[request s]]z    = s[x].x <-> z
-
