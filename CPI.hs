@@ -9,6 +9,11 @@ import Syntax.LexCP
 import Syntax.ParCP
 import Syntax.PrintCP
 
+import qualified CheckGV as GV (checkAgainst, runCheck)
+import qualified CPToGV as GV
+import qualified Syntax.AbsGV as GV
+import qualified Syntax.PrintGV as GV
+
 import System.Console.Readline
 
 parse p s = case p (myLexer s) of
@@ -39,16 +44,23 @@ interp ds s =
           case do p' <- expandP ds p
                   b' <- expandB ds b
                   runCheck (check p') b'
-                  return (normalize p' b') of
+                  return (b', normalize p' b') of
             Left err ->
                 do putStrLn err
                    return ds
-            Right (executed, simplified) ->
-                do putStrLn (unlines ["Execution results in:",
-                                      printTree executed,
-                                      "which can be further simplified to:",
-                                      printTree simplified])
-                   return ds
+            Right (b', (executed, simplified)) ->
+                let gvContext = [GV.Typing (GV.LIdent v) (GV.xType t) | Typing (LIdent v) t <- b']
+                    gvExpr    = GV.xTerm [(v, t) | Typing v t <- b'] p
+                    gvResult  = ["GV translation is: ", GV.printTree gvExpr] ++
+                                (case GV.runCheck (GV.checkAgainst gvExpr (GV.Lift GV.OutTerm)) gvContext of
+                                   Left err -> ["which is ill-typed:", err]
+                                   Right _  -> [])
+                in do putStrLn (unlines (gvResult ++
+                                         ["Execution results in:",
+                                          printTree executed,
+                                          "which can be further simplified to:",
+                                          printTree simplified]))
+                      return ds
 
 repl ds = do s <- readline "> "
              case trim `fmap` s of
