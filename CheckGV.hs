@@ -17,7 +17,6 @@ import qualified Syntax.AbsCP as CP
 
 dual :: Session -> Session
 dual (Dual st)    = st
-dual (SVar v)     = Dual (SVar v)
 dual (Output t s) = Input t (dual s)
 dual (Input t s)  = Output t (dual s)
 dual (Sum cs)     = Choice [Label l (dual s) | Label l s <- cs]
@@ -131,6 +130,8 @@ xSession OutTerm      = CP.Bottom
 xSession InTerm       = CP.One
 xSession (Server s)   = CP.WhyNot (xSession s)
 xSession (Service s)  = CP.OfCourse (xSession s)
+xSession (SVar (UIdent s)) = CP.Var (CP.UIdent s)
+
 
 xType :: Type -> CP.Type
 xType (Lift s)     = xSession s
@@ -138,7 +139,6 @@ xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
 xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
 xType (Tensor t u) = xType t `CP.Times` xType u
 xType UnitType     = CP.OfCourse CP.Top
-xType (Const (UIdent s)) = CP.Var (CP.UIdent s)
 
 xId (LIdent s) = CP.LIdent s
 

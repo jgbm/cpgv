@@ -49,9 +49,9 @@ interp ds s =
                 do putStrLn err
                    return ds
             Right (b', (executed, simplified)) ->
-                let gvContext = [GV.Typing (GV.LIdent v) (GV.xType t) | Typing (LIdent v) t <- b']
+                let gvContext = [GV.Typing (GV.LIdent v) (GV.xType (dual t)) | Typing (LIdent v) t <- b']
                     gvExpr    = GV.xTerm [(v, t) | Typing v t <- b'] p
-                    gvResult  = ["GV translation is: ", GV.printTree gvExpr] ++
+                    gvResult  = ["GV translation is: ", GV.printTree (GV.Assert gvContext gvExpr (GV.Lift GV.OutTerm))] ++
                                 (case GV.runCheck (GV.checkAgainst gvExpr (GV.Lift GV.OutTerm)) gvContext of
                                    Left err -> ["which is ill-typed:", err]
                                    Right _  -> [])

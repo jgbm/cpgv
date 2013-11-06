@@ -1,5 +1,5 @@
 CP_SYNTAX_FILES=Syntax/AbsCP.hs Syntax/LexCP.x Syntax/PrintCP.hs Syntax/ErrM.hs Syntax/ParCP.y Syntax/SkelCP.hs
-CP_SOURCE_FILES=Check.hs Expand.hs CPI.hs Norm.hs
+CP_SOURCE_FILES=Check.hs Expand.hs CPI.hs Norm.hs CPToGV.hs
 GV_SYNTAX_FILES=Syntax/AbsGV.hs Syntax/LexGV.x Syntax/PrintGV.hs Syntax/ErrM.hs Syntax/ParGV.y Syntax/SkelGV.hs
 GV_SOURCE_FILES=CheckGV.hs GVI.hs RunGV.hs CPBuilder.hs ScopeGV.hs
 BNFC=~/.cabal/bin/bnfc

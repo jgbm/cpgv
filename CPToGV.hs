@@ -12,12 +12,15 @@ import qualified Syntax.AbsGV as GV
 xSession :: CP.Type -> GV.Session
 xSession (CP.Times a b) = GV.Input (xType a) (xSession b)
 xSession (CP.Par a b) = GV.Output (xTypeDual a) (xSession b)
+xSession (CP.Zero) = GV.Sum []
 xSession (CP.Plus cs) = GV.Sum (map (\(CP.Label x a) -> GV.Label (xId x) (xSession a)) cs)
 xSession (CP.With cs) = GV.Choice (map (\(CP.Label x a) -> GV.Label (xId x) (xSession a)) cs)
+xSession (CP.Top) = GV.Choice []
 xSession (CP.One) = GV.InTerm
-xSession (CP.Bottom) = GV.OutTerm 
+xSession (CP.Bottom) = GV.OutTerm
 xSession (CP.OfCourse a) = GV.Server (xSession a)
 xSession (CP.WhyNot a) = GV.Service (xSession a)
+xSession (CP.Var (CP.UIdent a)) = GV.SVar (GV.UIdent a)
 
 xType :: CP.Type -> GV.Type
 xType = GV.Lift . xSession
@@ -64,7 +67,7 @@ xId (CP.LIdent s) = GV.LIdent s
 -- xTerm' (CP.SendType _ _ _)      = error ("xTerm' (SendType _ _ _) unimplemented")
 -- xTerm' (CP.ReceiveType _ _ _)   = error ("xTerm' (ReceiveType _ _ _) unimplemented")
 -- xTerm' (CP.EmptyOut x)          = GV.Var (xId x)
--- xTerm' (CP.EmptyIn x p)         = GV.End (GV.Pair (xTerm' p) (GV.Var (xId x)))  
+-- xTerm' (CP.EmptyIn x p)         = GV.End (GV.Pair (xTerm' p) (GV.Var (xId x)))
 
 
 type TypeEnv = [(CP.LIdent, CP.Type)]
@@ -111,7 +114,7 @@ xTerm env (CP.Case x cs) =
   where
     x' = xId x
     branch l p = GV.Branch (xId l) x' (xTerm (extend env (x, xt)) p)
-      where 
+      where
         (CP.With lts) = find x env
         xt = findLabel l lts
     findLabel l (CP.Label l' t : lts)
@@ -130,4 +133,5 @@ xTerm env (CP.ClientRequest s x p) =
 xTerm env (CP.SendType _ _ _)      = error ("xTerm (SendType _ _ _) unimplemented")
 xTerm env (CP.ReceiveType _ _ _)   = error ("xTerm (ReceiveType _ _ _) unimplemented")
 xTerm env (CP.EmptyOut x)          = GV.Var (xId x)
-xTerm env (CP.EmptyIn x p)         = GV.End (GV.Pair (xTerm (extend env (x, CP.Bottom)) p) (GV.Var (xId x)))  
+xTerm env (CP.EmptyIn x p)         = GV.End (GV.Pair (xTerm (extend env (x, CP.Bottom)) p) (GV.Var (xId x)))
+xTerm env (CP.EmptyCase x [])      = GV.Case (GV.Var (xId x)) []

@@ -146,12 +146,10 @@ provide :: LIdent -> Type -> Check t -> Check t
 provide x t c = Check (\b -> let (included, excluded) = partition ((x /=) . name) b
                              in  case runCheck c (Typing x t : included) of
                                    Left err -> Left err
-                                   Right (v, b')
-                                       | null excluded -> Right (v, b')
-                                       | otherwise -> let (xs, b'') = partition ((x ==) . name) b'
-                                                      in  if any (not . isWhyNot . typ) xs
-                                                          then Left ("Failed to consume bindings " ++ intercalate "," [printTree x ++ ": " ++ printTree t | Typing x t <- xs])
-                                                          else Right (v, b'' ++ excluded))
+                                   Right (v, b') -> let (xs, b'') = partition ((x ==) . name) b'
+                                                    in  if any (not . isWhyNot . typ) xs
+                                                        then Left ("Failed to consume bindings " ++ intercalate "," [printTree x ++ ": " ++ printTree t | Typing x t <- xs])
+                                                        else Right (v, b'' ++ excluded))
 
 -- Restricts the assumptions for the purposes of the subcomputation.
 
