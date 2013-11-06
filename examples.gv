@@ -1,0 +1,17 @@
+name:Name, cc:CreditCard, c:!Name.!CreditCard.?Recept.end? |- let c = send name c in (let c = send cc c in terminate (receive c)):Receipt
+
+compute:Name->CreditCard->Receipt, c:?Name.?CreditCard.!Receipt.end! |- let (name, c) = receive c in let (cc, c) = receive c in send (compute name cc) c:end!
+
+name:Name,cc:CreditCard,compute:Name->CreditCard->Receipt |- with c:?Name.?CreditCard.!Receipt.end! connect (let (name, c) = receive c in let (cc, c) = receive c in send (compute name cc) c) to (let c = send name c in (let e = send cc c in terminate (receive c))):Receipt
+
+name:Name, c:!Name.?Price.end? |- let c = send name c in terminate (receive c): Price
+
+lookup:Name->Price, c:?Name.!Price.end! |- let (p, c) = receive c in send (lookup p) c: end!
+
+name:Name, lookup:Name->Price |- with c:?Name.!Price.end! connect let (p, c) = receive c in send (lookup p) c to let c = send name c in terminate (receive c): Price
+
+name:Name, lookup:Name->Price, compute:Name->CreditCard->Receipt |- with c:&{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!} connect case c of {buy: c.let (name, c) = receive c in let (cc, c) = receive c in send (compute name cc) c; shop: c.let (p, c) = receive c in send (lookup p) c} to let c = select shop c in let c = send name c in terminate (receive c): Price
+
+name:Name, cc:CreditCard, lookup:Name->Price, compute:Name->CreditCard->Receipt |- with c:&{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!} connect case c of {buy: c.let (name, c) = receive c in let (cc, c) = receive c in send (compute name cc) c; shop: c.let (p, c) = receive c in send (lookup p) c} to let c = select buy c in terminate (receive (send cc (send name c))) : Receipt
+
+aname:Name, bname:Name, cc:CreditCard, lookup:Name->Price, compute:Name->CreditCard->Receipt, out:!Price.!Receipt.end! |- with s:$&{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!} connect serve s(c) = (case c of {buy: c.let (name, c) = receive c in let (cc, c) = receive c in send (compute name cc) c; shop: c.let (p, c) = receive c in send (lookup p) c}) to (send (let c = select buy (request s) in terminate (receive (send cc (send aname c)))) (send (let c = select shop (request s) in terminate (receive (send bname c))) out)): end!
