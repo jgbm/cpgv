@@ -177,10 +177,10 @@ stepPrincipal p = Nothing
 stepCommuting :: Proc -> Maybe Proc
 -- kappa_times-1
 stepCommuting (Comp z a (Out x y p q) r)
-    | z /= x && z `elem` fn p = Just (Out x y (Comp z a p r) q)
+    | z /= x && z `elem` fn p && z `notElem` fn q = Just (Out x y (Comp z a p r) q)
 -- kappa_times-2
 stepCommuting (Comp z a (Out x y p q) r)
-    | z /= x && z `elem` fn q = Just (Out x y p (Comp z a q r))
+    | z /= x && z `elem` fn q && z `notElem` fn p = Just (Out x y p (Comp z a q r))
 -- kappa_par
 stepCommuting (Comp z a (In x y p) q)
     | z /= x = Just (In x y (Comp z a p q))
@@ -302,7 +302,7 @@ normalize p b = let p' = execute p in (p', simplify p')
           simplify p = case msum (map (stepUnder stepPrincipal `orElse` stepUnder stepCommuting) (equivUnder p)) of
                          Nothing -> p
                          Just p' -> case runCheck (check p') b of
-                                      Left err -> error (unlines ["Simplification went wrong! Last good step was:",
+                                      Left err -> error (unlines ["Simplification went wrong! (" ++ err ++ ") Last good step was:",
                                                                   "   " ++ printTree p,
                                                                   "and first bad step was:",
                                                                   "   " ++ printTree p'])
