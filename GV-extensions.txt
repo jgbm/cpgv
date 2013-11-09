@@ -44,4 +44,4 @@ Translation from GV to CP:
 
   [[link M N]]z     = nu x.([[M]]x | nu y.([[N]]y | z().x <-> y))
   [[serve s(x)=M]]z = z().!s(x).nu y.(y[].0 | [[M]]y)
-  [[request s]]z    = s[x].x <-> z
+  [[request s]]z    = ?s[x].x <-> z
