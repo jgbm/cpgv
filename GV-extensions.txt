@@ -36,9 +36,8 @@ Typing rules:
   -----------------------------
   G,s:$S |- serve s(x)=M : end!
 
-  un(G)
   -----------------------
-  G,s:#S |- request s : S
+  s:#S |- request s : S
 
 Translation from GV to CP:
 
