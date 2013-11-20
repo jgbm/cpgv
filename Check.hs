@@ -26,8 +26,8 @@ dual Bottom = One
 -- Additive combinators
 dual (Plus lts) = With (map dualL lts)
 dual (With lts) = Plus (map dualL lts)
-dual Zero = Top
-dual Top = Zero
+-- dual Zero = Top
+-- dual Top = Zero
 -- Exponentials
 dual (OfCourse a) = WhyNot (dual a)
 dual (WhyNot a) = OfCourse (dual a)
@@ -54,8 +54,8 @@ ftv Bottom = []
 -- Additive combinators
 ftv (Plus ls) = concat [ftv t | Label _ t <- ls]
 ftv (With ls) = concat [ftv t | Label _ t <- ls]
-ftv Zero = []
-ftv Top = []
+-- ftv Zero = []
+-- ftv Top = []
 -- Exponentials
 ftv (OfCourse a) = ftv a
 ftv (WhyNot a) = ftv a
@@ -82,8 +82,8 @@ instance HasTyVars Type
           -- Additive combinators
           inst x c (Plus lts) = Plus [Label l (inst x c t) | Label l t <- lts]
           inst x c (With lts) = With [Label l (inst x c t) | Label l t <- lts]
-          inst x c Zero = Zero
-          inst x c Top = Top
+          -- inst x c Zero = Zero
+          -- inst x c Top = Top
           -- Exponentials
           inst x c (OfCourse a) = OfCourse (inst x c a)
           inst x c (WhyNot a) = WhyNot (inst x c a)
@@ -287,5 +287,5 @@ check p = check' p >> empty
           check' (EmptyCase x ys) =
               do c <- consume x
                  case c of
-                   Top -> mapM_ consume ys
-                   _   -> unexpectedType x c (EmptyCase x ys)
+                   Plus [] -> mapM_ consume ys
+                   _       -> unexpectedType x c (EmptyCase x ys)

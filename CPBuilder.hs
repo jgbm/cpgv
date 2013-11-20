@@ -43,6 +43,6 @@ request x y m = do x' <- reference x
                    binder y (\y' -> liftM (ClientRequest x' y') m)
 emptyOut x = liftM EmptyOut (reference x)
 emptyIn x m = liftM2 EmptyIn (reference x) m
-emptyCase x = do x' <- reference x
-                 return (EmptyCase x' [])
+emptyCase x xs = do x' <- reference x
+                    return (EmptyCase x' xs)
 

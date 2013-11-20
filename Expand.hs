@@ -87,8 +87,8 @@ expandT ds (VarArgs v ts) = do (vs, t) <- getBinding v (types ds)
 expandT ds (Dual t)       = liftM dual (expandT ds t)
 expandT ds One            = return One
 expandT ds Bottom         = return Bottom
-expandT ds Zero           = return Zero
-expandT ds Top            = return Top
+-- expandT ds Zero           = return Zero
+-- expandT ds Top            = return Top
 
 expandB :: Defns -> Behavior -> Either String Behavior
 expandB ds b = sequence [liftM (Typing v) (expandT ds t) | Typing v t <- b]

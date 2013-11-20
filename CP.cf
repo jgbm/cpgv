@@ -18,8 +18,8 @@ separator LabeledType ",";
 internal Neg.      Type4 ::= "~" UIdent;
          One.      Type4 ::= "1";
          Bottom.   Type4 ::= "bot";
-         Zero.     Type4 ::= "0";
-         Top.      Type4 ::= "top";
+--         # Zero.     Type4 ::= "0";
+--         # Top.      Type4 ::= "top";
 
 coercions Type 4;
 separator Type ",";
@@ -31,7 +31,7 @@ token LIdent (lower (letter | digit | '_')*);
 separator LIdent ",";
 
 Branch.        Branch ::= LIdent ":" Proc;
-separator Branch ";";
+separator nonempty Branch ";";
 
 ProcVar.       Proc ::= UIdent;
 ProcVarArgs.   Proc ::= UIdent "(" [ProcArg] ")";

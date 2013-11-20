@@ -138,7 +138,7 @@ xType (Lift s)     = xSession s
 xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
 xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
 xType (Tensor t u) = xType t `CP.Times` xType u
-xType UnitType     = CP.OfCourse CP.Top
+xType UnitType     = CP.OfCourse (CP.Plus [])
 
 xId (LIdent s) = CP.LIdent s
 
@@ -151,7 +151,7 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
     where check' :: Term -> Check (Type, CP.LIdent -> Builder CP.Proc)
           check' (Var x)   = do ty <- consume x
                                 return (ty, \z -> link (xId x) z)
-          check' Unit      = return (UnitType, \z -> accept z "y" (emptyCase "y"))
+          check' Unit      = return (UnitType, \z -> accept z "y" (emptyCase "y" []))
           check' (Link m n) =
               do (t, m') <- check m
                  (t', n') <- check n
@@ -219,7 +219,7 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                                        return (Lift st, \z -> nu "x" (xType mty) (m' =<< reference "x") (inj "x" (xId l) (link "x" z)))
                    _             -> fail ("    Channel of select operation has unexepcted type " ++ printTree mty)
               where
-          check' (Case m bs)
+          check' (Case m bs@(_:_))
               | Just l <- duplicated bs = fail ("    Duplicated case label " ++ printTree l)
               | otherwise = do (mty, m') <- check m
                                case mty of
@@ -238,6 +238,15 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                         do s <- lookupLabel l cs
                            provide x (Lift s) (do (t, n') <- check n
                                                   return (t, \y z -> (CP.Branch (xId l) . CP.replace (xId x) y) `fmap` n' z))
+
+          check' (EmptyCase m xs t) =
+             do (mty, m') <- check m
+                case mty of
+                  Lift (Choice []) -> do mapM_ consume xs
+                                         return (t, \z -> nu "x" (xType mty)
+                                                                 (m' =<< reference "x")
+                                                                 (emptyCase "x" (map xId xs)))
+                  _                -> fail ("    Channel of empty case operation has unexpected type " ++ printTree mty)
           check' (With l st m n) =
               do (mty, m') <- provide l (Lift st) (check m)
                  case mty of

@@ -12,10 +12,10 @@ import qualified Syntax.AbsGV as GV
 xSession :: CP.Type -> GV.Session
 xSession (CP.Times a b) = GV.Output (xTypeDual a) (xSession b)
 xSession (CP.Par a b) = GV.Input (xType a) (xSession b)
-xSession (CP.Zero) = GV.Sum []
 xSession (CP.Plus cs) = GV.Sum (map (\(CP.Label x a) -> GV.Label (xId x) (xSession a)) cs)
 xSession (CP.With cs) = GV.Choice (map (\(CP.Label x a) -> GV.Label (xId x) (xSession a)) cs)
-xSession (CP.Top) = GV.Choice []
+-- xSession (CP.Zero) = GV.Sum []
+-- xSession (CP.Top) = GV.Choice []
 xSession (CP.One) = GV.OutTerm
 xSession (CP.Bottom) = GV.InTerm
 xSession (CP.OfCourse a) = GV.Server (xSession a)
@@ -69,7 +69,7 @@ xTerm env (CP.Inj x l p) =
     findLabel l (CP.Label l' t : lts)
       | l == l'   = t
       | otherwise = findLabel l lts
-xTerm env (CP.Case x cs) =
+xTerm env (CP.Case x cs@(_:_)) =
   GV.Case (GV.Var x')
     (map (\(CP.Branch l p) -> branch l p) cs)
   where
@@ -81,6 +81,8 @@ xTerm env (CP.Case x cs) =
     findLabel l (CP.Label l' t : lts)
       | l == l'   = t
       | otherwise = findLabel l lts
+xTerm env (CP.EmptyCase x xs) =
+  GV.EmptyCase (GV.Var (xId x)) (map xId xs) (GV.Lift GV.InTerm)
 xTerm env (CP.ServerAccept s x p) =
   GV.Serve (xId s) (xId x) (xTerm (extend env (x, xt)) p)
   where
@@ -95,4 +97,3 @@ xTerm env (CP.SendType _ _ _)      = error ("xTerm (SendType _ _ _) unimplemente
 xTerm env (CP.ReceiveType _ _ _)   = error ("xTerm (ReceiveType _ _ _) unimplemented")
 xTerm env (CP.EmptyOut x)          = GV.Var (xId x)
 xTerm env (CP.EmptyIn x p)         = GV.End (GV.Pair (xTerm (extend env (x, CP.Bottom)) p) (GV.Var (xId x)))
-xTerm env (CP.EmptyCase x [])      = GV.Case (GV.Var (xId x)) []
