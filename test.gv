@@ -14,7 +14,8 @@
      send (f unit) c
    to
      case c of {
-       frog:c.let (v,c) = receive (send (!\x:Unit.x) c) in let () = terminate c in v;
+       frog:c.let (v,c) = receive (send (!\x:Unit.x) c) in
+              let () = terminate c in v;
        goat:c.terminate c
      } : Unit.
 
