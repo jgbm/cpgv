@@ -108,6 +108,9 @@ runPure env e = runPure' env e where
   runPure' env (Let (BindName x) e e') =
     do v <- rp e
        runPure (extend env (x, v)) e'
+  runPure' env (Let BindUnit e e') =
+    do VUnit <- rp e
+       runPure env e'
   runPure' env (Let (BindPair x1 x2) e e') =
     do (VPair v1 v2) <- rp e
        runPure (extend (extend env (x1, v1)) (x2, v2)) e'
@@ -115,8 +118,8 @@ runPure env e = runPure' env e where
     swith (\(p1, p2) -> (runPure (extend env (x, VChannel (p1, p2))) e1,
                          runPure (extend env (x, VChannel (p2, p1))) e2))
   runPure' env (End e) =
-    do (VPair v _) <- rp e
-       return v
+    do (VChannel _) <- rp e
+       return VUnit
   runPure' env (Send m n) =
     do v <- rp m
        (VChannel c) <- rp n

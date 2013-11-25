@@ -192,6 +192,14 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
               do (t, m') <- check m
                  (u, n') <- provide x t (check n)
                  return (u, \z -> nu (xId x) (xType t) (m' =<< reference (xId x)) (n' z))
+          check' (Let BindUnit m n) =
+              do (mty, m') <- check m
+                 case mty of
+                   UnitType -> do (nty, n') <- check n
+                                  return (nty, \z -> nu "x" (xType mty)
+                                                        (m' =<< reference "x")
+                                                        (n' z))
+                   _        -> fail ("    Attempted to pattern-match non-unit of type " ++ printTree mty)
           check' (Let (BindPair x y) m n) =
               do (mty, m') <- check m
                  case mty of
@@ -258,10 +266,15 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
           check' (End m) =
               do (mty, m') <- check m
                  case mty of
-                   ty `Tensor` Lift InTerm -> return (ty, \z -> nu "y" (xType ty `CP.Times` CP.One)
-                                                                   (m' =<< reference "y")
-                                                                   (in_ "y" "x" (emptyIn "y" (link "x" z))))
-                   _                       -> fail ("    Unexpected type of right channel " ++ printTree mty)
+                   Lift InTerm -> return (UnitType, \z -> nu "x" CP.One
+                                                             (m' =<< reference "x")
+                                                             (emptyIn "x" (accept z "y" (emptyCase "y" []))))
+                   _           -> fail ("    Unexpected type of terminated channel " ++ printTree mty)
+                 -- case mty of
+                 --   ty `Tensor` Lift InTerm -> return (ty, \z -> nu "y" (xType ty `CP.Times` CP.One)
+                 --                                                   (m' =<< reference "y")
+                 --                                                   (in_ "y" "x" (emptyIn "y" (link "x" z))))
+                 --   _                       -> fail ("    Unexpected type of right channel " ++ printTree mty)
           check' (Serve s x m) =
               do sty <- consume s
                  case sty of

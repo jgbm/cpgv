@@ -96,4 +96,5 @@ xTerm env (CP.ClientRequest s x p) =
 xTerm env (CP.SendType _ _ _)      = error ("xTerm (SendType _ _ _) unimplemented")
 xTerm env (CP.ReceiveType _ _ _)   = error ("xTerm (ReceiveType _ _ _) unimplemented")
 xTerm env (CP.EmptyOut x)          = GV.Var (xId x)
-xTerm env (CP.EmptyIn x p)         = GV.End (GV.Pair (xTerm (extend env (x, CP.Bottom)) p) (GV.Var (xId x)))
+xTerm env (CP.EmptyIn x p)         = GV.Let GV.BindUnit (GV.End (GV.Var (xId x))) (xTerm env p)
+  --GV.End (GV.Pair (xTerm (extend env (x, CP.Bottom)) p) (GV.Var (xId x)))

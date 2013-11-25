@@ -33,7 +33,8 @@ instance HasScopedVariables Term
           rename (Let p m n) =
               do m' <- rename m
                  case p of
-                   BindName x -> binder x (\x' -> Let (BindName x') m' `fmap` rename n)
+                   BindName x   -> binder x (\x' -> Let (BindName x') m' `fmap` rename n)
+                   BindUnit     -> Let BindUnit m' `fmap` rename n
                    BindPair x y -> binder x (\x' -> binder y (\y' -> Let (BindPair x' y') m' `fmap` rename n))
           rename (Send m n) = liftM2 Send (rename m) (rename n)
           rename (Receive m) = liftM Receive (rename m)
