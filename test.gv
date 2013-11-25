@@ -1,5 +1,45 @@
-|- with c:?Unit->Unit.!Unit.end! connect let (f,c) = receive c in send (f unit) c to terminate (receive (send (!\x:Unit.x) c)) : Unit
-|- with c:+{frog:?Unit->Unit.!Unit.end!, goat:end!} connect let c = select frog c in let (f,c) = receive c in send (f unit) c to case c of {frog:c. terminate(receive (send (!\x:Unit.x) c)); goat:c.terminate (unit, c)} : Unit
-zed : Unit * Unit |- with c:+{frog:?Unit->Unit.!Unit.end!, goat:end!} connect let c = select frog c in let (f,c) = receive c in send (f unit) c to case c of {frog:c. terminate(receive (send (let (a,b) = zed in !\x:Unit.x) c)); goat:c.terminate (let (a,b) = zed in a, c)} : Unit
-|- with c:&{gimme:+{tenner:end!}} connect case c of {gimme:d.select tenner d} to let c = select gimme c in case c of {tenner:e.terminate (unit, e)} : Unit
-|- with s:$&{gimme:+{tenner:end!}} connect serve s(c) = (case c of {gimme:c.select tenner c}) to let c = request s in let c = select gimme c in case c of {tenner:c.terminate (unit, c)} : Unit
+-- GV test file
+
+|- with c:?Unit->Unit.!Unit.end! connect
+     let (f,c) = receive c in
+     send (f unit) c
+   to
+     terminate (receive (send (!\x:Unit.x) c)) : Unit.
+
+|- with c:+{frog:?Unit->Unit.!Unit.end!, goat:end!} connect
+     let c = select frog c in
+     let (f,c) = receive c in
+     send (f unit) c
+   to
+     case c of {
+       frog:c. terminate(receive (send (!\x:Unit.x) c));
+       goat:c.terminate (unit, c)
+     } : Unit.
+
+zed : Unit * Unit |-
+  with c:+{frog:?Unit->Unit.!Unit.end!, goat:end!} connect
+    let c = select frog c in
+    let (f,c) = receive c in
+    send (f unit) c
+  to
+    case c of {
+      frog:c. terminate(receive (send (let (a,b) = zed in !\x:Unit.x) c));
+      goat:c.terminate (let (a,b) = zed in a, c)
+    } : Unit.
+
+|- with c:&{gimme:+{tenner:end!}} connect
+     case c of {
+       gimme:d.select tenner d
+     }
+   to
+     let c = select gimme c in
+     case c of {
+       tenner:e.terminate (unit, e)
+     } : Unit.
+
+|- with s:$&{gimme:+{tenner:end!}} connect
+     serve s(c) = (case c of {gimme:c.select tenner c})
+   to
+     let c = request s in
+     let c = select gimme c in
+     case c of {tenner:c.terminate (unit, c)} : Unit.

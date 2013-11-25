@@ -1,3 +1,5 @@
+comment "--";
+
 token UIdent (upper (letter | digit | '_')*);
 token LIdent (lower (letter | digit | '_')*);
 separator LIdent ",";
@@ -52,4 +54,8 @@ Typing.  Typing ::= LIdent ":" Type;
 separator Typing ",";
 Assert.  Assertion ::= [Typing] "|-" Term ":" Type;
 
-entrypoints Type,Assertion;
+terminator Assertion ".";
+
+Prog.    Prog ::= [Assertion];
+
+entrypoints Type,Assertion,Prog;
