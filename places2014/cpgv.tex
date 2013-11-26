@@ -1,0 +1,482 @@
+% easychair.tex,v 3.2 2012/05/15
+%
+% Select appropriate paper format in your document class as
+% instructed by your conference organizers. Only withtimes
+% and notimes can be used in proceedings created by EasyChair
+%
+% The available formats are 'letterpaper' and 'a4paper' with
+% the former being the default if omitted as in the example
+% below.
+%
+\documentclass{easychair}
+%\documentclass[debug]{easychair}
+%\documentclass[verbose]{easychair}
+%\documentclass[notimes]{easychair}
+%\documentclass[withtimes]{easychair}
+%\documentclass[a4paper]{easychair}
+%\documentclass[letterpaper]{easychair}
+
+% This provides the \BibTeX macro
+\usepackage{doc}
+\usepackage{makeidx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{stmaryrd}
+
+% In order to save space or manage large tables or figures in a
+% landcape-like text, you can use the rotating and pdflscape
+% packages. Uncomment the desired from the below.
+%
+% \usepackage{rotating}
+% \usepackage{pdflscape}
+
+% If you plan on including some algorithm specification, we recommend
+% the below package. Read more details on the custom options of the
+% package documentation.
+%
+% \usepackage{algorithm2e}
+
+
+%%% macros
+
+\newcommand{\ba}{\begin{array}}
+\newcommand{\ea}{\end{array}}
+
+\newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
+
+
+\newcommand{\key}{\mathsf}
+
+\newcommand{\set}[1]{\{ #1 \}}
+
+
+\newcommand{\gvtocp}[1]{\llbracket{#1}\rrbracket}
+\newcommand{\cptogv}[1]{\llparenthesis{#1}\rrparenthesis}
+
+\newcommand{\row}[2]{\set{#1}_{#2}}
+
+\newcommand{\gvOutput}[2]{!{#1}.{#2}}
+\newcommand{\gvInput}[2]{?{#1}.{#2}}
+\newcommand{\gvEndOutput}{\key{end}_!}
+\newcommand{\gvEndInput}{\key{end}_?}
+\newcommand{\gvPlus}[2]{\oplus \row{#1}{#2}}
+\newcommand{\gvChoice}[2]{\binampersand \row{#1}{#2}}
+\newcommand{\gvServer}[1]{\${#1}}
+\newcommand{\gvService}[1]{\#{#1}}
+\newcommand{\gvDual}[1]{\overline{#1}}
+
+\newcommand{\cpj}[2]{{#1} \vdash {#2}}
+\newcommand{\gvj}[3]{{#1} \vdash {#2} : {#3}}
+
+\newcommand{\la}{l}
+\newcommand{\A}{A}
+\newcommand{\B}{B}
+\newcommand{\PR}{P}
+\newcommand{\Q}{Q}
+\newcommand{\G}{\Gamma}
+
+\newcommand{\SE}{S}
+\newcommand{\T}{T}
+\newcommand{\U}{U}
+
+\newcommand{\gvLinFun}[2]{{#1} \multimap {#2}}
+\newcommand{\gvUnFun}[2]{{#1} \to {#2}}
+\newcommand{\gvTimes}[2]{{#1} \otimes {#2}}
+\newcommand{\gvUnitType}{\key{Unit}}
+
+\newcommand{\gvUnit}{\key{unit}}
+\newcommand{\gvLink}[2]{\key{link}~{#1}~{#2}}
+\newcommand{\gvLam}[2]{\lambda {#1}.{#2}}
+\newcommand{\gvApp}[2]{{#1}~{#2}}
+\newcommand{\gvPair}[2]{({#1},{#2})}
+\newcommand{\gvLet}[3]{\key{let}~{#1}={#2}~\key{in}~{#3}}
+\newcommand{\gvSend}[2]{\key{send}~{#1}~{#2}}
+\newcommand{\gvReceive}[1]{\key{receive}~{#1}}
+\newcommand{\gvSelect}[2]{\key{select}~{#1}~{#2}}
+\newcommand{\gvCase}[2]{\key{case}~{#1}~\key{of}~{#2}}
+\newcommand{\gvWith}[3]{\key{with}~{#1}~\key{connect}~{#2}~\key{to}~{#3}}
+\newcommand{\gvTerminate}[1]{\key{terminate}~{#1}}
+
+\newcommand{\gvServe}[3]{\key{serve}~{#1}({#2})={#3}}
+\newcommand{\gvRequest}[1]{\key{request}~{#1}}
+
+\newcommand{\cpLink}[2]{{#1} \leftrightarrow {#2}}
+\newcommand{\cpCut}[3]{\nu {#1}.({#2} \mid {#3})}
+\newcommand{\cpOutput}[4]{{#1}[{#2}].({#3} \mid {#4})}
+\newcommand{\cpInput}[3]{{#1}({#2}).{#3}}
+\newcommand{\cpInject}[3]{{#1}[{#2}].{#3}}
+\newcommand{\cpCase}[2]{{#1}.\key{case}~{#2}}
+\newcommand{\cpServe}[3]{!{#1}({#2}).{#3}}
+\newcommand{\cpRequest}[3]{?{#1}[{#2}].{#3}}
+\newcommand{\cpEmptyOut}[1]{{#1}[].0}
+\newcommand{\cpEmptyIn}[2]{{#1}().{#2}}
+
+\newcommand{\cpTimes}[2]{{#1} \otimes {#2}}
+\newcommand{\cpPar}[2]{{#1} \mathbin{\bindnasrepma} {#2}}
+\newcommand{\cpPlus}[2]{\oplus \row{#1}{#2}}
+\newcommand{\cpWith}[2]{\binampersand \row{#1}{#2}}
+\newcommand{\cpOne}{1}
+\newcommand{\cpBottom}{\bot}
+\newcommand{\cpOfCourse}[1]{!{#1}}
+\newcommand{\cpWhyNot}[1]{?{#1}}
+\newcommand{\cpDual}[1]{{#1}^\bot}
+
+
+
+
+
+
+%\makeindex
+
+%% Document
+%%
+\begin{document}
+
+\title{Sessions as propositions}
+
+% \titlerunning{} has to be set to either the main title or its shorter
+% version for the running heads. When processed by
+% EasyChair, this command is mandatory: a document without \titlerunning
+% will be rejected by EasyChair
+
+\titlerunning{Sessions as propositions}
+
+% Authors are joined by \and. Their affiliations are given by \inst, which indexes
+% into the list defined using \institute
+%
+\author{
+  Sam Lindley
+  \and
+  J. Garrett Morris
+  \and
+  ...
+}
+%% \author{
+%% Serguei A. Mokhov\inst{1}\thanks{Designed and implemented the class style}
+%% \and
+%%     Geoff Sutcliffe\inst{2}\thanks{Did numerous tests and provided a lot of suggestions}
+%% \and
+%%    Andrei Voronkov\inst{3}\thanks{Masterminded EasyChair and created versions
+%%      3.0--3.1 of the class style}\\
+%% \and
+%%    Graham Gough\inst{3}\thanks{Changed author list format.}\\
+%% }
+
+
+% Institutes for affiliations are also joined by \and,
+\institute{The University of Edinburgh}
+%% \institute{
+%%   Concordia University,
+%%   Montreal, Quebec, Canada\\
+%%   \email{mokhov@cse.concordia.ca}
+%% \and
+%%    University of Miami,
+%%    Miami, Florida, U.S.A.\\
+%%    \email{geoff@cs.miami.edu}\\
+%% \and
+%%    University of Manchester,
+%%    Manchester, U.K.\\
+%%    \email{andrei@voronkov.com, graham@cs.man.ac.uk}\\
+%%  }
+%  \authorrunning{} has to be set for the shorter version of the authors' names;
+% otherwise a warning will be rendered in the running heads. When processed by
+% EasyChair, this command is mandatory: a document without \authorrunning
+% will be rejected by EasyChair
+
+%% \authorrunning{Mokhov, Sutcliffe, Voronkov and Gough}
+\authorrunning{Lindley, Morris and ...}
+
+
+\clearpage
+
+\maketitle
+
+\begin{abstract}
+TODO
+\end{abstract}
+
+
+%\section{To mention}
+%
+%Processing in EasyChair - number of pages.
+%
+%Examples of how EasyChair processes papers. Caveats (replacement of EC
+%class, errors).
+
+% \pagestyle{empty}
+
+
+\section{Introduction}
+TODO
+
+\section{From CP to GV}
+~
+
+Types
+\begin{equations}
+\cptogv{\cpTimes{\A}{\B}} &=& \gvOutput{\gvDual{\cptogv{\A}}}{\cptogv{\B}} \\
+\cptogv{\cpPar{\A}{\B}} &=& \gvInput{\cptogv{\A}}{\cptogv{\B}} \\
+\cptogv{\cpPlus{\la_i:\A_i}{i}} &=& \gvPlus{\la_i:\cptogv{\A_i}}{i} \\
+\cptogv{\cpWith{\la_i:\A_i}{i}} &=& \gvChoice{\la_i:\cptogv{\A_i}}{i} \\
+\cptogv{\cpOne} &=& \gvEndOutput \\
+\cptogv{\cpBottom} &=& \gvEndInput \\[1ex]
+
+\cptogv{\cpOfCourse{\A}} &=& \gvServer{\cptogv{\A}} \\
+\cptogv{\cpWhyNot{\A}} &=& \gvService{\cptogv{\A}} \\
+\end{equations}
+
+Terms
+\begin{equations}
+\cptogv{\cpCut{x}{\PR}{\Q}} &=&
+  \gvWith{x}{\cptogv{\PR}}{\cptogv{\Q}} \\
+\cptogv{\cpOutput{x}{y}{\PR}{\Q}} &=&
+  \gvWith{y}{\cptogv{\PR}}{\gvLet{x}{\gvSend{y}{x}}{\cptogv{\Q}}} \\
+\cptogv{\cpInput{x}{y}{\PR}} &=&
+  \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{\PR}} \\
+\cptogv{\cpInject{x}{\la}{\PR}} &=&
+  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{\PR}} \\  
+\cptogv{\cpCase{x}{\row{\la_i.\PR_i}{i}}} &=&
+  \gvCase{x}{\row{\la_i(x).\cptogv{\PR_i}}{i}} \\
+\cptogv{\cpEmptyOut{x}} &=& x \\
+\cptogv{\cpEmptyIn{x}{\PR}} &=&
+  \gvLet{\gvUnit}{\gvTerminate{x}}{\cptogv{\PR}} \\[1ex]
+
+\cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
+\cptogv{\cpServe{s}{x}{\PR}} &=&
+  \gvServe{s}{x}{\cptogv{\PR}} \\
+\cptogv{\cpRequest{s}{x}{\PR}} &=&
+  \gvWith{x}{\gvLink{(\gvRequest{s})}{x}}{\cptogv{\PR}} \\
+\end{equations}
+
+Judgements
+\begin{equations}
+\cptogv{\cpj{\PR}{\G}} = \gvj{\cptogv{\G}}{\cptogv{\PR}}{\gvEndOutput}
+\end{equations}
+
+\section{From GV to CP}
+~
+
+Session types
+\begin{equations}
+\gvtocp{\gvOutput{\T}{\SE}}        &=& \cpPar{\cpDual{\gvtocp{\T}}}{\gvtocp{\SE}} \\
+\gvtocp{\gvInput{\T}{\SE}}         &=& \cpTimes{\gvtocp{\T}}{\gvtocp{\SE}} \\
+\gvtocp{\gvPlus{\la_i:\SE_i}{i}}   &=& \cpWith{\la_i:\gvtocp{\SE_i}}{i} \\
+\gvtocp{\gvChoice{\la_i:\SE_i}{i}} &=& \cpPlus{\la_i:\gvtocp{\SE_i}}{i} \\
+\gvtocp{\gvEndOutput}              &=& \cpBottom \\
+\gvtocp{\gvEndInput}               &=& \cpOne \\[1ex]
+
+\gvtocp{\gvServer{\SE}}  &=& \cpWhyNot{\gvtocp{\SE}} \\
+\gvtocp{\gvService{\SE}} &=& \cpOfCourse{\gvtocp{\SE}} \\[1ex]
+\end{equations}
+
+Non-session types
+\begin{equations}
+\gvtocp{\gvLinFun{\T}{\U}} &=& \cpPar{\cpDual{\gvtocp{\T}}}{\gvtocp{\U}} \\
+\gvtocp{\gvUnFun{\T}{\U}} &=& \cpOfCourse{(\cpPar{\cpDual{\gvtocp{\T}}}{\gvtocp{\U}})} \\
+\gvtocp{\gvTimes{\T}{\U}} &=& \cpTimes{\gvtocp{\T}}{\gvtocp{\U}} \\
+\gvtocp{\gvUnitType} &=& \cpOfCourse{(\cpWith{}{})} \\
+\end{equations}
+
+Terms
+\begin{equations}
+\gvtocp{\gvLink{M}{N}}z &=& \cpCut{x}{\gvtocp{M}x}{\cpCut{y}{\gvtocp{N}y}{\cpEmptyIn{z}{\cpLink{x}{y}}}} \\
+\gvtocp{\gvServe{s}{x}{M}}z &=&
+  \cpEmptyIn{z}
+            {\cpServe{s}{x}
+                     {\cpCut{y}{\cpEmptyOut{y}}{\gvtocp{M}y}}} \\
+\gvtocp{\gvRequest{s}}z &=& \cpRequest{s}{x}{\cpLink{x}{z}} \\
+\end{equations}
+
+Judgements
+\begin{equations}
+\gvtocp{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocp{M}z}{\cpDual{\gvtocp{\Phi}}, z:\gvtocp{\T}}
+\end{equations}
+
+\section{Alternative translations from GV to CP}
+
+\subsection{Dualising the interpretation of judgements}
+
+It is possible to avoid the dualisation of session types in the type
+translation by dualising the interpretation of judgements.
+
+\newcommand{\gvtocps}[1]{\gvtocp{#1}^\star}
+\newcommand{\gvtocpd}[1]{\gvtocp{#1}^\dagger}
+
+\begin{equations}
+\gvtocps{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{\T})}}
+\end{equations}
+
+The idea is that the term translation stays exactly the same. We just
+dualise the interpretation of types in judgements. This approach fits
+somewhat with the view of $z$ as a negative continuation parameter. It
+yields a straightforward interpretation of session types, but then the
+interpretation of non-session types: linear functions, unrestricted
+functions, tensor, and unit, becomes dual to what one would normally
+expect.
+
+\begin{equations}
+\gvtocps{\gvLinFun{\T}{\U}} &=& \cpTimes{\gvtocp{\T}}{\cpDual{\gvtocp{\U}}} \\
+\gvtocps{\gvUnFun{\T}{\U}} &=& \cpWhyNot{(\cpTimes{\gvtocp{\T}}{\cpDual{\gvtocp{\U}}})} \\
+\gvtocps{\gvTimes{\T}{\U}} &=& \cpPar{\cpDual{\gvtocp{\T}}}{\cpDual{\gvtocp{\U}}} \\
+\gvtocps{\gvUnitType} &=& \cpWhyNot{(\cpPlus{}{})} \\
+\end{equations}
+
+\subsection{Adapting the translation on terms}
+
+As an alternative to dualising the interpretation of non-session
+types, we can attempt to keep the standard interpretation of
+non-session types and instead adapt the translation on terms.
+
+\begin{equations}
+\gvtocpd{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocpd{M} z}{\gvtocpd{\Phi}, z:{\gvtocpd{\T}}}
+\end{equations}
+
+This looks like it might work if we add the Mix rule to CP along with
+another rule which can be derived from BiCut, but which appears to
+be weaker.
+
+%% z : [[T]] * ~[[U]]
+%% [[\x.M]]z = nu y.z[x].([[M]]y | y <-> z)
+%% [[\x.M]]z = nu y x.([[M]]y | z[w].(w <-> x | y <-> z))
+
+%% z : ~[[U]]
+%% [[L M]]z = nu y.([[L]]y | y(x).([[M]]x | y <-> z))
+
+%% z : ~[[T]] || ~[[U]]
+%% [[(M, N)]]z = z(x).([[M]]x | [[N]]z)
+
+%% z : ~[[V]]
+%% [[let (x,y)=M in N]]z = nu w.([[M]]w | nu y.w[x].([[N]]z | w <-> y))
+
+\newcommand{\cpMix}[2]{({#1} \mid {#2})}
+\newcommand{\cpCutOutput}[5]{{#2}[{#3}].\nu{#1}.\cpMix{#4}{#5}}
+
+\begin{equations}
+\gvtocpd{\lambda x.M}z &=& \cpCutOutput{y}{z}{x}{\gvtocpd{M}y}{\cpLink{y}{z}} \\
+\gvtocpd{L~M}z &=& \cpCut{y}{\gvtocpd{L}y}{\cpInput{y}{x}{\cpMix{\gvtocpd{M}x}{\cpLink{y}{z}}}} \\
+\gvtocpd{\gvPair{M}{N}}z &=& \cpInput{z}{x}{\cpMix{\gvtocpd{M}x}{\gvtocpd{N}z}} \\
+\gvtocpd{\gvLet{\gvPair{x}{y}}{M}{N}}z &=&
+  \cpCut{w}{\gvtocpd{M}w}{\cpCutOutput{y}{w}{x}{\gvtocpd{N}z}{\cpLink{w}{y}}} \\
+\end{equations}
+
+\subsection{Compiling away non-session types}
+
+Another option is to compile away non-session types in GV as a
+pre-processing step, where the type translation is given by
+$\cptogv{\gvtocp{-}}$ and the term translation by
+$\cptogv{\gvtocp{-}z}$.
+
+\newpage
+\section{Conclusion}
+
+TODO
+
+\cite{wadler2014jfp}
+
+\label{sect:bib}
+\bibliographystyle{plain}
+%\bibliographystyle{alpha}
+%\bibliographystyle{unsrt}
+%\bibliographystyle{abbrv}
+\bibliography{cpgv}
+
+%------------------------------------------------------------------------------
+%% \appendix
+
+%------------------------------------------------------------------------------
+% Index
+%\printindex
+
+%------------------------------------------------------------------------------
+\end{document}
+
+Composing the translations
+
+(([[T -o U]])) = ?~(([[T]])).(([[U]]))
+(([[T * U]])) = !(([[T]])).(([[U]]))
+
+
+\x.M --> ((z(x).[[M]]z))  --> let (x,z)=receive z in (([[M]]z))
+[[L M]]z --> nu y.([[L]]y | y[x].([[M]]x | y <-> z)) -->
+       with y connect
+         (([[L]]y))
+       to
+         with x connect (([[M]]x)) to let y=send x y in link y z
+(M,N) --> z[y].([[M]]y | [[N]]z) --> with y connect (([[M]]y)) to let z = send y z in (([[N]]z))
+
+
+Attempting to undualise the GV to CP translation on types
+
+[[T -o U]] = [[~T || U]]
+
+z : [[T]] * ~[[U]]
+[[\x.N]]z = nu y:[[U]].z[x].([[N]]y|y <-> z)
+
+
+
+P |- x : A, y : B
+----------------------------------------------------
+y[x].(P | nu r s.(r <-> x | s <-> y))) |- y : A * B
+
+
+P |- x : A, x : C     Q |- x : ~C, y : B
+----------------------------------------
+     nu x.y[z].(P | Q) |- y : A * B
+
+z : ~[[U]]
+[[L M]]z = nu y.([[L]]y | y(x).([[M]]x | y <-> z))
+
+
+
+y(x).x().y <->z  |- y : bot || 1, z:bot
+
+y(x).y <->z  |- y : 1 || 1, z:bot
+
+
+[[L]]y |- [[Phi]],y:[[T]]*~[[U]]   ? |- [[Psi]],y:~[[T]] || [[U]],z:~[[U]]
+--------------------------------------------------------------------------
+? |- [[Phi]],[[Psi]],z:~[[U]]
+
+
+
+P |- G,x:~A
+
+? |- G,x:~A,y:B,z:~B
+----------------------------------
+y(x).? |- y:~A || B,z:~B
+
+z : ~[[T]] || ~[[U]]
+[[(M, N)]]z = z(x).([[M]]x || [[N]]z)
+
+
+x(y).x(z).x().y <-> z |- x:1||(bot || bot)
+
+
+
+nu y1 : !top * !top . (foo <-> y1 |  y1(x2).!z0(y3).y3.case(){}) |- foo : ~(!top * !top),z0:!top
+
+
+  foo : ?#+{}.#+{}, z0 : $&{}
+|-
+  with y1 : !#+{}.$&{}
+  connect
+    link foo y1
+  to
+    let (x2, y1)=receive y1 in serve z0 (y3)=case y3 of {}
+: end!
+
+
+((!top*!top)) = !~((!top)).((!top)) = !#+{}.$&{}
+
+foo : ?#+{}.#+{}, z0 : $&{} |- with y1 : !#+{}.$&{} connect link foo y1 to let (x2, y1)=receive y1 in serve z0 (y3)=case y3 of {} : end!
+
+New version of terminate:
+
+[[terminate M]](z : !top) = nu (x:1).([[M]]x|x().!z(y).y.case())
+
+Let unit:
+
+[[ let () = m in n ]]z = [[ (\().n)m ]] z
+  = nu y.(y(x).[[n]]y | y[x].([[m]]x | y <-> z))
+  = nu x.(nu y.([[n]]y | y <-> z) | [[m]]x)
+  = nu x.([[m]]x | [[n]]z)
