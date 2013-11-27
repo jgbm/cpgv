@@ -299,21 +299,36 @@ Judgements
 It is possible to avoid the dualisation of session types in the type
 translation by dualising the interpretation of judgements.
 
-\newcommand{\gvtocps}[1]{\gvtocp{#1}^\star}
-\newcommand{\gvtocpd}[1]{\gvtocp{#1}^\dagger}
+\newcommand{\gvtocps}[1]{\gvtocp{#1}}
+\newcommand{\gvtocpd}[1]{\gvtocp{#1}}
 
+Judgements
 \begin{equations}
 \gvtocps{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{\T})}}
 \end{equations}
 
-The idea is that the term translation stays exactly the same. We just
-dualise the interpretation of types in judgements. This approach fits
-somewhat with the view of $z$ as a negative continuation parameter. It
-yields a straightforward interpretation of session types, but then the
-interpretation of non-session types: linear functions, unrestricted
-functions, tensor, and unit, becomes dual to what one would normally
-expect.
+Session types
+\begin{equations}
+\gvtocps{\gvOutput{\T}{\SE}}        &=& \cpTimes{\cpDual{\gvtocps{\T}}}{\gvtocps{\SE}} \\
+\gvtocps{\gvInput{\T}{\SE}}         &=& \cpPar{\gvtocps{\T}}{\gvtocps{\SE}} \\
+\gvtocps{\gvPlus{\la_i:\SE_i}{i}}   &=& \cpPlus{\la_i:\gvtocps{\SE_i}}{i} \\
+\gvtocps{\gvChoice{\la_i:\SE_i}{i}} &=& \cpWith{\la_i:\gvtocps{\SE_i}}{i} \\
+\gvtocps{\gvEndOutput}              &=& \cpOne \\
+\gvtocps{\gvEndInput}               &=& \cpBottom \\[1ex]
 
+\gvtocps{\gvServer{\SE}}  &=& \cpOfCourse{\gvtocps{\SE}} \\
+\gvtocps{\gvService{\SE}} &=& \cpWhyNot{\gvtocps{\SE}} \\[1ex]
+\end{equations}
+
+
+The idea is that the term translation stays exactly the same. This
+approach fits somewhat with the view of $z$ as a negative continuation
+parameter. It yields a straightforward interpretation of session
+types, but then the interpretation of non-session types: linear
+functions, unrestricted functions, tensor, and unit, becomes dual to
+what one would normally expect.
+
+Non-session types
 \begin{equations}
 \gvtocps{\gvLinFun{\T}{\U}} &=& \cpTimes{\gvtocp{\T}}{\cpDual{\gvtocp{\U}}} \\
 \gvtocps{\gvUnFun{\T}{\U}} &=& \cpWhyNot{(\cpTimes{\gvtocp{\T}}{\cpDual{\gvtocp{\U}}})} \\
@@ -327,6 +342,7 @@ As an alternative to dualising the interpretation of non-session
 types, we can attempt to keep the standard interpretation of
 non-session types and instead adapt the translation on terms.
 
+Judgements
 \begin{equations}
 \gvtocpd{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocpd{M} z}{\gvtocpd{\Phi}, z:{\gvtocpd{\T}}}
 \end{equations}
@@ -348,15 +364,32 @@ be weaker.
 %% z : ~[[V]]
 %% [[let (x,y)=M in N]]z = nu w.([[M]]w | nu y.w[x].([[N]]z | w <-> y))
 
+%% Cutting an output with a private channel against an input with a
+%% mix would appear to yield a term containing a plain bicut and a mix
+
+%%    nu x.(x[y].nu z.(P | Q) | x(y).(R | S))
+%%  -->
+%%    nu y z.(P | nu x.(Q | (R | S)))
+
+
 \newcommand{\cpMix}[2]{({#1} \mid {#2})}
 \newcommand{\cpCutOutput}[5]{{#2}[{#3}].\nu{#1}.\cpMix{#4}{#5}}
 
+Non-session terms
 \begin{equations}
-\gvtocpd{\lambda x.M}z &=& \cpCutOutput{y}{z}{x}{\gvtocpd{M}y}{\cpLink{y}{z}} \\
-\gvtocpd{L~M}z &=& \cpCut{y}{\gvtocpd{L}y}{\cpInput{y}{x}{\cpMix{\gvtocpd{M}x}{\cpLink{y}{z}}}} \\
-\gvtocpd{\gvPair{M}{N}}z &=& \cpInput{z}{x}{\cpMix{\gvtocpd{M}x}{\gvtocpd{N}z}} \\
+\gvtocpd{\lambda x:T.M}z &=&
+  \cpCutOutput{y:{\cpDual{\gvtocpd{U}}}}{z}{x:{\gvtocpd{T}}}
+              {\gvtocpd{M}y}{\cpLink{y}{z}} \\
+\gvtocpd{L~M}z &=&
+  \cpCut{y:\cpTimes{\gvtocpd{T}}{\cpDual{\gvtocpd{U}}}}
+        {\gvtocpd{L}y}
+        {\cpInput{y}{x:\cpDual{\gvtocpd{U}}}{\cpMix{\gvtocpd{M}x}{\cpLink{y}{z}}}} \\
+\gvtocpd{\gvPair{M}{N}}z &=&
+  \cpInput{z}{x:\cpDual{\gvtocpd{T}}}{\cpMix{\gvtocpd{M}x}{\gvtocpd{N}z}} \\
 \gvtocpd{\gvLet{\gvPair{x}{y}}{M}{N}}z &=&
-  \cpCut{w}{\gvtocpd{M}w}{\cpCutOutput{y}{w}{x}{\gvtocpd{N}z}{\cpLink{w}{y}}} \\
+  \cpCut{w:\cpPar{\cpDual{\gvtocpd{T}}}{\cpDual{\gvtocpd{U}}}}
+    {\gvtocpd{M}w}
+    {\cpCutOutput{y:\gvtocpd{U}}{w}{x:\gvtocpd{T}}{\gvtocpd{N}z}{\cpLink{w}{y}}} \\
 \end{equations}
 
 \subsection{Compiling away non-session types}
