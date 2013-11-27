@@ -25,6 +25,11 @@ dual InTerm       = OutTerm
 dual OutTerm      = InTerm
 dual (Server s)   = Service (dual s)
 dual (Service s)  = Server (dual s)
+dual (SVar x)     = Neg x
+dual (Neg x)      = SVar x
+dual (OutputType x s) = InputType x (dual s)
+dual (InputType x s)  = OutputType x (dual s)
+
 
 linear :: Type -> Bool
 linear (LinFun _ _)       = True
@@ -35,6 +40,59 @@ linear _                  = False
 
 unlimited :: Type -> Bool
 unlimited = not . linear
+
+
+
+--------------------------------------------------------------------------------
+-- Free session variables
+fsv :: Session -> [UIdent]
+fsv (Output t s) = ftv t ++ fsv s
+fsv (Input t s) = ftv t ++ fsv s
+fsv (Sum ls) = concat [fsv t | Label _ t <- ls]
+fsv (Choice ls) = concat [fsv t | Label _ t <- ls]
+fsv OutTerm = []
+fsv InTerm = []
+fsv (Server s) = fsv s
+fsv (Service s) = fsv s
+fsv (SVar x) = [x]
+fsv (Neg x) = [x]
+fsv (OutputType x s) = filter (x /=) (fsv s)
+fsv (InputType x s) = filter (x /=) (fsv s)
+
+ftv :: Type -> [UIdent]
+ftv (LinFun t u) = ftv t ++ ftv u
+ftv (UnlFun t u) = ftv t ++ ftv u
+ftv (Tensor t u) = ftv t ++ ftv u
+ftv (Lift s) = fsv s
+ftv UnitType = []
+
+--------------------------------------------------------------------------------
+-- Instantiating session variables
+instSession :: UIdent -> Session -> Session -> Session
+instSession x s (Output t s') = Output (instType x s t) (instSession x s s')
+instSession x s (Input t s') = Input (instType x s t) (instSession x s s')
+instSession x s (Sum lts) = Sum [Label l (instSession x s s') | Label l s' <- lts]
+instSession x s (Choice lts) = Choice [Label l (instSession x s s') | Label l s' <- lts]
+instSession x s OutTerm = OutTerm
+instSession x s InTerm = InTerm
+instSession x s (Server s') = Server (instSession x s s')
+instSession x s (Service s') = Service (instSession x s s')
+instSession x s (SVar y) | x == y = s
+                         | otherwise = SVar y
+instSession x s (Dual s') = Dual (instSession x s s')
+instSession x s (Neg y) | x == y = s
+                        | otherwise = Neg y
+instSession x s (OutputType y s') | x == y = OutputType y s'
+                                  | otherwise = OutputType y (instSession x s s')
+instSession x s (InputType y s') | x == y = InputType y s'
+                                  | otherwise = InputType y (instSession x s s')
+
+instType :: UIdent -> Session -> Type -> Type
+instType x s (LinFun t u) = LinFun (instType x s t) (instType x s u)
+instType x s (UnlFun t u) = LinFun (instType x s t) (instType x s u)
+instType x s (Tensor t u) = LinFun (instType x s t) (instType x s u)
+instType x s (Lift s') = Lift (instSession x s s')
+instType x s UnitType = UnitType
 
 --------------------------------------------------------------------------------
 -- Typechecking monad and non-proper morphisms
@@ -141,6 +199,8 @@ xType (Tensor t u) = xType t `CP.Times` xType u
 xType UnitType     = CP.OfCourse (CP.Plus [])
 
 xId (LIdent s) = CP.LIdent s
+
+xUId (UIdent x) = CP.UIdent x
 
 --------------------------------------------------------------------------------
 -- With all that out of the way, type checking itself can be implemented
@@ -292,6 +352,39 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
                    Lift (Service ty) ->
                      return (Lift ty, \z -> request (xId s) "x" (link "x" z))
                    _                 -> fail("    Unexpected type of service channel " ++ printTree sty)
+          check' (SendType s m) =
+              do (mty, m') <- check m
+                 case mty of
+                   Lift (OutputType v s') ->
+                        return (Lift (instSession v s s'),
+                                \z -> nu "x" (xType mty)
+                                          (sendType "x" (xSession s) (m' =<< reference "x"))
+                                          (link "x" z))
+                   _ -> fail ("    Channel of send type operation has unexpected type " ++ printTree mty)
+          check' (ReceiveType m) =
+              do (mty, m') <- check m
+                 case mty of
+                   Lift (InputType v s) ->
+                        return (Lift s,
+                                \z -> nu "x" (xType mty)
+                                          (receiveType "x" (xUId v) (m' =<< reference "x"))
+                                          (link "x" z))
+                   _ -> fail ("    Channel of receive type operation has unexpected type " ++ printTree mty)
+
+
+-- [[send S M]](z : !V.S') = nu x.(x[ [[S]] ].[[M]]x | link x z)
+-- [[receive M]](z : ?V.S) = nu x.(x(V).[[M]]x | link x z)
+
+--           check' (Send m n) =
+--               do (mty, m') <- check m
+--                  (nty, n') <- check n
+--                  case nty of
+--                    Lift (Output v w)
+--                         | mty == v -> return (Lift w, \z -> nu "x" (xType v `CP.Times` CP.dual (xSession w))
+--                                                                    (out "x" "y" (m' =<< reference "y") (link "x" z)) (n' =<< reference "x"))
+--                         | otherwise -> fail ("    Sent value has type " ++ printTree mty ++ " but expected " ++ printTree v)
+--                    _ -> fail ("    Channel of send operation has unexpected type " ++ printTree nty)
+
 
 lookupLabel :: LIdent -> [LabeledSession] -> Check Session
 lookupLabel l [] = fail ("    Unable to find label " ++ printTree l)

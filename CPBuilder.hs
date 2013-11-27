@@ -46,3 +46,8 @@ emptyIn x m = liftM2 EmptyIn (reference x) m
 emptyCase x xs = do x' <- reference x
                     return (EmptyCase x' xs)
 
+
+sendType x a m = do x' <- reference x
+                    liftM (SendType x' a) m
+receiveType x z m = do x' <- reference x
+                       liftM (ReceiveType x' z) m

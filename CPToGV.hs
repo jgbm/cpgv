@@ -4,7 +4,7 @@ import Data.Maybe
 
 import CheckGV (dual)
 
-import qualified Check as CPCheck (dual)
+import qualified Check as CPCheck (dual, inst)
 
 import qualified Syntax.AbsCP as CP
 import qualified Syntax.AbsGV as GV
@@ -20,7 +20,10 @@ xSession (CP.One) = GV.OutTerm
 xSession (CP.Bottom) = GV.InTerm
 xSession (CP.OfCourse a) = GV.Server (xSession a)
 xSession (CP.WhyNot a) = GV.Service (xSession a)
-xSession (CP.Var (CP.UIdent a)) = GV.SVar (GV.UIdent a)
+xSession (CP.Var (CP.UIdent v)) = GV.SVar (GV.UIdent v)
+xSession (CP.Neg (CP.UIdent v)) = GV.Neg (GV.UIdent v)
+xSession (CP.ForAll (CP.UIdent v) a) = GV.InputType (GV.UIdent v) (xSession a)
+xSession (CP.Exists (CP.UIdent v) a) = GV.OutputType (GV.UIdent v) (xSession a)
 
 xType :: CP.Type -> GV.Type
 xType = GV.Lift . xSession
@@ -88,13 +91,21 @@ xTerm env (CP.ServerAccept s x p) =
   where
     (CP.OfCourse xt) = find s env
 xTerm env (CP.ClientRequest s x p) =
-  GV.With (xId x) (xSession xt)
+  GV.With (xId x) (dual (xSession xt))
           (GV.Link (GV.Request (xId s)) (GV.Var (xId x)))
           (xTerm (extend env (x, xt)) p)
   where
     (CP.WhyNot xt) = find s env
-xTerm env (CP.SendType _ _ _)      = error ("xTerm (SendType _ _ _) unimplemented")
-xTerm env (CP.ReceiveType _ _ _)   = error ("xTerm (ReceiveType _ _ _) unimplemented")
+xTerm env (CP.SendType x a p)      =
+  GV.Let (GV.BindName x') (GV.SendType (xSession a) (GV.Var x')) (xTerm (extend env (x, xt)) p)
+  where
+    x' = xId x
+    (CP.Exists v t) = find x env
+    xt = CPCheck.inst v a t
+xTerm env (CP.ReceiveType x v p)   =
+  GV.Let (GV.BindName x') (GV.ReceiveType (GV.Var x')) (xTerm (extend env (x, xt)) p)
+  where
+    x' = xId x
+    (CP.ForAll v xt) = find x env
 xTerm env (CP.EmptyOut x)          = GV.Var (xId x)
 xTerm env (CP.EmptyIn x p)         = GV.Let GV.BindUnit (GV.End (GV.Var (xId x))) (xTerm env p)
-  --GV.End (GV.Pair (xTerm (extend env (x, CP.Bottom)) p) (GV.Var (xId x)))

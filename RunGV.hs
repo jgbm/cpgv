@@ -140,6 +140,8 @@ runPure env e = runPure' env e where
   runPure' env (Request s) =
     do VChannel s' <- rp (Var s)
        srequest s'
+  runPure' env (SendType s e) = rp e
+  runPure' env (ReceiveType e) = rp e
 
 blocked = Left Nothing
 exit v = Left (Just v)
