@@ -355,20 +355,20 @@ check te = addErrorContext ("Checking \"" ++ printTree te ++ "\"") (check' te)
           check' (SendType s m) =
               do (mty, m') <- check m
                  case mty of
-                   Lift (OutputType v s') ->
+                   Lift (InputType v s') ->
                         return (Lift (instSession v s s'),
-                                \z -> nu "x" (xType mty)
-                                          (sendType "x" (xSession s) (m' =<< reference "x"))
-                                          (link "x" z))
+                                \z -> nu "x" (CP.dual (xType mty))
+                                          (sendType "x" (xSession s) (link "x" z))
+                                          (m' =<< reference "x"))
                    _ -> fail ("    Channel of send type operation has unexpected type " ++ printTree mty)
           check' (ReceiveType m) =
               do (mty, m') <- check m
                  case mty of
-                   Lift (InputType v s) ->
-                        return (Lift s,
-                                \z -> nu "x" (xType mty)
-                                          (receiveType "x" (xUId v) (m' =<< reference "x"))
-                                          (link "x" z))
+                   Lift (OutputType v s') ->
+                        return (Lift s',
+                                \z -> nu "x" (CP.dual (xType mty))
+                                          (receiveType "x" (xUId v) (link "x" z))
+                                          (m' =<< reference "x"))
                    _ -> fail ("    Channel of receive type operation has unexpected type " ++ printTree mty)
 
 

@@ -64,6 +64,8 @@
 \newcommand{\gvServer}[1]{\${#1}}
 \newcommand{\gvService}[1]{\#{#1}}
 \newcommand{\gvDual}[1]{\overline{#1}}
+\newcommand{\gvOutputType}[2]{!!{#1}.{#2}}
+\newcommand{\gvInputType}[2]{??{#1}.{#2}}
 
 \newcommand{\cpj}[2]{{#1} \vdash {#2}}
 \newcommand{\gvj}[3]{{#1} \vdash {#2} : {#3}}
@@ -97,6 +99,10 @@
 \newcommand{\gvWith}[3]{\key{with}~{#1}~\key{connect}~{#2}~\key{to}~{#3}}
 \newcommand{\gvTerminate}[1]{\key{terminate}~{#1}}
 
+\newcommand{\gvSendType}[2]{\key{sendType}~{#1}~{#2}}
+\newcommand{\gvReceiveType}[1]{\key{receiveType}~{#1}}
+
+
 \newcommand{\gvServe}[3]{\key{serve}~{#1}({#2})={#3}}
 \newcommand{\gvRequest}[1]{\key{request}~{#1}}
 
@@ -110,6 +116,9 @@
 \newcommand{\cpRequest}[3]{?{#1}[{#2}].{#3}}
 \newcommand{\cpEmptyOut}[1]{{#1}[].0}
 \newcommand{\cpEmptyIn}[2]{{#1}().{#2}}
+\newcommand{\cpSendType}[3]{{#1}[{#2}].{#3}}
+\newcommand{\cpReceiveType}[3]{{#1}({#2}).{#3}}
+
 
 \newcommand{\cpTimes}[2]{{#1} \otimes {#2}}
 \newcommand{\cpPar}[2]{{#1} \mathbin{\bindnasrepma} {#2}}
@@ -120,7 +129,8 @@
 \newcommand{\cpOfCourse}[1]{!{#1}}
 \newcommand{\cpWhyNot}[1]{?{#1}}
 \newcommand{\cpDual}[1]{{#1}^\bot}
-
+\newcommand{\cpExists}[2]{\exists {#1}.{#2}}
+\newcommand{\cpForall}[2]{\forall {#1}.{#2}}
 
 
 
@@ -219,7 +229,11 @@ Types
 \cptogv{\cpPlus{\la_i:\A_i}{i}} &=& \gvPlus{\la_i:\cptogv{\A_i}}{i} \\
 \cptogv{\cpWith{\la_i:\A_i}{i}} &=& \gvChoice{\la_i:\cptogv{\A_i}}{i} \\
 \cptogv{\cpOne} &=& \gvEndOutput \\
-\cptogv{\cpBottom} &=& \gvEndInput \\[1ex]
+\cptogv{\cpBottom} &=& \gvEndInput \\
+\cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
+\cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\
+
+\\[1ex]
 
 \cptogv{\cpOfCourse{\A}} &=& \gvServer{\cptogv{\A}} \\
 \cptogv{\cpWhyNot{\A}} &=& \gvService{\cptogv{\A}} \\
@@ -240,6 +254,11 @@ Terms
 \cptogv{\cpEmptyOut{x}} &=& x \\
 \cptogv{\cpEmptyIn{x}{\PR}} &=&
   \gvLet{\gvUnit}{\gvTerminate{x}}{\cptogv{\PR}} \\[1ex]
+
+\cptogv{\cpSendType{x}{A}{P}} &=&
+  \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
+\cptogv{\cpReceiveType{x}{X}{P}} &=&
+  \gvLet{x}{\gvReceiveType{x}}{\cptogv{P}} \\[1ex]
 
 \cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
 \cptogv{\cpServe{s}{x}{\PR}} &=&
@@ -265,6 +284,9 @@ Session types
 \gvtocp{\gvEndOutput}              &=& \cpBottom \\
 \gvtocp{\gvEndInput}               &=& \cpOne \\[1ex]
 
+\gvtocp{\gvOutputType{X}{\SE}}     &=& \cpForall{X}{\gvtocp{\SE}} \\
+\gvtocp{\gvInputType{X}{\SE}}      &=& \cpExists{X}{\gvtocp{\SE}} \\[1ex]
+
 \gvtocp{\gvServer{\SE}}  &=& \cpWhyNot{\gvtocp{\SE}} \\
 \gvtocp{\gvService{\SE}} &=& \cpOfCourse{\gvtocp{\SE}} \\[1ex]
 \end{equations}
@@ -279,6 +301,11 @@ Non-session types
 
 Terms
 \begin{equations}
+\gvtocp{\gvSendType{\SE}{(M : \cpForall{X}{S'})}}z &=&
+  \cpCut{(x:\cpExists{X}{\cpDual{\gvtocp{S'}}})}{\cpSendType{x}{\gvtocp{\SE}}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
+\gvtocp{\gvReceiveType{(M : \cpExists{X}{S'})}}z &=&
+  \cpCut{(x:\cpForall{X}{\cpDual{\gvtocp{S'}}})}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
+\\[1ex]
 \gvtocp{\gvLink{M}{N}}z &=& \cpCut{x}{\gvtocp{M}x}{\cpCut{y}{\gvtocp{N}y}{\cpEmptyIn{z}{\cpLink{x}{y}}}} \\
 \gvtocp{\gvServe{s}{x}{M}}z &=&
   \cpEmptyIn{z}
@@ -513,3 +540,16 @@ Let unit:
   = nu y.(y(x).[[n]]y | y[x].([[m]]x | y <-> z))
   = nu x.(nu y.([[n]]y | y <-> z) | [[m]]x)
   = nu x.([[m]]x | [[n]]z)
+
+Rules for sendType and receiveType
+
+G |- M : ??X.S'
+---------------------------
+G |- sendType S M : S'[S/X]
+
+G |- M : !!X.S'   X notin FV(G)
+-------------------------------
+G |- receiveType M : S'
+
+[[sendType S M]](z : S'[S/X]) = nu (x:exists X.[[S']]).(x[S].x <-> z | [[M]]x)
+[[receiveType M]](z : S')     = nu.(x:forall X.[[S']]).(x(X).x <-> z | [[M]]x)
