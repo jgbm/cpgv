@@ -71,15 +71,7 @@
 \newcommand{\gvj}[3]{{#1} \vdash {#2} : {#3}}
 
 \newcommand{\la}{l}
-\newcommand{\A}{A}
-\newcommand{\B}{B}
-\newcommand{\PR}{P}
-\newcommand{\Q}{Q}
 \newcommand{\G}{\Gamma}
-
-\newcommand{\SE}{S}
-\newcommand{\T}{T}
-\newcommand{\U}{U}
 
 \newcommand{\gvLinFun}[2]{{#1} \multimap {#2}}
 \newcommand{\gvUnFun}[2]{{#1} \to {#2}}
@@ -224,10 +216,10 @@ TODO
 
 Types
 \begin{equations}
-\cptogv{\cpTimes{\A}{\B}} &=& \gvOutput{\gvDual{\cptogv{\A}}}{\cptogv{\B}} \\
-\cptogv{\cpPar{\A}{\B}} &=& \gvInput{\cptogv{\A}}{\cptogv{\B}} \\
-\cptogv{\cpPlus{\la_i:\A_i}{i}} &=& \gvPlus{\la_i:\cptogv{\A_i}}{i} \\
-\cptogv{\cpWith{\la_i:\A_i}{i}} &=& \gvChoice{\la_i:\cptogv{\A_i}}{i} \\
+\cptogv{\cpTimes{A}{B}} &=& \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} \\
+\cptogv{\cpPar{A}{B}} &=& \gvInput{\cptogv{A}}{\cptogv{B}} \\
+\cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i} \\
+\cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
 \cptogv{\cpOne} &=& \gvEndOutput \\
 \cptogv{\cpBottom} &=& \gvEndInput \\
 \cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
@@ -235,25 +227,25 @@ Types
 
 \\[1ex]
 
-\cptogv{\cpOfCourse{\A}} &=& \gvServer{\cptogv{\A}} \\
-\cptogv{\cpWhyNot{\A}} &=& \gvService{\cptogv{\A}} \\
+\cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
+\cptogv{\cpWhyNot{A}} &=& \gvService{\cptogv{A}} \\
 \end{equations}
 
 Terms
 \begin{equations}
-\cptogv{\cpCut{x}{\PR}{\Q}} &=&
-  \gvWith{x}{\cptogv{\PR}}{\cptogv{\Q}} \\
-\cptogv{\cpOutput{x}{y}{\PR}{\Q}} &=&
-  \gvWith{y}{\cptogv{\PR}}{\gvLet{x}{\gvSend{y}{x}}{\cptogv{\Q}}} \\
-\cptogv{\cpInput{x}{y}{\PR}} &=&
-  \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{\PR}} \\
-\cptogv{\cpInject{x}{\la}{\PR}} &=&
-  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{\PR}} \\  
-\cptogv{\cpCase{x}{\row{\la_i.\PR_i}{i}}} &=&
-  \gvCase{x}{\row{\la_i(x).\cptogv{\PR_i}}{i}} \\
+\cptogv{\cpCut{x}{P}{Q}} &=&
+  \gvWith{x}{\cptogv{P}}{\cptogv{Q}} \\
+\cptogv{\cpOutput{x}{y}{P}{Q}} &=&
+  \gvWith{y}{\cptogv{P}}{\gvLet{x}{\gvSend{y}{x}}{\cptogv{Q}}} \\
+\cptogv{\cpInput{x}{y}{P}} &=&
+  \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{P}} \\
+\cptogv{\cpInject{x}{\la}{P}} &=&
+  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{P}} \\  
+\cptogv{\cpCase{x}{\row{\la_i.P_i}{i}}} &=&
+  \gvCase{x}{\row{\la_i(x).\cptogv{P_i}}{i}} \\
 \cptogv{\cpEmptyOut{x}} &=& x \\
-\cptogv{\cpEmptyIn{x}{\PR}} &=&
-  \gvLet{\gvUnit}{\gvTerminate{x}}{\cptogv{\PR}} \\[1ex]
+\cptogv{\cpEmptyIn{x}{P}} &=&
+  \gvLet{\gvUnit}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
 
 \cptogv{\cpSendType{x}{A}{P}} &=&
   \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
@@ -261,15 +253,15 @@ Terms
   \gvLet{x}{\gvReceiveType{x}}{\cptogv{P}} \\[1ex]
 
 \cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
-\cptogv{\cpServe{s}{x}{\PR}} &=&
-  \gvServe{s}{x}{\cptogv{\PR}} \\
-\cptogv{\cpRequest{s}{x}{\PR}} &=&
-  \gvWith{x}{\gvLink{(\gvRequest{s})}{x}}{\cptogv{\PR}} \\
+\cptogv{\cpServe{s}{x}{P}} &=&
+  \gvServe{s}{x}{\cptogv{P}} \\
+\cptogv{\cpRequest{s}{x}{P}} &=&
+  \gvWith{x}{\gvLink{(\gvRequest{s})}{x}}{\cptogv{P}} \\
 \end{equations}
 
 Judgements
 \begin{equations}
-\cptogv{\cpj{\PR}{\G}} = \gvj{\cptogv{\G}}{\cptogv{\PR}}{\gvEndOutput}
+\cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
 \end{equations}
 
 \section{From GV to CP}
@@ -277,32 +269,32 @@ Judgements
 
 Session types
 \begin{equations}
-\gvtocp{\gvOutput{\T}{\SE}}        &=& \cpPar{\cpDual{\gvtocp{\T}}}{\gvtocp{\SE}} \\
-\gvtocp{\gvInput{\T}{\SE}}         &=& \cpTimes{\gvtocp{\T}}{\gvtocp{\SE}} \\
-\gvtocp{\gvPlus{\la_i:\SE_i}{i}}   &=& \cpWith{\la_i:\gvtocp{\SE_i}}{i} \\
-\gvtocp{\gvChoice{\la_i:\SE_i}{i}} &=& \cpPlus{\la_i:\gvtocp{\SE_i}}{i} \\
+\gvtocp{\gvOutput{T}{S}}        &=& \cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{S}} \\
+\gvtocp{\gvInput{T}{S}}         &=& \cpTimes{\gvtocp{T}}{\gvtocp{S}} \\
+\gvtocp{\gvPlus{\la_i:S_i}{i}}   &=& \cpWith{\la_i:\gvtocp{S_i}}{i} \\
+\gvtocp{\gvChoice{\la_i:S_i}{i}} &=& \cpPlus{\la_i:\gvtocp{S_i}}{i} \\
 \gvtocp{\gvEndOutput}              &=& \cpBottom \\
 \gvtocp{\gvEndInput}               &=& \cpOne \\[1ex]
 
-\gvtocp{\gvOutputType{X}{\SE}}     &=& \cpForall{X}{\gvtocp{\SE}} \\
-\gvtocp{\gvInputType{X}{\SE}}      &=& \cpExists{X}{\gvtocp{\SE}} \\[1ex]
+\gvtocp{\gvOutputType{X}{S}}     &=& \cpForall{X}{\gvtocp{S}} \\
+\gvtocp{\gvInputType{X}{S}}      &=& \cpExists{X}{\gvtocp{S}} \\[1ex]
 
-\gvtocp{\gvServer{\SE}}  &=& \cpWhyNot{\gvtocp{\SE}} \\
-\gvtocp{\gvService{\SE}} &=& \cpOfCourse{\gvtocp{\SE}} \\[1ex]
+\gvtocp{\gvServer{S}}  &=& \cpWhyNot{\gvtocp{S}} \\
+\gvtocp{\gvService{S}} &=& \cpOfCourse{\gvtocp{S}} \\[1ex]
 \end{equations}
 
 Non-session types
 \begin{equations}
-\gvtocp{\gvLinFun{\T}{\U}} &=& \cpPar{\cpDual{\gvtocp{\T}}}{\gvtocp{\U}} \\
-\gvtocp{\gvUnFun{\T}{\U}} &=& \cpOfCourse{(\cpPar{\cpDual{\gvtocp{\T}}}{\gvtocp{\U}})} \\
-\gvtocp{\gvTimes{\T}{\U}} &=& \cpTimes{\gvtocp{\T}}{\gvtocp{\U}} \\
+\gvtocp{\gvLinFun{T}{U}} &=& \cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{U}} \\
+\gvtocp{\gvUnFun{T}{U}} &=& \cpOfCourse{(\cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{U}})} \\
+\gvtocp{\gvTimes{T}{U}} &=& \cpTimes{\gvtocp{T}}{\gvtocp{U}} \\
 \gvtocp{\gvUnitType} &=& \cpOfCourse{(\cpWith{}{})} \\
 \end{equations}
 
 Terms
 \begin{equations}
-\gvtocp{\gvSendType{\SE}{(M : \cpForall{X}{S'})}}z &=&
-  \cpCut{(x:\cpExists{X}{\cpDual{\gvtocp{S'}}})}{\cpSendType{x}{\gvtocp{\SE}}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
+\gvtocp{\gvSendType{S}{(M : \cpForall{X}{S'})}}z &=&
+  \cpCut{(x:\cpExists{X}{\cpDual{\gvtocp{S'}}})}{\cpSendType{x}{\gvtocp{S}}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
 \gvtocp{\gvReceiveType{(M : \cpExists{X}{S'})}}z &=&
   \cpCut{(x:\cpForall{X}{\cpDual{\gvtocp{S'}}})}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
 \\[1ex]
@@ -316,7 +308,7 @@ Terms
 
 Judgements
 \begin{equations}
-\gvtocp{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocp{M}z}{\cpDual{\gvtocp{\Phi}}, z:\gvtocp{\T}}
+\gvtocp{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M}z}{\cpDual{\gvtocp{\Phi}}, z:\gvtocp{T}}
 \end{equations}
 
 \section{Alternative translations from GV to CP}
@@ -331,20 +323,20 @@ translation by dualising the interpretation of judgements.
 
 Judgements
 \begin{equations}
-\gvtocps{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{\T})}}
+\gvtocps{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{T})}}
 \end{equations}
 
 Session types
 \begin{equations}
-\gvtocps{\gvOutput{\T}{\SE}}        &=& \cpTimes{\cpDual{\gvtocps{\T}}}{\gvtocps{\SE}} \\
-\gvtocps{\gvInput{\T}{\SE}}         &=& \cpPar{\gvtocps{\T}}{\gvtocps{\SE}} \\
-\gvtocps{\gvPlus{\la_i:\SE_i}{i}}   &=& \cpPlus{\la_i:\gvtocps{\SE_i}}{i} \\
-\gvtocps{\gvChoice{\la_i:\SE_i}{i}} &=& \cpWith{\la_i:\gvtocps{\SE_i}}{i} \\
+\gvtocps{\gvOutput{T}{S}}        &=& \cpTimes{\cpDual{\gvtocps{T}}}{\gvtocps{S}} \\
+\gvtocps{\gvInput{T}{S}}         &=& \cpPar{\gvtocps{T}}{\gvtocps{S}} \\
+\gvtocps{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\gvtocps{S_i}}{i} \\
+\gvtocps{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\gvtocps{S_i}}{i} \\
 \gvtocps{\gvEndOutput}              &=& \cpOne \\
 \gvtocps{\gvEndInput}               &=& \cpBottom \\[1ex]
 
-\gvtocps{\gvServer{\SE}}  &=& \cpOfCourse{\gvtocps{\SE}} \\
-\gvtocps{\gvService{\SE}} &=& \cpWhyNot{\gvtocps{\SE}} \\[1ex]
+\gvtocps{\gvServer{S}}  &=& \cpOfCourse{\gvtocps{S}} \\
+\gvtocps{\gvService{S}} &=& \cpWhyNot{\gvtocps{S}} \\[1ex]
 \end{equations}
 
 
@@ -357,9 +349,9 @@ what one would normally expect.
 
 Non-session types
 \begin{equations}
-\gvtocps{\gvLinFun{\T}{\U}} &=& \cpTimes{\gvtocp{\T}}{\cpDual{\gvtocp{\U}}} \\
-\gvtocps{\gvUnFun{\T}{\U}} &=& \cpWhyNot{(\cpTimes{\gvtocp{\T}}{\cpDual{\gvtocp{\U}}})} \\
-\gvtocps{\gvTimes{\T}{\U}} &=& \cpPar{\cpDual{\gvtocp{\T}}}{\cpDual{\gvtocp{\U}}} \\
+\gvtocps{\gvLinFun{T}{U}} &=& \cpTimes{\gvtocp{T}}{\cpDual{\gvtocp{U}}} \\
+\gvtocps{\gvUnFun{T}{U}} &=& \cpWhyNot{(\cpTimes{\gvtocp{T}}{\cpDual{\gvtocp{U}}})} \\
+\gvtocps{\gvTimes{T}{U}} &=& \cpPar{\cpDual{\gvtocp{T}}}{\cpDual{\gvtocp{U}}} \\
 \gvtocps{\gvUnitType} &=& \cpWhyNot{(\cpPlus{}{})} \\
 \end{equations}
 
@@ -371,7 +363,7 @@ non-session types and instead adapt the translation on terms.
 
 Judgements
 \begin{equations}
-\gvtocpd{\gvj{\Phi}{M}{\T}} &=& \cpj{\gvtocpd{M} z}{\gvtocpd{\Phi}, z:{\gvtocpd{\T}}}
+\gvtocpd{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocpd{M} z}{\gvtocpd{\Phi}, z:{\gvtocpd{T}}}
 \end{equations}
 
 This looks like it might work if we add the Mix rule to CP along with
