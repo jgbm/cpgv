@@ -230,6 +230,7 @@ Types
 \cptogv{\cpOne} &=& \gvEndOutput \\
 \cptogv{\cpBottom} &=& \gvEndInput \\[1ex]
 
+\cptogv{X} &=& X \\
 \cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
 \cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\[1ex]
 
@@ -309,6 +310,7 @@ Session types
 \gvtocp{\gvEndOutput}              &=& \cpBottom \\
 \gvtocp{\gvEndInput}               &=& \cpOne \\[1ex]
 
+\gvtocp{X}                       &=& X \\
 \gvtocp{\gvOutputType{X}{S}}     &=& \cpForall{X}{\gvtocp{S}} \\
 \gvtocp{\gvInputType{X}{S}}      &=& \cpExists{X}{\gvtocp{S}} \\[1ex]
 
@@ -371,10 +373,10 @@ Session types
 
 
 The idea is that the term translation stays exactly the same. This
-approach fits somewhat with the view of $z$ as a negative continuation
+approach fits with the view of $z$ as a negative continuation
 parameter. It yields a straightforward interpretation of session
-types, but then the interpretation of non-session types: linear
-functions, unrestricted functions, tensor, and unit, becomes dual to
+types, but then the interpretation of non-session types (linear
+functions, unrestricted functions, tensor, and unit), becomes dual to
 what one would normally expect.
 
 Non-session types
@@ -405,6 +407,31 @@ be weaker.
 {\cpj{P}{\G, y:A, z:C} \\ \cpj{Q}{\D, x:B, z:\cpDual{C}}}
 {\cpj{\cpCutOutput{z}{x}{y}{P}{Q}}{\G, \D, x : \cpTimes{A}{B}}}
 \end{mathpar}
+
+%%   [[
+%%   Phi |- L : T -o U  un(Phi)
+%%   --------------------------
+%%   Phi |- L : T -> U
+%%   ]] z
+%% =
+%%   [[L]]y |- [[Phi]], y:~[[T -o U]]
+%%   --------------------------------------------
+%%   ?z[y].[[L]]y |- [[Phi]], z:?(~[[T -o U]])
+
+%%   [[
+%%   Phi |- L : T -> U
+%%   -----------------
+%%   Phi |- L : T -o U
+%%   ]] z
+%% =
+%%                                            x <-> z |- x:[[T -o U]], z:~([[T -o U]])
+%%                                         ---------------------------------------------------
+%%   [[L]]y |- [[Phi]], y:?(~[[T -o U]])   !y(x).x <-> z |- y:!([[T -o U]]), z:~([[T -o U]])
+%%   ------------------------------------------------------------------------------------------
+%%   nu y.([[L]]y | !y(x).x <-> z) |- [[Phi]], z:~[[T -o U]]
+%%
+%% Oops! z can't appear inside the server output!
+
 
 %% z : [[T]] * ~[[U]]
 %% [[\x.M]]z = nu y.z[x].([[M]]y | y <-> z)
@@ -444,12 +471,60 @@ Non-session terms
     {\cpCutOutput{y:\gvtocpd{U}}{w}{x:\gvtocpd{T}}{\gvtocpd{N}z}{\cpLink{w}{y}}} \\
 \end{equations}
 
+Where this approach seems to completely break down is in the
+translation of the elimination rule for unrestricted functions. We
+might reasonably hope to simulate linear lambdas using output rather
+than input, but it seems unreasonable to expect to simulate
+unrestricted lambda application using a linear server rather than an
+unrestricted client.
+
 \subsection{Compiling away non-session types}
 
 Another option is to compile away non-session types in GV as a
 pre-processing step, where the type translation is given by
 $\cptogv{\gvtocp{-}}$ and the term translation by
 $\cptogv{\gvtocp{-}z}$.
+
+%% T -o U --> ~[[T]] || [[U]] --> ?~T*.U*
+%% T -> U --> !(~[[T]] || [[U]]) --> $(?~T*.U*)
+%% T * U --> [[T]] * [[U]] --> !~T*.U*
+%% Unit --> !&{} --> $&{}
+
+%% Hmmm... Looks like things are the wrong way round in the GV to CP
+%% translation: input types should be negated and output types
+%% should't.
+
+We could simply compose the translations as described, but then it
+would seem that we would have to perform a global CPS transformation
+on all terms including the session typing constructs. This would be
+rather disappointing, as then we would appear to have to effectively
+perform a CPS transformation twice on such terms in order to generate
+a CP term. Perhaps we can do better, though, by performing a kind of
+local CPS transformation.
+
+% channel passing translation
+\newcommand{\cps}[1]{({#1})^\star}
+
+\begin{equations}
+\cps{\gvLinFun{T}{U}} &=& \gvInput{\gvDual{\cps{T}}}{\cps{U}} \\
+\cps{\gvUnFun{T}{U}} &=& \gvServer{(\gvInput{\gvDual{\cps{T}}}{\cps{U}})} \\
+\cps{\gvTimes{T}{U}} &=& \gvOutput{\gvDual{\cps{T}}}{\cps{U}} \\
+\cps{\gvUnitType} &=& \gvServer{(\gvChoice{}{})} \\
+\end{equations}
+
+\begin{equations}
+\cps{\gvj{\Phi}{M}{T}} &=& \gvj{\cps{\Phi}}{\cps{M}}{\cps{T}} \\
+\end{equations}
+
+
+\begin{equations}
+\cps{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\cps{M}}{z}}}{z} \\
+\cps{\gvApp{L}{M}} &=&
+    \gvWith{y}
+       {\gvLink{\cps{L}}{y}}
+       {\gvSend{\cps{M}}{y}} \\
+\end{equations}
+
 
 \newpage
 \section{Conclusion}
@@ -481,14 +556,88 @@ Composing the translations
 (([[T * U]])) = !(([[T]])).(([[U]]))
 
 
+
+
 \x.M --> ((z(x).[[M]]z))  --> let (x,z)=receive z in (([[M]]z))
 [[L M]]z --> nu y.([[L]]y | y[x].([[M]]x | y <-> z)) -->
        with y connect
          (([[L]]y))
        to
-         with x connect (([[M]]x)) to let y=send x y in link y z
+         with x connect
+           (([[M]]x))
+         to
+           let y=send x y in link y z
 (M,N) --> z[y].([[M]]y | [[N]]z) --> with y connect (([[M]]y)) to let z = send y z in (([[N]]z))
+let (x, y) = M in N
+   --> nu y.([[M]]y | y(x).[[N]]z)
+   --> with y connect
+         (([[M]]y))
+       to
+         let (x, y) = receive y in (([[N]]z))
 
+Phi |- L : T -o U  un(Phi)
+--------------------------
+Phi |- L : T -> U
+  --> !z(y).[[L]]y
+  --> serve z(y) = (([[L]]y))
+
+Phi |- L : T -o U  un(Phi)
+--------------------------
+Phi |- L : T -> U
+  --> nu y.([[L]]y | ?y[x].x <-> z)
+  --> with y connect
+        (([[L]]z))
+      to
+        with x connect link (request y) x to link x z
+  ==
+     with y connect
+       (([[L]]z))
+     to
+       link (request y) z
+
+A problem is that we appear to have to CPS transform everything
+globally - including the session typing constructs. For instance:
+
+send M N --> nu x.(x[y].([[M]]y | x <-> z) | [[N]]x)
+         --> with x connect
+               with y connect
+                 (([[M]]y))
+               to
+                 let x = send y x in link x z
+             to
+               (([[N]]))x
+
+send (\v.v) w -->
+    with x connect
+      with y connect
+        let (v,y) = receive y in link v y
+      to
+        let x = send y x in link x z
+    to
+      link w x
+  ==
+    with y connect
+      let (v,y) = receive y in link v y
+    to
+      let w = send y w in link w z
+
+If we do this as a pre-processing step, then we effectively end up
+doing a CPS transformation twice! Can we do some kind of local CPS
+transformation:
+
+send (\v.v) w -->
+    with y connect
+      let (v,y) = receive y in link v y
+    to
+      send y w
+  ==
+    send
+      (with y connect
+        let (v,y) = receive y in link v y
+       to
+         y)
+    w
+  
 
 Attempting to undualise the GV to CP translation on types
 
