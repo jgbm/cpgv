@@ -1,86 +1,68 @@
-import Check
 import Control.Monad.Error
 import Data.Char (isSpace)
-import Expand
-import Norm
-import Syntax.ErrM
-import Syntax.AbsCP
-import Syntax.LexCP
-import Syntax.ParCP
-import Syntax.PrintCP
+import Data.List (partition)
+import CP.Check
+import CP.Expand
+import CP.Norm
+import CP.Syntax
+import CP.Printer
+import CP.Parser
+import System.Console.Haskeline
+import System.Environment (getArgs)
 
-import qualified CheckGV as GV (checkAgainst, runCheck)
-import qualified CPToGV as GV
-import qualified Syntax.AbsGV as GV
-import qualified Syntax.PrintGV as GV
 
-import System.Console.Readline
+traceBehavior i b =
+    case b of
+      [] -> si ++ "{}"
+      (t:ts) -> unlines ((si ++ st t) : [sp ++ st t | t <- ts])
+    where si = '(' : show i ++ ") "
+          sp = replicate (length si) ' '
+          st (v, t) =  v ++ ": " ++ show (pretty t)
 
-parse p s = case p (myLexer s) of
-              Bad err -> error err
-              Ok p    -> p
+into (t, Left err) = Left (unlines ([traceBehavior i b | (i, b) <- zip [1..] t] ++ [err]))
+into (t, Right v)  = Right t
 
-proc = parse pProc
-typ  = parse pType
-ass  = parse pAssertion
-
-chk s = case runCheck (check p) b of
-          Left err -> putStrLn err
-          _        -> putStrLn "ok"
-    where Assert p b = ass s
-
-n s   = normalize p b
-    where Assert p b = ass s
-
-interp :: Defns -> String -> IO Defns
-interp ds s =
-    case pTop (myLexer s) of
-      Bad err ->
-          do putStrLn err
+interp ds (Left d) = return (addDefn ds d)
+interp ds (Right (Assert p b isCheck)) =
+    case do p' <- expandP ds p
+            b' <- expandB ds b
+            t <- into (runCheck (check p') b')
+            return (t, b', normalize p' b') of
+      Left err ->
+          do if isCheck then putStrLn ("Check failed: " ++ show (pretty (Assert p b isCheck))) else return ()
+             putStrLn err
              return ds
-      Ok (TDef d) ->
-          return (addDefn ds d)
-      Ok (TAss (Assert p b)) ->
-          case do p' <- expandP ds p
-                  b' <- expandB ds b
-                  runCheck (check p') b'
-                  return (b', normalize p' b') of
-            Left err ->
-                do putStrLn err
-                   return ds
-            Right (b', (executed, simplified)) ->
-                let gvContext = [GV.Typing (GV.LIdent v) (GV.xType t) | Typing (LIdent v) t <- b']
-                    gvExpr    = GV.xTerm [(v, t) | Typing v t <- b'] p
-                    gvResult  = ["GV translation is: ", GV.printTree (GV.Assert gvContext gvExpr (GV.Lift GV.OutTerm))] ++
-                                (case GV.runCheck (GV.checkAgainst gvExpr (GV.Lift GV.OutTerm)) gvContext of
-                                   Left err -> ["which is ill-typed:", err]
-                                   Right _  -> [])
-                in do putStrLn (unlines (gvResult ++
-                                         ["Execution results in:",
-                                          printTree executed,
-                                          "which can be further simplified to:",
-                                          printTree simplified]))
-                      return ds
+      Right (t, b', (executed, simplified))
+          | isCheck -> return ds
+          | otherwise ->
+              do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]
+                 putStrLn (unlines ["Execution results in:",
+                                    displayS (renderPretty 0.8 120 (pretty executed)) "",
+                                    "which can be further simplified to:",
+                                    displayS (renderPretty 0.8 120 (pretty simplified)) ""])
+                 return ds
 
-repl ds = do s <- readline "> "
+repl ds = do s <- getInputLine "> "
              case trim `fmap` s of
                Nothing   -> return ()
                Just ":q" -> return ()
                Just ""   -> repl ds
-               Just s'   -> addHistory s' >> interp ds s' >>= repl
+               Just ('-' : '-' : _) -> repl ds
+               Just s'   -> case parse tops s' of
+                              Left err -> do outputStrLn err
+                                             repl ds
+                              Right ts -> liftIO (foldM interp ds ts) >>= repl
     where trim = f . f
               where f = reverse . dropWhile isSpace
 
-main = repl emptyDefns
+parseFile ds fn =
+    do s <- readFile fn
+       case parse tops s of
+         Left err -> do putStrLn err
+                        return ds
+         Right ts -> foldM interp ds ts
 
--- For testing purposes: the first pair of Church numerals
-
-pingZeroOne =
-    add "type Church = forall X.?(X * ~X) || (~X || X)" $
-    add "def Zero(x) = x(X).x(s).x(z).z<->x" $
-    add "def One(x) = x(X).x(s).x(z).?s[f].f[a].(a<->z | f<->x)" $
-    add "def Ping(x,y,w) = x[1].x[s].(!s(f).f(a).a().?y[u].u().f[].0 | x[z].(z[].0 | x().w[].0))" $
-    emptyDefns
-    where add s ds = let TDef d = parse pTop s
-                     in  addDefn ds d
-
+main = do args <- getArgs
+          let (interactive, files) = partition ("-i" ==) args
+          ds <- foldM parseFile emptyDefns files
+          if not (null interactive) || null files then runInputT defaultSettings (repl ds) else return ()

@@ -1,7 +1,7 @@
-module RunGV where
+module GV.Run where
 
-import Syntax.AbsGV
-import Syntax.PrintGV
+import GV.Syntax
+import GV.Printer
 
 import Control.Monad
 import Control.Monad.Error
@@ -19,8 +19,8 @@ data Value =
 type Port = Int
 type Chan = (Port, Port)
 
-type Var = LIdent
-type Label = LIdent
+type Var = String
+type Label = String
 
 type Buffer = (Port, [Value])
 type Env k v = [(k, v)]
@@ -132,7 +132,7 @@ runPure env e = runPure' env e where
        sselect l c
   runPure' env (Case e bs) =
     do (VChannel c) <- rp e
-       let bs' = map (\(Branch l x e) -> (l, \v -> runPure (extend env (x, v)) e)) bs
+       let bs' = map (\(l, x, e) -> (l, \v -> runPure (extend env (x, v)) e)) bs
        scase c bs'
   runPure' env (Serve s x e) =
     do VChannel s' <- rp (Var s)
@@ -162,7 +162,7 @@ runCommand (SLink c1 c2 k) (penv, bufs, ts, next) =
 runCommand (SSend v c@(p, _) k) conf@(penv, bufs, ts, next) =
   return (penv, sendValue v penv bufs p, ts ++ [k (VChannel c)], next)
 runCommand (SReceive c@(_, p) k) (penv, bufs, ts, next) =
-  do (v, bufs') <- receiveValue penv bufs p 
+  do (v, bufs') <- receiveValue penv bufs p
      return (penv, bufs', ts ++ [k (VPair v (VChannel c))], next)
 runCommand (SSelect l c@(p, _) k) (penv, bufs, ts, next) =
   return (penv, sendLabel l penv bufs p, ts ++ [k (VChannel c)], next)
@@ -202,7 +202,7 @@ sendValue v penv bufs p =
       sendValue v penv bufs q
 
 sendLabel :: Label -> PEnv -> [Buffer] -> Port -> [Buffer]
-sendLabel l = sendValue (VLabel l) 
+sendLabel l = sendValue (VLabel l)
 
 receiveValue :: PEnv ->  [Buffer] -> Port -> Either (Maybe Value) (Value, [Buffer])
 receiveValue penv bufs p =
@@ -235,7 +235,7 @@ receiveLabel c bs penv bufs p =
 
 -- run the current configuration until either
 --   * deadlock occurs (guaranteed never to happen by the GV type system)
---   * the top-level exits with a final value 
+--   * the top-level exits with a final value
 runConfig :: Configuration -> Configuration
 runConfig conf = runConfig' 0 conf where
   -- keep going until all threads are blocked
@@ -261,7 +261,7 @@ runProgram e =
 data ThreadHead =
    THReturn Value
  | THExit Value
- | THWith 
+ | THWith
  | THLink Chan Chan
  | THSend Value Chan
  | THReceive Chan
@@ -284,5 +284,3 @@ threadHead (SCase c _ _)    = THCase c
 threadHead (SServe c _ _)   = THServe c
 threadHead (SRequest c _)   = THRequest c
 threadHead (SServeMore c _) = THServeMore c
-
-

@@ -1,64 +1,60 @@
-import CheckGV
-import CPBuilder
+import Control.Monad.Trans
 import Data.Char (isSpace)
 import Data.List (partition)
-import ScopeGV
-import Syntax.AbsGV
-import Syntax.ErrM
-import Syntax.LexGV
-import Syntax.ParGV
-import Syntax.PrintGV
+import GV.Check
+import GV.CPBuilder
+import GV.Parser
+import GV.Printer
+import GV.Run
+import GV.Scope
+import GV.Syntax
 
-import RunGV
-import qualified Syntax.AbsCP as CP
-import qualified Syntax.PrintCP as CP
-import qualified Check as CP
-import qualified Norm as CP
+import qualified CP.Syntax as CP
+import qualified CP.Printer as CP
+import qualified CP.Check as CP
+import qualified CP.Norm as CP
 
-import System.Console.Readline
+import System.Console.Haskeline
 import System.Environment (getArgs)
 
 interp (Assert gamma m t) =
     case runCheck (checkAgainst (renameTerm m) t) gamma of
       Left err -> putStrLn err
       Right (p, _) -> let p' = build p
-                          cpBehavior = CP.Typing (CP.LIdent "z'0") (xType t) :
-                                       [CP.Typing (CP.LIdent v) (CP.dual (xType t)) | Typing (LIdent v) t <- gamma]
+                          showCP c = (displayS (renderPretty 0.8 120 (pretty c))) ""
+                          cpBehavior = ("z'0", xType t) :
+                                       [(v, CP.dual (xType t)) | (v, t) <- gamma]
                           cpResults = case CP.runCheck (CP.check p') cpBehavior of
-                                        Left err -> unlines ["CP translation:", CP.printTree (CP.Assert p' cpBehavior), "But:", err]
-                                        Right _  -> let (normalized, simplified) = CP.normalize p' cpBehavior
-                                                    in unlines ["CP translation:", CP.printTree (CP.Assert p' cpBehavior),
-                                                                "CP normalization:", CP.printTree normalized,
-                                                                "CP simplification:", CP.printTree simplified]
+                                        (_, Left err) -> unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False), "But:", err]
+                                        (_, Right _)  -> let (normalized, simplified) = CP.normalize p' cpBehavior
+                                                         in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False),
+                                                                     "CP normalization:", showCP normalized,
+                                                                     "CP simplification:", showCP  simplified]
                           gvResults | null gamma = unlines ["GV execution:", show (runProgram m)]
                                     | otherwise  = "No GV execution (free variables).\n"
                       in putStrLn (gvResults ++ cpResults)
     where build b = fst (runBuilder b [] 0)
 
-repl = do s <- readline "> "
+repl = do s <- getInputLine "> "
           case trim `fmap` s of
             Nothing   -> return ()
             Just ":q" -> return ()
             Just ""   -> repl
-            Just s'   -> do addHistory s'
-                            case pProg (myLexer s') of
-                              Bad err -> putStrLn err
-                              Ok (Prog as) -> mapM_ interp as
-                            repl
+            Just s'   -> case parse prog s' of
+                           Left err -> outputStrLn err >> repl
+                           Right as -> liftIO (mapM_ interp as) >> repl
     where trim = f . f
               where f = reverse . dropWhile isSpace
 
 
 interpFile fn =
     do s <- readFile fn
-       case pProg (myLexer s) of
-         Bad err -> do putStrLn ("When parsing " ++ fn)
-                       putStrLn err
-         Ok (Prog as) -> mapM_ interp as
+       case parse prog s of
+         Left err -> do putStrLn ("When parsing " ++ fn)
+                        putStrLn err
+         Right as -> mapM_ interp as
 
 main = do args <- getArgs
           let (interactive, files) = partition ("-i" ==) args
           mapM_ interpFile files
-          if not (null interactive) || null files then repl else return ()
-
-
+          if not (null interactive) || null files then runInputT defaultSettings repl else return ()

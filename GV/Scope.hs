@@ -1,8 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module ScopeGV (renameTerm) where
+{-# LANGUAGE GeneralizedNewtypeDeriving, TupleSections #-}
+module GV.Scope (renameTerm) where
 
 import Control.Monad
-import Syntax.AbsGV
+import GV.Syntax
 
 type Environment = ([(String, String)], Int)
 newtype ScopeM t = Scope { runScope :: Environment -> t }
@@ -12,12 +12,12 @@ instance Monad ScopeM
     where return v = Scope (const v)
           Scope f >>= g = Scope (\e -> runScope (g (f e)) e)
 
-reference (LIdent x) = Scope (\(e,z) -> case lookup x e of
-                                          Nothing -> (LIdent x)
-                                          Just x' -> (LIdent x'))
+reference x = Scope (\(e,z) -> case lookup x e of
+                                 Nothing -> x
+                                 Just x' -> x')
 
-binder (LIdent x) v = Scope (\(e,z) -> let x' = (x ++ '-' : show z)
-                                       in  runScope (v (LIdent x')) ((x, x') : e, z + 1))
+binder x v = Scope (\(e,z) -> let x' = (x ++ '-' : show z)
+                              in  runScope (v x') ((x, x') : e, z + 1))
 
 class HasScopedVariables t
     where rename :: t -> ScopeM t
@@ -40,7 +40,7 @@ instance HasScopedVariables Term
           rename (Receive m) = liftM Receive (rename m)
           rename (Select l m) = liftM (Select l) (rename m)
           rename (Case m bs) = liftM2 Case (rename m) (mapM renameBranch bs)
-              where renameBranch (Branch l x m) = binder x (\x' -> liftM (Branch l x') (rename m))
+              where renameBranch (l, x, m) = binder x (\x' -> liftM (l, x',) (rename m))
           rename (With x t m n) = binder x (\x' -> liftM2 (With x' t) (rename m) (rename n))
           rename (End m) = liftM End (rename m)
           rename (Serve x y m) = do x' <- reference x
