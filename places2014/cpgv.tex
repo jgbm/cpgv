@@ -22,6 +22,7 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{stmaryrd}
+\usepackage{mathpartir}
 
 % In order to save space or manage large tables or figures in a
 % landcape-like text, you can use the rotating and pdflscape
@@ -72,6 +73,7 @@
 
 \newcommand{\la}{l}
 \newcommand{\G}{\Gamma}
+\newcommand{\D}{\Delta}
 
 \newcommand{\gvLinFun}[2]{{#1} \multimap {#2}}
 \newcommand{\gvUnFun}[2]{{#1} \to {#2}}
@@ -124,9 +126,17 @@
 \newcommand{\cpExists}[2]{\exists {#1}.{#2}}
 \newcommand{\cpForall}[2]{\forall {#1}.{#2}}
 
+\newcommand{\cpZero}{0}    % 0   == +{}
+\newcommand{\cpTop}{\top}  % top == &{}
 
 
+\newcommand{\FV}[1]{\mathit{FV}(#1)}
 
+\newcommand{\gvtocps}[1]{\gvtocp{#1}}
+\newcommand{\gvtocpd}[1]{\gvtocp{#1}}
+
+\newcommand{\cpMix}[2]{({#1} \mid {#2})}
+\newcommand{\cpCutOutput}[5]{{#2}[{#3}].\nu{#1}.\cpMix{#4}{#5}}
 
 %\makeindex
 
@@ -150,8 +160,6 @@
   Sam Lindley
   \and
   J. Garrett Morris
-  \and
-  ...
 }
 %% \author{
 %% Serguei A. Mokhov\inst{1}\thanks{Designed and implemented the class style}
@@ -185,8 +193,7 @@
 % EasyChair, this command is mandatory: a document without \authorrunning
 % will be rejected by EasyChair
 
-%% \authorrunning{Mokhov, Sutcliffe, Voronkov and Gough}
-\authorrunning{Lindley, Morris and ...}
+\authorrunning{Lindley and Morris}
 
 
 \clearpage
@@ -221,11 +228,10 @@ Types
 \cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i} \\
 \cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
 \cptogv{\cpOne} &=& \gvEndOutput \\
-\cptogv{\cpBottom} &=& \gvEndInput \\
-\cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
-\cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\
+\cptogv{\cpBottom} &=& \gvEndInput \\[1ex]
 
-\\[1ex]
+\cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
+\cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\[1ex]
 
 \cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
 \cptogv{\cpWhyNot{A}} &=& \gvService{\cptogv{A}} \\
@@ -263,6 +269,33 @@ Judgements
 \begin{equations}
 \cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
 \end{equations}
+
+\subsection{GV extensions}
+
+\begin{mathpar}
+\inferrule
+{\gvj{\Phi}{M}{\gvInputType{X}{S}}}
+{\gvj{\Phi}{\gvSendType{S}{M}}{S'[S/X]}}
+
+\inferrule
+{\gvj{\Phi}{M}{\gvOutputType{X}{S}} \\ X \notin \FV{\Phi}}
+{\gvj{\Phi}{\gvReceiveType M}{S'}}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule
+{\gvj{\Phi}{M}{S} \\ \gvj{\Phi}{N}{\gvDual{S}}}
+{\gvj{\Phi}{\gvLink{M}{N}}{\gvEndOutput}}
+
+\inferrule
+{\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput}}
+{\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
+
+\inferrule
+{ }
+{\gvj{\Phi, s : \gvService{S}}{\gvRequest{s}}{S}}
+\end{mathpar}
+
 
 \section{From GV to CP}
 ~
@@ -318,9 +351,6 @@ Judgements
 It is possible to avoid the dualisation of session types in the type
 translation by dualising the interpretation of judgements.
 
-\newcommand{\gvtocps}[1]{\gvtocp{#1}}
-\newcommand{\gvtocpd}[1]{\gvtocp{#1}}
-
 Judgements
 \begin{equations}
 \gvtocps{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{T})}}
@@ -370,6 +400,12 @@ This looks like it might work if we add the Mix rule to CP along with
 another rule which can be derived from BiCut, but which appears to
 be weaker.
 
+\begin{mathpar}
+\inferrule
+{\cpj{P}{\G, y:A, z:C} \\ \cpj{Q}{\D, x:B, z:\cpDual{C}}}
+{\cpj{\cpCutOutput{z}{x}{y}{P}{Q}}{\G, \D, x : \cpTimes{A}{B}}}
+\end{mathpar}
+
 %% z : [[T]] * ~[[U]]
 %% [[\x.M]]z = nu y.z[x].([[M]]y | y <-> z)
 %% [[\x.M]]z = nu y x.([[M]]y | z[w].(w <-> x | y <-> z))
@@ -390,9 +426,6 @@ be weaker.
 %%  -->
 %%    nu y z.(P | nu x.(Q | (R | S)))
 
-
-\newcommand{\cpMix}[2]{({#1} \mid {#2})}
-\newcommand{\cpCutOutput}[5]{{#2}[{#3}].\nu{#1}.\cpMix{#4}{#5}}
 
 Non-session terms
 \begin{equations}
