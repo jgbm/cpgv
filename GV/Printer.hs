@@ -56,7 +56,7 @@ pterm (Receive t) = prec 1 ("receive" <+> pretty t)
 pterm (Select l t) = prec 1 ("select" <+> text l <+> pretty t)
 pterm (Case x bs) = prec 1 (group ("case" <+> pretty x <$> braces (align (cat (punctuate (semi <> space ) [text l <> colon <+> text y <> dot <>  pretty p | (l, y, p) <- bs])))))
 pterm (EmptyCase x ys t) = prec 1 ("case" <+> pretty x <> parens (cat (punctuate comma (map text ys))) <> "{} :" <+> pretty t)
-pterm (With x a t u) = prec 1 (group ("with" <+> text x <> comma <+> pretty a <+> "connect" <$>
+pterm (With x a t u) = prec 1 (group ("with" <+> text x <> colon <+> pretty a <+> "connect" <$>
                                       indent 2 (pretty t) <$>
                                       "to" <$>
                                       indent 2 (pretty u)))
