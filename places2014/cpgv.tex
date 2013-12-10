@@ -252,7 +252,7 @@ Terms
   \gvCase{x}{\row{\la_i(x).\cptogv{P_i}}{i}} \\
 \cptogv{\cpEmptyOut{x}} &=& x \\
 \cptogv{\cpEmptyIn{x}{P}} &=&
-  \gvLet{\gvUnit}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
+  \gvLet{z}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
 
 \cptogv{\cpSendType{x}{A}{P}} &=&
   \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
@@ -499,32 +499,97 @@ would seem that we would have to perform a global CPS transformation
 on all terms including the session typing constructs. This would be
 rather disappointing, as then we would appear to have to effectively
 perform a CPS transformation twice on such terms in order to generate
-a CP term. Perhaps we can do better, though, by performing a kind of
-local CPS transformation.
+a CP term.
 
 % channel passing translation
-\newcommand{\cps}[1]{({#1})^\star}
+\newcommand{\gvtogv}[1]{({#1})^\star}
+
+We can do better, though, by performing a local transformation. The
+key observation is that we can locally abstract over the continuation
+channel $z$ in a term $M$ using $\gvWith{z}{M}{z}$.
+
+This is where the dualisation of types arises: the type of the whole
+expression must be dual to the type of $z$ in $M$. For instance, we
+implement a lambda of type $\gvLinFun{T}{U}$ with a channel $z$ of
+type $\gvInput{\gvDual{\gvtogv{T}}}{\gvtogv{U}}$, but the interface to
+the lambda is the other end of the channel $z$ which has type
+$\gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}}$ (and application becomes
+simply sending the argument along this channel).
 
 \begin{equations}
-\cps{\gvLinFun{T}{U}} &=& \gvInput{\gvDual{\cps{T}}}{\cps{U}} \\
-\cps{\gvUnFun{T}{U}} &=& \gvServer{(\gvInput{\gvDual{\cps{T}}}{\cps{U}})} \\
-\cps{\gvTimes{T}{U}} &=& \gvOutput{\gvDual{\cps{T}}}{\cps{U}} \\
-\cps{\gvUnitType} &=& \gvServer{(\gvChoice{}{})} \\
-\end{equations}
+\gvtogv{\gvLinFun{T}{U}} &=& \gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}} \\
+\gvtogv{\gvUnFun{T}{U}} &=& \gvService{(\gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}})} \\
+\gvtogv{\gvTimes{T}{U}} &=& \gvInput{\gvtogv{T}}{\gvDual{\gvtogv{U}}} \\
+\gvtogv{\gvUnitType} &=& \gvService{(\gvPlus{}{})} \\
+\end{equations}%
 
 \begin{equations}
-\cps{\gvj{\Phi}{M}{T}} &=& \gvj{\cps{\Phi}}{\cps{M}}{\cps{T}} \\
-\end{equations}
-
+\gvtogv{\gvj{\Phi}{M}{T}} &=& \gvj{\gvtogv{\Phi}}{\gvtogv{M}}{\gvtogv{T}} \\
+\end{equations}%
 
 \begin{equations}
-\cps{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\cps{M}}{z}}}{z} \\
-\cps{\gvApp{L}{M}} &=&
-    \gvWith{y}
-       {\gvLink{\cps{L}}{y}}
-       {\gvSend{\cps{M}}{y}} \\
+\gvtogv{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\gvtogv{M}}{z}}}{z} \\
+\gvtogv{\gvApp{L}{M}} &=& \gvSend{\gvtogv{M}}{\gvtogv{L}} \\
+\gvtogv{\gvTimes{M}{N}} &=&
+  \gvWith{z}
+    {\gvLink{(\gvSend{\gvtogv{M}}{z})}{\gvtogv{N}}}
+    {z} \\
+\gvtogv{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
+    \gvLet{\gvPair{x}{y}}{\gvReceive{\gvtogv{M}}}{\gvtogv{N}} \\
+\gvtogv{\gvReceive{M}} &=& M \\
+\gvtogv{\gvUnit} &=&
+    \gvWith{z}
+    {\gvServe{z}{x}{\gvCase{x}{\row{}{}}}}
+    {z} \\
+%% Unnecessary as we don't have a linear unit!
+%%
+%% \gvtogv{\gvLet{\gvUnit}{M}{N}} &=&
+%%   \gvLet{z}{\gvtogv{M}}{\gvtogv{N}} \\
+\gvtogv{L : \gvUnFun{T}{U}} &=&
+  \gvWith{z}{\gvServe{z}{y}{\gvLink{\gvtogv{L}}{y}}}{z} \\
+\gvtogv{L : \gvLinFun{T}{U}} &=& \gvRequest{\gvtogv{L}} \\
 \end{equations}
 
+A problem we run into is that $\gvReceive{M}$ has tensor type, and yet
+our translation is supposed to compile away non-session types,
+including tensors. Similarly, $\gvTerminate{M}$ has unit type. The
+problem illustrates an irregularity in GV. All of the typing rules for
+the other session typing constructs mention only session types.
+
+Dealing with $\key{terminate}$ is easy. We just amend our target
+language such that $\gvTerminate{M}$ has type
+$\gvService{(\gvPlus{}{})}$, the interpretation of the unit type.
+%
+Dealing with $\key{receive}$ is a little harder. We still need some
+way of binding the two values returned by $\key{receive}$. The
+solution is to fuse $\key{receive}$ with the pair elimination
+construct. Notice that this is more or less what CP server input does
+already. Because we interpret $\gvTimes{T}{U}$ as
+$\gvInput{\gvtogv{T}}{\gvDual{\gvtogv{U}}}$, instances of
+$\key{receive}$ from the source term are all erased. The only
+instances of $\key{receive}$ in the target term arise from
+interpreting lambdas and pair elimination. This may seem strange until
+one considers that the only way to use the pair resulting from a
+$\key{receive}$ in GV is to eliminate it. The transformation shunts
+each receive up to the point at which the resulting pair is
+eliminated.
+
+\begin{mathpar}
+\inferrule
+  {\gvj{\Phi}{M}{\gvEndInput}}
+  {\gvj{\Phi}{\gvTerminate{M}}{\gvService{(\gvPlus{}{})}}}
+
+\inferrule
+  {\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi, x:T, y:S}{N}{U}}
+  {\gvj{\Phi, \Psi}{\gvLet{\gvPair{x}{y}}{\gvReceive{M}}{N}}{U}}
+\end{mathpar}
+
+Another alternative is to get rid of terminate altogether and change
+$\gvEndInput$ to be an unrestricted session type. Correspondingly, we
+could also interpret the unit type as $\gvEndInput$ and $\gvUnit$ as
+$\gvWith{x}{x}{x}$. Making $\gvEndInput$ unrestricted makes sense as
+$\gvEndInput = \cptogv{\cpBottom}$, and weakening and contraction are
+derivable for $\cpBottom$ in CP.
 
 \newpage
 \section{Conclusion}
@@ -581,9 +646,9 @@ Phi |- L : T -> U
   --> !z(y).[[L]]y
   --> serve z(y) = (([[L]]y))
 
-Phi |- L : T -o U  un(Phi)
---------------------------
 Phi |- L : T -> U
+-----------------
+Phi |- L : T -o U
   --> nu y.([[L]]y | ?y[x].x <-> z)
   --> with y connect
         (([[L]]z))
@@ -637,6 +702,14 @@ send (\v.v) w -->
        to
          y)
     w
+
+
+let syntactic sugar after translating away lambdas:
+
+  let x = M in N
+  ==
+  send M (with z connect let (x,z)=receive z in link N z to z)
+
   
 
 Attempting to undualise the GV to CP translation on types
