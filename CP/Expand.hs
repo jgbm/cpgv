@@ -38,15 +38,22 @@ filterTypeDefns p ds = ds{ types = filter (p . fst) (types ds) }
 filterNameBindings :: (String -> Bool) -> Defns -> Defns
 filterNameBindings p ds = ds{ names = filter (p . fst) (names ds) }
 
+expandA :: Defns -> Arg -> M Arg
+expandA ds (NameArg v) = case lookup v (names ds) of
+                          Nothing -> return (NameArg v)
+                          Just v' -> return (NameArg v')
+expandA ds (ProcArg p) = ProcArg `fmap` expandP ds p
+
 expandP :: Defns -> Proc -> M Proc
 expandP ds = ex
     where ex (ProcVar v ps)    = do (vs, p) <- getBinding' v (procs ds)
+                                    ps' <- mapM (expandA ds) ps
                                     if length vs == length ps
                                     then let addBinding ds (ProcParam v, ProcArg p) = return (addDefn ds (ProcDef v [] p))
                                              addBinding ds (NameParam x, NameArg y) = return (addNameBinding ds x y)
                                              addBinding _ _ = throwError "Argument class does not match parameter class"
                                              showCP x = displayS (renderPretty 0.8 120 (pretty x)) ""
-                                         in  do ds' <- foldM addBinding ds (zip vs ps)
+                                         in  do ds' <- foldM addBinding ds (zip vs ps')
                                                 expandP ds' p
                                     else throwError ("Wrong number of arguments for " ++ v)
           ex (Link w x)            = return (Link (exn w) (exn x))
@@ -76,7 +83,7 @@ expandP ds = ex
                                                  p' <- replace y y' p
                                                  q' <- replace y y' q
                                                  liftM3 (Roll (exn x) y') (expandT ds a) (ex p') (ex q')
-              | otherwise          = liftM3 (Roll x y) (expandT ds a) (expandP ds' p) (expandP ds' q)
+              | otherwise          = liftM3 (Roll (exn x) y) (expandT ds a) (expandP ds' p) (expandP ds' q)
               where ds' = filterNameBindings (y /=) ds
           ex (Replicate x y p)     = liftM (Replicate (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
           ex (Derelict x y p)      = liftM (Derelict (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
