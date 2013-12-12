@@ -293,5 +293,7 @@ check p = check' p >> empty
                  case c of
                    With [] -> mapM_ consume ys
                    _       -> unexpectedType x c (EmptyCase x ys)
+          check' (Unk []) =
+              Check (\b -> ([b], Right ((), filter (isWhyNot . snd) b)))
           check' (Unk ys) =
-              Check (\b -> ([filter ((`elem` ys) . fst) b], Right ((), (filter ((`notElem` ys) . fst) b))))
+              Check (\b -> ([filter ((`elem` ys) . fst) b], Right ((), [(x,t) | (x,t) <- b, x `notElem` ys || isWhyNot t])))
