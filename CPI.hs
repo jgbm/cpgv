@@ -28,14 +28,16 @@ interp ds (Right (Assert p b isCheck)) =
     case runM $ do p' <- expandP ds p
                    b' <- expandB ds b
                    t <- into (runCheck (check p') b')
-                   (executed, simplified) <- normalize p' b'
+                   (executed, simplified) <- if isCheck then return (undefined, undefined) else normalize p' b'
                    return (t, b', executed, simplified) of
       Left err ->
           do if isCheck then putStrLn ("Check failed: " ++ show (pretty (Assert p b isCheck))) else return ()
              putStrLn err
              return ds
       Right (t, b', executed, simplified)
-          | isCheck -> return ds
+          | isCheck ->
+              do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]
+                 return ds
           | otherwise ->
               do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]
                  putStrLn (unlines ["Execution results in:",

@@ -147,9 +147,16 @@ stepPrincipal (Cut x (Mu t a) (Unroll x' p) (Roll x'' y s q r))
                                 r' <- replace x z r
                                 recurse <- funct b x z (Roll z y s (Link x y) r')
                                 p' <- replace x z p
-                                return (Cut y s q
-                                        (Cut x (bbar `appl` s) r
-                                         (Cut z (bbar `appl` nu bbar) recurse p')))
+                                if y `elem` fn p
+                                then do y' <- fresh y
+                                        q' <- replace y y' q
+                                        r' <- replace y y' r
+                                        return (Cut y' s q'
+                                                (Cut x (bbar `appl` s) r'
+                                                 (Cut z (bbar `appl` nu bbar) recurse p')))
+                                else return (Cut y s q
+                                             (Cut x (bbar `appl` s) r
+                                              (Cut z (bbar `appl` nu bbar) recurse p')))
     where b = (t, a)
           bbar = dualOp b
           nu (t, a) = Nu t a
@@ -237,18 +244,13 @@ equiv p@Cut{} = nub (ps ++ concatMap (expandOne (ps ++ ps')) ps')
 
           expandOne ps p = p : concatMap (expandOne (p : ps' ++ ps)) ps'
               where ps' = filter (`notElem` ps) (swapped p : reassocLeft p ++ reassocRight p)
-
                     swapped (Cut x a p q) = Cut x (dual a) q p
-                    reassocLeft (Cut x a p q) =
-                        case p of
-                          Cut y b p' q'
-                              | x `notElem` fn p' -> [Cut y b p' (Cut x a q' q)]
-                          _                       -> []
-                    reassocRight (Cut x a p q) =
-                        case q of
-                          Cut y b p' q'
-                              | x `notElem` fn q' -> [Cut y b (Cut x a p p') q']
-                          _                       -> []
+                    reassocLeft (Cut x a (Cut y b p' q') q)
+                        | x `notElem` fn p', y `notElem` fn q = [Cut y b p' (Cut x a q' q)]
+                    reassocLeft _ = []
+                    reassocRight (Cut x a p (Cut y b p' q'))
+                        | x `notElem` fn q', y `notElem` fn p = [Cut y b (Cut x a p p') q']
+                    reassocRight _ = []
 equiv p = [p]
 
 equivUnder r@Cut{}               = [Cut x a p' q' | Cut x a p q <- equiv r, p' <- equivUnder p, q' <- equivUnder q]
@@ -317,12 +319,13 @@ normalize p b = do p' <- execute p
                                         (_, Right _) -> execute p'
 
               where ps = equiv p
+                    showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
                     errorMessage p p' e = unlines ["Execution went wrong:",
                                                    e,
                                                    "Last good step was:",
-                                                   "   " ++ show (pretty p),
+                                                   showCP p,
                                                    "and first bad step was:",
-                                                   "   " ++ show (pretty p')]
+                                                   showCP p']
 
           simplify p = do stepped <- (Just `fmap` msum [stepUnder stepPrincipal p' `mplus` stepUnder stepCommuting p' | p' <- equivUnder p])
                                      `catchError` const (return Nothing)
@@ -330,8 +333,9 @@ normalize p b = do p' <- execute p
                             Nothing -> return p
                             Just p' ->
                                 case runCheck (check p') b of
-                                  (_, Left err) -> error (unlines ["Simplification went wrong! (" ++ err ++ ") Last good step was:",
-                                                                   "   " ++ show (pretty p),
-                                                                   "and first bad step was:",
-                                                                   "   " ++ show (pretty p')])
+                                  (_, Left err) -> throwError (unlines ["Simplification went wrong! (" ++ err ++ ") Last good step was:",
+                                                                        "   " ++ showCP p,
+                                                                        "and first bad step was:",
+                                                                        "   " ++ showCP p'])
                                   (_, Right _) -> simplify p'
+              where showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
