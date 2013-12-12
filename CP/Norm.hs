@@ -1,30 +1,12 @@
 {-# LANGUAGE PatternGuards, TupleSections #-}
 module CP.Norm where
 
-import Control.Monad
+import Control.Monad.Error
 import CP.Check
 import Data.List (intercalate, nub)
 import Data.Maybe
 import CP.Syntax
 import CP.Printer
-
-newtype Norm t = Norm{ runNorm :: Int -> Maybe (t, Int) }
-instance Functor Norm
-    where fmap f (Norm g) = Norm (\i -> fmap (\(x, i) -> (f x, i)) (g i))
-instance Monad Norm
-    where return x = Norm (\i -> Just (x, i))
-          Norm f >>= g = Norm (\i -> case f i of
-                                       Nothing -> Nothing
-                                       Just (v, i') -> runNorm (g v) i')
-          fail s   = Norm (\i -> Nothing)
-instance MonadPlus Norm
-    where mzero = Norm (\i -> Nothing)
-          mplus (Norm f) (Norm g) =
-              Norm (\i -> case f i of
-                            Nothing -> g i
-                            Just r  -> Just r)
-fresh s = Norm (\i -> Just (takeWhile ('\'' /=) s ++ '\'' : show i, i + 1))
-
 
 --------------------------------------------------------------------------------
 -- Operators (types with holes)
@@ -87,61 +69,6 @@ fln (Unk ys)            = ys
 -- Replace one variable by another---used, for example, when eliminating a cut
 -- by the AxCut rule.
 
-replace :: String -> String -> Proc -> Norm Proc
-replace x y = replace'
-    where var z
-              | x == z = y
-              | otherwise = z
-
-          replace' (Link z z') = return (Link (var z) (var z'))
-          replace' (Cut z a p q)
-              | x == z || y == z =
-                  do z' <- fresh z
-                     p' <- replace z z' p
-                     q' <- replace z z' q
-                     liftM2 (Cut z' a) (replace' p') (replace' q')
-              | otherwise = liftM2 (Cut z a) (replace' p) (replace' q)
-          replace' (Out z w p q)
-              | x == w || y == w =
-                  do w' <- fresh w
-                     p' <- replace w w' p
-                     liftM2 (Out (var z) w') (replace' p') (replace' q)
-              | otherwise = liftM2 (Out (var z) w) (replace' p) (replace' q)
-          replace' (In z w p)
-              | x == w || y == w =
-                  do w' <- fresh w
-                     p' <- replace w w' p
-                     liftM (In (var z) w') (replace' p')
-              | otherwise = liftM (In (var z) w) (replace' p)
-          replace' (Select z l p) = liftM (Select (var z) l) (replace' p)
-          replace' (Case z bs) = liftM (Case (var z)) (sequence [liftM (l,) (replace' p) | (l, p) <- bs])
-          replace' (Unroll z p) = liftM (Unroll (var z)) (replace' p)
-          replace' (Roll z w a p q)
-              | x == w || y == z =
-                  do w' <- fresh w
-                     p' <- replace w w' p
-                     q' <- replace w w' q
-                     liftM2 (Roll (var z) w' a) (replace' p') (replace' q')
-              | otherwise = liftM2 (Roll (var z) w a) (replace' p) (replace' q)
-          replace' (Replicate z w p)
-              | x == w || y == w =
-                  do w' <- fresh w
-                     p' <- replace w w' p
-                     liftM (Replicate (var z) w') (replace' p')
-              | otherwise = liftM (Replicate (var z) w) (replace' p)
-          replace' (Derelict z w p)
-              | x == w || y == w =
-                  do w' <- fresh w
-                     p' <- replace w w' p
-                     liftM (Derelict (var z) w') (replace' p')
-              | otherwise = liftM (Derelict (var z) w) (replace' p)
-          replace' (SendProp z a p) = liftM (SendProp (var z) a) (replace' p)
-          replace' (ReceiveProp z a p) = liftM (ReceiveProp (var z) a) (replace' p)
-          replace' (EmptyOut z) = return (EmptyOut (var z))
-          replace' (EmptyIn z p) = liftM (EmptyIn (var z)) (replace' p)
-          replace' (EmptyCase z ws) = return (EmptyCase (var z) (map var ws))
-          replace' (Unk vs) = return (Unk (map var vs))
-
 --------------------------------------------------------------------------------
 -- Props in terms
 --------------------------------------------------------------------------------
@@ -171,10 +98,10 @@ instance HasTyVars Proc
                     go (Unk ys) = Unk ys
 
 --------------------------------------------------------------------------------
--- Normalization steps
+-- Freshalization steps
 --------------------------------------------------------------------------------
 
-renameBoundVariable :: String -> Proc -> String -> Proc -> Norm (String, Proc, Proc)
+renameBoundVariable :: String -> Proc -> String -> Proc -> M (String, Proc, Proc)
 renameBoundVariable x p x' p'
     | x == x' = return (x, p, p')
     | x `notElem` fn p' = liftM (x, p,) (replace x' x p')
@@ -185,7 +112,7 @@ renameBoundVariable x p x' p'
 -- Principal cut reductions; "stepPrincipal p" returns "Just p'" if it was able
 -- to eliminate a cut, and Nothing otherwise.
 
-stepPrincipal :: Proc -> Norm Proc
+stepPrincipal :: Proc -> M Proc
 -- AxCut:
 stepPrincipal (Cut x a (Link y z) p)
     | x == y = replace x z p
@@ -258,11 +185,11 @@ stepPrincipal (Cut x a p q) =
         return (Cut x a p' q)) `mplus`
     (do q' <- stepPrincipal q
         return (Cut x a p q'))
-stepPrincipal p = fail "No applicable principal cut reduction"
+stepPrincipal p = throwError "No applicable principal cut reduction"
 
 -- Commuting conversions.
 
-stepCommuting :: Proc -> Norm Proc
+stepCommuting :: Proc -> M Proc
 -- kappa_times-1
 stepCommuting (Cut z a (Out x y p q) r)
     | z /= x && z `elem` fn p && z `notElem` fn q = return (Out x y (Cut z a p r) q)
@@ -299,7 +226,7 @@ stepCommuting (Cut z a (EmptyCase x ys) q)
 -- kappa_mu
 stepCommuting (Cut z a (Unroll x p) q)
     | z /= x = return (Unroll x (Cut z a p q))
-stepCommuting p = fail "No applicable commuting conversion"
+stepCommuting p = throwError "No applicable commuting conversion"
 
 -- Expressions equivalent, either by swapping the order of cut arguments or by
 -- commuting cut arguments, to the original expression.
@@ -340,7 +267,7 @@ equivUnder (ReceiveProp x a p)   = ReceiveProp x a `fmap` equivUnder p
 equivUnder (EmptyIn x p)         = EmptyIn x `fmap` equivUnder p
 equivUnder p                     = [p]
 
-stepUnder :: (Proc -> Norm Proc) -> Proc -> Norm Proc
+stepUnder :: (Proc -> M Proc) -> Proc -> M Proc
 stepUnder stepper p = stepper p `mplus` into p
     where firstOf f p q =
               (do p' <- stepUnder stepper p
@@ -348,13 +275,13 @@ stepUnder stepper p = stepper p `mplus` into p
               (do q' <- stepUnder stepper q
                   return (f p q'))
 
-          into (Link w x) = fail "No subexpressions"
+          into (Link w x) = throwError "No subexpressions"
           into (Cut x a p q) = firstOf (Cut x a) p q
           into (Out x y p q) = firstOf (Out x y) p q
           into (In x y p) = In x y `fmap` stepUnder stepper p
           into (Select x l p) = Select x l `fmap` stepUnder stepper p
           into (Case x bs) = Case x `fmap` intoBranches bs
-              where intoBranches [] = fail "Exhausted branches"
+              where intoBranches [] = throwError "Exhausted branches"
                     intoBranches ((l, p) : rest) =
                         (do p' <- stepUnder stepper p
                             return ((l, p') : rest)) `mplus`
@@ -365,13 +292,13 @@ stepUnder stepper p = stepper p `mplus` into p
           into (Derelict x y p) = Derelict x y `fmap` stepUnder stepper p
           into (SendProp x a p) = SendProp x a `fmap` stepUnder stepper p
           into (ReceiveProp x a p) = ReceiveProp x a `fmap` stepUnder stepper p
-          into (EmptyOut x) = fail "No subexpressions"
+          into (EmptyOut x) = throwError "No subexpressions"
           into (EmptyIn x p) = EmptyIn x `fmap` stepUnder stepper p
-          into (EmptyCase x ys) = fail "No subexpressions"
-          into Unk{} = fail "No subexpressions"
+          into (EmptyCase x ys) = throwError "No subexpressions"
+          into Unk{} = throwError "No subexpressions"
 
 
--- Normalization is implemented as a simple loop.  As long as one of the
+-- Malization is implemented as a simple loop.  As long as one of the
 -- principal cut reductions applies to the input expression, or to any
 -- expression equivalent to the input expression, normalization loops on the
 -- result.  Otherwise, it attempts to apply commuting conversions and finishes.
@@ -379,28 +306,32 @@ stepUnder stepper p = stepper p `mplus` into p
 -- and after normalization, assuring that the normalized expression has the same
 -- behavior as the un-normalized one.
 
-normalize :: Proc -> Behavior -> (Proc, Proc)
-normalize p b = let (p', i) = execute p 0 in (p', simplify p' i)
-    where execute p i = case runNorm (msum (map stepPrincipal ps)) i of
-                          Nothing ->
-                              fromMaybe (p, i) (runNorm (msum (map stepCommuting ps)) i)
-                          Just (p', i') ->
-                              case runCheck (check p') b of
-                                (_, Left err) -> error (unlines ["Execution went wrong:",
-                                                                 err,
-                                                                 "Last good step was:",
-                                                                 "   " ++ show (pretty p),
-                                                                 "and first bad step was:",
-                                                                 "   " ++ show (pretty p')])
-                                (_, Right _) -> execute p' i'
-              where ps = equiv p
+normalize :: Proc -> Behavior -> M (Proc, Proc)
+normalize p b = do p' <- execute p
+                   (p',) `fmap` simplify p'
+    where execute p = do stepped <- (Just `fmap` msum (map stepPrincipal ps)) `catchError` const (return Nothing)
+                         case stepped of
+                           Nothing -> msum (map stepCommuting ps) `catchError` const (return p)
+                           Just p' -> case runCheck (check p') b of
+                                        (_, Left err) -> throwError (errorMessage p p' err)
+                                        (_, Right _) -> execute p'
 
-          simplify p i = case runNorm (msum [stepUnder stepPrincipal p' `mplus` stepUnder stepCommuting p' | p' <- equivUnder p]) i of
-                           Nothing -> p
-                           Just (p', i') ->
-                               case runCheck (check p') b of
-                                 (_, Left err) -> error (unlines ["Simplification went wrong! (" ++ err ++ ") Last good step was:",
-                                                                  "   " ++ show (pretty p),
-                                                                  "and first bad step was:",
-                                                                  "   " ++ show (pretty p')])
-                                 (_, Right _) -> simplify p' i'
+              where ps = equiv p
+                    errorMessage p p' e = unlines ["Execution went wrong:",
+                                                   e,
+                                                   "Last good step was:",
+                                                   "   " ++ show (pretty p),
+                                                   "and first bad step was:",
+                                                   "   " ++ show (pretty p')]
+
+          simplify p = do stepped <- (Just `fmap` msum [stepUnder stepPrincipal p' `mplus` stepUnder stepCommuting p' | p' <- equivUnder p])
+                                     `catchError` const (return Nothing)
+                          case stepped of
+                            Nothing -> return p
+                            Just p' ->
+                                case runCheck (check p') b of
+                                  (_, Left err) -> error (unlines ["Simplification went wrong! (" ++ err ++ ") Last good step was:",
+                                                                   "   " ++ show (pretty p),
+                                                                   "and first bad step was:",
+                                                                   "   " ++ show (pretty p')])
+                                  (_, Right _) -> simplify p'

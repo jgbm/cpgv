@@ -17,22 +17,24 @@ traceBehavior i b =
       (t:ts) -> unlines ((si ++ st t) : [sp ++ st t | t <- ts])
     where si = '(' : show i ++ ") "
           sp = replicate (length si) ' '
-          st (v, t) =  v ++ ": " ++ show (pretty t)
+          st (v, t) =  v ++ ": " ++ showCP t
+          showCP x = (displayS . renderPretty 0.8 120 . pretty) x ""
 
-into (t, Left err) = Left (unlines ([traceBehavior i b | (i, b) <- zip [1..] t] ++ [err]))
-into (t, Right v)  = Right t
+into (t, Left err) = throwError (unlines ([traceBehavior i b | (i, b) <- zip [1..] t] ++ [err]))
+into (t, Right v)  = return t
 
 interp ds (Left d) = return (addDefn ds d)
 interp ds (Right (Assert p b isCheck)) =
-    case do p' <- expandP ds p
-            b' <- expandB ds b
-            t <- into (runCheck (check p') b')
-            return (t, b', normalize p' b') of
+    case runM $ do p' <- expandP ds p
+                   b' <- expandB ds b
+                   t <- into (runCheck (check p') b')
+                   (executed, simplified) <- normalize p' b'
+                   return (t, b', executed, simplified) of
       Left err ->
           do if isCheck then putStrLn ("Check failed: " ++ show (pretty (Assert p b isCheck))) else return ()
              putStrLn err
              return ds
-      Right (t, b', (executed, simplified))
+      Right (t, b', executed, simplified)
           | isCheck -> return ds
           | otherwise ->
               do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]

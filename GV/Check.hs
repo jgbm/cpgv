@@ -10,7 +10,6 @@ import GV.Printer
 
 import GV.CPBuilder
 import qualified CP.Check as CP (dual)
-import qualified CP.Norm as CP (replace, runNorm)
 import qualified CP.Syntax as CP
 
 
@@ -307,7 +306,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                            provide x (Lift s) (do (t, n') <- check n
                                                   return (t, \y z -> ((l,) . replace x y) `fmap` n' z))
                     replace x y t = t'
-                        where Just (t', _) = CP.runNorm (CP.replace x y t) 0
+                        where Right t' = CP.runM (CP.replace x y t)
 
           check' (EmptyCase m xs t) =
              do (mty, m') <- check m
