@@ -65,8 +65,8 @@
 \newcommand{\gvServer}[1]{\${#1}}
 \newcommand{\gvService}[1]{\#{#1}}
 \newcommand{\gvDual}[1]{\overline{#1}}
-\newcommand{\gvOutputType}[2]{!!{#1}.{#2}}
-\newcommand{\gvInputType}[2]{??{#1}.{#2}}
+\newcommand{\gvOutputType}[2]{![{#1}].{#2}}
+\newcommand{\gvInputType}[2]{?[{#1}].{#2}}
 
 \newcommand{\cpj}[2]{{#1} \vdash {#2}}
 \newcommand{\gvj}[3]{{#1} \vdash {#2} : {#3}}
@@ -174,7 +174,9 @@
 
 
 % Institutes for affiliations are also joined by \and,
-\institute{The University of Edinburgh}
+\institute{The University of Edinburgh \\
+           \email{Sam.Lindley@ed.ac.uk, Garrett.Morris@ed.ac.uk}
+}
 %% \institute{
 %%   Concordia University,
 %%   Montreal, Quebec, Canada\\
@@ -199,6 +201,34 @@
 \clearpage
 
 \maketitle
+
+
+
+
+
+%% Extend GV
+%% Define CP --> GV (direct)
+%% Compose GV --> CP --> GV-Pi (CPS)
+%% Obtain simplified GV --> GV-Pi (direct)
+%% Factor GV --> CP (CPS) as GV --> GV-Pi (direct) followed by GV-Pi -->
+%% CP (CPS)
+
+
+
+
+
+
+%% Background:
+
+%%   Propositions (in classical linear logic) as sessions.
+%%   Channel-passing translation of GV into CP.
+
+%% Our contributions:
+
+%%   Translation of CP to GV+.
+  
+
+
 
 \begin{abstract}
 TODO
@@ -345,6 +375,19 @@ Judgements
 \begin{equations}
 \gvtocp{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M}z}{\cpDual{\gvtocp{\Phi}}, z:\gvtocp{T}}
 \end{equations}
+
+
+Theorem:
+
+  [[((A))]] = ~A
+  [[((P |- G))]] = Q |- G, z : bot
+    where nu z.(z[].0|Q) --> P
+
+  (([[S]])) = ~S
+  (([[Phi |- M : S]] z)) = Phi |- N : end!
+    where
+      nu w.(w[].0|[[N]]w) --> [[M]]z
+  
 
 \section{Alternative translations from GV to CP}
 
