@@ -136,7 +136,7 @@
 \newcommand{\cpTop}{\top}  % top == &{}
 
 \newcommand{\un}[1]{\mathit{un}(#1)}
-\newcommand{\lin}[2]{\mathit{lin}(#1)}
+\newcommand{\lin}[1]{\mathit{lin}(#1)}
 
 \newcommand{\FV}[1]{\mathit{FV}(#1)}
 \newcommand{\subst}[3]{{#1}[{#2}/{#3}]}
@@ -215,17 +215,17 @@
 
 
 \begin{abstract}
-Recently, Wadler demonstrated a continuation-passing translation from
-a session-typed functional language, called GV, to a process calculus,
+Recently, Wadler presented a continuation-passing translation from a
+session-typed functional language, called GV, to a process calculus,
 called CP, based on classical linear logic. However, this translation
-is one-way: CP is more expressive than GV. This paper proposes an
-extensions to GV, called HGV, which remedies the expressiveness gap.
-We demonstrate direct translations from CP into the session fragment
-of HGV (which we call \hgvpi), and from HGV to \hgvpi.  We show that
-the original continuation-passing translation of GV to CP factors
-through the direct translation to \hgvpi. Finally, these translations
-shed light both on the original translation from GV to CP, and on the
-limitations in expressiveness of GV.
+is one-way: CP is more expressive than GV. We propose an extension to
+GV, called HGV, which bridges the expressiveness gap. We provide
+direct translations from CP into the session fragment of HGV, called
+\hgvpi, and from HGV to \hgvpi. We prove that the original
+continuation-passing translation of GV to CP factors through the
+direct translation to \hgvpi. The new translations shed light both on
+the original translation from GV to CP, and on the limitations in
+expressiveness of GV.
 \end{abstract}
 
 
@@ -243,6 +243,119 @@ limitations in expressiveness of GV.
 TODO
 
 \section{Background}
+
+
+\subsection{HGV}
+~
+
+GV stands for ``good variation''. HGV stands for ``harmonious good
+variation''.
+
+Session types
+\[
+S ::= \gvOutput{T}{S} \mid \gvInput{T}{S} \mid 
+      \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
+      \gvEndOutput \mid \gvEndInput \mid
+      X \mid
+      \gvOutputType{X}{S} \mid \gvInputType{X}{S} \mid
+      \gvServer{S} \mid \gvService{S}
+\]
+
+In addition to the value output ($\gvOutput{T}{S}$), value input
+($\gvInput{T}{S}$), select ($\gvPlus{\la_i:S_i}{i}$), choice
+($\gvChoice{\la_i:S_i}{i}$), end output ($\gvEndOutput$) and end input
+($\gvEndInput$) session types of GV, HGV has session type variables
+($X$), type output ($\gvEndInput$), type input ($\gvEndInput$), server
+($\gvServer{S}$) and service ($\gvService{S}$) session types.
+
+
+Types
+\[
+T,U,V ::= S \mid \gvTimes{T}{U} \mid \gvLinFun{T}{U} \mid \gvUnFun{T}{U}
+\]
+
+Each type $T$ is classified as either linear ($\lin{T}$) or unlimited
+($\un{T}$).
+\[
+\begin{array}{l}
+\lin{\gvOutput{T}{S}}  \quad \lin{\gvInput{T}{S}} \quad
+\lin{\gvPlus{\la_i:S_i}{i}} \quad \lin{\gvChoice{\la_i:S_i}{i}} \quad
+\lin{\gvEndOutput} \quad \un{\gvEndInput} \\
+\lin{X} \quad
+\lin{\gvOutputType{X}{S}} \quad \lin{\gvInputType{X}{S}} \quad
+\lin{\gvServer{S}} \quad \un{\gvService{S}} \\
+\lin{\gvTimes{T}{U}} \quad \lin{\gvLinFun{T}{U}} \quad \un{\gvUnFun{T}{U}}
+\end{array}
+\]
+The only unlimited type constructors are those for end input,
+services, and unlimited functions.
+
+Apart from the extensions, the two differences in the types of GV are
+that there is no unit type (called $\gvUnitType$ in GV), and
+$\gvEndInput$ is unlimited. We omit unit because it is isomorphic to
+both $\gvEndInput$ and $\gvService{(\gvPlus{}{})}$.
+
+The terms and typing rules for HGV are given in
+Figure~\ref{fig:HGV-typing}. The first three rules are structural. The
+next six rules cover the non-session fragment of HGV. The remaining
+rules cover the session fragment of HGV.
+
+Notice that the non-session and session fragments are orthogonal, in
+that the non-session rules mention only non-session type constructors,
+and the session rules mention only session type constructors. This is
+a useful property which does not hold of the original GV. As we shall
+see, it enables us to compile away the non-session fragment into the
+session fragment.
+
+Vanilla GV, has session constructs $\key{receive}$ and
+$\key{terminate}$, both of whose typing rules mention non-session
+types.
+\begin{mathpar}
+\inferrule[Receive-$\otimes$]
+{\gvj{\Phi}{M}{\gvInput{T}{S}}}
+{\gvj{\Phi}{\gvReceive{M}}{\gvTimes{T}{S}}}
+
+\inferrule[Terminate-$\otimes$]
+{\gvj{\Phi}{M}{\gvTimes{T}{\gvEndInput}}}
+{\gvj{\Phi}{\gvTerminate{M}}{T}}
+\end{mathpar}
+HGV dispenses with $\key{terminate}$ by making $\gvEndOutput$
+unlimited, and builds a pair binding into $\key{receive}$, thus
+immediately eliminating the tensor.
+
+The final five typing rules of Figure~\ref{fig:HGV-typing} extend the
+functionality of HGV with respect to GV: $\gvLink{M}{N}$ links channel
+$M$ to channel $N$, $\gvSendType{S}{M}$ sends session type $S$ along
+$M$, $\gvReceiveType{M}$ receives a type along $M$,
+$\gvServe{s}{x}{M}$ defines server $s$ as $M$ parameterised by channel
+$x$, and $\gvRequest{M}$ requests a fresh instance of service $M$.
+%
+
+We argue that each of the five new constructs adds expressive power to
+GV.
+%
+It seems clear that the ability to send and receive types adds
+expressive power.
+%
+One can straightforwardly simulate $\gvLink{M}{N}$ in terms of other
+constructs for monomorphic types, but not for polymorphic types.
+%
+There are parallels between servers and unlimited functions. One might
+expect to be able to simulate the former in terms of the latter --- a
+server is much like an unlimited function parameterised by a
+channel. A key difference is that we can disassociate a server
+declaration ($\gvWith{s}{\dots}{\dots}$) from its definition
+($\gvServe{s}{x}{\dots}$). Thus, servers support a very limited form
+of linear dynamic binding, which functions do not. We believe that
+servers can be simulated by unlimited functions, but only if one
+performs a global translation similar to closure conversion.
+%
+In fact, we will focus on going the other way, translating away
+functions as sessions.
+
+
+
+
 
 
 \begin{figure}
@@ -326,12 +439,12 @@ TODO
 {\gvj{\Phi}{\gvReceiveType M}{S'}}
 
 \inferrule[Serve]
-{\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
-{\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
+{\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
+{\gvj{\Phi,s : \gvServer{S}}{\gvServe{s}{x}{M}}{\gvEndOutput}}
 
 \inferrule[Request]
-{ }
-{\gvj{s : \gvService{S}}{\gvRequest{s}}{S}}
+{\gvj{\Phi}{M}{\gvService{S}}}
+{\gvj{\Phi}{\gvRequest{M}}{S}}
 \end{mathpar}
 
 \caption{Typing rules for HGV}
@@ -397,31 +510,31 @@ Judgements
 \cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
 \end{equations}
 
-\subsection{GV extensions}
+%% \subsection{GV extensions}
 
-\begin{mathpar}
-\inferrule
-{\gvj{\Phi}{M}{\gvInputType{X}{S}}}
-{\gvj{\Phi}{\gvSendType{S}{M}}{S'[S/X]}}
+%% \begin{mathpar}
+%% \inferrule
+%% {\gvj{\Phi}{M}{\gvInputType{X}{S}}}
+%% {\gvj{\Phi}{\gvSendType{S}{M}}{S'[S/X]}}
 
-\inferrule
-{\gvj{\Phi}{M}{\gvOutputType{X}{S}} \\ X \notin \FV{\Phi}}
-{\gvj{\Phi}{\gvReceiveType M}{S'}}
-\end{mathpar}
+%% \inferrule
+%% {\gvj{\Phi}{M}{\gvOutputType{X}{S}} \\ X \notin \FV{\Phi}}
+%% {\gvj{\Phi}{\gvReceiveType M}{S'}}
+%% \end{mathpar}
 
-\begin{mathpar}
-\inferrule
-{\gvj{\Phi}{M}{S} \\ \gvj{\Phi}{N}{\gvDual{S}}}
-{\gvj{\Phi}{\gvLink{M}{N}}{\gvEndOutput}}
+%% \begin{mathpar}
+%% \inferrule
+%% {\gvj{\Phi}{M}{S} \\ \gvj{\Phi}{N}{\gvDual{S}}}
+%% {\gvj{\Phi}{\gvLink{M}{N}}{\gvEndOutput}}
 
-\inferrule
-{\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput}}
-{\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
+%% \inferrule
+%% {\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput}}
+%% {\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
 
-\inferrule
-{ }
-{\gvj{\Phi, s : \gvService{S}}{\gvRequest{s}}{S}}
-\end{mathpar}
+%% \inferrule
+%% { }
+%% {\gvj{\Phi, s : \gvService{S}}{\gvRequest{s}}{S}}
+%% \end{mathpar}
 
 
 \section{From GV to CP}
@@ -473,16 +586,16 @@ Judgements
 \end{equations}
 
 
-Theorem:
+%% Theorem:
 
-  [[((A))]] = ~A
-  [[((P |- G))]] = Q |- G, z : bot
-    where nu z.(z[].0|Q) --> P
+%%   [[((A))]] = ~A
+%%   [[((P |- G))]] = Q |- G, z : bot
+%%     where nu z.(z[].0|Q) --> P
 
-  (([[S]])) = ~S
-  (([[Phi |- M : S]] z)) = Phi |- N : end!
-    where
-      nu w.(w[].0|[[N]]w) --> [[M]]z
+%%   (([[S]])) = ~S
+%%   (([[Phi |- M : S]] z)) = Phi |- N : end!
+%%     where
+%%       nu w.(w[].0|[[N]]w) --> [[M]]z
   
 
 \section{Alternative translations from GV to CP}
