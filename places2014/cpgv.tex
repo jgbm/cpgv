@@ -23,6 +23,7 @@
 \usepackage{amsmath}
 \usepackage{stmaryrd}
 \usepackage{mathpartir}
+\usepackage{xspace}
 
 % In order to save space or manage large tables or figures in a
 % landcape-like text, you can use the rotating and pdflscape
@@ -138,6 +139,8 @@
 \newcommand{\cpMix}[2]{({#1} \mid {#2})}
 \newcommand{\cpCutOutput}[5]{{#2}[{#3}].\nu{#1}.\cpMix{#4}{#5}}
 
+\newcommand{\hgvpi}{HGV$\pi$\xspace}
+
 %\makeindex
 
 %% Document
@@ -231,7 +234,14 @@
 
 
 \begin{abstract}
-TODO
+Recently, Wadler demonstrated a continuation-passing translation from a session-typed functional
+language, called GV, to a process calculus, called CP, based on classical linear logic.  However,
+this translation is one-way: CP is more expressive than GV.  This paper proposes an extensions to
+GV, called HGV, which remedies the expressiveness gap.  We demonstrate direct translations from CP
+into the session fragment of HGV (which we call \hgvpi), and from HGV to \hgvpi.  We show that the
+original continuation-passing translation of GV to CP factors through the direct translation to
+\hgvpi.  Finally, these translations shed light both on the original translation from GV to CP, and
+on the limitations in expressiveness of GV.
 \end{abstract}
 
 
@@ -277,7 +287,7 @@ Terms
 \cptogv{\cpInput{x}{y}{P}} &=&
   \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{P}} \\
 \cptogv{\cpInject{x}{\la}{P}} &=&
-  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{P}} \\  
+  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{P}} \\
 \cptogv{\cpCase{x}{\row{\la_i.P_i}{i}}} &=&
   \gvCase{x}{\row{\la_i(x).\cptogv{P_i}}{i}} \\
 \cptogv{\cpEmptyOut{x}} &=& x \\
@@ -753,7 +763,7 @@ let syntactic sugar after translating away lambdas:
   ==
   send M (with z connect let (x,z)=receive z in link N z to z)
 
-  
+
 
 Attempting to undualise the GV to CP translation on types
 
