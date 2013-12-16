@@ -76,7 +76,9 @@
 \newcommand{\G}{\Gamma}
 \newcommand{\D}{\Delta}
 
-\newcommand{\gvLinFun}[2]{{#1} \multimap {#2}}
+\newcommand{\lolli}{\multimap}
+
+\newcommand{\gvLinFun}[2]{{#1} \lolli {#2}}
 \newcommand{\gvUnFun}[2]{{#1} \to {#2}}
 \newcommand{\gvTimes}[2]{{#1} \otimes {#2}}
 \newcommand{\gvUnitType}{\key{Unit}}
@@ -93,6 +95,9 @@
 \newcommand{\gvCase}[2]{\key{case}~{#1}~\key{of}~{#2}}
 \newcommand{\gvWith}[3]{\key{with}~{#1}~\key{connect}~{#2}~\key{to}~{#3}}
 \newcommand{\gvTerminate}[1]{\key{terminate}~{#1}}
+
+% receive with continuation
+\newcommand{\gvReceiveK}[4]{\gvLet{\gvPair{#1}{#2}}{\gvReceive{#3}}{#4}}
 
 \newcommand{\gvSendType}[2]{\key{sendType}~{#1}~{#2}}
 \newcommand{\gvReceiveType}[1]{\key{receiveType}~{#1}}
@@ -130,8 +135,11 @@
 \newcommand{\cpZero}{0}    % 0   == +{}
 \newcommand{\cpTop}{\top}  % top == &{}
 
+\newcommand{\un}[1]{\mathit{un}(#1)}
+\newcommand{\lin}[2]{\mathit{lin}(#1)}
 
 \newcommand{\FV}[1]{\mathit{FV}(#1)}
+\newcommand{\subst}[3]{{#1}[{#2} := {#3}]}
 
 \newcommand{\gvtocps}[1]{\gvtocp{#1}}
 \newcommand{\gvtocpd}[1]{\gvtocp{#1}}
@@ -206,42 +214,18 @@
 \maketitle
 
 
-
-
-
-%% Extend GV
-%% Define CP --> GV (direct)
-%% Compose GV --> CP --> GV-Pi (CPS)
-%% Obtain simplified GV --> GV-Pi (direct)
-%% Factor GV --> CP (CPS) as GV --> GV-Pi (direct) followed by GV-Pi -->
-%% CP (CPS)
-
-
-
-
-
-
-%% Background:
-
-%%   Propositions (in classical linear logic) as sessions.
-%%   Channel-passing translation of GV into CP.
-
-%% Our contributions:
-
-%%   Translation of CP to GV+.
-  
-
-
-
 \begin{abstract}
-Recently, Wadler demonstrated a continuation-passing translation from a session-typed functional
-language, called GV, to a process calculus, called CP, based on classical linear logic.  However,
-this translation is one-way: CP is more expressive than GV.  This paper proposes an extensions to
-GV, called HGV, which remedies the expressiveness gap.  We demonstrate direct translations from CP
-into the session fragment of HGV (which we call \hgvpi), and from HGV to \hgvpi.  We show that the
-original continuation-passing translation of GV to CP factors through the direct translation to
-\hgvpi.  Finally, these translations shed light both on the original translation from GV to CP, and
-on the limitations in expressiveness of GV.
+Recently, Wadler demonstrated a continuation-passing translation from
+a session-typed functional language, called GV, to a process calculus,
+called CP, based on classical linear logic. However, this translation
+is one-way: CP is more expressive than GV. This paper proposes an
+extensions to GV, called HGV, which remedies the expressiveness gap.
+We demonstrate direct translations from CP into the session fragment
+of HGV (which we call \hgvpi), and from HGV to \hgvpi.  We show that
+the original continuation-passing translation of GV to CP factors
+through the direct translation to \hgvpi. Finally, these translations
+shed light both on the original translation from GV to CP, and on the
+limitations in expressiveness of GV.
 \end{abstract}
 
 
@@ -257,6 +241,107 @@ on the limitations in expressiveness of GV.
 
 \section{Introduction}
 TODO
+
+\section{Background}
+
+\begin{figure}
+\begin{mathpar}
+\inferrule[Id]
+{ }
+{\gvj{x:T}{X}{T}}
+
+\inferrule[Weaken]
+{\gvj{\Phi}{N}{U} \\ \un{T}}
+{\gvj{\Phi,x:T}{N}{U}}
+
+\inferrule[Contract]
+{\gvj{\Phi,x:T,x':T}{N}{U} \\ \un{T}}
+{\gvj{\Phi,x:T}{\subst{N}{x'}{x}}{U}}
+\\
+
+\inferrule[$\lolli$-I]
+{\gvj{\Phi,x:T}{N}{U}}
+{\gvj{\Phi}{\gvLam{x}{N}}{\gvLinFun{T}{U}}}
+
+\inferrule[$\lolli$-E]
+{\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \gvj{\Psi}{M}{T}}
+{\gvj{\Phi,\Psi}{\gvApp{L}{M}}{U}}
+
+\\
+
+\inferrule[$\to$-I]
+{\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \un{\Phi}}
+{\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
+
+\inferrule[$\to$-E]
+{\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
+{\gvj{\Phi}{L}{\gvLinFun{T}{U}}}
+
+\\
+
+%% \inferrule[Unit]
+%% { }
+%% {\gvj{}{\gvUnit}{\gvUnitType}}
+
+\inferrule[$\otimes$-I]
+{\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{U}}
+{\gvj{\Phi,\Psi}{\gvPair{M}{N}}{\gvTimes{T}{U}}}
+
+\inferrule[$\otimes$-E]
+{\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
+{\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
+
+\inferrule[Send]
+{\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{\gvOutput{T}{S}}}
+{\gvj{\Phi}{\gvSend{M}{N}}{S}}
+
+
+\inferrule[Receive]
+{\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi,x:T,y:S}{N}{V}}
+{\gvj{\Phi,\Psi}{\gvReceiveK{x}{y}{M}{N}}{V}}
+
+\inferrule[Select]
+{\gvj{\Phi}{M}{\gvPlus{\la_i:S_i}{i}}}
+{\gvj{\Phi}{\gvSelect{\la_j}{M}}{S_j}}
+
+\inferrule[Case]
+{\gvj{\Phi}{M}{\gvChoice{\la_i:S_i}{i}} \\ \row{\gvj{\Psi,x:S_i}{N_i}{T}}{i}}
+{\gvj{\Phi,\Psi}{\gvCase{M}{\row{\la_i(x).N_i}{i}}}{T}}
+
+\inferrule[Connect]
+{\gvj{\Phi,x:S}{M}{\gvEndOutput} \\ \gvj{\Psi,x:\gvDual{S}}{N}{T}}
+{\gvj{\Phi,\Psi}{\gvWith{x}{M}{N}}{T}}
+
+\inferrule[Link]
+{\gvj{\Phi}{M}{S} \\ \gvj{\Phi}{N}{\gvDual{S}}}
+{\gvj{\Phi}{\gvLink{M}{N}}{\gvEndOutput}}
+
+\inferrule[SendType]
+{\gvj{\Phi}{M}{\gvInputType{X}{S}}}
+{\gvj{\Phi}{\gvSendType{S}{M}}{S'[S/X]}}
+
+\inferrule[ReceiveType]
+{\gvj{\Phi}{M}{\gvOutputType{X}{S}} \\ X \notin \FV{\Phi}}
+{\gvj{\Phi}{\gvReceiveType M}{S'}}
+
+\inferrule[Serve]
+{\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput}}
+{\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
+
+\inferrule[Request]
+{ }
+{\gvj{\Phi, s : \gvService{S}}{\gvRequest{s}}{S}}
+\end{mathpar}
+
+\caption{Typing rules for HGV}
+\label{fig:HGV-typing}
+\end{figure}
+
+
+
+
+
+
 
 \section{From CP to GV}
 ~
