@@ -45,6 +45,8 @@
 \newcommand{\ea}{\end{array}}
 
 \newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
+\newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
+
 
 
 \newcommand{\key}{\mathsf}
@@ -147,6 +149,7 @@
 \newcommand{\cpMix}[2]{({#1} \mid {#2})}
 \newcommand{\cpCutOutput}[5]{{#2}[{#3}].\nu{#1}.\cpMix{#4}{#5}}
 
+\newcommand{\hgv}{HGV\xspace}
 \newcommand{\hgvpi}{HGV$\pi$\xspace}
 
 %\makeindex
@@ -219,10 +222,10 @@ Recently, Wadler presented a continuation-passing translation from a
 session-typed functional language, called GV, to a process calculus,
 called CP, based on classical linear logic. However, this translation
 is one-way: CP is more expressive than GV. We propose an extension to
-GV, called HGV, which bridges the expressiveness gap. We provide
-direct translations from CP into the session fragment of HGV, called
-\hgvpi, and from HGV to \hgvpi. We prove that the original
-continuation-passing translation of GV to CP factors through the
+GV, called \hgv, which bridges the expressiveness gap. We provide
+direct translations from CP into the session fragment of \hgv, called
+\hgvpi, and from \hgv to \hgvpi. We prove that the original
+continuation-passing translation from GV to CP factors through the
 direct translation to \hgvpi. The new translations shed light both on
 the original translation from GV to CP, and on the limitations in
 expressiveness of GV.
@@ -245,10 +248,10 @@ TODO
 \section{Background}
 
 
-\subsection{HGV}
+\subsection{\hgv}
 ~
 
-GV stands for ``good variation''. HGV stands for ``harmonious good
+GV stands for ``good variation''. \hgv stands for ``harmonious good
 variation''.
 
 Session types
@@ -256,17 +259,18 @@ Session types
 S ::= \gvOutput{T}{S} \mid \gvInput{T}{S} \mid 
       \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
       \gvEndOutput \mid \gvEndInput \mid
-      X \mid
+      X \mid \gvDual{X} \mid
       \gvOutputType{X}{S} \mid \gvInputType{X}{S} \mid
       \gvServer{S} \mid \gvService{S}
 \]
 
-In addition to the value output ($\gvOutput{T}{S}$), value input
+\hgv, in addition to the: value output ($\gvOutput{T}{S}$), value input
 ($\gvInput{T}{S}$), select ($\gvPlus{\la_i:S_i}{i}$), choice
 ($\gvChoice{\la_i:S_i}{i}$), end output ($\gvEndOutput$) and end input
-($\gvEndInput$) session types of GV, HGV has session type variables
-($X$), type output ($\gvEndInput$), type input ($\gvEndInput$), server
-($\gvServer{S}$) and service ($\gvService{S}$) session types.
+($\gvEndInput$) session types of GV, has: session type variables
+($X$), negated session type variables ($\gvDual{X}$), type output
+($\gvEndInput$), type input ($\gvEndInput$), server ($\gvServer{S}$)
+and service ($\gvService{S}$) session types.
 
 
 Types
@@ -295,10 +299,10 @@ that there is no unit type (called $\gvUnitType$ in GV), and
 $\gvEndInput$ is unlimited. We omit unit because it is isomorphic to
 both $\gvEndInput$ and $\gvService{(\gvPlus{}{})}$.
 
-The terms and typing rules for HGV are given in
-Figure~\ref{fig:HGV-typing}. The first three rules are structural. The
-next six rules cover the non-session fragment of HGV. The remaining
-rules cover the session fragment of HGV.
+The terms and typing rules for \hgv are given in
+Figure~\ref{fig:hgv-typing}. The first three rules are structural. The
+next six rules cover the non-session fragment of \hgv. The remaining
+rules cover the session fragment of \hgv.
 
 Notice that the non-session and session fragments are orthogonal, in
 that the non-session rules mention only non-session type constructors,
@@ -319,12 +323,12 @@ types.
 {\gvj{\Phi}{M}{\gvTimes{T}{\gvEndInput}}}
 {\gvj{\Phi}{\gvTerminate{M}}{T}}
 \end{mathpar}
-HGV dispenses with $\key{terminate}$ by making $\gvEndOutput$
+\hgv dispenses with $\key{terminate}$ by making $\gvEndOutput$
 unlimited, and builds a pair binding into $\key{receive}$, thus
 immediately eliminating the tensor.
 
-The final five typing rules of Figure~\ref{fig:HGV-typing} extend the
-functionality of HGV with respect to GV: $\gvLink{M}{N}$ links channel
+The final five typing rules of Figure~\ref{fig:hgv-typing} extend the
+functionality of \hgv with respect to GV: $\gvLink{M}{N}$ links channel
 $M$ to channel $N$, $\gvSendType{S}{M}$ sends session type $S$ along
 $M$, $\gvReceiveType{M}$ receives a type along $M$,
 $\gvServe{s}{x}{M}$ defines server $s$ as $M$ parameterised by channel
@@ -350,8 +354,8 @@ of linear dynamic binding, which functions do not. We believe that
 servers can be simulated by unlimited functions, but only if one
 performs a global translation similar to closure conversion.
 %
-In fact, we will focus on going the other way, translating away
-functions as sessions.
+In fact, we will be more interested in going the other way,
+translating away functions as sessions.
 
 
 
@@ -447,8 +451,8 @@ functions as sessions.
 {\gvj{\Phi}{\gvRequest{M}}{S}}
 \end{mathpar}
 
-\caption{Typing rules for HGV}
-\label{fig:HGV-typing}
+\caption{Typing rules for \hgv}
+\label{fig:hgv-typing}
 \end{figure}
 
 
@@ -461,21 +465,29 @@ functions as sessions.
 ~
 
 Types
-\begin{equations}
+\[
+\begin{array}{@{}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
 \cptogv{\cpTimes{A}{B}} &=& \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} \\
 \cptogv{\cpPar{A}{B}} &=& \gvInput{\cptogv{A}}{\cptogv{B}} \\
 \cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i} \\
 \cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
+\end{eqs}
+&
+\begin{eqs}
 \cptogv{\cpOne} &=& \gvEndOutput \\
 \cptogv{\cpBottom} &=& \gvEndInput \\[1ex]
-
+\cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
+\cptogv{\cpWhyNot{A}} &=& \gvService{\cptogv{A}} \\
+\end{eqs}
+&
+\begin{eqs}
 \cptogv{X} &=& X \\
 \cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
 \cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\[1ex]
-
-\cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
-\cptogv{\cpWhyNot{A}} &=& \gvService{\cptogv{A}} \\
-\end{equations}
+\end{eqs}
+\end{array}
+\]
 
 Terms
 \begin{equations}
@@ -490,8 +502,8 @@ Terms
 \cptogv{\cpCase{x}{\row{\la_i.P_i}{i}}} &=&
   \gvCase{x}{\row{\la_i(x).\cptogv{P_i}}{i}} \\
 \cptogv{\cpEmptyOut{x}} &=& x \\
-\cptogv{\cpEmptyIn{x}{P}} &=&
-  \gvLet{z}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
+\cptogv{\cpEmptyIn{x}{P}} &=& \cptogv{P} \\[1ex]
+  %% \gvLet{z}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
 
 \cptogv{\cpSendType{x}{A}{P}} &=&
   \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
@@ -509,6 +521,24 @@ Judgements
 \begin{equations}
 \cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
 \end{equations}
+
+\section{From \hgv to \hgvpi} 
+
+\section{From \hgvpi to CP}
+
+\section{Conclusion}
+
+TODO
+
+\cite{wadler2014jfp}
+
+\label{sect:bib}
+\bibliographystyle{plain}
+%\bibliographystyle{alpha}
+%\bibliographystyle{unsrt}
+%\bibliographystyle{abbrv}
+\bibliography{cpgv}
+
 
 %% \subsection{GV extensions}
 
@@ -536,6 +566,8 @@ Judgements
 %% {\gvj{\Phi, s : \gvService{S}}{\gvRequest{s}}{S}}
 %% \end{mathpar}
 
+
+\newpage
 
 \section{From GV to CP}
 ~
@@ -844,18 +876,6 @@ $\gvEndInput = \cptogv{\cpBottom}$, and weakening and contraction are
 derivable for $\cpBottom$ in CP.
 
 \newpage
-\section{Conclusion}
-
-TODO
-
-\cite{wadler2014jfp}
-
-\label{sect:bib}
-\bibliographystyle{plain}
-%\bibliographystyle{alpha}
-%\bibliographystyle{unsrt}
-%\bibliographystyle{abbrv}
-\bibliography{cpgv}
 
 %------------------------------------------------------------------------------
 %% \appendix
