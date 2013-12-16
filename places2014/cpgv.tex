@@ -139,7 +139,7 @@
 \newcommand{\lin}[2]{\mathit{lin}(#1)}
 
 \newcommand{\FV}[1]{\mathit{FV}(#1)}
-\newcommand{\subst}[3]{{#1}[{#2} := {#3}]}
+\newcommand{\subst}[3]{{#1}[{#2}/{#3}]}
 
 \newcommand{\gvtocps}[1]{\gvtocp{#1}}
 \newcommand{\gvtocpd}[1]{\gvtocp{#1}}
@@ -244,6 +244,7 @@ TODO
 
 \section{Background}
 
+
 \begin{figure}
 \begin{mathpar}
 \inferrule[Id]
@@ -256,7 +257,7 @@ TODO
 
 \inferrule[Contract]
 {\gvj{\Phi,x:T,x':T}{N}{U} \\ \un{T}}
-{\gvj{\Phi,x:T}{\subst{N}{x'}{x}}{U}}
+{\gvj{\Phi,x:T}{\subst{N}{x}{x'}}{U}}
 \\
 
 \inferrule[$\lolli$-I]
@@ -318,19 +319,19 @@ TODO
 
 \inferrule[SendType]
 {\gvj{\Phi}{M}{\gvInputType{X}{S}}}
-{\gvj{\Phi}{\gvSendType{S}{M}}{S'[S/X]}}
+{\gvj{\Phi}{\gvSendType{S}{M}}{\subst{S'}{S}{X}}}
 
 \inferrule[ReceiveType]
 {\gvj{\Phi}{M}{\gvOutputType{X}{S}} \\ X \notin \FV{\Phi}}
 {\gvj{\Phi}{\gvReceiveType M}{S'}}
 
 \inferrule[Serve]
-{\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput}}
+{\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
 {\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
 
 \inferrule[Request]
 { }
-{\gvj{\Phi, s : \gvService{S}}{\gvRequest{s}}{S}}
+{\gvj{s : \gvService{S}}{\gvRequest{s}}{S}}
 \end{mathpar}
 
 \caption{Typing rules for HGV}
