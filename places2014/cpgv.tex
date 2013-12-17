@@ -474,12 +474,12 @@ translating away functions as sessions.
 {\gvj{\Phi}{\gvLink{M}{N}}{\gvEndOutput}}
 
 \inferrule[SendType]
-{\gvj{\Phi}{M}{\gvInputType{X}{S}}}
+{\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
 {\gvj{\Phi}{\gvSendType{S}{M}}{\subst{S'}{S}{X}}}
 
 \inferrule[ReceiveType]
-{\gvj{\Phi}{M}{\gvOutputType{X}{S}} \\ X \notin \FV{\Phi}}
-{\gvj{\Phi}{\gvReceiveType M}{S'}}
+{\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
+{\gvj{\Phi}{\gvReceiveType M}{S}}
 
 \inferrule[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
@@ -662,9 +662,9 @@ Terms
 \hgvcp{\gvWith{x}{M}{N}}z &=&
   \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\hgvcp{N}z} \\[1ex]
 
-\hgvcp{\gvSendType{S}{(M : \cpForall{X}{S'})}}z &=&
+\hgvcp{\gvSendType{S}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
-\hgvcp{\gvReceiveType{(M : \cpExists{X}{S'})}}z &=&
+\hgvcp{\gvReceiveType{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}} \\[1ex]
 
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\cpCut{y}{\hgvcp{N}y}{\cpLink{x}{y}}}} \\
@@ -674,9 +674,62 @@ Terms
 \hgvcp{\gvRequest{M}}z &=& \cpCut{x}{\hgvcp{M}x}{\cpRequest{x}{y}{\cpLink{y}{z}}} \\
 \end{equations}
 
+Horrible verbose versions of the rules for sending and receiving types
+\begin{mathpar}
+\left\llbracket
+  \inferrule
+     {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
+     {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
+\right\rrbracket z =
+  \inferrule*
+    {
+      \inferrule*
+        {}
+        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
+      \\
+      \inferrule*
+        {\inferrule*
+           { }
+           {\cpj{\cpLink{x}{z}}
+             {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
+                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
+        {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
+             {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
+                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+    }
+    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
+         {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+\\
+\left\llbracket
+  \inferrule
+     {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
+     {\gvj{\Phi}{\gvReceiveType{M}}{S}}
+\right\rrbracket z =
+  \inferrule*
+    {\inferrule*
+       {}
+       {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
+     \\
+     \inferrule*
+       {\inferrule*
+            { }
+            {\cpj{\cpLink{x}{z}}
+              {\hgvcp{\Phi},x:\hgvcp{S}
+                           ,z:\cpDual{\hgvcp{S}}}}
+        \\ X \notin \FV{\hgvcp{\Phi}}
+       }
+       {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
+          {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
+                       ,z:\cpDual{\hgvcp{S}}}}
+    }
+    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
+         {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
+\end{mathpar}
+
+
 Judgements
 \begin{equations}
-\hgvcp{\gvj{\Phi}{M}{T}} &=& \cpj{\hgvcp{M}z}{\hgvcp{\Phi}, z:\gvDual{\hgvcp{T}}}
+\hgvcp{\gvj{\Phi}{M}{T}} &=& \cpj{\hgvcp{M}z}{\hgvcp{\Phi}, z:\cpDual{\hgvcp{T}}}
 \end{equations}
 
 
