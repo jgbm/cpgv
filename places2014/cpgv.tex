@@ -1,3 +1,5 @@
+% -*- fill-column: 100 -*-
+
 % easychair.tex,v 3.2 2012/05/15
 %
 % Select appropriate paper format in your document class as
@@ -65,8 +67,8 @@
 \newcommand{\gvEndInput}{\key{end}_?}
 \newcommand{\gvPlus}[2]{\oplus \row{#1}{#2}}
 \newcommand{\gvChoice}[2]{\binampersand \row{#1}{#2}}
-\newcommand{\gvServer}[1]{\${#1}}
-\newcommand{\gvService}[1]{\#{#1}}
+\newcommand{\gvServer}[1]{{#1}^\sharp}
+\newcommand{\gvService}[1]{{#1}^\flat}
 \newcommand{\gvDual}[1]{\overline{#1}}
 \newcommand{\gvOutputType}[2]{![{#1}].{#2}}
 \newcommand{\gvInputType}[2]{?[{#1}].{#2}}
@@ -218,17 +220,14 @@
 
 
 \begin{abstract}
-Recently, Wadler presented a continuation-passing translation from a
-session-typed functional language, called GV, to a process calculus,
-called CP, based on classical linear logic. However, this translation
-is one-way: CP is more expressive than GV. We propose an extension to
-GV, called \hgv, which bridges the expressiveness gap. We provide
-direct translations from CP into the session fragment of \hgv, called
-\hgvpi, and from \hgv to \hgvpi. We prove that the original
-continuation-passing translation from GV to CP factors through the
-direct translation to \hgvpi. The new translations shed light both on
-the original translation from GV to CP, and on the limitations in
-expressiveness of GV.
+Recently, Wadler presented a continuation-passing translation from a session-typed functional
+language, called GV, to a process calculus, called CP, based on classical linear logic. However,
+this translation is one-way: CP is more expressive than GV. We propose an extension to GV, called
+\hgv, which bridges the expressiveness gap. We provide direct translations from CP into the session
+fragment of \hgv, called \hgvpi, and from \hgv to \hgvpi. We prove that the original
+qcontinuation-passing translation from GV to CP factors through the direct translation to
+\hgvpi. The new translations shed light both on the original translation from GV to CP, and on the
+limitations in expressiveness of GV.
 \end{abstract}
 
 
@@ -243,7 +242,40 @@ expressiveness of GV.
 
 
 \section{Introduction}
-TODO
+
+Linear logic has long been seen as a possible typing discipline for concurrent programming.
+Girard~\cite{Girard87} originally identified that the connectives of linear logic could be
+interpreted as parallel computation.  Abramsky~\cite{Abramsky92} and Bellin and
+Scott~\cite{BellinScott94} demonstrated an interpretation of linear logic proofs as processes in
+Milner's $\pi$-calculus; however, while their system provided $\pi$-calculus interprations of all
+linear logic proofs, it did not provide a proof-theoretic interpretation for arbitrary
+$\pi$-calculus terms.  Caires and Pfenning~\cite{CairesPfenning10} observed that the multiplicative
+connectives could be interpreted in the style of session types; however, their underlying process
+calculus is more similar to the $\pi$-calculus than to traditional session-typed languages, and is
+based on intuitionistic linear logic.  Finally, Wadler~\cite{Wadler12} showed that a simple
+session-typed linear functional language, patterned after that of Gay and
+Vasconselos~\cite{GayVasconcelos10}, could be mapped into a process calculus based on the classical
+linear logic.
+
+Wadler's work showed that linear session-typed programs could be interpreted as proofs in linear
+logic.  However, his session-typed language (called GV) is less expressive than the linear
+logic---thus, there are linear logic proofs, with corresponding terms of his process calculus
+(called CP), which do not correspond to any GV program.  This work begins by defining an extension
+of GV, called \hgv, sufficient to express all proofs in the linear logic. To demonstrate \hgv's
+expressiveness, we both give a direct translation from CP into \hgv and extend Wadler's
+continuation-passing translation from GV into CP to one from \hgv into CP.
+
+As CP only describes process communication, our translation maps all of CP into the session-oriented
+fragment of HGV (which we call \hgvpi), avoiding the functional features of \hgv entirely.  Thus, by
+composing the translation from \hgv to CP with that from CP to \hgvpi, we obtain a translation of
+the functional features of \hgv into their process counterparts.  Because the translation from \hgv
+to CP is continuation-passing, the composed translation from \hgv into \hgvpi is also
+continuation-passing.  As an alternative approach, we give a direct translation from \hgv to \hgvpi.
+These translations illustrate several points.  First, they show the increased exprsesivityof \hgv:
+as GV's session types contained no notion of replication or recursion, they could not express the
+non-linear features of its functional fragment; \hgv, in contrast, can be reduced to \hgvpi.
+Second, factoring the translation of \hgv into CP over that from \hgv into \hgvpi simplifies the
+translation, and illuminates regularities that were not apparent in Wadler's original translation.
 
 \section{Background}
 
@@ -251,12 +283,12 @@ TODO
 \subsection{\hgv}
 ~
 
-GV stands for ``good variation''. \hgv stands for ``harmonious good
-variation''.
+GV stands for ``good vibrations''. \hgv stands for ``harmonious good
+vibrations''.
 
 Session types
 \[
-S ::= \gvOutput{T}{S} \mid \gvInput{T}{S} \mid 
+S ::= \gvOutput{T}{S} \mid \gvInput{T}{S} \mid
       \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
       \gvEndOutput \mid \gvEndInput \mid
       X \mid \gvDual{X} \mid
@@ -522,11 +554,11 @@ Judgements
 \cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
 \end{equations}
 
-\section{From \hgv to \hgvpi} 
+\section{From \hgv to \hgvpi}
 
 \section{From \hgvpi to CP}
 
-\section{Conclusion}
+\section{Conclusions and Future Work}
 
 TODO
 
@@ -628,7 +660,6 @@ Judgements
 %%   (([[Phi |- M : S]] z)) = Phi |- N : end!
 %%     where
 %%       nu w.(w[].0|[[N]]w) --> [[M]]z
-  
 
 \section{Alternative translations from GV to CP}
 
