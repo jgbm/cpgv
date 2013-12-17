@@ -107,7 +107,9 @@
 \newcommand{\gvReceiveType}[1]{\key{receiveType}~{#1}}
 
 
-\newcommand{\gvServe}[3]{\key{serve}~{#1}({#2})={#3}}
+\newcommand{\gvServeOld}[3]{\key{serve}~{#1}({#2})={#3}}
+
+\newcommand{\gvServe}[2]{\key{serve}~{#1}.{#2}}
 \newcommand{\gvRequest}[1]{\key{request}~{#1}}
 
 \newcommand{\cpLink}[2]{{#1} \leftrightarrow {#2}}
@@ -360,11 +362,11 @@ unlimited, and builds a pair binding into $\key{receive}$, thus
 immediately eliminating the tensor.
 
 The final five typing rules of Figure~\ref{fig:hgv-typing} extend the
-functionality of \hgv with respect to GV: $\gvLink{M}{N}$ links channel
-$M$ to channel $N$, $\gvSendType{S}{M}$ sends session type $S$ along
-$M$, $\gvReceiveType{M}$ receives a type along $M$,
-$\gvServe{s}{x}{M}$ defines server $s$ as $M$ parameterised by channel
-$x$, and $\gvRequest{M}$ requests a fresh instance of service $M$.
+functionality of \hgv with respect to GV: $\gvLink{M}{N}$ links
+channel $M$ to channel $N$, $\gvSendType{S}{M}$ sends session type $S$
+along $M$, $\gvReceiveType{M}$ receives a type along $M$,
+$\gvServe{x}{M}$ defines a server as $M$ parameterised by channel $x$,
+and $\gvRequest{M}$ requests a fresh instance of service $M$.
 %
 
 We argue that each of the five new constructs adds expressive power to
@@ -379,12 +381,17 @@ constructs for monomorphic types, but not for polymorphic types.
 There are parallels between servers and unlimited functions. One might
 expect to be able to simulate the former in terms of the latter --- a
 server is much like an unlimited function parameterised by a
-channel. A key difference is that we can disassociate a server
-declaration ($\gvWith{s}{\dots}{\dots}$) from its definition
-($\gvServe{s}{x}{\dots}$). Thus, servers support a very limited form
-of linear dynamic binding, which functions do not. We believe that
+channel. A key difference is that functions are not session types, so
+cannot appear everywhere that a server type can. We believe that
 servers can be simulated by unlimited functions, but only if one
-performs a global translation similar to closure conversion.
+performs a global translation.
+%
+%% A key difference is that we can disassociate a server declaration
+%% ($\gvWith{s}{\dots}{\dots}$) from its definition
+%% ($\gvServeOld{s}{x}{\dots}$). Thus, servers support a very limited
+%% form of linear dynamic binding, which functions do not. We believe
+%% that servers can be simulated by unlimited functions, but only if one
+%% performs a global translation similar to closure conversion.
 %
 In fact, we will be more interested in going the other way,
 translating away functions as sessions.
@@ -476,7 +483,7 @@ translating away functions as sessions.
 
 \inferrule[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
-{\gvj{\Phi,s : \gvServer{S}}{\gvServe{s}{x}{M}}{\gvEndOutput}}
+{\gvj{\Phi}{\gvServe{x}{M}}{\gvService{S}}}
 
 \inferrule[Request]
 {\gvj{\Phi}{M}{\gvService{S}}}
@@ -493,7 +500,7 @@ translating away functions as sessions.
 
 
 
-\section{From CP to GV}
+\section{From CP to \hgv}
 ~
 
 Types
@@ -544,7 +551,7 @@ Terms
 
 \cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
 \cptogv{\cpServe{s}{x}{P}} &=&
-  \gvServe{s}{x}{\cptogv{P}} \\
+  \gvLink{s}{(\gvServe{x}{\cptogv{P}})} \\
 \cptogv{\cpRequest{s}{x}{P}} &=&
   \gvWith{x}{\gvLink{(\gvRequest{s})}{x}}{\cptogv{P}} \\
 \end{equations}
@@ -592,7 +599,7 @@ following equations.
 \lampi{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
     \gvLet{\gvPair{x}{y}}{\gvReceive{\lampi{M}}}{\lampi{N}} \\
 \lampi{L : \gvUnFun{T}{U}} &=&
-  \gvWith{z}{\gvServe{z}{y}{\gvLink{\lampi{L}}{y}}}{z} \\
+  \gvWith{z}{\gvLink{z}{(\gvServe{y}{\gvLink{\lampi{L}}{y}})}}{z} \\
 \lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
 \end{equations}%
 Each introduction form translates to a term $\gvWith{z}{M}{z}$, where
@@ -661,10 +668,9 @@ Terms
   \cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}} \\[1ex]
 
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\cpCut{y}{\hgvcp{N}y}{\cpLink{x}{y}}}} \\
-\hgvcp{\gvServe{s}{y}{M}}z &=&
-  \cpEmptyIn{z}
-            {\cpServe{s}{y}
-                     {\cpCut{x}{\hgvcp{M}x}{\cpEmptyOut{x}}}} \\
+\hgvcp{\gvServe{y}{M}}z &=&
+   \cpServe{z}{y}
+      {\cpCut{x}{\hgvcp{M}x}{\cpEmptyOut{x}}} \\
 \hgvcp{\gvRequest{M}}z &=& \cpCut{x}{\hgvcp{M}x}{\cpRequest{x}{y}{\cpLink{y}{z}}} \\
 \end{equations}
 
@@ -708,7 +714,7 @@ TODO
 
 %% \inferrule
 %% {\gvj{\Phi, s : \gvServer{S}, x : S}{M}{\gvEndOutput}}
-%% {\gvj{\Phi}{\gvServe{s}{x}{M}}{\gvEndOutput}}
+%% {\gvj{\Phi}{\gvServeOld{s}{x}{M}}{\gvEndOutput}}
 
 %% \inferrule
 %% { }
@@ -754,7 +760,7 @@ Terms
   \cpCut{(x:\cpForall{X}{\cpDual{\gvtocp{S'}}})}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
 \\[1ex]
 \gvtocp{\gvLink{M}{N}}z &=& \cpCut{x}{\gvtocp{M}x}{\cpCut{y}{\gvtocp{N}y}{\cpEmptyIn{z}{\cpLink{x}{y}}}} \\
-\gvtocp{\gvServe{s}{x}{M}}z &=&
+\gvtocp{\gvServeOld{s}{x}{M}}z &=&
   \cpEmptyIn{z}
             {\cpServe{s}{x}
                      {\cpCut{y}{\cpEmptyOut{y}}{\gvtocp{M}y}}} \\
@@ -971,14 +977,14 @@ simply sending the argument along this channel).
 \gvtogv{\gvReceive{M}} &=& M \\
 \gvtogv{\gvUnit} &=&
     \gvWith{z}
-    {\gvServe{z}{x}{\gvCase{x}{\row{}{}}}}
+    {\gvServeOld{z}{x}{\gvCase{x}{\row{}{}}}}
     {z} \\
 %% Unnecessary as we don't have a linear unit!
 %%
 %% \gvtogv{\gvLet{\gvUnit}{M}{N}} &=&
 %%   \gvLet{z}{\gvtogv{M}}{\gvtogv{N}} \\
 \gvtogv{L : \gvUnFun{T}{U}} &=&
-  \gvWith{z}{\gvServe{z}{y}{\gvLink{\gvtogv{L}}{y}}}{z} \\
+  \gvWith{z}{\gvServeOld{z}{y}{\gvLink{\gvtogv{L}}{y}}}{z} \\
 \gvtogv{L : \gvLinFun{T}{U}} &=& \gvRequest{\gvtogv{L}} \\
 \end{equations}
 
