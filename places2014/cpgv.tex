@@ -647,7 +647,7 @@ Terms
 \hgvcp{x}z &=& \cpLink{x}z \\
 \hgvcp{\gvSend{M}{N}}z &=& \cpCut{x}{\cpOutput{x}{y}{\hgvcp{M}y}{\cpLink{x}{z}}}{\hgvcp{N}x} \\
 \hgvcp{\gvReceiveK{y}{x}{M}{N}}z &=&
-  \cpCut{x}{\hgvcp{M}x}{\cpInput{y}{x}{\hgvcp{N}z}} \\
+  \cpCut{x}{\hgvcp{M}x}{\cpInput{x}{y}{\hgvcp{N}z}} \\
 \hgvcp{\gvSelect{\la}{x}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
 \hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
