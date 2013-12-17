@@ -608,6 +608,72 @@ The translation on judgements is pointwise.
 
 
 \section{From \hgvpi to CP}
+~
+
+\newcommand{\hgvcp}[1]{\llbracket{#1}\rrbracket}
+
+Session types
+\begin{equations}
+\hgvcp{\gvOutput{T}{S}}        &=& \cpTimes{\cpDual{\hgvcp{T}}}{\hgvcp{S}} \\
+\hgvcp{\gvInput{T}{S}}         &=& \cpPar{\hgvcp{T}}{\hgvcp{S}} \\
+\hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
+\hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
+\hgvcp{\gvEndOutput}              &=& \cpOne \\
+\hgvcp{\gvEndInput}               &=& \cpBottom \\[1ex]
+
+\hgvcp{X}                       &=& X \\
+\hgvcp{\gvOutputType{X}{S}}     &=& \cpExists{X}{\hgvcp{S}} \\
+\hgvcp{\gvInputType{X}{S}}      &=& \cpForall{X}{\hgvcp{S}} \\[1ex]
+
+\hgvcp{\gvServer{S}}  &=& \cpOfCourse{\hgvcp{S}} \\
+\hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\[1ex]
+\end{equations}
+
+Terms
+
+\begin{mathpar}
+\left\llbracket \inferrule{\gvj{\Phi}{N}{U}}{\gvj{\Phi,x:\gvEndInput}{N}{U}} \right\rrbracket z =
+  \inferrule
+    {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},z:\cpDual{\hgvcp{U}}}}
+    {\cpj{\cpEmptyIn{x}{\hgvcp{N}z}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{U}}}}
+\\
+\left\llbracket \inferrule{\gvj{\Phi,x:\gvEndInput,x':\gvEndInput}{N}{U}}
+                          {\gvj{\Phi,x:\gvEndInput}{\subst{N}{x}{x'}}{U}} \right\rrbracket z =
+  \inferrule
+    {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},x:\cpBottom,x':\cpBottom,z:\cpDual{\hgvcp{U}}}}
+    {\cpj{\cpCut{x'}{\hgvcp{N}z}{\cpEmptyOut{x'}}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{U}}}}
+\end{mathpar}
+\begin{equations}
+\hgvcp{x}z &=& \cpLink{x}z \\
+\hgvcp{\gvSend{M}{N}}z &=& \cpCut{x}{\cpOutput{x}{y}{\hgvcp{M}y}{\cpLink{x}{z}}}{\hgvcp{N}x} \\
+\hgvcp{\gvReceiveK{y}{x}{M}{N}}z &=&
+  \cpCut{x}{\hgvcp{M}x}{\cpInput{y}{x}{\hgvcp{N}z}} \\
+\hgvcp{\gvSelect{\la}{x}}z &=&
+  \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
+\hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
+  \cpCut{x}{\hgvcp{M}x}{\cpCase{x}{\row{\la_i.N_i}{i}}} \\
+\hgvcp{\gvWith{x}{M}{N}}z &=&
+  \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\hgvcp{N}z} \\[1ex]
+
+\hgvcp{\gvSendType{S}{(M : \cpForall{X}{S'})}}z &=&
+  \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
+\hgvcp{\gvReceiveType{(M : \cpExists{X}{S'})}}z &=&
+  \cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}} \\[1ex]
+
+\hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\cpCut{y}{\hgvcp{N}y}{\cpLink{x}{y}}}} \\
+\hgvcp{\gvServe{s}{y}{M}}z &=&
+  \cpEmptyIn{z}
+            {\cpServe{s}{y}
+                     {\cpCut{x}{\hgvcp{M}x}{\cpEmptyOut{x}}}} \\
+\hgvcp{\gvRequest{M}}z &=& \cpCut{x}{\hgvcp{M}x}{\cpRequest{x}{y}{\cpLink{y}{z}}} \\
+\end{equations}
+
+Judgements
+\begin{equations}
+\hgvcp{\gvj{\Phi}{M}{T}} &=& \cpj{\hgvcp{M}z}{\hgvcp{\Phi}, z:\gvDual{\hgvcp{T}}}
+\end{equations}
+
+
 
 \section{Conclusions and Future Work}
 
