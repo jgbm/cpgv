@@ -1,4 +1,4 @@
-% -*- fill-column: 100 -*-
+% -*- fill-column: 70 -*-
 
 % easychair.tex,v 3.2 2012/05/15
 %
@@ -61,14 +61,14 @@
 
 \newcommand{\row}[2]{\set{#1}_{#2}}
 
-\newcommand{\gvOutput}[2]{!{#1}.{#2}}
-\newcommand{\gvInput}[2]{?{#1}.{#2}}
+\newcommand{\gvOutput}[2]{\mathord{!}{#1}.{#2}}
+\newcommand{\gvInput}[2]{\mathord{?}{#1}.{#2}}
 \newcommand{\gvEndOutput}{\key{end}_!}
 \newcommand{\gvEndInput}{\key{end}_?}
 \newcommand{\gvPlus}[2]{\oplus \row{#1}{#2}}
 \newcommand{\gvChoice}[2]{\binampersand \row{#1}{#2}}
-\newcommand{\gvServer}[1]{{#1}^\sharp}
-\newcommand{\gvService}[1]{{#1}^\flat}
+\newcommand{\gvServer}[1]{\flat {#1}}
+\newcommand{\gvService}[1]{\sharp {#1}}
 \newcommand{\gvDual}[1]{\overline{#1}}
 \newcommand{\gvOutputType}[2]{![{#1}].{#2}}
 \newcommand{\gvInputType}[2]{?[{#1}].{#2}}
@@ -296,13 +296,13 @@ S ::= \gvOutput{T}{S} \mid \gvInput{T}{S} \mid
       \gvServer{S} \mid \gvService{S}
 \]
 
-\hgv, in addition to the: value output ($\gvOutput{T}{S}$), value input
-($\gvInput{T}{S}$), select ($\gvPlus{\la_i:S_i}{i}$), choice
+\hgv, in addition to the: value output ($\gvOutput{T}{S}$), value
+input ($\gvInput{T}{S}$), select ($\gvPlus{\la_i:S_i}{i}$), choice
 ($\gvChoice{\la_i:S_i}{i}$), end output ($\gvEndOutput$) and end input
 ($\gvEndInput$) session types of GV, has: session type variables
 ($X$), negated session type variables ($\gvDual{X}$), type output
-($\gvEndInput$), type input ($\gvEndInput$), server ($\gvServer{S}$)
-and service ($\gvService{S}$) session types.
+($\gvOutputType{X}{S}$), type input ($\gvInputType{X}{S}$), server
+($\gvServer{S}$) and service ($\gvService{S}$) session types.
 
 
 Types
@@ -555,6 +555,57 @@ Judgements
 \end{equations}
 
 \section{From \hgv to \hgvpi}
+
+\newcommand{\lampi}[1]{({#1})^\star}
+
+
+The language \hgvpi is the restriction of \hgv to session types,
+that is, \hgv without $\lolli$, $\to$, or $\otimes$.
+
+The translation on types is given by the homomorphic extension of the
+following equations.
+\[
+\lampi{\gvLinFun{T}{U}} = \gvOutput{\lampi{T}}{\gvDual{\lampi{U}}} \qquad
+\lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\gvDual{\lampi{U}}})} \qquad
+\lampi{\gvTimes{T}{U}} = \gvInput{\lampi{T}}{\gvDual{\lampi{U}}}
+\]%
+Each translated type characterise the \emph{interface} to the
+simulated source type. A linear function is simulated by input along a
+channel; its interface is output along the other end of the channel.
+An unlimited function is simulated by a server; its interface is a
+client. A tensor is simulated by output along a channel; its interface
+is input along the other end of that channel.
+%
+This duality between implementation and interface explains the
+dualisation of types in Wadler's original CPS translation from GV to
+CP.
+
+The translation on terms is given by the homomorphic extension of the
+following equations.
+\begin{equations}
+\lampi{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\lampi{M}}{z}}}{z} \\
+\lampi{\gvApp{L}{M}} &=& \gvSend{\lampi{M}}{\lampi{L}} \\
+\lampi{\gvTimes{M}{N}} &=&
+  \gvWith{z}
+    {\gvLink{(\gvSend{\lampi{M}}{z})}{\lampi{N}}}
+    {z} \\
+\lampi{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
+    \gvLet{\gvPair{x}{y}}{\gvReceive{\lampi{M}}}{\lampi{N}} \\
+\lampi{L : \gvUnFun{T}{U}} &=&
+  \gvWith{z}{\gvServe{z}{y}{\gvLink{\lampi{L}}{y}}}{z} \\
+\lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
+\end{equations}%
+Each introduction form translates to a term $\gvWith{z}{M}{z}$, where
+$M : \gvEndOutput$ provides the simulated implementation of the
+introduction form with $z : S$ bound in $M$, and $z : \gvDual{S}$ on
+the right provides its interface.
+
+The translation on judgements is pointwise.
+%
+\begin{equations}
+\lampi{\gvj{\Phi}{M}{T}} &=& \gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}} \\
+\end{equations}%
+
 
 \section{From \hgvpi to CP}
 
