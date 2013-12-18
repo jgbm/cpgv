@@ -97,8 +97,12 @@
 \newcommand{\gvReceive}[1]{\key{receive}~{#1}}
 \newcommand{\gvSelect}[2]{\key{select}~{#1}~{#2}}
 \newcommand{\gvCase}[2]{\key{case}~{#1}~\key{of}~{#2}}
+
+\newcommand{\gvFork}[2]{\key{fork}~{#1}.{#2}}
+
 \newcommand{\gvWith}[3]{\key{with}~{#1}~\key{connect}~{#2}~\key{to}~{#3}}
 \newcommand{\gvTerminate}[1]{\key{terminate}~{#1}}
+
 
 % receive with continuation
 \newcommand{\gvReceiveK}[4]{\gvLet{\gvPair{#1}{#2}}{\gvReceive{#3}}{#4}}
@@ -333,6 +337,8 @@ that there is no unit type (called $\gvUnitType$ in GV), and
 $\gvEndInput$ is unlimited. We omit unit because it is isomorphic to
 both $\gvEndInput$ and $\gvService{(\gvPlus{}{})}$.
 
+TODO: fork vs with
+
 The terms and typing rules for \hgv are given in
 Figure~\ref{fig:hgv-typing}. The first three rules are structural. The
 next six rules cover the non-session fragment of \hgv. The remaining
@@ -464,10 +470,14 @@ translating away functions as sessions.
 \inferrule[Case]
 {\gvj{\Phi}{M}{\gvChoice{\la_i:S_i}{i}} \\ \row{\gvj{\Psi,x:S_i}{N_i}{T}}{i}}
 {\gvj{\Phi,\Psi}{\gvCase{M}{\row{\la_i(x).N_i}{i}}}{T}}
+\\
+\inferrule[Fork]
+{\gvj{\Phi,x:S}{M}{\gvEndOutput}}
+{\gvj{\Phi}{\gvFork{x}{M}}{\gvDual{S}}}
 
-\inferrule[Connect]
-{\gvj{\Phi,x:S}{M}{\gvEndOutput} \\ \gvj{\Psi,x:\gvDual{S}}{N}{T}}
-{\gvj{\Phi,\Psi}{\gvWith{x}{M}{N}}{T}}
+%% \inferrule[Connect]
+%% {\gvj{\Phi,x:S}{M}{\gvEndOutput} \\ \gvj{\Psi,x:\gvDual{S}}{N}{T}}
+%% {\gvj{\Phi,\Psi}{\gvWith{x}{M}{N}}{T}}
 
 \inferrule[Link]
 {\gvj{\Phi}{M}{S} \\ \gvj{\Phi}{N}{\gvDual{S}}}
@@ -531,9 +541,9 @@ Types
 Terms
 \begin{equations}
 \cptogv{\cpCut{x}{P}{Q}} &=&
-  \gvWith{x}{\cptogv{P}}{\cptogv{Q}} \\
+  \gvLet{x}{\gvFork{x}{\cptogv{P}}}{\cptogv{Q}} \\
 \cptogv{\cpOutput{x}{y}{P}{Q}} &=&
-  \gvWith{y}{\cptogv{P}}{\gvLet{x}{\gvSend{y}{x}}{\cptogv{Q}}} \\
+  \gvLet{x}{\gvSend{(\gvFork{y}{\cptogv{P}})}{x}}{\cptogv{Q}} \\
 \cptogv{\cpInput{x}{y}{P}} &=&
   \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{P}} \\
 \cptogv{\cpInject{x}{\la}{P}} &=&
@@ -553,7 +563,7 @@ Terms
 \cptogv{\cpServe{s}{x}{P}} &=&
   \gvLink{s}{(\gvServe{x}{\cptogv{P}})} \\
 \cptogv{\cpRequest{s}{x}{P}} &=&
-  \gvWith{x}{\gvLink{(\gvRequest{s})}{x}}{\cptogv{P}} \\
+  \gvLet{x}{\gvFork{x}{\gvLink{(\gvRequest{s})}{x}}}{\cptogv{P}} \\
 \end{equations}
 
 Judgements
@@ -590,22 +600,21 @@ CP.
 The translation on terms is given by the homomorphic extension of the
 following equations.
 \begin{equations}
-\lampi{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\lampi{M}}{z}}}{z} \\
+\lampi{\gvLam{x}{M}} &=& \gvFork{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\lampi{M}}{z}}} \\
 \lampi{\gvApp{L}{M}} &=& \gvSend{\lampi{M}}{\lampi{L}} \\
 \lampi{\gvTimes{M}{N}} &=&
-  \gvWith{z}
-    {\gvLink{(\gvSend{\lampi{M}}{z})}{\lampi{N}}}
-    {z} \\
+  \gvFork{z}
+    {\gvLink{(\gvSend{\lampi{M}}{z})}{\lampi{N}}} \\
 \lampi{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
     \gvLet{\gvPair{x}{y}}{\gvReceive{\lampi{M}}}{\lampi{N}} \\
 \lampi{L : \gvUnFun{T}{U}} &=&
-  \gvWith{z}{\gvLink{z}{(\gvServe{y}{\gvLink{\lampi{L}}{y}})}}{z} \\
+  \gvFork{z}{\gvLink{z}{(\gvServe{y}{\gvLink{\lampi{L}}{y}})}} \\
 \lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
 \end{equations}%
-Each introduction form translates to a term $\gvWith{z}{M}{z}$, where
-$M : \gvEndOutput$ provides the simulated implementation of the
-introduction form with $z : S$ bound in $M$, and $z : \gvDual{S}$ on
-the right provides its interface.
+Each introduction form translates to a term $\gvFork{z}{M}$, where $M
+: \gvEndOutput$ provides the simulated implementation of the
+introduction form with $z : S$ bound in $M$, and $\gvDual{S}$ provides
+its interface.
 
 The translation on judgements is pointwise.
 %
@@ -655,12 +664,12 @@ Terms
 \hgvcp{\gvSend{M}{N}}z &=& \cpCut{x}{\cpOutput{x}{y}{\hgvcp{M}y}{\cpLink{x}{z}}}{\hgvcp{N}x} \\
 \hgvcp{\gvReceiveK{y}{x}{M}{N}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInput{x}{y}{\hgvcp{N}z}} \\
-\hgvcp{\gvSelect{\la}{x}}z &=&
+\hgvcp{\gvSelect{\la}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
 \hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpCase{x}{\row{\la_i.N_i}{i}}} \\
-\hgvcp{\gvWith{x}{M}{N}}z &=&
-  \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\hgvcp{N}z} \\[1ex]
+\hgvcp{\gvFork{x}{M}}z &=&
+  \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\cpLink{x}{z}} \\[1ex]
 
 \hgvcp{\gvSendType{S}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
