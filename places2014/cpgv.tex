@@ -313,14 +313,14 @@ closely corresponding to linear logic.
 \end{eqs}\]
 The types for input ($\gvInput{T}{S}$), output ($\gvOutput{T}{S}$), selection
 ($\gvPlus{\la_i:S_i}{i}$) and choice ($\gvChoice{\la_i:\S_i}{i}$) are standard.  Like GV, but unlike
-most session typed systems, we distinguish explicit ($\gvEndOutput$) and implicit ($\gvEndInput$)
-session ends; this matches the situation in linear logic, where there is no convenient self-dual
-proposition to represent session ending.  Finally, \hgv contains several less usual session types.
-We include variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType{X}{S}$) and
-output ($\gvOutputType{X}{S}$), permitting the definition of polymorphic sessions.  Finally, we
-include a notion of replicated sessions: a session of type $\gvService{S}$ can be thought of as a
-``service'', providing any number of copies of a session of type $S$; a ssession of type
-$\gvServer{S}$ can be thought of as the ``server'' providing that service.
+most session typed systems, we distinguish output ($\gvEndOutput$) and input ($\gvEndInput$) session
+ends; this matches the situation in linear logic, where there is no convenient self-dual proposition
+to represent the end of a session.  Finally, \hgv contains several less usual session types.  We
+include variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType{X}{S}$) and output
+($\gvOutputType{X}{S}$), permitting the definition of polymorphic sessions.  Finally, we include a
+notion of replicated sessions: a session of type $\gvService{S}$ can be thought of as a ``service'',
+providing any number of copies of a session of type $S$; a ssession of type $\gvServer{S}$ can be
+thought of as the ``server'' providing that service.
 
 The notion of duals for \hgv sessions is standard, with the expected addition for services and their
 servers:
@@ -330,7 +330,7 @@ servers:
   \gvDual{\gvEndOutput} &= \gvEndInput
 \end{align*}
 
-\hgv's types include sessions, as well as pairs, and linear and unlimited functions:
+In addition to sessions, \hgv's types include pairs, and linear and unlimited functions:
 \[
 T,U,V ::= S \mid \gvTimes{T}{U} \mid \gvLinFun{T}{U} \mid \gvUnFun{T}{U}
 \]
@@ -425,8 +425,8 @@ T,U,V ::= S \mid \gvTimes{T}{U} \mid \gvLinFun{T}{U} \mid \gvUnFun{T}{U}
 
 
 Each type $T$ is classified as either linear ($\lin{T}$) or unlimited ($\un{T}$); the only unlimited
-types are those for services ($\un{\gvService{S}}$), unlimited functions ($\un{\gvUnFun{T}{U}}$) and implicit
-end session ($\un{\gvEndInput}$).
+types are those for services ($\un{\gvService{S}}$), unlimited functions ($\un{\gvUnFun{T}{U}}$) and
+input end session ($\un{\gvEndInput}$).
 
 \begin{figure}
 \begin{mathpar}
@@ -535,7 +535,7 @@ are structural, followed by the rules for the functional forms and then those fo
 fragment.  The unusual features of \hgv are captured in the final six rules.  We replace Wadler's
 \textsf{with \dots connect \dots to} construct with \textsf{fork}; the two are interdefinable, but
 we found \textsf{fork} to be more natural and better aligned with the language of Gay and
-Vasconcelos.  We add a term $\gvLink{M}{N}$ to implement session forwarding; this is provided in
+Vasconcelos.  We add a term $\gvLink{M}{N}$ to implement channel forwarding; this is provided in
 neither Wadler's nor Gay and Vasconcelos's languages, but is necessary to equal the expressivity of
 CP.  Finally, we add terms $\gvSendType{S}{M}$ and $\gvReceiveType{S}$ to provide polymorphism, and
 $\gvServe{x}{M}$ and $\gvRequest{M}$ to implement replicated sessions.  Note that, as the body $M$
@@ -623,29 +623,14 @@ side is identical to $\lampi{\gvApp{(\gvLam{x}{N})}{M}}$ where the
 translation $\lampi{-}$ is defined in the next section.
 
 Types
-\[
-\begin{array}{@{}c@{\qquad}c@{\qquad}c@{}}
-\begin{eqs}
-\cptogv{\cpTimes{A}{B}} &=& \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} \\
-\cptogv{\cpPar{A}{B}} &=& \gvInput{\cptogv{A}}{\cptogv{B}} \\
-\cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i} \\
-\cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
-\end{eqs}
-&
-\begin{eqs}
-\cptogv{\cpOne} &=& \gvEndOutput \\
-\cptogv{\cpBottom} &=& \gvEndInput \\[1ex]
-\cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
-\cptogv{\cpWhyNot{A}} &=& \gvService{\cptogv{A}} \\
-\end{eqs}
-&
-\begin{eqs}
-\cptogv{X} &=& X \\
-\cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
-\cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\[1ex]
-\end{eqs}
-\end{array}
-\]
+\begin{align*}
+\cptogv{\cpTimes{A}{B}} &= \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} & \cptogv{\cpOne} &= \gvEndOutput \\
+\cptogv{\cpPar{A}{B}} &= \gvInput{\cptogv{A}}{\cptogv{B}} & \cptogv{\cpBottom} &= \gvEndInput \\
+\cptogv{\cpPlus{\la_i:A_i}{i}} &= \gvPlus{\la_i:\cptogv{A_i}}{i} & \cptogv{\cpOfCourse{A}} &= \gvServer{\cptogv{A}} \\
+\cptogv{\cpWith{\la_i:A_i}{i}} &= \gvChoice{\la_i:\cptogv{A_i}}{i} & \cptogv{\cpWhyNot{A}} &= \gvService{\cptogv{A}} \\
+\cptogv{\cpExists{X}{A}} &= \gvOutputType{X}{\cptogv{A}} & \cptogv{X} &= X \\
+\cptogv{\cpForall{X}{A}} &= \gvInputType{X}{\cptogv{A}} \\
+\end{align*}
 
 Terms
 \begin{equations}
@@ -745,30 +730,14 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 
 
 Session types
-\[
-\begin{array}{@{}c@{\qquad}c@{\qquad}c@{}}
-\begin{eqs}
-\hgvcp{\gvOutput{S}{S'}}        &=& \cpTimes{\cpDual{\hgvcp{S}}}{\hgvcp{S'}} \\
-\hgvcp{\gvInput{S}{S'}}         &=& \cpPar{\hgvcp{S}}{\hgvcp{S'}} \\
-\hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
-\hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
-\end{eqs}
-&
-\begin{eqs}
-\hgvcp{\gvEndOutput}           &=& \cpOne \\
-\hgvcp{\gvEndInput}            &=& \cpBottom \\[1ex]
-
-\hgvcp{\gvServer{S}}  &=& \cpOfCourse{\hgvcp{S}} \\
-\hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\
-\end{eqs}
-&
-\begin{eqs}
-\hgvcp{X}                       &=& X \\
-\hgvcp{\gvOutputType{X}{S}}     &=& \cpExists{X}{\hgvcp{S}} \\
-\hgvcp{\gvInputType{X}{S}}      &=& \cpForall{X}{\hgvcp{S}} \\
-\end{eqs}
-\end{array}
-\]
+\begin{align*}
+\hgvcp{\gvOutput{T}{S}}        &= \cpTimes{\cpDual{\hgvcp{T}}}{\hgvcp{S}} & \hgvcp{X}                       &= X \\
+\hgvcp{\gvInput{T}{S}}         &= \cpPar{\hgvcp{T}}{\hgvcp{S}} & \hgvcp{\gvOutputType{X}{S}}     &= \cpExists{X}{\hgvcp{S}} \\
+\hgvcp{\gvPlus{\la_i:S_i}{i}}   &= \cpPlus{\la_i:\hgvcp{S_i}}{i} & \hgvcp{\gvInputType{X}{S}}      &= \cpForall{X}{\hgvcp{S}} \\
+\hgvcp{\gvChoice{\la_i:S_i}{i}} &= \cpWith{\la_i:\hgvcp{S_i}}{i} & \hgvcp{\gvServer{S}}  &=\: \cpOfCourse{\hgvcp{S}} \\
+\hgvcp{\gvEndOutput}              &= \cpOne & \hgvcp{\gvService{S}} &= \: \cpWhyNot{\hgvcp{S}} \\
+\hgvcp{\gvEndInput}               &= \cpBottom
+\end{align*}
 
 Terms
 
@@ -863,7 +832,6 @@ Terms
 %%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
 %% \end{mathpar}
 
-
 The translation on contexts is pointwise.
 \begin{equations}
 \hgvcp{x_1:T_1, \dots, x_n:T_n} &=& x_1:\hgvcp{T_1}, \dots, x_n:\hgvcp{T_n} \\
@@ -883,9 +851,30 @@ If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 
 \section{Conclusions and Future Work}
 
-TODO
+In this paper, we have proposed a session-typed functional language, \hgv, which builds on the
+similar languages of Wadler and Gay and Vasconcelos.  We have demonstrated that \hgv is sufficient
+to encode arbitrary linear logic proofs, completing the correspondence between linear logic and
+session typing.  We have also demonstrated that we can code the functional fragment of \hgv in terms
+of its session fragment, simplifying the translation from \hgv to CP.  To conclude, we identify
+three important areas for continued research.
+\begin{itemize}
+\item In this paper, we have given a semantics to \hgv only via its translation to CP.  We would
+  like to give \hgv a semantics directly, in terms of reductions of configurations of processes, and
+  then to show that such an approach is equivalent to translation to CP.
+\item Replication has limited expressive power compared to recursion; in particular, it cannot
+  express services whose behavior changes over time or in response to client requests.  We believe
+  that the study of fixed points in linear logic provides a mechanism to support more expressive
+  recursive behavior without sacrificing the logical interpretation of \hgv.
+\item The semantics of \hgv is equivalent to that of cut elimination in linear logic.  As linear
+  logic proofs enjoy weak normalization, \hgv programs are also deterministic.  We hope to identify
+  further extensions of \hgv that would introduce non-determinism, and thus allow \hgv programs with
+  a wider variety of concurrent behaviors, while preserving as much of the connection to linear
+  logic as possible.
+\end{itemize}
 
-\cite{wadler2014jfp}
+
+
+
 
 \label{sect:bib}
 \bibliographystyle{plain}
@@ -967,6 +956,58 @@ Terms
                      {\cpCut{y}{\cpEmptyOut{y}}{\gvtocp{M}y}}} \\
 \gvtocp{\gvRequest{s}}z &=& \cpRequest{s}{x}{\cpLink{x}{z}} \\
 \end{equations}
+
+Horrible verbose versions of the rules for sending and receiving types
+\begin{mathpar}
+\left\llbracket
+  \inferrule
+     {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
+     {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
+\right\rrbracket z =
+  \inferrule*
+    {
+      \inferrule*
+        {}
+        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
+      \\
+      \inferrule*
+        {\inferrule*
+           { }
+           {\cpj{\cpLink{x}{z}}
+             {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
+                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
+        {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
+             {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
+                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+    }
+    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
+         {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+\\
+\left\llbracket
+  \inferrule
+     {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
+     {\gvj{\Phi}{\gvReceiveType{M}}{S}}
+\right\rrbracket z =
+  \inferrule*
+    {\inferrule*
+       {}
+       {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
+     \\
+     \inferrule*
+       {\inferrule*
+            { }
+            {\cpj{\cpLink{x}{z}}
+              {\hgvcp{\Phi},x:\hgvcp{S}
+                           ,z:\cpDual{\hgvcp{S}}}}
+        \\ X \notin \FV{\hgvcp{\Phi}}
+       }
+       {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
+          {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
+                       ,z:\cpDual{\hgvcp{S}}}}
+    }
+    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
+         {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
+\end{mathpar}
 
 Judgements
 \begin{equations}
@@ -1229,8 +1270,6 @@ could also interpret the unit type as $\gvEndInput$ and $\gvUnit$ as
 $\gvWith{x}{x}{x}$. Making $\gvEndInput$ unrestricted makes sense as
 $\gvEndInput = \cptogv{\cpBottom}$, and weakening and contraction are
 derivable for $\cpBottom$ in CP.
-
-\newpage
 
 %------------------------------------------------------------------------------
 %%
