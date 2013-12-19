@@ -43,6 +43,12 @@
 
 %%% macros
 
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+
 \newcommand{\ba}{\begin{array}}
 \newcommand{\ea}{\end{array}}
 
@@ -159,6 +165,10 @@
 
 \newcommand{\hgv}{HGV\xspace}
 \newcommand{\hgvpi}{HGV$\pi$\xspace}
+
+\newcommand{\lampi}[1]{({#1})^\star}
+\newcommand{\hgvcp}[1]{\llbracket{#1}\rrbracket}
+
 
 %\makeindex
 
@@ -388,9 +398,11 @@ There are parallels between servers and unlimited functions. One might
 expect to be able to simulate the former in terms of the latter --- a
 server is much like an unlimited function parameterised by a
 channel. A key difference is that functions are not session types, so
-cannot appear everywhere that a server type can. We believe that
-servers can be simulated by unlimited functions, but only if one
-performs a global translation.
+cannot appear everywhere that a server type can.
+%% Maybe not...
+%%
+%% We believe that servers can be simulated by unlimited functions,
+%% but only if one performs a global translation.
 %
 %% A key difference is that we can disassociate a server declaration
 %% ($\gvWith{s}{\dots}{\dots}$) from its definition
@@ -399,8 +411,8 @@ performs a global translation.
 %% that servers can be simulated by unlimited functions, but only if one
 %% performs a global translation similar to closure conversion.
 %
-In fact, we will be more interested in going the other way,
-translating away functions as sessions.
+%% In fact, we will be more interested in going the other way,
+%% translating away functions as sessions.
 
 
 
@@ -510,8 +522,18 @@ translating away functions as sessions.
 
 
 
-\section{From CP to \hgv}
+\section{From CP to \hgvpi}
 ~
+
+As a convenience we will use the following syntactic sugar in this
+section.
+\[
+\gvLet{x}{M}{N} = \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}
+\]
+This may look surprising, but the $\gvLet{x}{M}{N}$ is commonly used
+as syntactic sugar for $\gvApp{(\gvLam{x}{N})}{M}$, and the right hand
+side is identical to $\lampi{\gvApp{(\gvLam{x}{N})}{M}}$ where the
+translation $\lampi{-}$ is defined in the next section.
 
 Types
 \[
@@ -573,8 +595,6 @@ Judgements
 
 \section{From \hgv to \hgvpi}
 
-\newcommand{\lampi}[1]{({#1})^\star}
-
 
 The language \hgvpi is the restriction of \hgv to session types,
 that is, \hgv without $\lolli$, $\to$, or $\otimes$.
@@ -586,12 +606,12 @@ following equations.
 \lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\gvDual{\lampi{U}}})} \qquad
 \lampi{\gvTimes{T}{U}} = \gvInput{\lampi{T}}{\gvDual{\lampi{U}}}
 \]%
-Each translated type characterise the \emph{interface} to the
-simulated source type. A linear function is simulated by input along a
-channel; its interface is output along the other end of the channel.
-An unlimited function is simulated by a server; its interface is a
-client. A tensor is simulated by output along a channel; its interface
-is input along the other end of that channel.
+Each target type is the \emph{interface} to the simulated source
+type. A linear function is simulated by input on a channel; its
+interface is output on the other end of the channel. An unlimited
+function is simulated by a server; its interface is a client. A tensor
+is simulated by output on a channel; its interface is input on the
+other end of that channel.
 %
 This duality between implementation and interface explains the
 dualisation of types in Wadler's original CPS translation from GV to
@@ -610,54 +630,75 @@ following equations.
 \lampi{L : \gvUnFun{T}{U}} &=&
   \gvFork{z}{\gvLink{z}{(\gvServe{y}{\gvLink{\lampi{L}}{y}})}} \\
 \lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
+\lampi{\gvReceive{M}} &=& \lampi{M} \\
 \end{equations}%
 Each introduction form translates to a term $\gvFork{z}{M}$, where $M
 : \gvEndOutput$ provides the simulated implementation of the
 introduction form with $z : S$ bound in $M$, and $\gvDual{S}$ provides
 its interface.
 
-The translation on judgements is pointwise.
-%
+The translation on contexts is pointwise.
 \begin{equations}
-\lampi{\gvj{\Phi}{M}{T}} &=& \gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}} \\
+\lampi{x_1:T_1, \dots, x_n:T_n} &=& x_1:\lampi{T_1}, \dots, x_n:\lampi{T_n} \\
 \end{equations}%
+It is straightforward to verify that the translation preserves typing.
+\begin{theorem}
+If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
+\end{theorem}
+
+%% \begin{equations}
+%% \lampi{\gvj{\Phi}{M}{T}} &=& \gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}} \\
+%% \end{equations}%
+
 
 
 \section{From \hgvpi to CP}
 ~
 
-\newcommand{\hgvcp}[1]{\llbracket{#1}\rrbracket}
+
 
 Session types
-\begin{equations}
-\hgvcp{\gvOutput{T}{S}}        &=& \cpTimes{\cpDual{\hgvcp{T}}}{\hgvcp{S}} \\
-\hgvcp{\gvInput{T}{S}}         &=& \cpPar{\hgvcp{T}}{\hgvcp{S}} \\
+\[
+\begin{array}{@{}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
+\hgvcp{\gvOutput{S}{S'}}        &=& \cpTimes{\cpDual{\hgvcp{S}}}{\hgvcp{S'}} \\
+\hgvcp{\gvInput{S}{S'}}         &=& \cpPar{\hgvcp{S}}{\hgvcp{S'}} \\
 \hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
 \hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
-\hgvcp{\gvEndOutput}              &=& \cpOne \\
-\hgvcp{\gvEndInput}               &=& \cpBottom \\[1ex]
-
-\hgvcp{X}                       &=& X \\
-\hgvcp{\gvOutputType{X}{S}}     &=& \cpExists{X}{\hgvcp{S}} \\
-\hgvcp{\gvInputType{X}{S}}      &=& \cpForall{X}{\hgvcp{S}} \\[1ex]
+\end{eqs}
+&
+\begin{eqs}
+\hgvcp{\gvEndOutput}           &=& \cpOne \\
+\hgvcp{\gvEndInput}            &=& \cpBottom \\[1ex]
 
 \hgvcp{\gvServer{S}}  &=& \cpOfCourse{\hgvcp{S}} \\
-\hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\[1ex]
-\end{equations}
+\hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\
+\end{eqs}
+&
+\begin{eqs}
+\hgvcp{X}                       &=& X \\
+\hgvcp{\gvOutputType{X}{S}}     &=& \cpExists{X}{\hgvcp{S}} \\
+\hgvcp{\gvInputType{X}{S}}      &=& \cpForall{X}{\hgvcp{S}} \\
+\end{eqs}
+\end{array}
+\]
 
 Terms
 
+\newcommand{\hgvcpl}{\left\llbracket}
+\newcommand{\hgvcpr}{\right\rrbracket}
+
 \begin{mathpar}
-\left\llbracket \inferrule{\gvj{\Phi}{N}{U}}{\gvj{\Phi,x:\gvEndInput}{N}{U}} \right\rrbracket z =
+\hgvcpl \inferrule{\gvj{\Phi}{N}{S}}{\gvj{\Phi,x:\gvEndInput}{N}{S}} \hgvcpr z =
   \inferrule
-    {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},z:\cpDual{\hgvcp{U}}}}
-    {\cpj{\cpEmptyIn{x}{\hgvcp{N}z}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{U}}}}
+    {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}}
+    {\cpj{\cpEmptyIn{x}{\hgvcp{N}z}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{S}}}}
 \\
-\left\llbracket \inferrule{\gvj{\Phi,x:\gvEndInput,x':\gvEndInput}{N}{U}}
-                          {\gvj{\Phi,x:\gvEndInput}{\subst{N}{x}{x'}}{U}} \right\rrbracket z =
+\hgvcpl \inferrule{\gvj{\Phi,x:\gvEndInput,x':\gvEndInput}{N}{S}}
+                          {\gvj{\Phi,x:\gvEndInput}{\subst{N}{x}{x'}}{S}} \hgvcpr z =
   \inferrule
-    {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},x:\cpBottom,x':\cpBottom,z:\cpDual{\hgvcp{U}}}}
-    {\cpj{\cpCut{x'}{\hgvcp{N}z}{\cpEmptyOut{x'}}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{U}}}}
+    {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},x:\cpBottom,x':\cpBottom,z:\cpDual{\hgvcp{S}}}}
+    {\cpj{\cpCut{x'}{\hgvcp{N}z}{\cpEmptyOut{x'}}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{S}}}}
 \end{mathpar}
 \begin{equations}
 \hgvcp{x}z &=& \cpLink{x}z \\
@@ -673,7 +714,7 @@ Terms
 
 \hgvcp{\gvSendType{S}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
-\hgvcp{\gvReceiveType{M}}z &=&
+\hgvcp{\gvReceiveType{(M \mathbin{:} {\gvInputType{X}{S}})}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}} \\[1ex]
 
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\cpCut{y}{\hgvcp{N}y}{\cpLink{x}{y}}}} \\
@@ -683,63 +724,73 @@ Terms
 \hgvcp{\gvRequest{M}}z &=& \cpCut{x}{\hgvcp{M}x}{\cpRequest{x}{y}{\cpLink{y}{z}}} \\
 \end{equations}
 
-Horrible verbose versions of the rules for sending and receiving types
-\begin{mathpar}
-\left\llbracket
-  \inferrule
-     {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
-     {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
-\right\rrbracket z =
-  \inferrule*
-    {
-      \inferrule*
-        {}
-        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
-      \\
-      \inferrule*
-        {\inferrule*
-           { }
-           {\cpj{\cpLink{x}{z}}
-             {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
-                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
-        {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
-             {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
-                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
-    }
-    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
-         {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
-\\
-\left\llbracket
-  \inferrule
-     {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
-     {\gvj{\Phi}{\gvReceiveType{M}}{S}}
-\right\rrbracket z =
-  \inferrule*
-    {\inferrule*
-       {}
-       {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
-     \\
-     \inferrule*
-       {\inferrule*
-            { }
-            {\cpj{\cpLink{x}{z}}
-              {\hgvcp{\Phi},x:\hgvcp{S}
-                           ,z:\cpDual{\hgvcp{S}}}}
-        \\ X \notin \FV{\hgvcp{\Phi}}
-       }
-       {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
-          {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
-                       ,z:\cpDual{\hgvcp{S}}}}
-    }
-    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
-         {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
-\end{mathpar}
+%% Horrible verbose versions of the rules for sending and receiving types
+%% \begin{mathpar}
+%% \left\llbracket
+%%   \inferrule
+%%      {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
+%%      {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
+%% \right\rrbracket z =
+%%   \inferrule*
+%%     {
+%%       \inferrule*
+%%         {}
+%%         {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
+%%       \\
+%%       \inferrule*
+%%         {\inferrule*
+%%            { }
+%%            {\cpj{\cpLink{x}{z}}
+%%              {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
+%%                            z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
+%%         {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
+%%              {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
+%%                            z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+%%     }
+%%     {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
+%%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+%% \\
+%% \left\llbracket
+%%   \inferrule
+%%      {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
+%%      {\gvj{\Phi}{\gvReceiveType{M}}{S}}
+%% \right\rrbracket z =
+%%   \inferrule*
+%%     {\inferrule*
+%%        {}
+%%        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
+%%      \\
+%%      \inferrule*
+%%        {\inferrule*
+%%             { }
+%%             {\cpj{\cpLink{x}{z}}
+%%               {\hgvcp{\Phi},x:\hgvcp{S}
+%%                            ,z:\cpDual{\hgvcp{S}}}}
+%%         \\ X \notin \FV{\hgvcp{\Phi}}
+%%        }
+%%        {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
+%%           {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
+%%                        ,z:\cpDual{\hgvcp{S}}}}
+%%     }
+%%     {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
+%%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
+%% \end{mathpar}
 
 
-Judgements
+The translation on contexts is pointwise.
 \begin{equations}
-\hgvcp{\gvj{\Phi}{M}{T}} &=& \cpj{\hgvcp{M}z}{\hgvcp{\Phi}, z:\cpDual{\hgvcp{T}}}
-\end{equations}
+\hgvcp{x_1:T_1, \dots, x_n:T_n} &=& x_1:\hgvcp{T_1}, \dots, x_n:\hgvcp{T_n} \\
+\end{equations}%
+It is straightforward to verify that the translation preserves typing.
+\begin{theorem}
+If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
+\end{theorem}
+
+
+%% Judgements
+%% \begin{equations}
+%% \hgvcp{\gvj{\Phi}{M}{T}} &=& \cpj{\hgvcp{M}z}{\hgvcp{\Phi}, z:\cpDual{\hgvcp{T}}}
+%% \end{equations}
 
 
 
