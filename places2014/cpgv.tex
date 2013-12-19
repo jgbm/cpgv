@@ -1,4 +1,4 @@
-% -*- fill-column: 70 -*-
+% -*- fill-column: 100 -*-
 
 % easychair.tex,v 3.2 2012/05/15
 %
@@ -19,10 +19,11 @@
 %\documentclass[letterpaper]{easychair}
 
 % This provides the \BibTeX macro
-\usepackage{doc}
-\usepackage{makeidx}
 \usepackage{amssymb}
 \usepackage{amsmath}
+\usepackage{color}
+\usepackage{doc}
+\usepackage{makeidx}
 \usepackage{stmaryrd}
 \usepackage{mathpartir}
 \usepackage{xspace}
@@ -160,6 +161,8 @@
 \newcommand{\hgv}{HGV\xspace}
 \newcommand{\hgvpi}{HGV$\pi$\xspace}
 
+\newcommand{\todo}[1]{\textbf{\color{red}TODO: #1}}
+
 %\makeindex
 
 %% Document
@@ -283,129 +286,48 @@ non-linear features of its functional fragment; \hgv, in contrast, can be reduce
 Second, factoring the translation of \hgv into CP over that from \hgv into \hgvpi simplifies the
 translation, and illuminates regularities that were not apparent in Wadler's original translation.
 
-\section{Background}
+\section{The \hgv Language}
 
+This section describes our session-typed language \hgv, constrasting it with Gay and Vasconcelos's
+functional session-typed language~\cite{GayVasconcelos10} and Wadler's language GV~\cite{Wadler12}.
+Our language's features are closer to those of Gay and Vasconcelos, but retains a type system
+closely corresponding to linear logic.
 
-\subsection{\hgv}
-~
+\hgv's session types are given by
+\[\begin{eqs}
+  S & ::= & \gvOutput{T}{S} \mid \gvInput{T}{S} \mid
+           \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
+           \gvEndOutput \mid \gvEndInput \\
+    & \mid & X \mid \gvDual{X} \mid
+            \gvOutputType{X}{S} \mid \gvInputType{X}{S} \mid
+            \gvServer{S} \mid \gvService{S}
+\end{eqs}\]
+The types for input ($\gvInput{T}{S}$), output ($\gvOutput{T}{S}$), selection
+($\gvPlus{\la_i:S_i}{i}$) and choice ($\gvChoice{\la_i:\S_i}{i}$) are standard.  Like GV, but unlike
+most session typed systems, we distinguish explicit ($\gvEndOutput$) and implicit ($\gvEndInput$)
+session ends; this matches the situation in linear logic, where there is no convenient self-dual
+proposition to represent session ending.  Finally, \hgv contains several less usual session types.
+We include variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType{X}{S}$) and
+output ($\gvOutputType{X}{S}$), permitting the definition of polymorphic sessions.  Finally, we
+include a notion of replicated sessions: a session of type $\gvService{S}$ can be thought of as a
+``service'', providing any number of copies of a session of type $S$; a ssession of type
+$\gvServer{S}$ can be thought of as the ``server'' providing that service.
 
-GV stands for ``good vibrations''. \hgv stands for ``harmonious good
-vibrations''.
+The notion of duals for \hgv sessions is standard, with the expected addition for services and their
+servers:
+\begin{align*}
+  \gvDual{\gvOutput{T}{S}} &= \gvInput{T}{\gvDual{S}} & \gvDual{\gvOutputType{X}{S}} &= \gvInputType{X}{\gvDual{S}} \\
+  \gvDual{\gvPlus{\la_i:S_i}{i}} &= \gvChoice{\la_i:\gvDual{S_i}}{i} & \gvDual{\gvService{S}} &= \gvServer{\gvDual{S}} \\
+  \gvDual{\gvEndOutput} &= \gvEndInput
+\end{align*}
 
-Session types
-\[
-S ::= \gvOutput{T}{S} \mid \gvInput{T}{S} \mid
-      \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
-      \gvEndOutput \mid \gvEndInput \mid
-      X \mid \gvDual{X} \mid
-      \gvOutputType{X}{S} \mid \gvInputType{X}{S} \mid
-      \gvServer{S} \mid \gvService{S}
-\]
-
-\hgv, in addition to the: value output ($\gvOutput{T}{S}$), value
-input ($\gvInput{T}{S}$), select ($\gvPlus{\la_i:S_i}{i}$), choice
-($\gvChoice{\la_i:S_i}{i}$), end output ($\gvEndOutput$) and end input
-($\gvEndInput$) session types of GV, has: session type variables
-($X$), negated session type variables ($\gvDual{X}$), type output
-($\gvOutputType{X}{S}$), type input ($\gvInputType{X}{S}$), server
-($\gvServer{S}$) and service ($\gvService{S}$) session types.
-
-
-Types
+\hgv's types include sessions, as well as pairs, and linear and unlimited functions:
 \[
 T,U,V ::= S \mid \gvTimes{T}{U} \mid \gvLinFun{T}{U} \mid \gvUnFun{T}{U}
 \]
-
-Each type $T$ is classified as either linear ($\lin{T}$) or unlimited
-($\un{T}$).
-\[
-\begin{array}{l}
-\lin{\gvOutput{T}{S}}  \quad \lin{\gvInput{T}{S}} \quad
-\lin{\gvPlus{\la_i:S_i}{i}} \quad \lin{\gvChoice{\la_i:S_i}{i}} \quad
-\lin{\gvEndOutput} \quad \un{\gvEndInput} \\
-\lin{X} \quad
-\lin{\gvOutputType{X}{S}} \quad \lin{\gvInputType{X}{S}} \quad
-\lin{\gvServer{S}} \quad \un{\gvService{S}} \\
-\lin{\gvTimes{T}{U}} \quad \lin{\gvLinFun{T}{U}} \quad \un{\gvUnFun{T}{U}}
-\end{array}
-\]
-The only unlimited type constructors are those for end input,
-services, and unlimited functions.
-
-Apart from the extensions, the two differences in the types of GV are
-that there is no unit type (called $\gvUnitType$ in GV), and
-$\gvEndInput$ is unlimited. We omit unit because it is isomorphic to
-both $\gvEndInput$ and $\gvService{(\gvPlus{}{})}$.
-
-TODO: fork vs with
-
-The terms and typing rules for \hgv are given in
-Figure~\ref{fig:hgv-typing}. The first three rules are structural. The
-next six rules cover the non-session fragment of \hgv. The remaining
-rules cover the session fragment of \hgv.
-
-Notice that the non-session and session fragments are orthogonal, in
-that the non-session rules mention only non-session type constructors,
-and the session rules mention only session type constructors. This is
-a useful property which does not hold of the original GV. As we shall
-see, it enables us to compile away the non-session fragment into the
-session fragment.
-
-Vanilla GV, has session constructs $\key{receive}$ and
-$\key{terminate}$, both of whose typing rules mention non-session
-types.
-\begin{mathpar}
-\inferrule[Receive-$\otimes$]
-{\gvj{\Phi}{M}{\gvInput{T}{S}}}
-{\gvj{\Phi}{\gvReceive{M}}{\gvTimes{T}{S}}}
-
-\inferrule[Terminate-$\otimes$]
-{\gvj{\Phi}{M}{\gvTimes{T}{\gvEndInput}}}
-{\gvj{\Phi}{\gvTerminate{M}}{T}}
-\end{mathpar}
-\hgv dispenses with $\key{terminate}$ by making $\gvEndOutput$
-unlimited, and builds a pair binding into $\key{receive}$, thus
-immediately eliminating the tensor.
-
-The final five typing rules of Figure~\ref{fig:hgv-typing} extend the
-functionality of \hgv with respect to GV: $\gvLink{M}{N}$ links
-channel $M$ to channel $N$, $\gvSendType{S}{M}$ sends session type $S$
-along $M$, $\gvReceiveType{M}$ receives a type along $M$,
-$\gvServe{x}{M}$ defines a server as $M$ parameterised by channel $x$,
-and $\gvRequest{M}$ requests a fresh instance of service $M$.
-%
-
-We argue that each of the five new constructs adds expressive power to
-GV.
-%
-It seems clear that the ability to send and receive types adds
-expressive power.
-%
-One can straightforwardly simulate $\gvLink{M}{N}$ in terms of other
-constructs for monomorphic types, but not for polymorphic types.
-%
-There are parallels between servers and unlimited functions. One might
-expect to be able to simulate the former in terms of the latter --- a
-server is much like an unlimited function parameterised by a
-channel. A key difference is that functions are not session types, so
-cannot appear everywhere that a server type can. We believe that
-servers can be simulated by unlimited functions, but only if one
-performs a global translation.
-%
-%% A key difference is that we can disassociate a server declaration
-%% ($\gvWith{s}{\dots}{\dots}$) from its definition
-%% ($\gvServeOld{s}{x}{\dots}$). Thus, servers support a very limited
-%% form of linear dynamic binding, which functions do not. We believe
-%% that servers can be simulated by unlimited functions, but only if one
-%% performs a global translation similar to closure conversion.
-%
-In fact, we will be more interested in going the other way,
-translating away functions as sessions.
-
-
-
-
-
+Each type $T$ is classified as either linear ($\lin{T}$) or unlimited ($\un{T}$); the only unlimited
+types are those for services ($\un{\gvService{S}}$), unlimited functions ($\un{\gvUnFun{T}{U}}$) and implicit
+end session ($\un{\gvEndInput}$).
 
 \begin{figure}
 \begin{mathpar}
@@ -420,8 +342,9 @@ translating away functions as sessions.
 \inferrule[Contract]
 {\gvj{\Phi,x:T,x':T}{N}{U} \\ \un{T}}
 {\gvj{\Phi,x:T}{\subst{N}{x}{x'}}{U}}
-\\
-
+\end{mathpar}
+\hrule
+\begin{mathpar}
 \inferrule[$\lolli$-I]
 {\gvj{\Phi,x:T}{N}{U}}
 {\gvj{\Phi}{\gvLam{x}{N}}{\gvLinFun{T}{U}}}
@@ -453,16 +376,20 @@ translating away functions as sessions.
 \inferrule[$\otimes$-E]
 {\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
 {\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
-
+\end{mathpar}
+\hrule
+\begin{mathpar}
 \inferrule[Send]
 {\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{\gvOutput{T}{S}}}
 {\gvj{\Phi}{\gvSend{M}{N}}{S}}
-
+%% \inferrule[Receive]
+%% {\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi,x:T,y:S}{N}{V}}
+%% {\gvj{\Phi,\Psi}{\gvReceiveK{x}{y}{M}{N}}{V}}
 
 \inferrule[Receive]
-{\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi,x:T,y:S}{N}{V}}
-{\gvj{\Phi,\Psi}{\gvReceiveK{x}{y}{M}{N}}{V}}
-
+{\gvj{\Phi}{M}{\gvInput{T}{S}}}
+{\gvj{\Phi}{\gvReceive{M}}{\gvTimes{T}{S}}}
+\\
 \inferrule[Select]
 {\gvj{\Phi}{M}{\gvPlus{\la_i:S_i}{i}}}
 {\gvj{\Phi}{\gvSelect{\la_j}{M}}{S_j}}
@@ -504,11 +431,84 @@ translating away functions as sessions.
 \label{fig:hgv-typing}
 \end{figure}
 
+\hgv's terms and their typing rules are given in Figure~\ref{fig:hgv-typing}; the top three rules
+are structural, followed by the rules for the functional forms and then those for the session-typed
+fragment.  The unusual features of \hgv are captured in the final six rules.  We replace Wadler's
+\textsf{with \dots connect \dots to} construct with \textsf{fork}; the two are interdefinable, but
+we found \textsf{fork} to be more natural and better aligned with the language of Gay and
+Vasconcelos.  We add a term $\gvLink{M}{N}$ to implement session forwarding; this is provided in
+neither Wadler's nor Gay and Vasconcelos's languages, but is necessary to equal the expressivity of
+CP.  Finally, we add terms $\gvSendType{S}{M}$ and $\gvReceiveType{S}$ to provide polymorphism, and
+$\gvServe{x}{M}$ and $\gvRequest{M}$ to implement replicated sessions.  Note that, as the body $M$
+of \textsf{serve} can be arbitrarily replicated, it can only refer to the unlimited portion of the
+environment.
 
+We argue that each of the added forms add expressivity to \hgv.  Channel forwarding can be
+implemented in a type-directed fashion for any given channel in either Wadler's GV or Gay and
+Vasconcelos's language, but neither allows a generic description of forwarding, nor one that would
+account for polymorphic sessions.  GV supports no notion of replication; Gay and Vasconcelos provide
+arbitrary recursive sessions instead of replication, which do not admit an interpretation in linear
+logic.
 
+\todo{Say something about unlimited functions and replication.}
 
-
-
+%% Notice that the non-session and session fragments are orthogonal, in
+%% that the non-session rules mention only non-session type constructors,
+%% and the session rules mention only session type constructors. This is
+%% a useful property which does not hold of the original GV. As we shall
+%% see, it enables us to compile away the non-session fragment into the
+%% session fragment.
+%%
+%% Vanilla GV, has session constructs $\key{receive}$ and
+%% $\key{terminate}$, both of whose typing rules mention non-session
+%% types.
+%% \begin{mathpar}
+%% \inferrule[Receive-$\otimes$]
+%% {\gvj{\Phi}{M}{\gvInput{T}{S}}}
+%% {\gvj{\Phi}{\gvReceive{M}}{\gvTimes{T}{S}}}
+%%
+%% \inferrule[Terminate-$\otimes$]
+%% {\gvj{\Phi}{M}{\gvTimes{T}{\gvEndInput}}}
+%% {\gvj{\Phi}{\gvTerminate{M}}{T}}
+%% \end{mathpar}
+%% \hgv dispenses with $\key{terminate}$ by making $\gvEndOutput$
+%% unlimited, and builds a pair binding into $\key{receive}$, thus
+%% immediately eliminating the tensor.
+%%
+%% The final five typing rules of Figure~\ref{fig:hgv-typing} extend the
+%% functionality of \hgv with respect to GV: $\gvLink{M}{N}$ links
+%% channel $M$ to channel $N$, $\gvSendType{S}{M}$ sends session type $S$
+%% along $M$, $\gvReceiveType{M}$ receives a type along $M$,
+%% $\gvServe{x}{M}$ defines a server as $M$ parameterised by channel $x$,
+%% and $\gvRequest{M}$ requests a fresh instance of service $M$.
+%% %
+%%
+%% We argue that each of the five new constructs adds expressive power to
+%% GV.
+%% %
+%% It seems clear that the ability to send and receive types adds
+%% expressive power.
+%% %
+%% One can straightforwardly simulate $\gvLink{M}{N}$ in terms of other
+%% constructs for monomorphic types, but not for polymorphic types.
+%% %
+%% There are parallels between servers and unlimited functions. One might
+%% expect to be able to simulate the former in terms of the latter --- a
+%% server is much like an unlimited function parameterised by a
+%% channel. A key difference is that functions are not session types, so
+%% cannot appear everywhere that a server type can. We believe that
+%% servers can be simulated by unlimited functions, but only if one
+%% performs a global translation.
+%% %
+%% %% A key difference is that we can disassociate a server declaration
+%% %% ($\gvWith{s}{\dots}{\dots}$) from its definition
+%% %% ($\gvServeOld{s}{x}{\dots}$). Thus, servers support a very limited
+%% %% form of linear dynamic binding, which functions do not. We believe
+%% %% that servers can be simulated by unlimited functions, but only if one
+%% %% performs a global translation similar to closure conversion.
+%% %
+%% In fact, we will be more interested in going the other way,
+%% translating away functions as sessions.
 
 \section{From CP to \hgv}
 ~
@@ -756,6 +756,7 @@ TODO
 %\bibliographystyle{abbrv}
 \bibliography{cpgv}
 
+\appendix
 
 %% \subsection{GV extensions}
 
@@ -1094,7 +1095,7 @@ derivable for $\cpBottom$ in CP.
 \newpage
 
 %------------------------------------------------------------------------------
-%% \appendix
+%%
 
 %------------------------------------------------------------------------------
 % Index
