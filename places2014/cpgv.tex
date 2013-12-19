@@ -1,4 +1,4 @@
-% -*- fill-column: 100 -*-
+% -*- fill-column: 70 -*-
 
 % easychair.tex,v 3.2 2012/05/15
 %
@@ -243,7 +243,7 @@ language, called GV, to a process calculus, called CP, based on classical linear
 this translation is one-way: CP is more expressive than GV. We propose an extension to GV, called
 \hgv, which bridges the expressiveness gap. We provide direct translations from CP into the session
 fragment of \hgv, called \hgvpi, and from \hgv to \hgvpi. We prove that the original
-qcontinuation-passing translation from GV to CP factors through the direct translation to
+continuation-passing translation from GV to CP factors through the direct translation to
 \hgvpi. The new translations shed light both on the original translation from GV to CP, and on the
 limitations in expressiveness of GV.
 \end{abstract}
@@ -609,61 +609,6 @@ logic.
 %% In fact, we will be more interested in going the other way,
 %% translating away functions as sessions.
 
-\section{From CP to \hgvpi}
-~
-
-As a convenience we will use the following syntactic sugar in this
-section.
-\[
-\gvLet{x}{M}{N} = \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}
-\]
-This may look surprising, but the $\gvLet{x}{M}{N}$ is commonly used
-as syntactic sugar for $\gvApp{(\gvLam{x}{N})}{M}$, and the right hand
-side is identical to $\lampi{\gvApp{(\gvLam{x}{N})}{M}}$ where the
-translation $\lampi{-}$ is defined in the next section.
-
-Types
-\begin{align*}
-\cptogv{\cpTimes{A}{B}} &= \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} & \cptogv{\cpOne} &= \gvEndOutput \\
-\cptogv{\cpPar{A}{B}} &= \gvInput{\cptogv{A}}{\cptogv{B}} & \cptogv{\cpBottom} &= \gvEndInput \\
-\cptogv{\cpPlus{\la_i:A_i}{i}} &= \gvPlus{\la_i:\cptogv{A_i}}{i} & \cptogv{\cpOfCourse{A}} &= \gvServer{\cptogv{A}} \\
-\cptogv{\cpWith{\la_i:A_i}{i}} &= \gvChoice{\la_i:\cptogv{A_i}}{i} & \cptogv{\cpWhyNot{A}} &= \gvService{\cptogv{A}} \\
-\cptogv{\cpExists{X}{A}} &= \gvOutputType{X}{\cptogv{A}} & \cptogv{X} &= X \\
-\cptogv{\cpForall{X}{A}} &= \gvInputType{X}{\cptogv{A}} \\
-\end{align*}
-
-Terms
-\begin{equations}
-\cptogv{\cpCut{x}{P}{Q}} &=&
-  \gvLet{x}{\gvFork{x}{\cptogv{P}}}{\cptogv{Q}} \\
-\cptogv{\cpOutput{x}{y}{P}{Q}} &=&
-  \gvLet{x}{\gvSend{(\gvFork{y}{\cptogv{P}})}{x}}{\cptogv{Q}} \\
-\cptogv{\cpInput{x}{y}{P}} &=&
-  \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{P}} \\
-\cptogv{\cpInject{x}{\la}{P}} &=&
-  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{P}} \\
-\cptogv{\cpCase{x}{\row{\la_i.P_i}{i}}} &=&
-  \gvCase{x}{\row{\la_i(x).\cptogv{P_i}}{i}} \\
-\cptogv{\cpEmptyOut{x}} &=& x \\
-\cptogv{\cpEmptyIn{x}{P}} &=& \cptogv{P} \\[1ex]
-  %% \gvLet{z}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
-
-\cptogv{\cpSendType{x}{A}{P}} &=&
-  \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
-\cptogv{\cpReceiveType{x}{X}{P}} &=&
-  \gvLet{x}{\gvReceiveType{x}}{\cptogv{P}} \\[1ex]
-
-\cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
-\cptogv{\cpServe{s}{x}{P}} &=&
-  \gvLink{s}{(\gvServe{x}{\cptogv{P}})} \\
-\cptogv{\cpRequest{s}{x}{P}} &=&
-  \gvLet{x}{\gvFork{x}{\gvLink{(\gvRequest{s})}{x}}}{\cptogv{P}} \\
-\end{equations}
-
-Judgements
-\begin{equations}
-\cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
-\end{equations}
 
 \section{From \hgv to \hgvpi}
 
@@ -840,6 +785,99 @@ It is straightforward to verify that the translation preserves typing.
 \begin{theorem}
 If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 \end{theorem}
+
+
+\section{From CP to \hgvpi}
+~
+
+As a convenience we will use the following syntactic sugar in this
+section.
+\[
+\gvLet{x}{M}{N} = \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}
+\]
+This may look surprising, but the $\gvLet{x}{M}{N}$ is commonly used
+as syntactic sugar for $\gvApp{(\gvLam{x}{N})}{M}$, and the right hand
+side is identical to $\lampi{\gvApp{(\gvLam{x}{N})}{M}}$ where the
+translation $\lampi{-}$ is defined in the next section.
+
+Types
+\begin{align*}
+\cptogv{\cpTimes{A}{B}} &= \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} & \cptogv{\cpOne} &= \gvEndOutput \\
+\cptogv{\cpPar{A}{B}} &= \gvInput{\cptogv{A}}{\cptogv{B}} & \cptogv{\cpBottom} &= \gvEndInput \\
+\cptogv{\cpPlus{\la_i:A_i}{i}} &= \gvPlus{\la_i:\cptogv{A_i}}{i} & \cptogv{\cpOfCourse{A}} &= \gvServer{\cptogv{A}} \\
+\cptogv{\cpWith{\la_i:A_i}{i}} &= \gvChoice{\la_i:\cptogv{A_i}}{i} & \cptogv{\cpWhyNot{A}} &= \gvService{\cptogv{A}} \\
+\cptogv{\cpExists{X}{A}} &= \gvOutputType{X}{\cptogv{A}} & \cptogv{X} &= X \\
+\cptogv{\cpForall{X}{A}} &= \gvInputType{X}{\cptogv{A}} \\
+\end{align*}
+
+Terms
+\begin{equations}
+\cptogv{\cpCut{x}{P}{Q}} &=&
+  \gvLet{x}{\gvFork{x}{\cptogv{P}}}{\cptogv{Q}} \\
+\cptogv{\cpOutput{x}{y}{P}{Q}} &=&
+  \gvLet{x}{\gvSend{(\gvFork{y}{\cptogv{P}})}{x}}{\cptogv{Q}} \\
+\cptogv{\cpInput{x}{y}{P}} &=&
+  \gvLet{\gvPair{y}{x}}{\gvReceive{x}}{\cptogv{P}} \\
+\cptogv{\cpInject{x}{\la}{P}} &=&
+  \gvLet{x}{\gvSelect{\la}{x}}{\cptogv{P}} \\
+\cptogv{\cpCase{x}{\row{\la_i.P_i}{i}}} &=&
+  \gvCase{x}{\row{\la_i(x).\cptogv{P_i}}{i}} \\
+\cptogv{\cpEmptyOut{x}} &=& x \\
+\cptogv{\cpEmptyIn{x}{P}} &=& \cptogv{P} \\[1ex]
+  %% \gvLet{z}{\gvTerminate{x}}{\cptogv{P}} \\[1ex]
+
+\cptogv{\cpSendType{x}{A}{P}} &=&
+  \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
+\cptogv{\cpReceiveType{x}{X}{P}} &=&
+  \gvLet{x}{\gvReceiveType{x}}{\cptogv{P}} \\[1ex]
+
+\cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
+\cptogv{\cpServe{s}{x}{P}} &=&
+  \gvLink{s}{(\gvServe{x}{\cptogv{P}})} \\
+\cptogv{\cpRequest{s}{x}{P}} &=&
+  \gvLet{x}{\gvFork{x}{\gvLink{(\gvRequest{s})}{x}}}{\cptogv{P}} \\
+\end{equations}
+
+%% Judgements
+%% \begin{equations}
+%% \cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
+%% \end{equations}
+
+The translation on contexts is pointwise.
+\begin{equations}
+\cptogv{x_1:A_1, \dots, x_n:A_n} &=& x_1:\cptogv{A_1}, \dots, x_n:\cptogv{A_n} \\
+\end{equations}%
+It is straightforward to verify that the translation preserves typing.
+\begin{theorem}
+If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
+\end{theorem}
+
+
+\section{Correctness}
+
+If we extend $\hgvcp{-}$ as in Wadler's original presentation, then it
+is straightforward to show by induction on derivations that the
+monolithic translation factors through $\lampi{-}$.
+\begin{theorem}
+$\hgvcp{\lampi{M}}z \longrightarrow^* \hgvcp{M}z$
+\end{theorem}
+
+
+The key soundness property of our translations is that if we translate
+a term from CP to \hgvpi and back, then we obtain a term equivalent to
+the one we started with.
+\begin{theorem}
+~
+\begin{enumerate}
+\item $\hgvcp{\cptogv{A}} = A$.
+\item If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \longrightarrow^* P$.
+\end{enumerate}
+\end{theorem}
+
+%% As we do not give a semantics for \hgv, other than by translation to
+%% CP, there is no point in considering the composition of the
+%% translations the other way round.
+
 
 
 %% Judgements
