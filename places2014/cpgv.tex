@@ -115,7 +115,7 @@
 \newcommand{\gvReceiveK}[4]{\gvLet{\gvPair{#1}{#2}}{\gvReceive{#3}}{#4}}
 
 \newcommand{\gvSendType}[2]{\key{sendType}~{#1}~{#2}}
-\newcommand{\gvReceiveType}[1]{\key{receiveType}~{#1}}
+\newcommand{\gvReceiveType}[2]{\key{receiveType}~{#1}~{#2}}
 
 
 \newcommand{\gvServeOld}[3]{\key{serve}~{#1}({#2})={#3}}
@@ -515,7 +515,7 @@ input end session ($\un{\gvEndInput}$).
 
 \inferrule[ReceiveType]
 {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
-{\gvj{\Phi}{\gvReceiveType M}{S}}
+{\gvj{\Phi}{\gvReceiveType{X}{M}}{S}}
 
 \inferrule[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
@@ -537,7 +537,7 @@ fragment.  The unusual features of \hgv are captured in the final six rules.  We
 we found \textsf{fork} to be more natural and better aligned with the language of Gay and
 Vasconcelos.  We add a term $\gvLink{M}{N}$ to implement channel forwarding; this is provided in
 neither Wadler's nor Gay and Vasconcelos's languages, but is necessary to equal the expressivity of
-CP.  Finally, we add terms $\gvSendType{S}{M}$ and $\gvReceiveType{S}$ to provide polymorphism, and
+CP.  Finally, we add terms $\gvSendType{S}{M}$ and $\gvReceiveType{X}{M}$ to provide polymorphism, and
 $\gvServe{x}{M}$ and $\gvRequest{M}$ to implement replicated sessions.  Note that, as the body $M$
 of \textsf{serve} can be arbitrarily replicated, it can only refer to the unlimited portion of the
 environment.
@@ -715,7 +715,7 @@ Terms
 
 \hgvcp{\gvSendType{S}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
-\hgvcp{\gvReceiveType{(M \mathbin{:} {\gvInputType{X}{S}})}}z &=&
+\hgvcp{\gvReceiveType{X}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}} \\[1ex]
 
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\cpCut{y}{\hgvcp{N}y}{\cpLink{x}{y}}}} \\
@@ -829,7 +829,7 @@ Terms
 \cptogv{\cpSendType{x}{A}{P}} &=&
   \gvLet{x}{\gvSendType{\cptogv{A}}{x}}{\cptogv{P}} \\
 \cptogv{\cpReceiveType{x}{X}{P}} &=&
-  \gvLet{x}{\gvReceiveType{x}}{\cptogv{P}} \\[1ex]
+  \gvLet{x}{\gvReceiveType{X}{x}}{\cptogv{P}} \\[1ex]
 
 \cptogv{\cpLink{x}{y}} &=& \gvLink{x}{y} \\
 \cptogv{\cpServe{s}{x}{P}} &=&
@@ -984,7 +984,7 @@ Terms
 \begin{equations}
 \gvtocp{\gvSendType{S}{(M : \cpForall{X}{S'})}}z &=&
   \cpCut{(x:\cpExists{X}{\cpDual{\gvtocp{S'}}})}{\cpSendType{x}{\gvtocp{S}}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
-\gvtocp{\gvReceiveType{(M : \cpExists{X}{S'})}}z &=&
+\gvtocp{\gvReceiveType{X}{M}}z &=&
   \cpCut{(x:\cpForall{X}{\cpDual{\gvtocp{S'}}})}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
 \\[1ex]
 \gvtocp{\gvLink{M}{N}}z &=& \cpCut{x}{\gvtocp{M}x}{\cpCut{y}{\gvtocp{N}y}{\cpEmptyIn{z}{\cpLink{x}{y}}}} \\
@@ -1024,7 +1024,7 @@ Horrible verbose versions of the rules for sending and receiving types
 \left\llbracket
   \inferrule
      {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
-     {\gvj{\Phi}{\gvReceiveType{M}}{S}}
+     {\gvj{\Phi}{\gvReceiveType{X}{M}}{S}}
 \right\rrbracket z =
   \inferrule*
     {\inferrule*
