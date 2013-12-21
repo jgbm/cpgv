@@ -146,8 +146,8 @@
 \newcommand{\cpWith}[2]{\binampersand \row{#1}{#2}}
 \newcommand{\cpOne}{1}
 \newcommand{\cpBottom}{\bot}
-\newcommand{\cpOfCourse}[1]{!{#1}}
-\newcommand{\cpWhyNot}[1]{?{#1}}
+\newcommand{\cpOfCourse}[1]{\mathord{!}{#1}}
+\newcommand{\cpWhyNot}[1]{\mathord{?}{#1}}
 \newcommand{\cpDual}[1]{{#1}^\bot}
 \newcommand{\cpExists}[2]{\exists {#1}.{#2}}
 \newcommand{\cpForall}[2]{\forall {#1}.{#2}}
@@ -175,6 +175,9 @@
 
 \newcommand{\hgvcpl}{\left\llbracket}
 \newcommand{\hgvcpr}{\right\rrbracket}
+
+%\newcommand{\infr}[3][]{\inferrule*[right={#1}]{#2}{#3}}
+\newcommand{\infr}[3][]{\inferrule[{#1}]{#2}{#3}}
 
 \newcommand{\todo}[1]{\textbf{\color{red}TODO: #1}}
 
@@ -296,17 +299,17 @@ the functional features of \hgv into their process counterparts.  Because the tr
 to CP is continuation-passing, the composed translation from \hgv into \hgvpi is also
 continuation-passing.  As an alternative approach, we give a direct translation from \hgv to \hgvpi.
 These translations illustrate several points.  First, they show the increased expressivity of \hgv:
-as GV's session types contained no notion of replication or recursion, they could not express the
+as GV's session types contains no notion of replication or recursion, they cannot express the
 non-linear features of its functional fragment; \hgv, in contrast, can be reduced to \hgvpi.
 Second, factoring the translation of \hgv into CP over that from \hgv into \hgvpi simplifies the
-translation, and illuminates regularities that were not apparent in Wadler's original translation.
+translation, and illuminates regularities that are not apparent in Wadler's original translation.
 
 \section{The \hgv Language}
 
 This section describes our session-typed language \hgv, constrasting it with Gay and Vasconcelos's
 functional session-typed language~\cite{GayVasconcelos10} and Wadler's language GV~\cite{Wadler12}.
-Our language's features are closer to those of Gay and Vasconcelos, but retains a type system
-closely corresponding to linear logic.
+HGV's features are closer to those of Gay and Vasconcelos, but retains a type system closely
+corresponding to linear logic.
 
 \hgv's session types are given by
 \begin{equations}
@@ -316,7 +319,7 @@ closely corresponding to linear logic.
     & \mid & X \mid \gvDual{X} \mid
             \gvOutputType{X}{S} \mid \gvInputType{X}{S} \mid
             \gvServer{S} \mid \gvService{S}
-\end{equations}
+\end{equations}%
 The types for input ($\gvInput{T}{S}$), output ($\gvOutput{T}{S}$), selection
 ($\gvPlus{\la_i:S_i}{i}$) and choice ($\gvChoice{\la_i:\S_i}{i}$) are standard.  Like GV, but unlike
 most session typed systems, we distinguish output ($\gvEndOutput$) and input ($\gvEndInput$) session
@@ -327,8 +330,8 @@ include variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType
 notion of replicated sessions: a session of type $\gvService{S}$ can be thought of as a ``service'',
 providing any number of copies of a session of type $S$; a ssession of type $\gvServer{S}$ can be
 thought of as the ``server'' providing that service.
-
-The notion of duals for \hgv sessions is standard:
+%
+Duals (written overline) for \hgv session types are standard:
 %, with the expected addition for services and theirservers:
 \[
 \bl
@@ -354,8 +357,10 @@ The notion of duals for \hgv sessions is standard:
 \\
 \el
 \]
+Note that dualisation leaves input and output types unchanged. This is necessary as the dual is not
+even defined for non-session types.
 
-In addition to sessions, \hgv's types include pairs, and linear and unlimited functions:
+In addition to sessions, \hgv's types include linear pairs, and linear and unlimited functions:
 \[
 T,U,V ::= S \mid \gvTimes{T}{U} \mid \gvLinFun{T}{U} \mid \gvUnFun{T}{U}
 \]
@@ -455,101 +460,99 @@ input end session ($\un{\gvEndInput}$).
 
 \begin{figure}
 \begin{mathpar}
-\inferrule[Id]
+\infr[Id]
 { }
 {\gvj{x:T}{X}{T}}
 
-\inferrule[Weaken]
+\infr[Weaken]
 {\gvj{\Phi}{N}{U} \\ \un{T}}
 {\gvj{\Phi,x:T}{N}{U}}
 
-\inferrule[Contract]
+\infr[Contract]
 {\gvj{\Phi,x:T,x':T}{N}{U} \\ \un{T}}
 {\gvj{\Phi,x:T}{\subst{N}{x}{x'}}{U}}
-\end{mathpar}
+\end{mathpar}%
 \hrule
 \begin{mathpar}
-\inferrule[$\lolli$-I]
+\infr[$\lolli$-I]
 {\gvj{\Phi,x:T}{N}{U}}
 {\gvj{\Phi}{\gvLam{x}{N}}{\gvLinFun{T}{U}}}
 
-\inferrule[$\lolli$-E]
+\infr[$\lolli$-E]
 {\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \gvj{\Psi}{M}{T}}
 {\gvj{\Phi,\Psi}{\gvApp{L}{M}}{U}}
 
-\inferrule[$\to$-I]
+\infr[$\to$-I]
 {\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \un{\Phi}}
 {\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
 
-\inferrule[$\to$-E]
+\infr[$\to$-E]
 {\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
 {\gvj{\Phi}{L}{\gvLinFun{T}{U}}}
 
-\inferrule[$\otimes$-I]
+\infr[$\otimes$-I]
 {\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{U}}
 {\gvj{\Phi,\Psi}{\gvPair{M}{N}}{\gvTimes{T}{U}}}
 
-\inferrule[$\otimes$-E]
+\infr[$\otimes$-E]
 {\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
 {\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
-
-
-%% \inferrule[Unit]
+%%
+%% \infr[Unit]
 %% { }
 %% {\gvj{}{\gvUnit}{\gvUnitType}}
-
-\end{mathpar}
+\end{mathpar}%
 \hrule
 \begin{mathpar}
-\inferrule[Send]
+\infr[Send]
 {\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{\gvOutput{T}{S}}}
 {\gvj{\Phi}{\gvSend{M}{N}}{S}}
-%% \inferrule[Receive]
+%% \infr[Receive]
 %% {\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi,x:T,y:S}{N}{V}}
 %% {\gvj{\Phi,\Psi}{\gvReceiveK{x}{y}{M}{N}}{V}}
 
-\inferrule[Receive]
+\infr[Receive]
 {\gvj{\Phi}{M}{\gvInput{T}{S}}}
 {\gvj{\Phi}{\gvReceive{M}}{\gvTimes{T}{S}}}
 \\
 
-\inferrule[Select]
+\infr[Select]
 {\gvj{\Phi}{M}{\gvPlus{\la_i:S_i}{i}}}
 {\gvj{\Phi}{\gvSelect{\la_j}{M}}{S_j}}
 
-\inferrule[Case]
+\infr[Case]
 {\gvj{\Phi}{M}{\gvChoice{\la_i:S_i}{i}} \\ \row{\gvj{\Psi,x:S_i}{N_i}{T}}{i}}
 {\gvj{\Phi,\Psi}{\gvCase{M}{\row{\la_i(x).N_i}{i}}}{T}}
 \\
 
-\inferrule[Fork]
+\infr[Fork]
 {\gvj{\Phi,x:S}{M}{\gvEndOutput}}
 {\gvj{\Phi}{\gvFork{x}{M}}{\gvDual{S}}}
 
-%% \inferrule[Connect]
+%% \infr[Connect]
 %% {\gvj{\Phi,x:S}{M}{\gvEndOutput} \\ \gvj{\Psi,x:\gvDual{S}}{N}{T}}
 %% {\gvj{\Phi,\Psi}{\gvWith{x}{M}{N}}{T}}
 
-\inferrule[Link]
+\infr[Link]
 {\gvj{\Phi}{M}{S} \\ \gvj{\Phi}{N}{\gvDual{S}}}
 {\gvj{\Phi}{\gvLink{M}{N}}{\gvEndOutput}}
 
-\inferrule[SendType]
+\infr[SendType]
 {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
 {\gvj{\Phi}{\gvSendType{S}{M}}{\subst{S'}{S}{X}}}
 
-\inferrule[ReceiveType]
+\infr[ReceiveType]
 {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
 {\gvj{\Phi}{\gvReceiveType{X}{M}}{S}}
 
-\inferrule[Serve]
+\infr[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
 {\gvj{\Phi}{\gvServe{x}{M}}{\gvService{S}}}
 
-\inferrule[Request]
+\infr[Request]
 {\gvj{\Phi}{M}{\gvService{S}}}
 {\gvj{\Phi}{\gvRequest{M}}{S}}
-\end{mathpar}
+\end{mathpar}%
 
 \caption{Typing rules for \hgv}
 \label{fig:hgv-typing}
@@ -566,6 +569,8 @@ expressivity of CP.  Finally, we add terms $\gvSendType{S}{M}$ and $\gvReceiveTy
 polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$ to implement replicated sessions.  Note that,
 as the body $M$ of \textsf{serve} can be arbitrarily replicated, it can only refer to the unlimited
 portion of the environment.
+
+\todo{More in-depth discussion of the design choices.}
 
 We argue that each of the added forms add expressivity to \hgv.  Channel forwarding can be
 implemented in a type-directed fashion for any given channel in either Wadler's GV or Gay and
@@ -670,8 +675,10 @@ The translation on terms is given by the homomorphic extension of the following 
 \lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
 \lampi{\gvReceive{M}} &=& \lampi{M} \\
 \end{equations}%
-Each introduction form translates to an interface $\gvFork{z}{M}$ of type $\gvDual{S}$, where $M :
-\gvEndOutput$ provides the implementation, with $z : S$ bound in $M$.
+Formally, this is a translation on derivations. We write type annotations for the cases of $\to$
+introduction and elimination. For all other cases, it is unambiguous to just give the translation on
+the term syntax. Each introduction form translates to an interface $\gvFork{z}{M}$ of type
+$\gvDual{S}$, where $M : \gvEndOutput$ provides the implementation, with $z : S$ bound in $M$.
 %
 The translation on contexts is pointwise.
 %% \begin{equations}
@@ -689,6 +696,116 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 
 
 \section{From \hgvpi to CP}
+
+Due to lack of space we omit a complete description of CP. The typing rules are given in
+Figure~\ref{fig:cp-typing}. For a full description, including the definition of the cut relation
+$\Longrightarrow$, see Wadler's work~\cite{Wadler12}. Note that the propositions of CP are exactly
+those of classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP enjoys all
+of the standard meta theoretic properties of classical linear logic, such as confluence and weak
+normalisation.
+%
+The only, minor, syntactic difference between our presentation and Wadler's is that our sum
+($\oplus$) and choice ($\binampersand$) types are $n$-ary, whereas he presents binary and nullary
+instances of each. The choice is superficial, but we chose the $n$-ary versions for greater
+uniformity between CP and \hgv.
+%
+Duality on CP types ($\cpDual{(-)}$) is standard.
+\[
+\bl
+  \cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}
+~~
+  \cpDual{(\cpPlus{\la_i:A_i}{i})} = \cpWith{\la_i:\cpDual{A_i}}{i}
+~~
+  \cpDual{\cpOne} = \cpBottom
+~~
+  \cpDual{(\cpExists{X}{B})} = \cpForall{X}{\cpDual{B}}
+~~
+  \cpDual{(\cpOfCourse{A})} = \cpWhyNot{\cpDual{A}}
+\\
+  \cpDual{(\cpPar{A}{B})} = \cpTimes{\cpDual{A}}{\cpDual{B}}
+~~
+  \cpDual{(\cpWith{\la_i:A_i}{i})} = \cpPlus{\la_i:\cpDual{A_i}}{i}
+~~
+  \cpDual{\cpBottom} = \cpOne
+~~
+  \cpDual{(\cpForall{X}{B})} = \cpExists{X}{\cpDual{B}}
+~~
+  \cpDual{(\cpWhyNot{A})} = \cpOfCourse{\cpDual{A}}
+\\
+\el
+\]
+
+
+\begin{figure}
+
+\begin{mathpar}
+\infr[Ax]
+{ }
+{\cpj{\cpLink{w}{x}}{w:\cpDual{A},x:A}}
+
+\infr[Cut]
+{\cpj{P}{\G,x:A} \\ \cpj{Q}{\D,x:\cpDual{A}}}
+{\cpj{\cpCut{x}{P}{Q}}{\G,\D}}
+
+\infr[$\otimes$]
+  {\cpj{P}{\G,y:A} \\ \cpj{Q}{\D,x:B}}
+  {\cpj{\cpOutput{x}{y}{P}{Q}}{\G,\D,x:\cpTimes{A}{B}}}
+
+\infr[$\bindnasrepma$]
+{\cpj{R}{\Theta,y:A,x:B}}
+{\cpj{\cpInput{x}{y}{R}}{\Theta,x:\cpPar{A}{B}}}
+
+\infr[$\oplus$]
+{\cpj{P}{\G,x:A_i}}
+{\cpj{\cpInject{x}{\la_i}{P}}{\G,x:\cpPlus{\la_i:A_i}{i}}}
+
+\infr[$\binampersand$]
+{\row{\cpj{Q_i}{\D,x_i:A_i}}{i}}
+{\cpj{\cpCase{x}{\row{\la_i.Q_i}{i}}}{\D,x:\cpWith{\la_i:A_i}{i}}}
+
+\infr[$!$]
+{\cpj{P}{\cpWhyNot{\G},y:A}}
+{\cpj{\cpServe{x}{y}{P}}{\cpWhyNot{\G},x:\cpOfCourse{A}}}
+
+\infr[$?$]
+{\cpj{Q}{\D,y:A}}
+{\cpj{\cpRequest{x}{y}{Q}}{\D,x:\cpWhyNot{A}}}
+
+\infr[Weaken]
+{\cpj{Q}{\D}}
+{\cpj{Q}{\D,x:\cpWhyNot{A}}}
+
+\infr[Contract]
+{\cpj{Q}{\D,x:\cpWhyNot{A},x':\cpWhyNot{A}}}
+{\cpj{\subst{Q}{x}{x'}}{\D,x:\cpWhyNot{A}}}
+
+\infr[$\exists$]
+{\cpj{P}{\G,x:\subst{B}{A}{X}}}
+{\cpj{\cpSendType{x}{A}{P}}{\G,x:\cpExists{X}{B}}}
+
+\infr[$\forall$]
+{\cpj{Q}{\D,x:B} \\ X \notin \D}
+{\cpj{\cpReceiveType{x}{X}{Q}}{\D,x:\cpForall{X}{B}}}
+
+\infr[$\cpOne$]
+{ }
+{\cpj{\cpEmptyOut{x}}{x:\cpOne}}
+
+\infr[$\cpBottom$]
+{\cpj{P}{\G}}
+{\cpj{\cpEmptyIn{x}{P}}{\G,x:\cpBottom}}
+%
+%% \infr[$\cpZero$]
+%% {\cpj{}{}}
+%% {\cpj{}{}}
+%%
+%% \infr[$\cpTop$]
+%% {\cpj{}{}}
+%% {\cpj{}{}}
+\end{mathpar}%
+\label{fig:cp-typing}
+\caption{CP, classical linear logic as a session-typed process calculus}
+\end{figure}
 
 We now give a semantics to \hgvpi as a translation from \hgvpi to CP. Post composing this with the
 embedding of \hgv in \hgvpi yields a semantics for \hgv.
@@ -714,10 +831,17 @@ The translation on session types is as follows.
 \hgvcp{\gvOutputType{X}{S}} &=& \cpExists{X}{\hgvcp{S}} \\
 \hgvcp{\gvInputType{X}{S}}  &=& \cpForall{X}{\hgvcp{S}} \\
 \hgvcp{X}                   &=& X \\
-~\\
+\hgvcp{\gvDual{X}}          &=& \cpDual{X} \\
 \end{eqs}
 \ea
 \]
+The translation is homomorphic except for output, where the output type is dualised. This accounts
+for the descrepancy between $\gvDual{\gvOutput{T}{S}} = \gvInput{T}{\gvDual{S}}$ and
+$\cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}$.
+%
+%% We could just have well have decided to dualise input types instead of output types in our
+%% translation.
+
 The translation on terms is formally specified as a CPS translation on derivations as in Wadler's
 presentation. Due to lack of space, we only write the translation of weakening and contraction for
 $\gvEndInput$ in this form. The other constructs depend only on the immediate syntactic structure,
@@ -845,7 +969,7 @@ translation $\cptogv{-}$ from CP to \hgvpi. The translation on types is as follo
 \cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
 \cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\
 \cptogv{X}               &=& X \\
-~ \\
+\cptogv{\cpDual{X}}      &=& \gvDual{X} \\
 \end{eqs}
 \ea
 \]
@@ -911,10 +1035,10 @@ If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 \section{Correctness}
 
 If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentation, then it is
-straightforward to show that the monolithic translation factors through $\lampi{-}$.
+straightforward to show that this monolithic translation factors through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
-$\hgvcp{\lampi{M}}z \longrightarrow^* \hgvcp{M}z$
+$\hgvcp{\lampi{M}}z \Longrightarrow^* \hgvcp{M}z$
 \end{theorem}
 
 The key soundness property of our translations is that if we translate a term from CP to \hgvpi and
@@ -924,18 +1048,21 @@ back, then we obtain a term equivalent to the one we started with.
 ~
 \begin{enumerate}
 \item $\hgvcp{\cptogv{A}} = A$.
-\item If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \longrightarrow^* P$.
+\item If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \Longrightarrow^* P$.
 \end{enumerate}
 \end{theorem}
 %
-Together, theorem's \ref{th:factor} and \ref{th:soundness} tell us that \hgv, \hgvpi and CP are
-equally expressive, in the sense that they capture the same class of programs / processes.
+Together, theorem's \ref{th:factor} and \ref{th:soundness} tell us that \hgv, \hgvpi, and CP are
+equally expressive, in the sense that every $X$ program can always be translated to an equivalent
+$Y$ program, where $X,Y \in \{$\hgv, \hgvpi, CP$\}$.
 
-It is interesting to also consider Felleisen's more refined notion of expressivity~\cite{Felleisen}.
-Both $\lampi{-}$ and $\cptogv{-}$ are local translations, thus both \hgv and CP are
-macro-expressible~\cite{Felleisen} in \hgvpi. However, the apparent need for a CPS translation from
-\hgvpi to CP indicates that \hgvpi is not macro-expressible in CP, and hence \hgvpi is more
-expressive than CP in the sense of Felleisen.
+% they capture exactly the same class of programs / processes.
+
+It is interesting also to consider Felleisen's more refined notion of
+expressivity~\cite{Felleisen91}.  Both $\lampi{-}$ and $\cptogv{-}$ are local translations, thus
+both \hgv and CP are macro-expressible~\cite{Felleisen91} in \hgvpi. However, the apparent need for
+CPS in translating from \hgvpi to CP indicates that \hgvpi is not macro-expressible in CP; hence
+\hgvpi is more expressive (in the Felleisen sense) than CP.
 %
 
 
@@ -986,7 +1113,7 @@ three important areas for continued research.
 %\bibliographystyle{abbrv}
 \bibliography{cpgv}
 
-\appendix
+%% \appendix
 
 %% \subsection{GV extensions}
 
@@ -1015,364 +1142,364 @@ three important areas for continued research.
 %% \end{mathpar}
 
 
-\newpage
+%% \newpage
 
-\section{From GV to CP}
-~
+%% \section{From GV to CP}
+%% ~
 
-Session types
-\begin{equations}
-\gvtocp{\gvOutput{T}{S}}        &=& \cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{S}} \\
-\gvtocp{\gvInput{T}{S}}         &=& \cpTimes{\gvtocp{T}}{\gvtocp{S}} \\
-\gvtocp{\gvPlus{\la_i:S_i}{i}}   &=& \cpWith{\la_i:\gvtocp{S_i}}{i} \\
-\gvtocp{\gvChoice{\la_i:S_i}{i}} &=& \cpPlus{\la_i:\gvtocp{S_i}}{i} \\
-\gvtocp{\gvEndOutput}              &=& \cpBottom \\
-\gvtocp{\gvEndInput}               &=& \cpOne \\[1ex]
+%% Session types
+%% \begin{equations}
+%% \gvtocp{\gvOutput{T}{S}}        &=& \cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{S}} \\
+%% \gvtocp{\gvInput{T}{S}}         &=& \cpTimes{\gvtocp{T}}{\gvtocp{S}} \\
+%% \gvtocp{\gvPlus{\la_i:S_i}{i}}   &=& \cpWith{\la_i:\gvtocp{S_i}}{i} \\
+%% \gvtocp{\gvChoice{\la_i:S_i}{i}} &=& \cpPlus{\la_i:\gvtocp{S_i}}{i} \\
+%% \gvtocp{\gvEndOutput}              &=& \cpBottom \\
+%% \gvtocp{\gvEndInput}               &=& \cpOne \\[1ex]
 
-\gvtocp{X}                       &=& X \\
-\gvtocp{\gvOutputType{X}{S}}     &=& \cpForall{X}{\gvtocp{S}} \\
-\gvtocp{\gvInputType{X}{S}}      &=& \cpExists{X}{\gvtocp{S}} \\[1ex]
+%% \gvtocp{X}                       &=& X \\
+%% \gvtocp{\gvOutputType{X}{S}}     &=& \cpForall{X}{\gvtocp{S}} \\
+%% \gvtocp{\gvInputType{X}{S}}      &=& \cpExists{X}{\gvtocp{S}} \\[1ex]
 
-\gvtocp{\gvServer{S}}  &=& \cpWhyNot{\gvtocp{S}} \\
-\gvtocp{\gvService{S}} &=& \cpOfCourse{\gvtocp{S}} \\[1ex]
-\end{equations}
+%% \gvtocp{\gvServer{S}}  &=& \cpWhyNot{\gvtocp{S}} \\
+%% \gvtocp{\gvService{S}} &=& \cpOfCourse{\gvtocp{S}} \\[1ex]
+%% \end{equations}
 
-Non-session types
-\begin{equations}
-\gvtocp{\gvLinFun{T}{U}} &=& \cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{U}} \\
-\gvtocp{\gvUnFun{T}{U}} &=& \cpOfCourse{(\cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{U}})} \\
-\gvtocp{\gvTimes{T}{U}} &=& \cpTimes{\gvtocp{T}}{\gvtocp{U}} \\
-\gvtocp{\gvUnitType} &=& \cpOfCourse{(\cpWith{}{})} \\
-\end{equations}
+%% Non-session types
+%% \begin{equations}
+%% \gvtocp{\gvLinFun{T}{U}} &=& \cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{U}} \\
+%% \gvtocp{\gvUnFun{T}{U}} &=& \cpOfCourse{(\cpPar{\cpDual{\gvtocp{T}}}{\gvtocp{U}})} \\
+%% \gvtocp{\gvTimes{T}{U}} &=& \cpTimes{\gvtocp{T}}{\gvtocp{U}} \\
+%% \gvtocp{\gvUnitType} &=& \cpOfCourse{(\cpWith{}{})} \\
+%% \end{equations}
 
-Terms
-\begin{equations}
-\gvtocp{\gvSendType{S}{(M : \cpForall{X}{S'})}}z &=&
-  \cpCut{(x:\cpExists{X}{\cpDual{\gvtocp{S'}}})}{\cpSendType{x}{\gvtocp{S}}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
-\gvtocp{\gvReceiveType{X}{M}}z &=&
-  \cpCut{(x:\cpForall{X}{\cpDual{\gvtocp{S'}}})}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
-\\[1ex]
-\gvtocp{\gvLink{M}{N}}z &=& \cpCut{x}{\gvtocp{M}x}{\cpCut{y}{\gvtocp{N}y}{\cpEmptyIn{z}{\cpLink{x}{y}}}} \\
-\gvtocp{\gvServeOld{s}{x}{M}}z &=&
-  \cpEmptyIn{z}
-            {\cpServe{s}{x}
-                     {\cpCut{y}{\cpEmptyOut{y}}{\gvtocp{M}y}}} \\
-\gvtocp{\gvRequest{s}}z &=& \cpRequest{s}{x}{\cpLink{x}{z}} \\
-\end{equations}
+%% Terms
+%% \begin{equations}
+%% \gvtocp{\gvSendType{S}{(M : \cpForall{X}{S'})}}z &=&
+%%   \cpCut{(x:\cpExists{X}{\cpDual{\gvtocp{S'}}})}{\cpSendType{x}{\gvtocp{S}}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
+%% \gvtocp{\gvReceiveType{X}{M}}z &=&
+%%   \cpCut{(x:\cpForall{X}{\cpDual{\gvtocp{S'}}})}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}{\gvtocp{M}x} \\
+%% \\[1ex]
+%% \gvtocp{\gvLink{M}{N}}z &=& \cpCut{x}{\gvtocp{M}x}{\cpCut{y}{\gvtocp{N}y}{\cpEmptyIn{z}{\cpLink{x}{y}}}} \\
+%% \gvtocp{\gvServeOld{s}{x}{M}}z &=&
+%%   \cpEmptyIn{z}
+%%             {\cpServe{s}{x}
+%%                      {\cpCut{y}{\cpEmptyOut{y}}{\gvtocp{M}y}}} \\
+%% \gvtocp{\gvRequest{s}}z &=& \cpRequest{s}{x}{\cpLink{x}{z}} \\
+%% \end{equations}
 
-Horrible verbose versions of the rules for sending and receiving types
-\begin{mathpar}
-\left\llbracket
-  \inferrule
-     {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
-     {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
-\right\rrbracket z =
-  \inferrule*
-    {
-      \inferrule*
-        {}
-        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
-      \\
-      \inferrule*
-        {\inferrule*
-           { }
-           {\cpj{\cpLink{x}{z}}
-             {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
-                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
-        {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
-             {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
-                           z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
-    }
-    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
-         {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
-\\
-\left\llbracket
-  \inferrule
-     {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
-     {\gvj{\Phi}{\gvReceiveType{X}{M}}{S}}
-\right\rrbracket z =
-  \inferrule*
-    {\inferrule*
-       {}
-       {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
-     \\
-     \inferrule*
-       {\inferrule*
-            { }
-            {\cpj{\cpLink{x}{z}}
-              {\hgvcp{\Phi},x:\hgvcp{S}
-                           ,z:\cpDual{\hgvcp{S}}}}
-        \\ X \notin \FV{\hgvcp{\Phi}}
-       }
-       {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
-          {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
-                       ,z:\cpDual{\hgvcp{S}}}}
-    }
-    {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
-         {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
-\end{mathpar}
+%% Horrible verbose versions of the rules for sending and receiving types
+%% \begin{mathpar}
+%% \left\llbracket
+%%   \inferrule
+%%      {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
+%%      {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
+%% \right\rrbracket z =
+%%   \inferrule*
+%%     {
+%%       \inferrule*
+%%         {}
+%%         {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
+%%       \\
+%%       \inferrule*
+%%         {\inferrule*
+%%            { }
+%%            {\cpj{\cpLink{x}{z}}
+%%              {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
+%%                            z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
+%%         {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
+%%              {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
+%%                            z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+%%     }
+%%     {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
+%%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
+%% \\
+%% \left\llbracket
+%%   \inferrule
+%%      {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
+%%      {\gvj{\Phi}{\gvReceiveType{X}{M}}{S}}
+%% \right\rrbracket z =
+%%   \inferrule*
+%%     {\inferrule*
+%%        {}
+%%        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
+%%      \\
+%%      \inferrule*
+%%        {\inferrule*
+%%             { }
+%%             {\cpj{\cpLink{x}{z}}
+%%               {\hgvcp{\Phi},x:\hgvcp{S}
+%%                            ,z:\cpDual{\hgvcp{S}}}}
+%%         \\ X \notin \FV{\hgvcp{\Phi}}
+%%        }
+%%        {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
+%%           {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
+%%                        ,z:\cpDual{\hgvcp{S}}}}
+%%     }
+%%     {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
+%%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
+%% \end{mathpar}
 
-Judgements
-\begin{equations}
-\gvtocp{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M}z}{\cpDual{\gvtocp{\Phi}}, z:\gvtocp{T}}
-\end{equations}
-
-
-%% Theorem:
-
-%%   [[((A))]] = ~A
-%%   [[((P |- G))]] = Q |- G, z : bot
-%%     where nu z.(z[].0|Q) --> P
-
-%%   (([[S]])) = ~S
-%%   (([[Phi |- M : S]] z)) = Phi |- N : end!
-%%     where
-%%       nu w.(w[].0|[[N]]w) --> [[M]]z
-
-\section{Alternative translations from GV to CP}
-
-\subsection{Dualising the interpretation of judgements}
-
-It is possible to avoid the dualisation of session types in the type
-translation by dualising the interpretation of judgements.
-
-Judgements
-\begin{equations}
-\gvtocps{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{T})}}
-\end{equations}
-
-Session types
-\begin{equations}
-\gvtocps{\gvOutput{T}{S}}        &=& \cpTimes{\cpDual{\gvtocps{T}}}{\gvtocps{S}} \\
-\gvtocps{\gvInput{T}{S}}         &=& \cpPar{\gvtocps{T}}{\gvtocps{S}} \\
-\gvtocps{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\gvtocps{S_i}}{i} \\
-\gvtocps{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\gvtocps{S_i}}{i} \\
-\gvtocps{\gvEndOutput}              &=& \cpOne \\
-\gvtocps{\gvEndInput}               &=& \cpBottom \\[1ex]
-
-\gvtocps{\gvServer{S}}  &=& \cpOfCourse{\gvtocps{S}} \\
-\gvtocps{\gvService{S}} &=& \cpWhyNot{\gvtocps{S}} \\[1ex]
-\end{equations}
+%% Judgements
+%% \begin{equations}
+%% \gvtocp{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M}z}{\cpDual{\gvtocp{\Phi}}, z:\gvtocp{T}}
+%% \end{equations}
 
 
-The idea is that the term translation stays exactly the same. This
-approach fits with the view of $z$ as a negative continuation
-parameter. It yields a straightforward interpretation of session
-types, but then the interpretation of non-session types (linear
-functions, unrestricted functions, tensor, and unit), becomes dual to
-what one would normally expect.
+%% %% Theorem:
 
-Non-session types
-\begin{equations}
-\gvtocps{\gvLinFun{T}{U}} &=& \cpTimes{\gvtocp{T}}{\cpDual{\gvtocp{U}}} \\
-\gvtocps{\gvUnFun{T}{U}} &=& \cpWhyNot{(\cpTimes{\gvtocp{T}}{\cpDual{\gvtocp{U}}})} \\
-\gvtocps{\gvTimes{T}{U}} &=& \cpPar{\cpDual{\gvtocp{T}}}{\cpDual{\gvtocp{U}}} \\
-\gvtocps{\gvUnitType} &=& \cpWhyNot{(\cpPlus{}{})} \\
-\end{equations}
+%% %%   [[((A))]] = ~A
+%% %%   [[((P |- G))]] = Q |- G, z : bot
+%% %%     where nu z.(z[].0|Q) --> P
 
-\subsection{Adapting the translation on terms}
+%% %%   (([[S]])) = ~S
+%% %%   (([[Phi |- M : S]] z)) = Phi |- N : end!
+%% %%     where
+%% %%       nu w.(w[].0|[[N]]w) --> [[M]]z
 
-As an alternative to dualising the interpretation of non-session
-types, we can attempt to keep the standard interpretation of
-non-session types and instead adapt the translation on terms.
+%% \section{Alternative translations from GV to CP}
 
-Judgements
-\begin{equations}
-\gvtocpd{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocpd{M} z}{\gvtocpd{\Phi}, z:{\gvtocpd{T}}}
-\end{equations}
+%% \subsection{Dualising the interpretation of judgements}
 
-This looks like it might work if we add the Mix rule to CP along with
-another rule which can be derived from BiCut, but which appears to
-be weaker.
+%% It is possible to avoid the dualisation of session types in the type
+%% translation by dualising the interpretation of judgements.
 
-\begin{mathpar}
-\inferrule
-{\cpj{P}{\G, y:A, z:C} \\ \cpj{Q}{\D, x:B, z:\cpDual{C}}}
-{\cpj{\cpCutOutput{z}{x}{y}{P}{Q}}{\G, \D, x : \cpTimes{A}{B}}}
-\end{mathpar}
+%% Judgements
+%% \begin{equations}
+%% \gvtocps{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocp{M} z}{\gvtocps{\Phi}, z:\cpDual{(\gvtocps{T})}}
+%% \end{equations}
 
-%%   [[
-%%   Phi |- L : T -o U  un(Phi)
-%%   --------------------------
-%%   Phi |- L : T -> U
-%%   ]] z
-%% =
-%%   [[L]]y |- [[Phi]], y:~[[T -o U]]
-%%   --------------------------------------------
-%%   ?z[y].[[L]]y |- [[Phi]], z:?(~[[T -o U]])
+%% Session types
+%% \begin{equations}
+%% \gvtocps{\gvOutput{T}{S}}        &=& \cpTimes{\cpDual{\gvtocps{T}}}{\gvtocps{S}} \\
+%% \gvtocps{\gvInput{T}{S}}         &=& \cpPar{\gvtocps{T}}{\gvtocps{S}} \\
+%% \gvtocps{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\gvtocps{S_i}}{i} \\
+%% \gvtocps{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\gvtocps{S_i}}{i} \\
+%% \gvtocps{\gvEndOutput}              &=& \cpOne \\
+%% \gvtocps{\gvEndInput}               &=& \cpBottom \\[1ex]
 
-%%   [[
-%%   Phi |- L : T -> U
-%%   -----------------
-%%   Phi |- L : T -o U
-%%   ]] z
-%% =
-%%                                            x <-> z |- x:[[T -o U]], z:~([[T -o U]])
-%%                                         ---------------------------------------------------
-%%   [[L]]y |- [[Phi]], y:?(~[[T -o U]])   !y(x).x <-> z |- y:!([[T -o U]]), z:~([[T -o U]])
-%%   ------------------------------------------------------------------------------------------
-%%   nu y.([[L]]y | !y(x).x <-> z) |- [[Phi]], z:~[[T -o U]]
-%%
-%% Oops! z can't appear inside the server output!
+%% \gvtocps{\gvServer{S}}  &=& \cpOfCourse{\gvtocps{S}} \\
+%% \gvtocps{\gvService{S}} &=& \cpWhyNot{\gvtocps{S}} \\[1ex]
+%% \end{equations}
 
 
-%% z : [[T]] * ~[[U]]
-%% [[\x.M]]z = nu y.z[x].([[M]]y | y <-> z)
-%% [[\x.M]]z = nu y x.([[M]]y | z[w].(w <-> x | y <-> z))
+%% The idea is that the term translation stays exactly the same. This
+%% approach fits with the view of $z$ as a negative continuation
+%% parameter. It yields a straightforward interpretation of session
+%% types, but then the interpretation of non-session types (linear
+%% functions, unrestricted functions, tensor, and unit), becomes dual to
+%% what one would normally expect.
 
-%% z : ~[[U]]
-%% [[L M]]z = nu y.([[L]]y | y(x).([[M]]x | y <-> z))
+%% Non-session types
+%% \begin{equations}
+%% \gvtocps{\gvLinFun{T}{U}} &=& \cpTimes{\gvtocp{T}}{\cpDual{\gvtocp{U}}} \\
+%% \gvtocps{\gvUnFun{T}{U}} &=& \cpWhyNot{(\cpTimes{\gvtocp{T}}{\cpDual{\gvtocp{U}}})} \\
+%% \gvtocps{\gvTimes{T}{U}} &=& \cpPar{\cpDual{\gvtocp{T}}}{\cpDual{\gvtocp{U}}} \\
+%% \gvtocps{\gvUnitType} &=& \cpWhyNot{(\cpPlus{}{})} \\
+%% \end{equations}
 
-%% z : ~[[T]] || ~[[U]]
-%% [[(M, N)]]z = z(x).([[M]]x | [[N]]z)
+%% \subsection{Adapting the translation on terms}
 
-%% z : ~[[V]]
-%% [[let (x,y)=M in N]]z = nu w.([[M]]w | nu y.w[x].([[N]]z | w <-> y))
+%% As an alternative to dualising the interpretation of non-session
+%% types, we can attempt to keep the standard interpretation of
+%% non-session types and instead adapt the translation on terms.
 
-%% Cutting an output with a private channel against an input with a
-%% mix would appear to yield a term containing a plain bicut and a mix
+%% Judgements
+%% \begin{equations}
+%% \gvtocpd{\gvj{\Phi}{M}{T}} &=& \cpj{\gvtocpd{M} z}{\gvtocpd{\Phi}, z:{\gvtocpd{T}}}
+%% \end{equations}
 
-%%    nu x.(x[y].nu z.(P | Q) | x(y).(R | S))
-%%  -->
-%%    nu y z.(P | nu x.(Q | (R | S)))
+%% This looks like it might work if we add the Mix rule to CP along with
+%% another rule which can be derived from BiCut, but which appears to
+%% be weaker.
+
+%% \begin{mathpar}
+%% \inferrule
+%% {\cpj{P}{\G, y:A, z:C} \\ \cpj{Q}{\D, x:B, z:\cpDual{C}}}
+%% {\cpj{\cpCutOutput{z}{x}{y}{P}{Q}}{\G, \D, x : \cpTimes{A}{B}}}
+%% \end{mathpar}
+
+%% %%   [[
+%% %%   Phi |- L : T -o U  un(Phi)
+%% %%   --------------------------
+%% %%   Phi |- L : T -> U
+%% %%   ]] z
+%% %% =
+%% %%   [[L]]y |- [[Phi]], y:~[[T -o U]]
+%% %%   --------------------------------------------
+%% %%   ?z[y].[[L]]y |- [[Phi]], z:?(~[[T -o U]])
+
+%% %%   [[
+%% %%   Phi |- L : T -> U
+%% %%   -----------------
+%% %%   Phi |- L : T -o U
+%% %%   ]] z
+%% %% =
+%% %%                                            x <-> z |- x:[[T -o U]], z:~([[T -o U]])
+%% %%                                         ---------------------------------------------------
+%% %%   [[L]]y |- [[Phi]], y:?(~[[T -o U]])   !y(x).x <-> z |- y:!([[T -o U]]), z:~([[T -o U]])
+%% %%   ------------------------------------------------------------------------------------------
+%% %%   nu y.([[L]]y | !y(x).x <-> z) |- [[Phi]], z:~[[T -o U]]
+%% %%
+%% %% Oops! z can't appear inside the server output!
 
 
-Non-session terms
-\begin{equations}
-\gvtocpd{\lambda x:T.M}z &=&
-  \cpCutOutput{y:{\cpDual{\gvtocpd{U}}}}{z}{x:{\gvtocpd{T}}}
-              {\gvtocpd{M}y}{\cpLink{y}{z}} \\
-\gvtocpd{L~M}z &=&
-  \cpCut{y:\cpTimes{\gvtocpd{T}}{\cpDual{\gvtocpd{U}}}}
-        {\gvtocpd{L}y}
-        {\cpInput{y}{x:\cpDual{\gvtocpd{U}}}{\cpMix{\gvtocpd{M}x}{\cpLink{y}{z}}}} \\
-\gvtocpd{\gvPair{M}{N}}z &=&
-  \cpInput{z}{x:\cpDual{\gvtocpd{T}}}{\cpMix{\gvtocpd{M}x}{\gvtocpd{N}z}} \\
-\gvtocpd{\gvLet{\gvPair{x}{y}}{M}{N}}z &=&
-  \cpCut{w:\cpPar{\cpDual{\gvtocpd{T}}}{\cpDual{\gvtocpd{U}}}}
-    {\gvtocpd{M}w}
-    {\cpCutOutput{y:\gvtocpd{U}}{w}{x:\gvtocpd{T}}{\gvtocpd{N}z}{\cpLink{w}{y}}} \\
-\end{equations}
+%% %% z : [[T]] * ~[[U]]
+%% %% [[\x.M]]z = nu y.z[x].([[M]]y | y <-> z)
+%% %% [[\x.M]]z = nu y x.([[M]]y | z[w].(w <-> x | y <-> z))
 
-Where this approach seems to completely break down is in the
-translation of the elimination rule for unrestricted functions. We
-might reasonably hope to simulate linear lambdas using output rather
-than input, but it seems unreasonable to expect to simulate
-unrestricted lambda application using a linear server rather than an
-unrestricted client.
+%% %% z : ~[[U]]
+%% %% [[L M]]z = nu y.([[L]]y | y(x).([[M]]x | y <-> z))
 
-\subsection{Compiling away non-session types}
+%% %% z : ~[[T]] || ~[[U]]
+%% %% [[(M, N)]]z = z(x).([[M]]x | [[N]]z)
 
-Another option is to compile away non-session types in GV as a
-pre-processing step, where the type translation is given by
-$\cptogv{\gvtocp{-}}$ and the term translation by
-$\cptogv{\gvtocp{-}z}$.
+%% %% z : ~[[V]]
+%% %% [[let (x,y)=M in N]]z = nu w.([[M]]w | nu y.w[x].([[N]]z | w <-> y))
 
-%% T -o U --> ~[[T]] || [[U]] --> ?~T*.U*
-%% T -> U --> !(~[[T]] || [[U]]) --> $(?~T*.U*)
-%% T * U --> [[T]] * [[U]] --> !~T*.U*
-%% Unit --> !&{} --> $&{}
+%% %% Cutting an output with a private channel against an input with a
+%% %% mix would appear to yield a term containing a plain bicut and a mix
 
-%% Hmmm... Looks like things are the wrong way round in the GV to CP
-%% translation: input types should be negated and output types
-%% should't.
+%% %%    nu x.(x[y].nu z.(P | Q) | x(y).(R | S))
+%% %%  -->
+%% %%    nu y z.(P | nu x.(Q | (R | S)))
 
-We could simply compose the translations as described, but then it
-would seem that we would have to perform a global CPS transformation
-on all terms including the session typing constructs. This would be
-rather disappointing, as then we would appear to have to effectively
-perform a CPS transformation twice on such terms in order to generate
-a CP term.
 
-% channel passing translation
-\newcommand{\gvtogv}[1]{({#1})^\star}
+%% Non-session terms
+%% \begin{equations}
+%% \gvtocpd{\lambda x:T.M}z &=&
+%%   \cpCutOutput{y:{\cpDual{\gvtocpd{U}}}}{z}{x:{\gvtocpd{T}}}
+%%               {\gvtocpd{M}y}{\cpLink{y}{z}} \\
+%% \gvtocpd{L~M}z &=&
+%%   \cpCut{y:\cpTimes{\gvtocpd{T}}{\cpDual{\gvtocpd{U}}}}
+%%         {\gvtocpd{L}y}
+%%         {\cpInput{y}{x:\cpDual{\gvtocpd{U}}}{\cpMix{\gvtocpd{M}x}{\cpLink{y}{z}}}} \\
+%% \gvtocpd{\gvPair{M}{N}}z &=&
+%%   \cpInput{z}{x:\cpDual{\gvtocpd{T}}}{\cpMix{\gvtocpd{M}x}{\gvtocpd{N}z}} \\
+%% \gvtocpd{\gvLet{\gvPair{x}{y}}{M}{N}}z &=&
+%%   \cpCut{w:\cpPar{\cpDual{\gvtocpd{T}}}{\cpDual{\gvtocpd{U}}}}
+%%     {\gvtocpd{M}w}
+%%     {\cpCutOutput{y:\gvtocpd{U}}{w}{x:\gvtocpd{T}}{\gvtocpd{N}z}{\cpLink{w}{y}}} \\
+%% \end{equations}
 
-We can do better, though, by performing a local transformation. The
-key observation is that we can locally abstract over the continuation
-channel $z$ in a term $M$ using $\gvWith{z}{M}{z}$.
+%% Where this approach seems to completely break down is in the
+%% translation of the elimination rule for unrestricted functions. We
+%% might reasonably hope to simulate linear lambdas using output rather
+%% than input, but it seems unreasonable to expect to simulate
+%% unrestricted lambda application using a linear server rather than an
+%% unrestricted client.
 
-This is where the dualisation of types arises: the type of the whole
-expression must be dual to the type of $z$ in $M$. For instance, we
-implement a lambda of type $\gvLinFun{T}{U}$ with a channel $z$ of
-type $\gvInput{\gvDual{\gvtogv{T}}}{\gvtogv{U}}$, but the interface to
-the lambda is the other end of the channel $z$ which has type
-$\gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}}$ (and application becomes
-simply sending the argument along this channel).
+%% \subsection{Compiling away non-session types}
 
-\begin{equations}
-\gvtogv{\gvLinFun{T}{U}} &=& \gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}} \\
-\gvtogv{\gvUnFun{T}{U}} &=& \gvService{(\gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}})} \\
-\gvtogv{\gvTimes{T}{U}} &=& \gvInput{\gvtogv{T}}{\gvDual{\gvtogv{U}}} \\
-\gvtogv{\gvUnitType} &=& \gvService{(\gvPlus{}{})} \\
-\end{equations}%
+%% Another option is to compile away non-session types in GV as a
+%% pre-processing step, where the type translation is given by
+%% $\cptogv{\gvtocp{-}}$ and the term translation by
+%% $\cptogv{\gvtocp{-}z}$.
 
-\begin{equations}
-\gvtogv{\gvj{\Phi}{M}{T}} &=& \gvj{\gvtogv{\Phi}}{\gvtogv{M}}{\gvtogv{T}} \\
-\end{equations}%
+%% %% T -o U --> ~[[T]] || [[U]] --> ?~T*.U*
+%% %% T -> U --> !(~[[T]] || [[U]]) --> $(?~T*.U*)
+%% %% T * U --> [[T]] * [[U]] --> !~T*.U*
+%% %% Unit --> !&{} --> $&{}
 
-\begin{equations}
-\gvtogv{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\gvtogv{M}}{z}}}{z} \\
-\gvtogv{\gvApp{L}{M}} &=& \gvSend{\gvtogv{M}}{\gvtogv{L}} \\
-\gvtogv{\gvTimes{M}{N}} &=&
-  \gvWith{z}
-    {\gvLink{(\gvSend{\gvtogv{M}}{z})}{\gvtogv{N}}}
-    {z} \\
-\gvtogv{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
-    \gvLet{\gvPair{x}{y}}{\gvReceive{\gvtogv{M}}}{\gvtogv{N}} \\
-\gvtogv{\gvReceive{M}} &=& M \\
-\gvtogv{\gvUnit} &=&
-    \gvWith{z}
-    {\gvServeOld{z}{x}{\gvCase{x}{\row{}{}}}}
-    {z} \\
-%% Unnecessary as we don't have a linear unit!
-%%
-%% \gvtogv{\gvLet{\gvUnit}{M}{N}} &=&
-%%   \gvLet{z}{\gvtogv{M}}{\gvtogv{N}} \\
-\gvtogv{L : \gvUnFun{T}{U}} &=&
-  \gvWith{z}{\gvServeOld{z}{y}{\gvLink{\gvtogv{L}}{y}}}{z} \\
-\gvtogv{L : \gvLinFun{T}{U}} &=& \gvRequest{\gvtogv{L}} \\
-\end{equations}
+%% %% Hmmm... Looks like things are the wrong way round in the GV to CP
+%% %% translation: input types should be negated and output types
+%% %% should't.
 
-A problem we run into is that $\gvReceive{M}$ has tensor type, and yet
-our translation is supposed to compile away non-session types,
-including tensors. Similarly, $\gvTerminate{M}$ has unit type. The
-problem illustrates an irregularity in GV. All of the typing rules for
-the other session typing constructs mention only session types.
+%% We could simply compose the translations as described, but then it
+%% would seem that we would have to perform a global CPS transformation
+%% on all terms including the session typing constructs. This would be
+%% rather disappointing, as then we would appear to have to effectively
+%% perform a CPS transformation twice on such terms in order to generate
+%% a CP term.
 
-Dealing with $\key{terminate}$ is easy. We just amend our target
-language such that $\gvTerminate{M}$ has type
-$\gvService{(\gvPlus{}{})}$, the interpretation of the unit type.
-%
-Dealing with $\key{receive}$ is a little harder. We still need some
-way of binding the two values returned by $\key{receive}$. The
-solution is to fuse $\key{receive}$ with the pair elimination
-construct. Notice that this is more or less what CP server input does
-already. Because we interpret $\gvTimes{T}{U}$ as
-$\gvInput{\gvtogv{T}}{\gvDual{\gvtogv{U}}}$, instances of
-$\key{receive}$ from the source term are all erased. The only
-instances of $\key{receive}$ in the target term arise from
-interpreting lambdas and pair elimination. This may seem strange until
-one considers that the only way to use the pair resulting from a
-$\key{receive}$ in GV is to eliminate it. The transformation shunts
-each receive up to the point at which the resulting pair is
-eliminated.
+%% % channel passing translation
+%% \newcommand{\gvtogv}[1]{({#1})^\star}
 
-\begin{mathpar}
-\inferrule
-  {\gvj{\Phi}{M}{\gvEndInput}}
-  {\gvj{\Phi}{\gvTerminate{M}}{\gvService{(\gvPlus{}{})}}}
+%% We can do better, though, by performing a local transformation. The
+%% key observation is that we can locally abstract over the continuation
+%% channel $z$ in a term $M$ using $\gvWith{z}{M}{z}$.
 
-\inferrule
-  {\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi, x:T, y:S}{N}{U}}
-  {\gvj{\Phi, \Psi}{\gvLet{\gvPair{x}{y}}{\gvReceive{M}}{N}}{U}}
-\end{mathpar}
+%% This is where the dualisation of types arises: the type of the whole
+%% expression must be dual to the type of $z$ in $M$. For instance, we
+%% implement a lambda of type $\gvLinFun{T}{U}$ with a channel $z$ of
+%% type $\gvInput{\gvDual{\gvtogv{T}}}{\gvtogv{U}}$, but the interface to
+%% the lambda is the other end of the channel $z$ which has type
+%% $\gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}}$ (and application becomes
+%% simply sending the argument along this channel).
 
-Another alternative is to get rid of terminate altogether and change
-$\gvEndInput$ to be an unrestricted session type. Correspondingly, we
-could also interpret the unit type as $\gvEndInput$ and $\gvUnit$ as
-$\gvWith{x}{x}{x}$. Making $\gvEndInput$ unrestricted makes sense as
-$\gvEndInput = \cptogv{\cpBottom}$, and weakening and contraction are
-derivable for $\cpBottom$ in CP.
+%% \begin{equations}
+%% \gvtogv{\gvLinFun{T}{U}} &=& \gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}} \\
+%% \gvtogv{\gvUnFun{T}{U}} &=& \gvService{(\gvOutput{\gvtogv{T}}{\gvDual{\gvtogv{U}}})} \\
+%% \gvtogv{\gvTimes{T}{U}} &=& \gvInput{\gvtogv{T}}{\gvDual{\gvtogv{U}}} \\
+%% \gvtogv{\gvUnitType} &=& \gvService{(\gvPlus{}{})} \\
+%% \end{equations}%
+
+%% \begin{equations}
+%% \gvtogv{\gvj{\Phi}{M}{T}} &=& \gvj{\gvtogv{\Phi}}{\gvtogv{M}}{\gvtogv{T}} \\
+%% \end{equations}%
+
+%% \begin{equations}
+%% \gvtogv{\gvLam{x}{M}} &=& \gvWith{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\gvtogv{M}}{z}}}{z} \\
+%% \gvtogv{\gvApp{L}{M}} &=& \gvSend{\gvtogv{M}}{\gvtogv{L}} \\
+%% \gvtogv{\gvTimes{M}{N}} &=&
+%%   \gvWith{z}
+%%     {\gvLink{(\gvSend{\gvtogv{M}}{z})}{\gvtogv{N}}}
+%%     {z} \\
+%% \gvtogv{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
+%%     \gvLet{\gvPair{x}{y}}{\gvReceive{\gvtogv{M}}}{\gvtogv{N}} \\
+%% \gvtogv{\gvReceive{M}} &=& M \\
+%% \gvtogv{\gvUnit} &=&
+%%     \gvWith{z}
+%%     {\gvServeOld{z}{x}{\gvCase{x}{\row{}{}}}}
+%%     {z} \\
+%% %% Unnecessary as we don't have a linear unit!
+%% %%
+%% %% \gvtogv{\gvLet{\gvUnit}{M}{N}} &=&
+%% %%   \gvLet{z}{\gvtogv{M}}{\gvtogv{N}} \\
+%% \gvtogv{L : \gvUnFun{T}{U}} &=&
+%%   \gvWith{z}{\gvServeOld{z}{y}{\gvLink{\gvtogv{L}}{y}}}{z} \\
+%% \gvtogv{L : \gvLinFun{T}{U}} &=& \gvRequest{\gvtogv{L}} \\
+%% \end{equations}
+
+%% A problem we run into is that $\gvReceive{M}$ has tensor type, and yet
+%% our translation is supposed to compile away non-session types,
+%% including tensors. Similarly, $\gvTerminate{M}$ has unit type. The
+%% problem illustrates an irregularity in GV. All of the typing rules for
+%% the other session typing constructs mention only session types.
+
+%% Dealing with $\key{terminate}$ is easy. We just amend our target
+%% language such that $\gvTerminate{M}$ has type
+%% $\gvService{(\gvPlus{}{})}$, the interpretation of the unit type.
+%% %
+%% Dealing with $\key{receive}$ is a little harder. We still need some
+%% way of binding the two values returned by $\key{receive}$. The
+%% solution is to fuse $\key{receive}$ with the pair elimination
+%% construct. Notice that this is more or less what CP server input does
+%% already. Because we interpret $\gvTimes{T}{U}$ as
+%% $\gvInput{\gvtogv{T}}{\gvDual{\gvtogv{U}}}$, instances of
+%% $\key{receive}$ from the source term are all erased. The only
+%% instances of $\key{receive}$ in the target term arise from
+%% interpreting lambdas and pair elimination. This may seem strange until
+%% one considers that the only way to use the pair resulting from a
+%% $\key{receive}$ in GV is to eliminate it. The transformation shunts
+%% each receive up to the point at which the resulting pair is
+%% eliminated.
+
+%% \begin{mathpar}
+%% \inferrule
+%%   {\gvj{\Phi}{M}{\gvEndInput}}
+%%   {\gvj{\Phi}{\gvTerminate{M}}{\gvService{(\gvPlus{}{})}}}
+
+%% \inferrule
+%%   {\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi, x:T, y:S}{N}{U}}
+%%   {\gvj{\Phi, \Psi}{\gvLet{\gvPair{x}{y}}{\gvReceive{M}}{N}}{U}}
+%% \end{mathpar}
+
+%% Another alternative is to get rid of terminate altogether and change
+%% $\gvEndInput$ to be an unrestricted session type. Correspondingly, we
+%% could also interpret the unit type as $\gvEndInput$ and $\gvUnit$ as
+%% $\gvWith{x}{x}{x}$. Making $\gvEndInput$ unrestricted makes sense as
+%% $\gvEndInput = \cptogv{\cpBottom}$, and weakening and contraction are
+%% derivable for $\cpBottom$ in CP.
 
 %------------------------------------------------------------------------------
 %%
