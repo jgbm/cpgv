@@ -477,8 +477,6 @@ input end session ($\un{\gvEndInput}$).
 {\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \gvj{\Psi}{M}{T}}
 {\gvj{\Phi,\Psi}{\gvApp{L}{M}}{U}}
 
-\\
-
 \inferrule[$\to$-I]
 {\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \un{\Phi}}
 {\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
@@ -487,12 +485,6 @@ input end session ($\un{\gvEndInput}$).
 {\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
 {\gvj{\Phi}{L}{\gvLinFun{T}{U}}}
 
-\\
-
-%% \inferrule[Unit]
-%% { }
-%% {\gvj{}{\gvUnit}{\gvUnitType}}
-
 \inferrule[$\otimes$-I]
 {\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{U}}
 {\gvj{\Phi,\Psi}{\gvPair{M}{N}}{\gvTimes{T}{U}}}
@@ -500,6 +492,12 @@ input end session ($\un{\gvEndInput}$).
 \inferrule[$\otimes$-E]
 {\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
 {\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
+
+
+%% \inferrule[Unit]
+%% { }
+%% {\gvj{}{\gvUnit}{\gvUnitType}}
+
 \end{mathpar}
 \hrule
 \begin{mathpar}
@@ -514,6 +512,7 @@ input end session ($\un{\gvEndInput}$).
 {\gvj{\Phi}{M}{\gvInput{T}{S}}}
 {\gvj{\Phi}{\gvReceive{M}}{\gvTimes{T}{S}}}
 \\
+
 \inferrule[Select]
 {\gvj{\Phi}{M}{\gvPlus{\la_i:S_i}{i}}}
 {\gvj{\Phi}{\gvSelect{\la_j}{M}}{S_j}}
@@ -522,6 +521,7 @@ input end session ($\un{\gvEndInput}$).
 {\gvj{\Phi}{M}{\gvChoice{\la_i:S_i}{i}} \\ \row{\gvj{\Psi,x:S_i}{N_i}{T}}{i}}
 {\gvj{\Phi,\Psi}{\gvCase{M}{\row{\la_i(x).N_i}{i}}}{T}}
 \\
+
 \inferrule[Fork]
 {\gvj{\Phi,x:S}{M}{\gvEndOutput}}
 {\gvj{\Phi}{\gvFork{x}{M}}{\gvDual{S}}}
