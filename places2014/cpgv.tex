@@ -342,8 +342,8 @@ The session types of \hgv are given by the following grammar.
 \begin{equations}
   S & ::= & \gvOutput{T}{S} \mid \gvInput{T}{S} \mid
            \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
-           \gvEndOutput \mid \gvEndInput \\
-    & \mid & X \mid \gvDual{X} \mid
+           \gvEndOutput \mid \gvEndInput 
+    \mid X \mid \gvDual{X} \mid
             \gvOutputType{X}{S} \mid \gvInputType{X}{S} \mid
             \gvServer{S} \mid \gvService{S}
 \end{equations}%
@@ -545,7 +545,6 @@ choose the current rule because we find it more convenient than the more uniform
 % Or not...
 
 
-
 \section{From \hgv to \hgvpi}
 
 The language \hgvpi is the restriction of \hgv to session types, that is, \hgv without $\lolli$,
@@ -600,7 +599,7 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 
 
 
-\section{From \hgvpi to CP}
+%\section{From \hgvpi to CP}
 
 Due to lack of space we omit a complete description of CP. The typing rules are given in
 Figure~\ref{fig:cp-typing}. For a full description, including the definition of the cut relation
@@ -909,12 +908,12 @@ If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \Longright
 \end{theorem}
 %
 Together, theorem's \ref{th:factor} and \ref{th:soundness} tell us that \hgv, \hgvpi, and CP are
-equally expressive, in the sense that every $X$ program can always be translated to an equivalent
-$Y$ program, where $X,Y \in \{$\hgv, \hgvpi, CP$\}$.
-
-% they capture exactly the same class of programs / processes.
+equally expressive.
 
 %% SL: commented out for space-saving
+
+%% , in the sense that every $X$ program can always be translated to an equivalent
+%% $Y$ program, where $X,Y \in \{$\hgv, \hgvpi, CP$\}$.
 
 %% It is interesting also to consider Felleisen's more refined notion of
 %% expressivity~\cite{Felleisen91}.  Both $\lampi{-}$ and $\cptogv{-}$ are local translations, thus
