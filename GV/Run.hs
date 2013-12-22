@@ -39,12 +39,14 @@ data Susp a =
    Return a
  | SExit Value
  | SWith (Chan -> (Thread, Thread))         (Value -> Susp a)
+ | SFork (Chan -> Thread)                   (Value -> Susp a)
  | SLink Chan Chan                          (Value -> Susp a)
  | SSend Value Chan                         (Value -> Susp a)
  | SReceive Chan                            (Value -> Susp a)
  | SSelect Label Chan                       (Value -> Susp a)
  | SCase Chan (Env Label (Value -> Thread)) (Value -> Susp a)
- | SServe Chan (Chan -> Thread)             (Value -> Susp a)
+-- | SServe Chan (Chan -> Thread)             (Value -> Susp a)
+ | SServe (Chan -> Thread)                  (Value -> Susp a)
  | SRequest Chan                            (Value -> Susp a)
  | SServeMore Chan (Chan -> Thread)
 
@@ -55,24 +57,26 @@ instance Monad Susp where
   Return v       >>= k = k v
   SExit v        >>= k = SExit v
   SWith f k'     >>= k = SWith f     (k' >=> k)
+  SFork f k'     >>= k = SFork f     (k' >=> k)
   SLink c1 c2 k' >>= k = SLink c1 c2 (k' >=> k)
   SSend v c k'   >>= k = SSend v c   (k' >=> k)
   SReceive c k'  >>= k = SReceive c  (k' >=> k)
   SSelect l c k' >>= k = SSelect l c (k' >=> k)
   SCase c bs k'  >>= k = SCase c bs  (k' >=> k)
-  SServe c f k'  >>= k = SServe c f  (k' >=> k)
+  SServe f k'    >>= k = SServe f    (k' >=> k)
   SRequest c k'  >>= k = SRequest c  (k' >=> k)
   SServeMore c f >>= k = SServeMore c f
 
 
 sexit       = SExit
 swith f     = SWith f return
+sfork f     = SFork f return
 slink c1 c2 = SLink c1 c2 return
 ssend v c   = SSend v c return
 sreceive c  = SReceive c return
 sselect l c = SSelect l c return
 scase v bs  = SCase v bs return
-sserve c f  = SServe c f return
+sserve f    = SServe f return
 srequest c  = SRequest c return
 
 emptyEnv :: Env k a
@@ -90,7 +94,6 @@ runPure env e = runPure' env e where
     case lookup x env of
       Nothing -> error ("Unbound variable: " ++ show x)
       Just v -> return v
-  runPure' env Unit = return VUnit
   runPure' env (Link e1 e2) =
     do (VChannel c1) <- rp e1
        (VChannel c2) <- rp e2
@@ -108,18 +111,11 @@ runPure env e = runPure' env e where
   runPure' env (Let (BindName x) e e') =
     do v <- rp e
        runPure (extend env (x, v)) e'
-  runPure' env (Let BindUnit e e') =
-    do VUnit <- rp e
-       runPure env e'
   runPure' env (Let (BindPair x1 x2) e e') =
     do (VPair v1 v2) <- rp e
        runPure (extend (extend env (x1, v1)) (x2, v2)) e'
-  runPure' env (With x _ e1 e2) =
-    swith (\(p1, p2) -> (runPure (extend env (x, VChannel (p1, p2))) e1,
-                         runPure (extend env (x, VChannel (p2, p1))) e2))
-  runPure' env (End e) =
-    do (VChannel _) <- rp e
-       return VUnit
+  runPure' env (Fork x _ e) =
+    sfork (\(p1, p2) -> runPure (extend env (x, VChannel (p1, p2))) e)
   runPure' env (Send m n) =
     do v <- rp m
        (VChannel c) <- rp n
@@ -134,11 +130,10 @@ runPure env e = runPure' env e where
     do (VChannel c) <- rp e
        let bs' = map (\(l, x, e) -> (l, \v -> runPure (extend env (x, v)) e)) bs
        scase c bs'
-  runPure' env (Serve s x e) =
-    do VChannel s' <- rp (Var s)
-       sserve s' (\(p1, p2) -> runPure (extend env (x, VChannel (p2, p1))) e)
-  runPure' env (Request s) =
-    do VChannel s' <- rp (Var s)
+  runPure' env (Serve x _ m) =
+    sserve (\(p1, p2) -> runPure (extend env (x, VChannel (p1, p2))) m)
+  runPure' env (Request m) =
+    do VChannel s' <- rp m
        srequest s'
   runPure' env (SendType s e) = rp e
   runPure' env (ReceiveType e) = rp e
@@ -157,6 +152,10 @@ runCommand (SWith f k) (penv, bufs, ts, next) =
   return (penv, (emptyBuffer (next+1)):(emptyBuffer next):bufs, ts ++ [t1, t2 >>= k], next+2)
   where
     (t1, t2) = f (next, next+1)
+runCommand (SFork f k) (penv, bufs, ts, next) =
+  return (penv, emptyBuffer (next + 1) : emptyBuffer next : bufs, ts ++ [t1, k (VChannel (next + 1, next))], next + 2)
+  where
+     t1 = f (next, next + 1)
 runCommand (SLink c1 c2 k) (penv, bufs, ts, next) =
   return (linkChannels c1 c2 penv, bufs, ts ++ [k (VChannel c2)], next)
 runCommand (SSend v c@(p, _) k) conf@(penv, bufs, ts, next) =
@@ -169,18 +168,16 @@ runCommand (SSelect l c@(p, _) k) (penv, bufs, ts, next) =
 runCommand (SCase c@(_, p) bs k) (penv, bufs, ts, next) =
   do (s, bufs') <- receiveLabel c bs penv bufs p
      return (penv, bufs', ts ++ [s >>= k], next)
-runCommand (SServe s f k) (penv, bufs, ts, next) =
-  -- the continuation expects a channel of type end!, so it can never
-  -- use its argument, so the current channel will do as a value to
-  -- send (undefined should work just as well)
-  return (penv, bufs, ts ++ [k (VChannel s), SServeMore s f], next)
+runCommand (SServe f k) (penv, bufs, ts, next) =
+  return (penv, emptyBuffer (next + 1) : emptyBuffer next : bufs, ts ++ [k (VChannel (next + 1, next)), SServeMore (next, next + 1) f], next + 2)
 runCommand (SServeMore s@(_, p) f) (penv, bufs, ts, next) =
   do (VChannel c, bufs') <- receiveValue penv bufs p
      return (penv, bufs', ts ++ [f c, SServeMore s f], next)
 runCommand (SRequest (p, _) k) (penv, bufs, ts, next) =
-  return (penv, bufs', ts ++ [k v], next+2)
+  return (penv, bufs', ts ++ [k v'], next+2)
   where
     v = VChannel (next, next+1)
+    v' = VChannel (next + 1, next)
     bufs' = sendValue v penv ((emptyBuffer (next+1)):(emptyBuffer next):bufs) p
 
 --  p1 <==> q1
@@ -262,12 +259,13 @@ data ThreadHead =
    THReturn Value
  | THExit Value
  | THWith
+ | THFork
  | THLink Chan Chan
  | THSend Value Chan
  | THReceive Chan
  | THSelect Label Chan
  | THCase Chan
- | THServe Chan
+ | THServe
  | THRequest Chan
  | THServeMore Chan
  deriving Show
@@ -276,11 +274,12 @@ threadHead :: Thread -> ThreadHead
 threadHead (Return v)       = THReturn v
 threadHead (SExit v)        = THExit v
 threadHead (SWith _ _)      = THWith
+threadHead (SFork {})       = THFork
 threadHead (SLink c d _)    = THLink c d
 threadHead (SSend v c _)    = THSend v c
 threadHead (SReceive c _)   = THReceive c
 threadHead (SSelect l c _)  = THSelect l c
 threadHead (SCase c _ _)    = THCase c
-threadHead (SServe c _ _)   = THServe c
+threadHead (SServe _ _)     = THServe
 threadHead (SRequest c _)   = THRequest c
 threadHead (SServeMore c _) = THServeMore c

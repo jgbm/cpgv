@@ -12,90 +12,7 @@ import GV.CPBuilder
 import qualified CP.Check as CP (dual)
 import qualified CP.Syntax as CP
 
-
---------------------------------------------------------------------------------
--- Types, substitutions, and unifications
-
-dual :: Session -> Session
-dual (Dual st)    = st
-dual (Output t s) = Input t (dual s)
-dual (Input t s)  = Output t (dual s)
-dual (Sum cs)     = Choice [(l, dual s) | (l, s) <- cs]
-dual (Choice cs)  = Sum [(l, dual s) | (l, s) <- cs]
-dual InTerm       = OutTerm
-dual OutTerm      = InTerm
-dual (Server s)   = Service (dual s)
-dual (Service s)  = Server (dual s)
-dual (SVar x)     = Neg x
-dual (Neg x)      = SVar x
-dual (OutputType x s) = InputType x (dual s)
-dual (InputType x s)  = OutputType x (dual s)
-
-
-linear :: Type -> Bool
-linear (LinFun _ _)       = True
-linear (Tensor _ _)       = True
-linear (Lift (Service _)) = False
-linear (Lift _)           = True
-linear _                  = False
-
-unlimited :: Type -> Bool
-unlimited = not . linear
-
-
-
---------------------------------------------------------------------------------
--- Free session variables
-fsv :: Session -> [String]
-fsv (Output t s) = ftv t ++ fsv s
-fsv (Input t s) = ftv t ++ fsv s
-fsv (Sum ls) = concatMap (fsv . snd) ls
-fsv (Choice ls) = concatMap (fsv . snd) ls
-fsv OutTerm = []
-fsv InTerm = []
-fsv (Server s) = fsv s
-fsv (Service s) = fsv s
-fsv (SVar x) = [x]
-fsv (Neg x) = [x]
-fsv (OutputType x s) = filter (x /=) (fsv s)
-fsv (InputType x s) = filter (x /=) (fsv s)
-
-ftv :: Type -> [String]
-ftv (LinFun t u) = ftv t ++ ftv u
-ftv (UnlFun t u) = ftv t ++ ftv u
-ftv (Tensor t u) = ftv t ++ ftv u
-ftv (Lift s) = fsv s
-ftv UnitType = []
-
---------------------------------------------------------------------------------
--- Instantiating session variables
-instSession :: String -> Session -> Session -> Session
-instSession x s (Output t s') = Output (instType x s t) (instSession x s s')
-instSession x s (Input t s') = Input (instType x s t) (instSession x s s')
-instSession x s (Sum lts) = Sum [(l, instSession x s s') | (l, s') <- lts]
-instSession x s (Choice lts) = Choice [(l, instSession x s s') | (l, s') <- lts]
-instSession x s OutTerm = OutTerm
-instSession x s InTerm = InTerm
-instSession x s (Server s') = Server (instSession x s s')
-instSession x s (Service s') = Service (instSession x s s')
-instSession x s (SVar y) | x == y = s
-                         | otherwise = SVar y
-instSession x s (Dual s') = dual (instSession x s s')
-instSession x s (Neg y) | x == y = s
-                        | otherwise = Neg y
-instSession x s (OutputType y s') | x == y = OutputType y s'
-                                  | otherwise = OutputType y (instSession x s s')
-instSession x s (InputType y s') | x == y = InputType y s'
-                                  | otherwise = InputType y (instSession x s s')
-
-instType :: String -> Session -> Type -> Type
-instType x s (LinFun t u) = LinFun (instType x s t) (instType x s u)
-instType x s (UnlFun t u) = LinFun (instType x s t) (instType x s u)
-instType x s (Tensor t u) = LinFun (instType x s t) (instType x s u)
-instType x s (Lift s') = Lift (instSession x s s')
-instType x s UnitType = UnitType
-
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- Typechecking monad and non-proper morphisms
 
 type Typing = (String, Type)
@@ -191,14 +108,15 @@ xSession InTerm       = CP.One
 xSession (Server s)   = CP.WhyNot (xSession s)
 xSession (Service s)  = CP.OfCourse (xSession s)
 xSession (SVar s)     = CP.Var s []
-
+xSession (Neg s)      = CP.Neg s
+xSession (OutputType x s) = CP.Exists x (xSession s)
+xSession (InputType x s) = CP.ForAll x (xSession s)
 
 xType :: Type -> CP.Prop
 xType (Lift s)     = xSession s
 xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
 xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
 xType (Tensor t u) = xType t `CP.Times` xType u
-xType UnitType     = CP.OfCourse (CP.With [])
 
 --------------------------------------------------------------------------------
 -- With all that out of the way, type checking itself can be implemented
@@ -209,7 +127,6 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
     where check' :: Term -> Check (Type, String -> Builder CP.Proc)
           check' (Var x)   = do ty <- consume x
                                 return (ty, \z -> link x z)
-          check' Unit      = return (UnitType, \z -> replicate z "y" (emptyCase "y" []))
           check' (Link m n) =
               do (t, m') <- check m
                  (t', n') <- check n
@@ -248,22 +165,20 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                  return (Tensor mty nty, \z -> out z (V "y") (m' =<< reference (V "y")) (n' z))
           check' (Let (BindName x) m n) =
               do (t, m') <- check m
-                 (u, n') <- provide x t (check n)
-                 return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
-          check' (Let BindUnit m n) =
-              do (mty, m') <- check m
-                 case mty of
-                   UnitType -> do (nty, n') <- check n
-                                  return (nty, \z -> nu (V "x") (xType mty)
-                                                        (m' =<< reference (V "x"))
-                                                        (n' z))
-                   _        -> fail ("    Attempted to pattern-match non-unit of type " ++ show (pretty mty))
+                 if t == Lift InTerm && x `notElem` fv n
+                 then do (u, n') <- check n
+                         return (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
+                 else do (u, n') <- provide x t (check n)
+                         return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
           check' (Let (BindPair x y) m n) =
               do (mty, m') <- check m
                  case mty of
-                   Tensor xty yty -> do (nty, n') <- provide x xty (provide y yty (check n))
-                                        return (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (n' z)))
-                   _              -> fail ("    Attempted to pattern-match non-pair of type " ++ show (pretty mty))
+                   Tensor xty yty ->
+                       let isWeakened z zty = if zty == Lift InTerm && z `notElem` fv n then (z :) else id
+                           weakened = isWeakened x xty (isWeakened y yty [])
+                       in  do (nty, n') <- provide x xty (provide y yty (check n))
+                              return (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
+                   _ -> fail ("    Attempted to pattern-match non-pair of type " ++ show (pretty mty))
           check' (Send m n) =
               do (mty, m') <- check m
                  (nty, n') <- check n
@@ -316,38 +231,29 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                                                                  (m' =<< reference (V "x"))
                                                                  (emptyCase (V "x") xs))
                   _                -> fail ("    Channel of empty case operation has unexpected type " ++ show (pretty mty))
-          check' (With l st m n) =
-              do (mty, m') <- provide l (Lift st) (check m)
+
+          check' (Fork x a m) =
+              do (mty, m') <- provide x (Lift a) (check m)
                  case mty of
-                   Lift OutTerm -> do (nty, n') <- provide l (Lift (dual st)) (check n)
-                                      return (nty, \z -> nu l (CP.dual (xSession st))
-                                                            (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y")))
-                                                            (n' z))
-                   _            -> fail ("    Unexpected type of left channel " ++ show (pretty mty))
-          check' (End m) =
-              do (mty, m') <- check m
-                 case mty of
-                   Lift InTerm -> return (UnitType, \z -> nu (V "x") CP.One
-                                                             (m' =<< reference (V "x"))
-                                                             (emptyIn (V "x") (replicate z (V "y") (emptyCase (V "y") []))))
-                   _           -> fail ("    Unexpected type of terminated channel " ++ show (pretty mty))
-          check' (Serve s x m) =
-              do sty <- consume s
-                 case sty of
-                   Lift (Server ty) ->
-                     do (u', m') <- provide x (Lift ty) (check m)
-                        return (Lift OutTerm, \z ->
-                                     emptyIn z
-                                       (replicate s x
-                                          (nu (V "y") CP.One (emptyOut (V "y"))
-                                              (m' =<< reference (V "y")))))
-                   _                -> fail ("    Unexpected type of server channel " ++ show (pretty sty))
-          check' (Request s) =
-              do sty <- consume s
-                 case sty of
+                   Lift OutTerm -> return (Lift (dual a), \z -> nu x (xSession (dual a))
+                                                                   (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y")))
+                                                                   (link x z))
+                   _ -> fail ("    Argument to fork has unexpected type " ++ show (pretty mty))
+
+          check' (Serve x a m) =
+              do (t, m') <- provide x (Lift a) (check m)
+                 case t of
+                   Lift OutTerm ->
+                       return (Lift (Service (dual a)),
+                               \z -> replicate z x (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y"))))
+                   _ -> fail ("    Argument to serve has unexpected type " ++ show (pretty t))
+
+          check' (Request m) =
+              do (t, m') <- check m
+                 case t of
                    Lift (Service ty) ->
-                     return (Lift ty, \z -> derelict s (V "x") (link (V "x") z))
-                   _                 -> fail("    Unexpected type of service channel " ++ show (pretty sty))
+                     return (Lift ty, \z -> nu (V "x") (CP.OfCourse (xSession ty)) (m' =<< reference (V "x")) (derelict (V "x") (V "y") (link (V "y") z)))
+                   _ -> fail("    Unexpected type of service channel " ++ show (pretty t))
           check' (SendType s m) =
               do (mty, m') <- check m
                  case mty of

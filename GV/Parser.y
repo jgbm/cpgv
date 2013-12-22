@@ -26,7 +26,6 @@ import GV.Syntax
      ']'          { RBRACK }
      '{'          { LBRACE }
      '}'          { RBRACE }
-     'unit'       { UNIT }
      'link'       { LINK }
      '\\'         { LAMBDA }
      'let'        { LET }
@@ -41,25 +40,18 @@ import GV.Syntax
      'request'    { REQUEST }
      'sendType'   { SENDTYPE }
      'receiveType' { RECEIVETYPE }
-     'with'       { WITH }
-     'connect'    { CONNECT }
-     'to'         { TO }
-
-
+     'fork'       { FORK }
 
      '?'          { QUERY }
      '!'          { BANG }
-     '!!'         { OUTTYPE }
-     '??'         { INTYPE }
      '*'          { TIMES }
      '+'          { PLUS }
      '&'          { AMP }
      '~'          { TILDE }
-     '$'          { SERVER }
+     '%'          { SERVER }
      '#'          { SERVICE }
      'end!'       { OUTTERM }
      'end?'       { INTERM}
-     'Unit'       { UNITTYPE }
      '-@'         { LINFUN }
      '->'         { UNLFUN }
 
@@ -101,12 +93,12 @@ Session      :: { Session }
                                               { Choice $3 }
              | 'end!'                         { OutTerm }
              | 'end?'                         { InTerm }
-             | '$' Session                    { Server $2 }
+             | '%' Session                    { Server $2 }
              | '#' Session                    { Service $2 }
-             | '~' Session                    { Dual $2 }
+             | '~' Session                    { dual $2 }
              | UIdent                         { SVar $1 }
-             | '!!' UIdent '.' Session        { OutputType $2 $4 }
-             | '??' UIdent '.' Session        { InputType $2 $4 }
+             | '!' '[' UIdent ']' '.' Session { OutputType $3 $6 }
+             | '?' '[' UIdent ']' '.' Session { InputType $3 $6 }
 
 Type        :: { Type }
             : Type1 '-@' Type                 { LinFun $1 $3 }
@@ -119,12 +111,10 @@ Type1       :: { Type }
 
 Type2       :: { Type }
             : Session                         { Lift $1 }
-            | 'Unit'                          { UnitType }
             | '(' Type ')'                    { $2 }
 
 Pattern     :: { Pattern }
             : LIdent                          { BindName $1 }
-            | '(' ')'                         { BindUnit }
             | '(' LIdent ',' LIdent ')'       { BindPair $2 $4 }
 
 Term        :: { Term }
@@ -141,19 +131,17 @@ Term        :: { Term }
                                               { Case $2 $5 }
             | 'case' Term '(' sep(LIdent, ',') ')' ':' Type '{' '}'
                                               { EmptyCase $2 $4 $7 }
-            | 'with' LIdent ':' Session 'connect' Term 'to' Term
-                                              { With $2 $4 $6 $8 }
-            | 'terminate' Term                { End $2 }
-            | 'serve' LIdent '(' LIdent ')' '=' Term
-                                              { Serve $2 $4 $7 }
-            | 'request' LIdent                { Request $2 }
+            | 'fork' LIdent ':' Session '.' Term
+                                              { Fork $2 $4 $6 }
+            | 'serve' LIdent ':' Session '.' Term
+                                              { Serve $2 $4 $6 }
+            | 'request' Term                  { Request $2 }
             | 'sendType' Session Term         { SendType $2 $3 }
             | 'receiveType' Term              { ReceiveType $2 }
             | Term1                           { $1 }
 
 Term1       :: { Term }
             : LIdent                          { Var $1 }
-            | 'unit'                          { Unit }
             | '(' Term ',' Term ')'           { Pair $2 $4 }
             | '(' Term ')'                    { $2 }
 

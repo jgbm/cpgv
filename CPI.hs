@@ -10,6 +10,11 @@ import CP.Parser
 import System.Console.Haskeline
 import System.Environment (getArgs)
 
+import GV.Printer
+import CPToGV
+import qualified GV.Syntax as GV
+import qualified GV.Check as GV
+
 
 traceBehavior i b =
     case b of
@@ -39,12 +44,20 @@ interp ds (Right (Assert p b isCheck)) =
               do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]
                  return ds
           | otherwise ->
-              do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]
-                 putStrLn (unlines ["Execution results in:",
-                                    displayS (renderPretty 0.8 120 (pretty executed)) "",
-                                    "which can be further simplified to:",
-                                    displayS (renderPretty 0.8 120 (pretty simplified)) ""])
-                 return ds
+              let gvContext = [(v, xType t) | (v, t) <- b']
+                  gvExpr    = xTerm [(v, t) | (v, t) <- b'] p
+                  gvResult  = ["GV translation is: ", displayS (renderPretty 0.8 120 (pretty (GV.Assert gvContext gvExpr (GV.Lift GV.OutTerm)))) ""] ++
+                              (case GV.runCheck (GV.checkAgainst gvExpr (GV.Lift GV.OutTerm)) gvContext of
+                                 Left err -> ["which is ill-typed:", err]
+                                 Right _  -> [])
+
+              in  do sequence_ [putStrLn (traceBehavior i b) | (i, b) <- zip [1..] t]
+                     putStrLn (unlines (["Execution results in:",
+                                         displayS (renderPretty 0.8 120 (pretty executed)) "",
+                                         "which can be further simplified to:",
+                                         displayS (renderPretty 0.8 120 (pretty simplified)) ""] ++
+                                        gvResult))
+                     return ds
 
 repl ds = do s <- getInputLine "> "
              case trim `fmap` s of

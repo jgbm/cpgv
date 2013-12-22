@@ -27,7 +27,6 @@ $any    = [$upper $lower $digit _]
      "]"          { lexeme RBRACK }
      "{"          { lexeme LBRACE }
      "}"          { lexeme RBRACE }
-     "unit"       { lexeme UNIT }
      "link"       { lexeme LINK }
      "\"          { lexeme LAMBDA }
      "let"        { lexeme LET }
@@ -42,27 +41,20 @@ $any    = [$upper $lower $digit _]
      "request"    { lexeme REQUEST }
      "sendType"   { lexeme SENDTYPE }
      "receiveType" {lexeme RECEIVETYPE }
-     "with"       { lexeme WITH }
-     "connect"    { lexeme CONNECT }
-     "to"         { lexeme TO }
-
+     "fork"       { lexeme FORK }
 
      "?"          { lexeme QUERY }
      "!"          { lexeme BANG }
-     "!!"         { lexeme OUTTYPE }
-     "??"         { lexeme INTYPE }
      "*"          { lexeme TIMES }
      "+"          { lexeme PLUS }
      "&"          { lexeme AMP }
      "~"          { lexeme TILDE }
-     "$"          { lexeme SERVER }
+     "%"          { lexeme SERVER }
      "#"          { lexeme SERVICE }
      "end!"       { lexeme OUTTERM }
      "end?"       { lexeme INTERM}
-     "Unit"       { lexeme UNITTYPE }
      "-@"         { lexeme LINFUN }
      "->"         { lexeme UNLFUN }
-
 
      "|-"         { lexeme TURNSTILE }
      "="          { lexeme EQUALS }
@@ -85,7 +77,6 @@ data Token = LIDENT String
            | RBRACK
            | LBRACE
            | RBRACE
-           | UNIT
            | LINK
            | LAMBDA
            | LET
@@ -100,14 +91,10 @@ data Token = LIDENT String
            | REQUEST
            | SENDTYPE
            | RECEIVETYPE
-           | WITH
-           | CONNECT
-           | TO
+           | FORK
 
            | BANG
            | QUERY
-           | OUTTYPE
-           | INTYPE
            | TIMES
            | PAR
            | PLUS
@@ -119,7 +106,6 @@ data Token = LIDENT String
            | SERVICE
            | OUTTERM
            | INTERM
-           | UNITTYPE
            | LINFUN
            | UNLFUN
 
