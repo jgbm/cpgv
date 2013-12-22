@@ -32,8 +32,8 @@
 % landcape-like text, you can use the rotating and pdflscape
 % packages. Uncomment the desired from the below.
 %
-\usepackage{rotating}
-\usepackage{pdflscape}
+% \usepackage{rotating}
+% \usepackage{pdflscape}
 
 % If you plan on including some algorithm specification, we recommend
 % the below package. Read more details on the custom options of the
@@ -789,58 +789,6 @@ so we can abbreviate their translations as mappings on plain terms.
 \end{equations}%
 The key idea is that the channel $z$ is the continuation that consumes the output of the process
 representing the original \hgvpi term.
-%
-%% Horrible verbose versions of the rules for sending and receiving types
-%% \begin{mathpar}
-%% \left\llbracket
-%%   \inferrule
-%%      {\gvj{\Phi}{M}{\gvOutputType{X}{S}}}
-%%      {\gvj{\Phi}{\gvSendType{S'}{M}}{\subst{S}{S'}{X}}}
-%% \right\rrbracket z =
-%%   \inferrule*
-%%     {
-%%       \inferrule*
-%%         {}
-%%         {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpForall{X}{\cpDual{\hgvcp{S}}}}}
-%%       \\
-%%       \inferrule*
-%%         {\inferrule*
-%%            { }
-%%            {\cpj{\cpLink{x}{z}}
-%%              {\hgvcp{\Phi},x:\hgvcp{\subst{S}{S'}{X}},
-%%                            z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}}
-%%         {\cpj{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}
-%%              {\hgvcp{\Phi},x:\cpExists{X}{\hgvcp{S}},
-%%                            z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
-%%     }
-%%     {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S'}}{\cpLink{x}{z}}}}
-%%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{\subst{S}{S'}{X}}}}}
-%% \\
-%% \left\llbracket
-%%   \inferrule
-%%      {\gvj{\Phi}{M}{\gvInputType{X}{S}} \\ X \notin \FV{\Phi}}
-%%      {\gvj{\Phi}{\gvReceiveType{M}}{S}}
-%% \right\rrbracket z =
-%%   \inferrule*
-%%     {\inferrule*
-%%        {}
-%%        {\cpj{\hgvcp{M}x}{\hgvcp{\Phi},x:\cpExists{X}{\cpDual{\hgvcp{S}}}}}
-%%      \\
-%%      \inferrule*
-%%        {\inferrule*
-%%             { }
-%%             {\cpj{\cpLink{x}{z}}
-%%               {\hgvcp{\Phi},x:\hgvcp{S}
-%%                            ,z:\cpDual{\hgvcp{S}}}}
-%%         \\ X \notin \FV{\hgvcp{\Phi}}
-%%        }
-%%        {\cpj{\cpReceiveType{x}{X}{\cpLink{x}{z}}}
-%%           {\hgvcp{\Phi},x:\cpForall{X}{\hgvcp{S}}
-%%                        ,z:\cpDual{\hgvcp{S}}}}
-%%     }
-%%     {\cpj{\cpCut{x}{\hgvcp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}}}
-%%          {\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}} \\
-%% \end{mathpar}
 %
 The translation on contexts is pointwise.
 %% \begin{equations}
