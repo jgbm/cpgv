@@ -515,7 +515,7 @@ interdefinable, but we find $\key{fork}$ more convenient. %natural and better al
 \gvFork{x}{M} \equiv \gvWith{x}{M}{x} \qquad \gvWith{x}{M}{N} \equiv \gvLet{x}{\gvFork{x}{M}}{N}
 \]
 We add a term $\gvLink{M}{N}$ to implement channel forwarding; this is provided in neither GV nor
-\last, but is necessary to match the expressivity of CP. we add terms $\gvSendType{S}{M}$ and
+\last, but is necessary to match the expressive power of CP. we add terms $\gvSendType{S}{M}$ and
 $\gvReceiveType{X}{M}$ to provide session polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$ for
 replicated sessions. Note that, as the body $M$ of $\gvServe{x}{M}$ may be arbitrarily replicated,
 it can only refer to the unlimited portion of the environment.
@@ -588,7 +588,8 @@ The translation on contexts is pointwise.
 %% \begin{equations}
 %% \lampi{x_1:T_1, \dots, x_n:T_n} &=& x_1:\lampi{T_1}, \dots, x_n:\lampi{T_n} \\
 %% \end{equations}%
-It is straightforward to verify that the translation preserves typing.
+%It is straightforward to verify that
+The translation preserves typing.
 \begin{theorem}
 If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 \end{theorem}
@@ -713,30 +714,57 @@ Duality on CP types ($\cpDual{(-)}$) is standard.
 \caption{Typing rules for CP}
 \end{figure}
 
-We now give a semantics to \hgvpi as a translation from \hgvpi to CP. Post composing this with the
-embedding of \hgv in \hgvpi yields a semantics for \hgv.
+We now give a translation from \hgvpi to CP. Post composing this with the embedding of \hgv in
+\hgvpi yields a semantics for \hgv.
 %
 The translation on session types is as follows.
+%% \[
+%% \ba{@{}c@{\qquad}c@{\qquad}c@{}}
+%% \begin{eqs}
+%% \hgvcp{\gvOutput{T}{S}}         &=& \cpTimes{\cpDual{\hgvcp{T}}}{\hgvcp{S}} \\
+%% \hgvcp{\gvInput{T}{S}}          &=& \cpPar{\hgvcp{T}}{\hgvcp{S}} \\
+%% \hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
+%% \hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \hgvcp{\gvEndOutput}  &=& \cpOne \\
+%% \hgvcp{\gvEndInput}   &=& \cpBottom \\
+%% \hgvcp{\gvServer{S}}  &=& \cpOfCourse{\hgvcp{S}} \\
+%% \hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \hgvcp{\gvOutputType{X}{S}} &=& \cpExists{X}{\hgvcp{S}} \\
+%% \hgvcp{\gvInputType{X}{S}}  &=& \cpForall{X}{\hgvcp{S}} \\
+%% \hgvcp{X}                   &=& X \\
+%% \hgvcp{\gvDual{X}}          &=& \cpDual{X} \\
+%% \end{eqs}
+%% \ea
+%% \]
 \[
-\ba{@{}c@{\qquad}c@{\qquad}c@{}}
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
 \hgvcp{\gvOutput{T}{S}}         &=& \cpTimes{\cpDual{\hgvcp{T}}}{\hgvcp{S}} \\
 \hgvcp{\gvInput{T}{S}}          &=& \cpPar{\hgvcp{T}}{\hgvcp{S}} \\
-\hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
-\hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
+\hgvcp{\gvEndOutput}  &=& \cpOne \\
 \end{eqs}
 &
 \begin{eqs}
-\hgvcp{\gvEndOutput}  &=& \cpOne \\
+\hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
+\hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
 \hgvcp{\gvEndInput}   &=& \cpBottom \\
+\end{eqs}
+&
+\begin{eqs}
 \hgvcp{\gvServer{S}}  &=& \cpOfCourse{\hgvcp{S}} \\
 \hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\
+\hgvcp{X}                   &=& X \\
 \end{eqs}
 &
 \begin{eqs}
 \hgvcp{\gvOutputType{X}{S}} &=& \cpExists{X}{\hgvcp{S}} \\
 \hgvcp{\gvInputType{X}{S}}  &=& \cpForall{X}{\hgvcp{S}} \\
-\hgvcp{X}                   &=& X \\
 \hgvcp{\gvDual{X}}          &=& \cpDual{X} \\
 \end{eqs}
 \ea
@@ -777,6 +805,8 @@ so we can abbreviate their translations as mappings on plain terms.
 \hgvcp{\gvFork{x}{M}}z &=&
   \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\cpLink{x}{z}} \\
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\hgvcp{N}x}} \\
+\end{equations}%
+\begin{equations}
 \hgvcp{\gvSendType{S}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
 \hgvcp{\gvReceiveType{X}{M}}z &=&
@@ -793,7 +823,8 @@ The translation on contexts is pointwise.
 %% \begin{equations}
 %% \hgvcp{x_1:T_1, \dots, x_n:T_n} &=& x_1:\hgvcp{T_1}, \dots, x_n:\hgvcp{T_n} \\
 %% \end{equations}%
-It is straightforward to verify that the translation preserves typing.
+%It is straightforward to verify that
+The translation preserves typing.
 \begin{theorem}
 If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 \end{theorem}
@@ -801,28 +832,56 @@ If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 
 \section{From CP to \hgvpi}
 
-In order to demonstrate that CP and \hgvpi (and indeed \hgv) are equally expressive we now present a
-translation $\cptogv{-}$ from CP to \hgvpi. The translation on types is as follows.
+%In order to demonstrate that CP and \hgvpi (and indeed \hgv) are equally expressive
+We now present the translation $\cptogv{-}$ from CP to \hgvpi. The translation on types is as
+follows.
+%% \[
+%% \ba{@{}c@{\qquad}c@{\qquad}c@{}}
+%% \begin{eqs}
+%% \cptogv{\cpTimes{A}{B}} &=& \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} \\
+%% \cptogv{\cpPar{A}{B}}   &=& \gvInput{\cptogv{A}}{\cptogv{B}} \\
+%% \cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i}  \\
+%% \cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \cptogv{\cpOne}         &=& \gvEndOutput \\
+%% \cptogv{\cpBottom}      &=& \gvEndInput \\
+%% \cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
+%% \cptogv{\cpWhyNot{A}}   &=& \gvService{\cptogv{A}} \\
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
+%% \cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\
+%% \cptogv{X}               &=& X \\
+%% \cptogv{\cpDual{X}}      &=& \gvDual{X} \\
+%% \end{eqs}
+%% \ea
+%% \]
 \[
-\ba{@{}c@{\qquad}c@{\qquad}c@{}}
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
 \cptogv{\cpTimes{A}{B}} &=& \gvOutput{\gvDual{\cptogv{A}}}{\cptogv{B}} \\
 \cptogv{\cpPar{A}{B}}   &=& \gvInput{\cptogv{A}}{\cptogv{B}} \\
-\cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i}  \\
-\cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
+\cptogv{\cpOne}         &=& \gvEndOutput \\
 \end{eqs}
 &
 \begin{eqs}
-\cptogv{\cpOne}         &=& \gvEndOutput \\
+\cptogv{\cpPlus{\la_i:A_i}{i}} &=& \gvPlus{\la_i:\cptogv{A_i}}{i}  \\
+\cptogv{\cpWith{\la_i:A_i}{i}} &=& \gvChoice{\la_i:\cptogv{A_i}}{i} \\
 \cptogv{\cpBottom}      &=& \gvEndInput \\
-\cptogv{\cpOfCourse{A}} &=& \gvServer{\cptogv{A}} \\
-\cptogv{\cpWhyNot{A}}   &=& \gvService{\cptogv{A}} \\
 \end{eqs}
 &
 \begin{eqs}
 \cptogv{\cpExists{X}{A}} &=& \gvOutputType{X}{\cptogv{A}} \\
 \cptogv{\cpForall{X}{A}} &=& \gvInputType{X}{\cptogv{A}} \\
 \cptogv{X}               &=& X \\
+\end{eqs}
+&
+\begin{eqs}
+\cptogv{\cpWhyNot{A}}    &=& \gvService{\cptogv{A}} \\
+\cptogv{\cpOfCourse{A}}  &=& \gvServer{\cptogv{A}} \\
 \cptogv{\cpDual{X}}      &=& \gvDual{X} \\
 \end{eqs}
 \ea
@@ -880,7 +939,8 @@ The translation on contexts is pointwise.
 %% \begin{equations}
 %% \cptogv{x_1:A_1, \dots, x_n:A_n} &=& x_1:\cptogv{A_1}, \dots, x_n:\cptogv{A_n} \\
 %% \end{equations}%
-It is straightforward to verify that the translation preserves typing.
+%It is straightforward to verify that 
+The translation preserves typing.
 \begin{theorem}
 If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 \end{theorem}
@@ -894,7 +954,7 @@ straightforward to show that this monolithic translation factors through $\lampi
 \label{th:factor}
 $\hgvcp{\lampi{M}}z \Longrightarrow^* \hgvcp{M}z$
 \end{theorem}
-
+\noindent
 The key soundness property of our translations is that if we translate a term from CP to \hgvpi and
 back, then we obtain a term equivalent to the one we started with.
 \begin{theorem}
@@ -906,8 +966,8 @@ back, then we obtain a term equivalent to the one we started with.
 If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \Longrightarrow^* P$.
 %%\end{enumerate}
 \end{theorem}
-%
-Together, theorem's \ref{th:factor} and \ref{th:soundness} tell us that \hgv, \hgvpi, and CP are
+\noindent
+Together, Theorem~\ref{th:factor}~and~\ref{th:soundness} tell us that \hgv, \hgvpi, and CP are
 equally expressive.
 
 %% SL: commented out for space-saving
@@ -944,7 +1004,7 @@ logic proofs, completing the correspondence between linear logic and session typ
 given an encoding of the non-session fragment of \hgv in terms of its session fragment, simplifying
 translation from \hgv to CP.
 
-We highlight several areas for continued research.
+We highlight several areas of future work.
 %% \begin{itemize}
 %% \item 
 The semantics of \hgv is given via cut elimination in CP. We would like to give \hgv a
