@@ -548,9 +548,10 @@ choose the current rule because we find it more convenient than the more uniform
 \section{From \hgv to \hgvpi}
 
 The language \hgvpi is the restriction of \hgv to session types, that is, \hgv without $\lolli$,
-$\to$, or $\otimes$. We can simulate all non-session types as session types via a translation from
-\hgv to \hgvpi. The translation on types is given by the homomorphic extension of the following
-equations.
+$\to$, or $\otimes$. In order to avoid $\otimes$, we disallow plain $\gvReceive{M}$, but do permit
+it to be fused with a pair elimination $\gvReceiveK{x}{y}{M}{N}$. We can simulate all non-session
+types as session types via a translation from \hgv to \hgvpi. The translation on types is given by
+the homomorphic extension of the following equations.
 \[
 \lampi{\gvLinFun{T}{U}} = \gvOutput{\lampi{T}}{\gvDual{\lampi{U}}} \qquad
 \lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\gvDual{\lampi{U}}})} \qquad
@@ -600,7 +601,7 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 
 
 
-%\section{From \hgvpi to CP}
+\section{From \hgvpi to CP}
 
 Due to lack of space we omit a complete description of CP. The typing rules are given in
 Figure~\ref{fig:cp-typing}. For a full description, including the definition of the cut relation
@@ -798,6 +799,8 @@ so we can abbreviate their translations as mappings on plain terms.
 \hgvcp{\gvSend{M}{N}}z &=& \cpCut{x}{\cpOutput{x}{y}{\hgvcp{M}y}{\cpLink{x}{z}}}{\hgvcp{N}x} \\
 \hgvcp{\gvReceiveK{y}{x}{M}{N}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInput{x}{y}{\hgvcp{N}z}} \\
+\end{equations}%
+\begin{equations}
 \hgvcp{\gvSelect{\la}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
 \hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
@@ -805,8 +808,6 @@ so we can abbreviate their translations as mappings on plain terms.
 \hgvcp{\gvFork{x}{M}}z &=&
   \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\cpLink{x}{z}} \\
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\hgvcp{N}x}} \\
-\end{equations}%
-\begin{equations}
 \hgvcp{\gvSendType{S}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpSendType{x}{\hgvcp{S}}{\cpLink{x}{z}}} \\
 \hgvcp{\gvReceiveType{X}{M}}z &=&
