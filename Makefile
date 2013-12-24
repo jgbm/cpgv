@@ -16,7 +16,11 @@ gvi: $(HS_SOURCES)
 
 clean:
 	-rm -rf obj
-	-rm cpi
-	-rm gvi
+	-rm -f cpi
+	-rm -f gvi
+	-rm -f CP/Lexer.hs
+	-rm -f CP/Parser.hs
+	-rm -f GV/Lexer.hs
+	-rm -f GV/Parser.hs
 
 .PHONY: all clean
