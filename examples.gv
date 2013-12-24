@@ -3,8 +3,7 @@
 name: Name, cc: CreditCard, c: !Name.!CreditCard.?Receipt.end? |-
   let c = send name c in
   let c = send cc c in
-  let (r, c) = receive c in
-  let () = terminate c in r : Receipt.
+  let (r, c) = receive c in r : Receipt.
 
 compute: Name -> CreditCard -> Receipt, c: ?Name.?CreditCard.!Receipt.end! |-
   let (name, c) = receive c in
@@ -12,73 +11,61 @@ compute: Name -> CreditCard -> Receipt, c: ?Name.?CreditCard.!Receipt.end! |-
   send (compute name cc) c : end!.
 
 name: Name, cc: CreditCard, compute: Name -> CreditCard -> Receipt |-
-  with c: ?Name.?CreditCard.!Receipt.end! connect
-    let (name, c) = receive c in
-    let (cc, c) = receive c in
-    send (compute name cc) c
-  to
-    let c = send name c in
-    let c = send cc c in
-    let (r, c) = receive c in
-    let () = terminate c in r : Receipt.
+  let c = fork c:?Name.?CreditCard.!Receipt.end!.
+            let (name, c) = receive c in
+            let (cc, c) = receive c in
+            send (compute name cc) c in
+  let c = send name c in
+  let c = send cc c in
+  let (r, c) = receive c in r : Receipt.
 
 name: Name, c: !Name.?Price.end? |-
   let c = send name c in
-  let (p, c) = receive c in
-  let () = terminate c in p : Price.
+  let (p, c) = receive c in p : Price.
 
 lookup: Name -> Price, c: ?Name.!Price.end! |-
   let (p, c) = receive c in
   send (lookup p) c : end!.
 
 name: Name, lookup: Name -> Price |-
-  with c: ?Name.!Price.end! connect
-    let (p, c) = receive c in
-    send (lookup p) c
-  to
-    let c = send name c in
-    let (p, c) = receive c in
-    let () = terminate c in p : Price.
+  let c = fork c:?Name.!Price.end!.
+            let (p, c) = receive c in
+            send (lookup p) c in
+  let c = send name c in
+  let (p, c) = receive c in p : Price.
 
 name: Name, lookup: Name -> Price, compute: Name -> CreditCard -> Receipt |-
-  with c: &{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!} connect
-    case c of
-      {buy: c.let (name, c) = receive c in
-              let (cc, c) = receive c in
-              send (compute name cc) c;
-       shop: c.let (p, c) = receive c in
-               send (lookup p) c }
-  to
-     let c = select shop c in
-     let c = send name c in
-     let (p, c) = receive c in
-     let () = terminate c in p : Price.
-
-name: Name, cc: CreditCard, lookup: Name -> Price, compute: Name -> CreditCard -> Receipt |-
-  with c:&{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!} connect
-    case c of {buy: c.let (name, c) = receive c in
+  let c = fork c: &{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!}.
+            case c of
+              {buy: c.let (name, c) = receive c in
                       let (cc, c) = receive c in
                       send (compute name cc) c;
                shop: c.let (p, c) = receive c in
-                       send (lookup p) c }
-  to
-    let c = select buy c in
-    let (r, c) = receive (send cc (send name c)) in
-    let () = terminate c in r : Receipt.
+                       send (lookup p) c } in
+  let c = select shop c in
+  let c = send name c in
+  let (p, c) = receive c in p : Price.
+
+name: Name, cc: CreditCard, lookup: Name -> Price, compute: Name -> CreditCard -> Receipt |-
+  let c = fork c: &{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!}.
+            case c of {buy: c.let (name, c) = receive c in
+                              let (cc, c) = receive c in
+                              send (compute name cc) c;
+                       shop: c.let (p, c) = receive c in
+                               send (lookup p) c } in
+  let c = select buy c in
+  let (r, c) = receive (send cc (send name c)) in r : Receipt.
 
 aname: Name, bname: Name, cc: CreditCard, lookup: Name -> Price, compute: Name -> CreditCard -> Receipt, out:!Price.!Receipt.end! |-
-  with s:$&{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!} connect
-    serve s(c) = case c of
-      {buy: c.let (name, c) = receive c in
-              let (cc, c) = receive c in
-              send (compute name cc) c;
-       shop: c.let (p, c) = receive c in
-               send (lookup p) c}
-  to
-    send (let c = select buy (request s) in
-          let (p, c) = receive (send cc (send aname c)) in
-          let () = terminate c in p)
-      (send (let c = select shop (request s) in
-             let (r, c) = receive (send bname c) in
-             let () = terminate c in r)
-        out) : end!.
+  let s = serve c: &{buy:?Name.?CreditCard.!Receipt.end!, shop:?Name.!Price.end!}.
+            case c of
+              {buy: c.let (name, c) = receive c in
+                      let (cc, c) = receive c in
+                      send (compute name cc) c;
+               shop: c.let (p, c) = receive c in
+                       send (lookup p) c} in
+  send (let c = select buy (request s) in
+        let (p, c) = receive (send cc (send aname c)) in p)
+    (send (let c = select shop (request s) in
+           let (r, c) = receive (send bname c) in r)
+      out) : end!.

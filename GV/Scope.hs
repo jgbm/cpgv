@@ -4,20 +4,22 @@ module GV.Scope (renameTerm) where
 import Control.Monad
 import GV.Syntax
 
-type Environment = ([(String, String)], Int)
-newtype ScopeM t = Scope { runScope :: Environment -> t }
+type Environment = [(String, String)]
+newtype ScopeM t = Scope { runScope :: Environment -> Int -> (t, Int) }
 instance Functor ScopeM
-    where fmap f (Scope g) = Scope (f . g)
+    where fmap f (Scope g) = Scope (\e z -> let (r, z') = g e z
+                                            in (f r, z'))
 instance Monad ScopeM
-    where return v = Scope (const v)
-          Scope f >>= g = Scope (\e -> runScope (g (f e)) e)
+    where return v = Scope (\e z -> (v, z))
+          Scope f >>= g = Scope (\e z -> let (r, z') = f e z
+                                         in  runScope (g r) e z')
 
-reference x = Scope (\(e,z) -> case lookup x e of
-                                 Nothing -> x
-                                 Just x' -> x')
+reference x = Scope (\e z -> case lookup x e of
+                               Nothing -> (x, z)
+                               Just x' -> (x', z))
 
-binder x v = Scope (\(e,z) -> let x' = (x ++ '-' : show z)
-                              in  runScope (v x') ((x, x') : e, z + 1))
+binder x v = Scope (\e z -> let x' = (x ++ '-' : show z)
+                            in  runScope (v x') ((x, x') : e) (z + 1))
 
 class HasScopedVariables t
     where rename :: t -> ScopeM t
@@ -44,4 +46,4 @@ instance HasScopedVariables Term
           rename (Serve x t m) = binder x (\x' -> liftM (Serve x' t) (rename m))
           rename (Request m) = liftM Request (rename m)
 
-renameTerm m = runScope (rename m) ([], 1)
+renameTerm m = fst (runScope (rename m) [] 1)

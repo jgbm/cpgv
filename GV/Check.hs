@@ -221,7 +221,11 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                     checkBranch cs (l, x, n) =
                         do s <- lookupLabel l cs
                            provide x (Lift s) (do (t, n') <- check n
-                                                  return (t, \y z -> ((l,) . replace x y) `fmap` n' z))
+                                                  return (t, \y z -> ((l,) . replace x y) `fmap` checkWeakening x t n (n' z)))
+                    checkWeakening x t n p
+                        | t == Lift InTerm && x `notElem` fv n = emptyIn x p
+                        | otherwise = p
+
                     replace x y t = t'
                         where Right t' = CP.runM (CP.replace x y t)
 
@@ -274,7 +278,6 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                                           (receiveType (V "x") v (link (V "x") z))
                                           (m' =<< reference (V "x")))
                    _ -> fail ("    Channel of receive type operation has unexpected type " ++ show (pretty mty))
-
 
 -- [[send S M]](z : !V.S') = nu x.(x[ [[S]] ].[[M]]x | link x z)
 -- [[receive M]](z : ?V.S) = nu x.(x(V).[[M]]x | link x z)
