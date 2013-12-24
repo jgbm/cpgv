@@ -117,6 +117,7 @@ xType (Lift s)     = xSession s
 xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
 xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
 xType (Tensor t u) = xType t `CP.Times` xType u
+xType UnitType     = CP.OfCourse (CP.With [])
 
 --------------------------------------------------------------------------------
 -- With all that out of the way, type checking itself can be implemented
@@ -125,6 +126,7 @@ xType (Tensor t u) = xType t `CP.Times` xType u
 check :: Term -> Check (Type, String -> Builder CP.Proc)
 check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' te)
     where check' :: Term -> Check (Type, String -> Builder CP.Proc)
+          check' Unit = return (UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
           check' (Var x)   = do ty <- consume x
                                 return (ty, \z -> link x z)
           check' (Link m n) =

@@ -42,6 +42,8 @@ $any    = [$upper $lower $digit _]
      "sendType"   { lexeme SENDTYPE }
      "receiveType" {lexeme RECEIVETYPE }
      "fork"       { lexeme FORK }
+     "unit"       { lexeme UNIT }
+
 
      "?"          { lexeme QUERY }
      "!"          { lexeme BANG }
@@ -55,6 +57,7 @@ $any    = [$upper $lower $digit _]
      "end?"       { lexeme INTERM}
      "-@"         { lexeme LINFUN }
      "->"         { lexeme UNLFUN }
+     "Unit"       { lexeme UNITTYPE }
 
      "|-"         { lexeme TURNSTILE }
      "="          { lexeme EQUALS }
@@ -92,6 +95,7 @@ data Token = LIDENT String
            | SENDTYPE
            | RECEIVETYPE
            | FORK
+           | UNIT 
 
            | BANG
            | QUERY
@@ -108,6 +112,7 @@ data Token = LIDENT String
            | INTERM
            | LINFUN
            | UNLFUN
+           | UNITTYPE
 
            | TURNSTILE
            | EQUALS

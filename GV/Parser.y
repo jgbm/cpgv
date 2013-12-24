@@ -41,6 +41,7 @@ import GV.Syntax
      'sendType'   { SENDTYPE }
      'receiveType' { RECEIVETYPE }
      'fork'       { FORK }
+     'unit'       { UNIT }
 
      '?'          { QUERY }
      '!'          { BANG }
@@ -54,6 +55,7 @@ import GV.Syntax
      'end?'       { INTERM}
      '-@'         { LINFUN }
      '->'         { UNLFUN }
+     'Unit'       { UNITTYPE }
 
      '|-'         { TURNSTILE }
      '='          { EQUALS }
@@ -103,6 +105,7 @@ Session      :: { Session }
 Type        :: { Type }
             : Type1 '-@' Type                 { LinFun $1 $3 }
             | Type1 '->' Type                 { UnlFun $1 $3 }
+            | 'Unit'                          { UnitType }
             | Type1                           { $1 }
 
 Type1       :: { Type }
@@ -138,6 +141,7 @@ Term        :: { Term }
             | 'request' Term                  { Request $2 }
             | 'sendType' Session Term         { SendType $2 $3 }
             | 'receiveType' Term              { ReceiveType $2 }
+            | 'unit'                          { Unit }
             | Term1                           { $1 }
 
 Term1       :: { Term }

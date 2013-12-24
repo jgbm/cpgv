@@ -23,7 +23,8 @@ class HasScopedVariables t
     where rename :: t -> ScopeM t
 
 instance HasScopedVariables Term
-    where rename (Var v) = liftM Var (reference v)
+    where rename Unit = return Unit
+          rename (Var v) = liftM Var (reference v)
           rename (Link m n) = liftM2 Link (rename m) (rename n)
           rename (LinLam x t m) = binder x (\x' -> LinLam x' t `fmap` rename m)
           rename (UnlLam x t m) = binder x (\x' -> UnlLam x' t `fmap` rename m)

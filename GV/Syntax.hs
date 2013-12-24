@@ -31,6 +31,7 @@ dual (InputType x s)  = OutputType x (dual s)
 data Type = LinFun Type Type
           | UnlFun Type Type
           | Tensor Type Type
+          | UnitType
           | Lift Session
     deriving (Eq, Ord, Show)
 
@@ -94,6 +95,7 @@ instType :: String -> Session -> Type -> Type
 instType x s (LinFun t u) = LinFun (instType x s t) (instType x s u)
 instType x s (UnlFun t u) = LinFun (instType x s t) (instType x s u)
 instType x s (Tensor t u) = LinFun (instType x s t) (instType x s u)
+instType x s UnitType         = UnitType
 instType x s (Lift s') = Lift (instSession x s s')
 
 data Pattern = BindName String
@@ -117,6 +119,7 @@ data Term = Var String
           | Request Term
           | SendType Session Term
           | ReceiveType Term
+          | Unit
     deriving (Eq, Ord, Show)
 
 fv :: Term -> [String]
@@ -138,5 +141,6 @@ fv (Serve x _ m)            =  filter (x /=) (fv m)
 fv (Request m)              = fv m
 fv (SendType _ m)           = fv m
 fv (ReceiveType m)          = fv m
+fv Unit                     = []
 
 data Assertion = Assert [(String, Type)] Term Type
