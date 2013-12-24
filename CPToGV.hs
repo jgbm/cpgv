@@ -5,6 +5,7 @@ import Data.Maybe
 import qualified CP.Check as CPCheck (dual, inst)
 
 import qualified CP.Syntax as CP
+import CP.Printer
 import GV.Syntax (dual)
 import qualified GV.Syntax as GV
 
@@ -73,14 +74,14 @@ xTerm env (CP.Case x cs@(_:_)) =
       | l == l'   = t
       | otherwise = findLabel l lts
 xTerm env (CP.EmptyCase x xs) =
-  GV.EmptyCase (GV.Var (xId x)) (map xId xs) (GV.Lift GV.InTerm)
+  GV.EmptyCase (GV.Var (xId x)) (map xId xs) (GV.Lift GV.OutTerm)
 xTerm env (CP.Replicate s x p) =
   GV.Link (GV.Var s) (GV.Serve x (xSession xt) (xTerm (extend env (x, xt)) p))
   where
     (CP.OfCourse xt) = find s env
 xTerm env (CP.Derelict s x p) =
   GV.Let (GV.BindName x)
-         (GV.Fork x (xSession xt) (GV.Link (GV.Var x) (GV.Request (GV.Var s))))
+         (GV.Fork x (dual (xSession xt)) (GV.Link (GV.Var x) (GV.Request (GV.Var s))))
          (xTerm (extend env (x, xt)) p)
   where
     (CP.WhyNot xt) = find s env
@@ -97,3 +98,4 @@ xTerm env (CP.ReceiveProp x v p)   =
     (CP.ForAll v xt) = find x env
 xTerm env (CP.EmptyOut x)          = GV.Var (xId x)
 xTerm env (CP.EmptyIn x p)         = xTerm env p
+xTerm _ t = error $ "No xTerm case for " ++ show (pretty t)
