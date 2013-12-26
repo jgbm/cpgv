@@ -137,7 +137,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                        | s == dual s' -> return (Lift OutTerm,
                                                  \z -> nu (V "x") (xSession s)
                                                           (m' =<< reference (V "x"))
-                                                          (nu "y" (xSession s')
+                                                          (nu (V "y") (xSession s')
                                                               (n' =<< reference (V "y"))
                                                               (emptyIn z (link (V "x") (V "y")))))
                        | otherwise -> fail ("    Sessions in link are not dual: " ++ show (pretty s) ++ " and " ++ show (pretty s'))
@@ -263,7 +263,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
           check' (SendType s m) =
               do (mty, m') <- check m
                  case mty of
-                   Lift (InputType v s') ->
+                   Lift (OutputType v s') ->
                         return (Lift (instSession v s s'),
                                 \z -> nu (V "x") (CP.dual (xType mty))
                                           (sendType (V "x") (xSession s) (link (V "x") z))
@@ -272,7 +272,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
           check' (ReceiveType m) =
               do (mty, m') <- check m
                  case mty of
-                   Lift (OutputType v s') ->
+                   Lift (InputType v s') ->
                         return (Lift s',
                                 \z -> nu (V "x") (CP.dual (xType mty))
                                           (receiveType (V "x") v (link (V "x") z))

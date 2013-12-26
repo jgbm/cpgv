@@ -84,7 +84,7 @@ instSession x s (Server s') = Server (instSession x s s')
 instSession x s (Service s') = Service (instSession x s s')
 instSession x s (SVar y) | x == y = s
                          | otherwise = SVar y
-instSession x s (Neg y) | x == y = s
+instSession x s (Neg y) | x == y = dual s
                         | otherwise = Neg y
 instSession x s (OutputType y s') | x == y = OutputType y s'
                                   | otherwise = OutputType y (instSession x s s')
