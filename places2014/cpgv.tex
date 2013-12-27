@@ -286,9 +286,9 @@ logic proofs as processes in Milner's $\pi$-calculus.
 Caires and Pfenning~\cite{CairesPfenning10} observe that the multiplicative connectives can be
 interpreted as session types. Their process calculus, based on intuitionistic linear logic, is
 closer to $\pi$-calculus than traditional session-typed languages. Wadler~\cite{Wadler12} shows that
-a core session-typed linear functional language, GV, patterned after the similar language of Gay and
-Vasconselos~\cite{GayVasconcelos10}, may be translated into a process calculus, CP, whose terms are
-proofs in classical linear logic.
+a core session-typed linear functional language, GV, patterned after a similar language due to Gay
+and Vasconcelos~\cite{GayVasconcelos10}, may be translated into a process calculus, CP, whose terms
+are proofs in classical linear logic.
 %
 %% Wadler's work shows that linear session-typed programs can be interpreted as proofs in classical
 %% linear logic.
@@ -333,10 +333,11 @@ We prove that \hgv, \hgvpi, and CP are all equally expressive.
 
 This section describes our session-typed language \hgv, constrasting it with Gay and Vasconcelos's
 functional language for asynchronous session types~\cite{GayVasconcelos10}, which we call \last, and
-Wadler's GV~\cite{Wadler12}. \hgv's features are closer to those of \last, but it retains a type
-system corresponding closely to linear logic. In designing \hgv, we have sometimes opted for
-programming convenience over uniformity, while insisting on a tight correspondence with linear
-logic.
+Wadler's GV~\cite{Wadler12}. 
+%% \hgv's features are closer to those of \last, but it retains a type
+%% system corresponding closely to linear logic. 
+In designing \hgv, we have sometimes opted for programming convenience over uniformity, while
+insisting on a tight correspondence with linear logic.
 %
 The session types of \hgv are given by the following grammar.
 \begin{equations}
@@ -348,11 +349,11 @@ The session types of \hgv are given by the following grammar.
             \gvServer{S} \mid \gvService{S}
 \end{equations}%
 Types for input ($\gvInput{T}{S}$), output ($\gvOutput{T}{S}$), selection ($\gvPlus{\la_i:S_i}{i}$)
-and choice ($\gvChoice{\la_i:\S_i}{i}$) are standard. Like GV, but unlike \last, we distinguish
+and choice ($\gvChoice{\la_i:S_i}{i}$) are standard. Like GV, but unlike \last, we distinguish
 output ($\gvEndOutput$) and input ($\gvEndInput$) session ends; this matches the situation in linear
 logic, where there is no conveniently self-dual proposition to represent the end of a
-session. Variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType{X}{S}$) and output
-($\gvOutputType{X}{S}$), permit definition of polymorphic sessions. We include a notion of
+session. Variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType{X}{S}$) and
+output ($\gvOutputType{X}{S}$), permit definition of polymorphic sessions. We include a notion of
 replicated sessions, corresponding to exponentials in linear logic: a session of type
 $\gvService{S}$ is a ``service'', providing any number of copies of a session of type $S$; a session
 of type $\gvServer{S}$ is the ``server'' providing that service.
@@ -404,7 +405,7 @@ for which weakening and contraction rules are derivable.
 \begin{mathpar}
 \infr[Id]
 { }
-{\gvj{x:T}{X}{T}}
+{\gvj{x:T}{x}{T}}
 
 \infr[Weaken]
 {\gvj{\Phi}{N}{U} \\ \un{T}}
@@ -480,11 +481,11 @@ without the asymmetry of the latter.  The two are interdefinable, as follows:
 \[
 \gvFork{x}{M} \equiv \gvWith{x}{M}{x} \qquad \gvWith{x}{M}{N} \equiv \gvLet{x}{\gvFork{x}{M}}{N}
 \]
-We add a term $\gvLink{M}{N}$ to implement channel forwarding; this is provided in neither GV nor
-\last, but is necessary to match the expressive power of CP. we add terms $\gvSendType{S}{M}$ and
-$\gvReceiveType{X}{M}$ to provide session polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$ for
-replicated sessions. Note that, as the body $M$ of $\gvServe{x}{M}$ may be arbitrarily replicated,
-it can only refer to the unlimited portion of the environment.
+We add a construct $\gvLink{M}{N}$ to implement channel forwarding; this form is provided in neither
+GV nor \last, but is necessary to match the expressive power of CP. we add terms $\gvSendType{S}{M}$
+and $\gvReceiveType{X}{M}$ to provide session polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$
+for replicated sessions. Note that, as the body $M$ of $\gvServe{x}{M}$ may be arbitrarily
+replicated, it can only refer to the unlimited portion of the environment.
 %
 The rule for $\key{serve}$ parallels that for $\key{fork}$: as $\gvFork{x}{M}$ returns the dual of
 the channel defined by $M$, so $\gvServe{x}{M}$ returns the dual of the server defined by
@@ -523,7 +524,7 @@ The language \hgvpi is the restriction of \hgv to session types, that is, \hgv w
 $\to$, or $\otimes$. In order to avoid $\otimes$, we disallow plain $\gvReceive{M}$, but do permit
 it to be fused with a pair elimination $\gvReceiveK{x}{y}{M}{N}$. We can simulate all non-session
 types as session types via a translation from \hgv to \hgvpi. The translation on types is given by
-the homomorphic extension of the following equations.
+the homomorphic extension of the following equations:
 \[
 \lampi{\gvLinFun{T}{U}} = \gvOutput{\lampi{T}}{\gvDual{\lampi{U}}} \qquad
 \lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\gvDual{\lampi{U}}})} \qquad
@@ -553,8 +554,8 @@ The translation on terms is given by the homomorphic extension of the following 
 \lampi{\gvReceive{M}} &=& \lampi{M} \\
 \end{equations}%
 Formally, this is a translation on derivations. We write type annotations for the cases of $\to$
-introduction and elimination. For all other cases, it is unambiguous to just give the translation on
-the term syntax. Each introduction form translates to an interface $\gvFork{z}{M}$ of type
+introduction and elimination. For all other cases, it is unambiguous to give the translation on
+plain term syntax. Each introduction form translates to an interface $\gvFork{z}{M}$ of type
 $\gvDual{S}$, where $M : \gvEndOutput$ provides the implementation, with $z : S$ bound in $M$.
 %
 The translation on contexts is pointwise.
@@ -584,7 +585,7 @@ enjoys all of the standard meta theoretic properties of classical linear logic.
 %% normalisation.
 %
 A minor syntactic difference between our presentation and Wadler's is that our sum ($\oplus$) and
-choice ($\binampersand$) types are $n$-ary, corresponding to corresponding session types in \hgv{}.
+choice ($\binampersand$) types are $n$-ary, as with the corresponding session types in \hgv.
 %% The choice is superficial, but we choose the $n$-ary variants for greater uniformity between
 %% CP and \hgv.
 %
@@ -617,7 +618,7 @@ Duality on CP types ($\cpDual{(-)}$) is standard.
 We now give a translation from \hgvpi to CP. Post composing this with the embedding of \hgv in
 \hgvpi yields a semantics for \hgv.
 %
-The translation on session types is as follows.
+The translation on session types is as follows:
 %% \[
 %% \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 %% \begin{eqs}
@@ -670,14 +671,14 @@ The translation on session types is as follows.
 \ea
 \]
 The translation is homomorphic except for output, where the output type is dualised. This accounts
-for the descrepancy between $\gvDual{\gvOutput{T}{S}} = \gvInput{T}{\gvDual{S}}$ and
+for the discrepancy between $\gvDual{\gvOutput{T}{S}} = \gvInput{T}{\gvDual{S}}$ and
 $\cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}$.
 %
 %% We could just have well have decided to dualise input types instead of output types in our
 %% translation.
 
 The translation on terms is formally specified as a CPS translation on derivations as in Wadler's
-presentation. Due to lack of space, we only write the translation of weakening and contraction for
+presentation. Due to lack of space, we write only the translation of weakening and contraction for
 $\gvEndInput$ in this form. The other constructs depend only on the immediate syntactic structure,
 so we can abbreviate their translations as mappings on plain terms.
 %
@@ -693,13 +694,14 @@ so we can abbreviate their translations as mappings on plain terms.
     {\cpj{\hgvcp{N}z}{\hgvcp{\Phi},x:\cpBottom,x':\cpBottom,z:\cpDual{\hgvcp{S}}}}
     {\cpj{\cpCut{x'}{\hgvcp{N}z}{\cpEmptyOut{x'}}}{\hgvcp{\Phi},x:\cpBottom,z:\cpDual{\hgvcp{S}}}}
 \end{mathpar}
+\vspace{-1ex}
 \begin{equations}
 \hgvcp{x}z &=& \cpLink{x}z \\
 \hgvcp{\gvSend{M}{N}}z &=& \cpCut{x}{\cpOutput{x}{y}{\hgvcp{M}y}{\cpLink{x}{z}}}{\hgvcp{N}x} \\
 \hgvcp{\gvReceiveK{y}{x}{M}{N}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInput{x}{y}{\hgvcp{N}z}} \\
-\end{equations}%
-\begin{equations}
+%% \end{equations}%
+%% \begin{equations}
 \hgvcp{\gvSelect{\la}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
 \hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
@@ -786,7 +788,7 @@ follows.
 \end{eqs}
 \ea
 \]
-The translation on terms is as follows.
+The translation on terms is as follows:
 \[
 %\ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
@@ -813,6 +815,10 @@ The translation on terms is as follows.
 \cptogv{\cpReceiveType{x}{X}{P}} &=&
   \gvLet{x}{\gvReceiveType{X}{x}}{\cptogv{P}} \\
 
+%% \end{eqs}%
+%% \]%
+%% \[
+%% \begin{eqs}
 \cptogv{\cpServe{s}{x}{P}} &=&
   \gvLink{s}{(\gvServe{x}{\cptogv{P}})} \\
 \cptogv{\cpRequest{s}{x}{P}} &=&
