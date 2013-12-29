@@ -1,12 +1,17 @@
-{-# LANGUAGE PatternGuards, TupleSections #-}
+{-# LANGUAGE TupleSections, PatternGuards #-}
 module CP.Norm where
 
 import Control.Monad.Error
 import CP.Check
-import Data.List (intercalate, nub)
+import Data.List (intercalate, nub, partition, tails)
 import Data.Maybe
 import CP.Syntax
 import CP.Printer
+import Text.PrettyPrint.Leijen
+
+import Debug.Trace
+--trace s x = x
+showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
 
 --------------------------------------------------------------------------------
 -- Operators (types with holes)
@@ -18,56 +23,6 @@ appl (x, b) a = inst x a b
 
 dualOp :: Op -> Op
 dualOp (x, b) = (x, dual (appl (x, b) (Neg x)))
-
---------------------------------------------------------------------------------
--- Free name and their manipulations
---------------------------------------------------------------------------------
-
--- The free names in an expression.
-
-fn :: Proc -> [String]
-fn (Link x w)          = [x,w]
-fn (Cut x _ p q)       = filter (x /=) (concatMap fn [p,q])
-fn (Out x y p q)       = x : filter (y /=) (fn p) ++ fn q
-fn (In x y p)          = x : filter (y /=) (fn p)
-fn (Select x l p)      = x : fn p
-fn (Case x bs)         = x : concatMap (fn . snd) bs
-fn (Unroll x p)        = x : fn p
-fn (Roll x y a p q)    = x : filter (y /=) (fn p ++ fn q)
-fn (Replicate x y p)   = x : filter (y /=) (fn p)
-fn (Derelict x y p)    = x : filter (y /=) (fn p)
-fn (SendProp x a p)    = x : fn p
-fn (ReceiveProp x a p) = x : fn p
-fn (EmptyOut x)        = [x]
-fn (EmptyIn x p)       = x : fn p
-fn (EmptyCase x ys)    = x : ys
-fn (Unk ys)            = ys
-
--- fln p returns the free "linear" names in p---that is, the free names that are
--- not used as the channels in ClientRequest forms.  This is used only to patch
--- up the list of discarded hypotheses when applying a commuting conversion to
--- an expression of the form nu x:A (x.case() | P).
-
-fln :: Proc -> [String]
-fln (Link x w)          = [x,w]
-fln (Cut x _ p q)       = filter (x /=) (concatMap fln [p,q])
-fln (Out x y p q)       = x : filter (y /=) (fln p) ++ fln q
-fln (In x y p)          = x : filter (y /=) (fln p)
-fln (Select x l p)      = x : fln p
-fln (Case x bs)         = x : concatMap (fln . snd) bs
-fln (Unroll x p)        = x : fn p
-fln (Roll x y a p q)    = x : filter (y /=) (fn p ++ fn q)
-fln (Replicate x y p)   = x : filter (y /=) (fln p)
-fln (Derelict x y p)    = filter (y /=) (fln p)
-fln (SendProp x a p)    = x : fln p
-fln (ReceiveProp x a p) = x : fln p
-fln (EmptyOut x)        = [x]
-fln (EmptyIn x p)       = x : fln p
-fln (EmptyCase x ys)    = x : ys
-fln (Unk ys)            = ys
-
--- Replace one variable by another---used, for example, when eliminating a cut
--- by the AxCut rule.
 
 --------------------------------------------------------------------------------
 -- Props in terms
@@ -97,9 +52,17 @@ instance HasTyVars Proc
                     go (EmptyCase z ys) = EmptyCase z ys
                     go (Unk ys) = Unk ys
 
---------------------------------------------------------------------------------
--- Freshalization steps
---------------------------------------------------------------------------------
+data Fragment = Fragment [(String, Prop)] Proc
+
+instance Pretty Fragment
+    where pretty (Fragment zs p) = group (hang 2 (text "<" <> cat (punctuate (comma <> space) [text z <> colon <+> pretty a | (z,a) <- zs]) <> text ">" <$> pretty p))
+
+addVar :: String -> Prop -> [Fragment] -> [Fragment]
+addVar v a = concatMap add
+    where add (Fragment vs p)
+              | v `elem` fn p = fragment ((v, a) : vs') p
+              | otherwise     = fragment vs p
+              where vs' = filter ((v /=) . fst) vs
 
 renameBoundVariable :: String -> Proc -> String -> Proc -> M (String, Proc, Proc)
 renameBoundVariable x p x' p'
@@ -109,58 +72,58 @@ renameBoundVariable x p x' p'
     | otherwise = do n <- fresh x
                      liftM2 (n,,) (replace x n p) (replace x' n p')
 
--- Principal cut reductions; "stepPrincipal p" returns "Just p'" if it was able
--- to eliminate a cut, and Nothing otherwise.
-
-stepPrincipal :: Proc -> M Proc
--- AxCut:
-stepPrincipal (Cut x a (Link y z) p)
-    | x == y = replace x z p
-    | x == z = replace x y p
--- beta_times-par:
-stepPrincipal (Cut x (a `Times` b) (Out z y p q) (In z' y' r))
-    | x == z && x == z' = do (y'', p', r') <- renameBoundVariable y p y' r
-                             return (Cut y'' a p' (Cut x b q r'))
---beta_plus-with (labelled):
-stepPrincipal (Cut x (Plus lts) (Select y l p) (Case z bs))
-    | x == y, x == z, Just a <- lookup l lts, Just q <- lookup l bs = return (Cut x a p q)
--- beta_exists-forall:
-stepPrincipal (Cut x (Exists z b) (SendProp y a p) (ReceiveProp y' a' q))
-    | x == y && x == y' = return (Cut x (inst a' a b) p (inst a' a q))
--- beta_1-bottom:
-stepPrincipal (Cut x One (EmptyOut z) (EmptyIn z' p))
-    | x == z && x == z' = return p
--- beta_!C?:
-stepPrincipal (Cut x (OfCourse a) (Replicate z w p) (Derelict z' w' q))
-    | x == z && x == z' && x `elem` fn q = do (w'', p', q') <- renameBoundVariable w p w' q
-                                              return  (Cut x (OfCourse a) (Replicate z w p) (Cut w'' a p' q'))
--- beta_!?:
-stepPrincipal (Cut x (OfCourse a) (Replicate z w p) (Derelict z' w' q))
-    | x == z && x == z' = do (w'', p', q') <- renameBoundVariable w p w' q
-                             return (Cut w'' a p' q')
--- beta_!W:
-stepPrincipal (Cut x (OfCourse a) (Replicate z w p) q)
-    | x == z && z `notElem` fn q = return q
--- beta_mu-nu
-stepPrincipal (Cut x (Mu t a) (Unroll x' p) (Roll x'' y s q r))
-    |  x == x' && x == x'' = do z <- fresh "z"
-                                r' <- replace x z r
-                                recurse <- funct b x z (Roll z y s (Link x y) r')
-                                p' <- replace x z p
-                                if y `elem` fn p
-                                then do y' <- fresh y
-                                        q' <- replace y y' q
-                                        r' <- replace y y' r
-                                        return (Cut y' s q'
-                                                (Cut x (bbar `appl` s) r'
-                                                 (Cut z (bbar `appl` nu bbar) recurse p')))
-                                else return (Cut y s q
-                                             (Cut x (bbar `appl` s) r
-                                              (Cut z (bbar `appl` nu bbar) recurse p')))
-    where b = (t, a)
-          bbar = dualOp b
-          nu (t, a) = Nu t a
-          -- assuming that there are propositions A and B such that q |- x:A,w:B,
+stepPrincipal :: Fragment -> Fragment -> M [Fragment]
+stepPrincipal (Fragment zs (Link x y)) (Fragment zs' p)
+    | x `elem` map fst zs', Just a <- lookup x zs, not (isWhyNot a) =
+        do p' <- replace x y p
+           return (fragment (add y zs') p')
+    | y `elem` map fst zs', Just a <- lookup y zs, not (isWhyNot a) =
+        do p' <- replace y x p
+           return (fragment (add x zs') p')
+    where isWhyNot WhyNot{} = True
+          isWhyNot _        = False
+          add z = case lookup z zs of
+                    Nothing -> id
+                    Just a  -> ((z, a) :)
+stepPrincipal (Fragment zs (Out x y p q)) (Fragment zs' (In x' y' r))
+    | x == x', Just (a `Times` b) <- lookup x zs =
+        do (y'', p', r') <- renameBoundVariable y p y' r
+           return (addVar y'' a (fragment zs p') ++
+                   addVar y'' (dual a) (addVar x b (fragment zs q)) ++
+                   addVar y'' (dual a) (addVar x (dual b) (fragment zs' r')))
+stepPrincipal (Fragment zs (Select x l p)) (Fragment zs' (Case x' bs))
+    | x == x', Just (Plus bts) <- lookup x zs, Just q <- lookup l bs, Just a <- lookup l bts =
+        return (addVar x a (fragment zs p) ++
+                addVar x (dual a) (fragment zs' q))
+stepPrincipal (Fragment zs (SendProp x a p)) (Fragment zs' (ReceiveProp x' t' q))
+    | x == x', Just (Exists t b) <- lookup x zs, t == t' =
+        return (addVar x (inst t a b) (fragment [(z,inst t a c) | (z,c) <- zs] p) ++
+                addVar x (dual (inst t a b)) (fragment [(z,inst t a c) | (z,c) <- zs'] (inst t a q)))
+stepPrincipal (Fragment zs (EmptyOut x)) (Fragment zs' (EmptyIn x' p))
+    | x == x', Just One <- lookup x zs =
+        return (fragment (filter ((x' /=) . fst) zs') p)
+stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
+    | x == x', Just (Mu t a) <- lookup x zs =
+        let b = (t, a)
+            bbar = dualOp b
+            nu (t, a) = Nu t a
+        in  do z <- fresh "z"
+               r' <- replace x z r
+               recurse <- funct b x z (Roll z y s (Link x y) r')
+               p' <- replace x z p
+               if y `elem` fn p
+               then do y' <- fresh y
+                       q' <- replace y y' q
+                       r' <- replace y y' r
+                       return (addVar y' s (fragment zs' q') ++
+                               addVar y' (dual s) (addVar x (bbar `appl` s) (fragment zs' r')) ++
+                               addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) ++
+                               addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p'))))
+               else return (addVar y s (fragment zs' q) ++
+                            addVar y (dual s) (addVar x (bbar `appl` s) (fragment zs' r)) ++
+                            addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) ++
+                            addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p'))))
+    where -- assuming that there are propositions A and B such that q |- x:A,w:B,
           -- funct c x w q |- x:c A,w:cbar B
           funct (t,c) x w q
               | t `notElem` ftv c = return (Link x w)
@@ -185,157 +148,135 @@ stepPrincipal (Cut x (Mu t a) (Unroll x' p) (Roll x'' y s q r))
           funct (t, With lts) x w q = Case x `fmap` mapM branch lts
               where branch (l, c) = ((l,) . Select w l) `fmap` funct (t, c) x w q
           funct (t, a) _ _ _ = error ("Unimplemented: functoriality for " ++ t ++ "." ++ show (pretty a))
+stepPrincipal (Fragment zs (Replicate x y p)) (Fragment zs' (Derelict x' y' q))
+    | x == x', Just (OfCourse a) <- lookup x zs =
+        do (y'', p', q') <- renameBoundVariable y p y' q
+           return (Fragment zs (Replicate x y p) :
+                   addVar y'' a (fragment zs p') ++
+                   addVar y'' (dual a) (fragment zs' q'))
+stepPrincipal _ _ = return []
 
--- reduction under cut:
-stepPrincipal (Cut x a p q) =
-    (do p' <- stepPrincipal p
-        return (Cut x a p' q)) `mplus`
-    (do q' <- stepPrincipal q
-        return (Cut x a p q'))
-stepPrincipal p = throwError "No applicable principal cut reduction"
+fragment :: [(String, Prop)] -> Proc -> [Fragment]
+fragment zs (Cut x a p q) = fragment ((x,a) : zs) p ++ fragment ((x, dual a) : zs) q
+fragment zs p             = [Fragment (filter ((`elem` vs) . fst) zs) p]
+    where vs = fn p
 
--- Commuting conversions.
+unFragment :: [Fragment] -> Proc
+unFragment fs = loop (filter (not . weaken) fs) []
+    where weaken (Fragment _ p@(Replicate x _ _)) = and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
+          weaken _                              = False
 
-stepCommuting :: Proc -> M Proc
--- kappa_times-1
-stepCommuting (Cut z a (Out x y p q) r)
-    | z /= x && z `elem` fn p && z `notElem` fn q = return (Out x y (Cut z a p r) q)
--- kappa_times-2
-stepCommuting (Cut z a (Out x y p q) r)
-    | z /= x && z `elem` fn q && z `notElem` fn p = return (Out x y p (Cut z a q r))
--- kappa_par
-stepCommuting (Cut z a (In x y p) q)
-    | z /= x = return (In x y (Cut z a p q))
--- kappa_plus-labelled
-stepCommuting (Cut z a (Select x l p) q)
-    | z /= x = return (Select x l (Cut z a p q))
--- kappa_with-labelled
-stepCommuting (Cut z a (Case x bs) r)
-    | z /= x = return (Case x [(l, Cut z a p r) | (l, p) <- bs])
--- kappa_bang
-stepCommuting (Cut z a (Replicate x y p) q)
-    | z /= x = return (Replicate x y (Cut z a p q))
--- kappa_question
-stepCommuting (Cut z a (Derelict x y p) q)
-    | z /= x = return (Derelict x y (Cut z a p q))
--- kappa_exists
-stepCommuting (Cut z a (SendProp x b p) q)
-    | z /= x = return (SendProp x b (Cut z a p q))
--- kappa_forall
-stepCommuting (Cut z a (ReceiveProp x b p) q)
-    | z /= x = return (ReceiveProp x b (Cut z a p q))
--- kappa_bottom
-stepCommuting (Cut z a (EmptyIn x p) q)
-    | z /= x = return (EmptyIn x (Cut z a p q))
--- kappa_top
-stepCommuting (Cut z a (EmptyCase x ys) q)
-    | z /= x = return (EmptyCase x (filter (x /=) (ys ++ fln q)))
--- kappa_mu
-stepCommuting (Cut z a (Unroll x p) q)
-    | z /= x = return (Unroll x (Cut z a p q))
-stepCommuting p = throwError "No applicable commuting conversion"
+          loop [Fragment [] p] [] = p
+          loop (Fragment [(x,a)] p : rest) passed = {- trace ("Introducing cut on " ++ x) $ -}
+                                                    Cut x a p (loop (map filterX (rest ++ passed)) [])
+              where filterX (Fragment zs q) = let f = Fragment (filter ((x /=) . fst) zs) q
+                                              in  {- trace (unlines ["Filtered " ++ x ++ " from fragment", showCP (Fragment zs q), "Giving", showCP f]) -} f
+          loop (f : rest) passed = loop rest (f : passed)
+          loop [] passed = error (unlines ("Failed in unFragment! Remaining fragments were:" : map (showCP . pretty) passed))
 
--- Expressions equivalent, either by swapping the order of cut arguments or by
--- commuting cut arguments, to the original expression.
+commute :: [Fragment] -> ([Fragment] -> M Proc) -> ([Fragment] -> M Proc) -> M Proc
+commute fs f g = loop fs [] False
+    where loop pending passed = trace (unlines ("Commute pending" : map showCP pending ++ "Commute passed": map showCP passed)) (loop' pending passed)
 
-equiv p@Cut{} = nub (ps ++ concatMap (expandOne (ps ++ ps')) ps')
-    where ps = expandOne [] p
-          ps' = filter (`notElem` ps) [Cut x a p' q' | Cut x a p q <- ps, p' <- equiv p, q' <- equiv q]
+          loop' [] passed True = f passed
+          loop' [] passed False = g passed
+          loop' (Fragment [] p : rest) passed b = loop' rest (Fragment [] p : passed) b
+          loop' (Fragment zs (Out x y p q) : rest) passed _
+              | x `notElem` map fst zs, not (null ps && null qs) =
+                  trace (x ++ '[' : y ++ "]") $
+                  do p' <- loop ps [] True
+                     q' <- loop qs [] True
+                     if null rest' then return (Out x y p' q') else loop rest' (fragment zs (Out x y p' q')) (p /= p' || q /= q')
+              where pns = fn p
+                    qns = fn q
+                    pzs = filter (`elem` pns) (map fst zs)
+                    qzs = filter (`elem` qns) (map fst zs)
 
-          expandOne ps p = p : concatMap (expandOne (p : ps' ++ ps)) ps'
-              where ps' = filter (`notElem` ps) (swapped p : reassocLeft p ++ reassocRight p)
-                    swapped (Cut x a p q) = Cut x (dual a) q p
-                    reassocLeft (Cut x a (Cut y b p' q') q)
-                        | x `notElem` fn p', y `notElem` fn q = [Cut y b p' (Cut x a q' q)]
-                    reassocLeft _ = []
-                    reassocRight (Cut x a p (Cut y b p' q'))
-                        | x `notElem` fn q', y `notElem` fn p = [Cut y b (Cut x a p p') q']
-                    reassocRight _ = []
-equiv p = [p]
+                    part ps pzs qs qzs ss [] passed False
+                        | null passed = (ps' ++ ss, qs' ++ ss, [])
+                        | otherwise   = (ps' ++ ss, qs' ++ ss, passed ++ ss)
+                        where pvs = concat [map fst vs | Fragment vs p <- passed]
+                              ps' = [Fragment (filter ((`notElem` pvs) . fst) vs) p | Fragment vs p <- ps]
+                              qs' = [Fragment (filter ((`notElem` pvs) . fst) vs) q | Fragment vs q <- qs]
+                    part ps pzs qs qzs ss [] passed True = part ps pzs qs qzs ss passed [] False
+                    part ps pzs qs qzs ss (Fragment zs (Replicate x y p) : rs) passed b = part ps pzs qs qzs (Fragment zs (Replicate x y p) : ss) rs passed b
+                    part ps pzs qs qzs ss (Fragment zs r:rs) passed b
+                        | any (`elem` pzs) (map fst zs) && all (`notElem` qzs) (map fst zs) = part (Fragment zs r : ps) (map fst zs ++ pzs) qs qzs ss rs passed True
+                        | any (`elem` qzs) (map fst zs) && all (`notElem` pzs) (map fst zs) = part ps pzs (Fragment zs r : qs) (map fst zs ++ qzs) ss rs passed True
+                        | otherwise = part ps pzs qs qzs rs ss (Fragment zs r : passed) b
 
-equivUnder r@Cut{}               = [Cut x a p' q' | Cut x a p q <- equiv r, p' <- equivUnder p, q' <- equivUnder q]
-equivUnder (Out x y p q)         = [Out x y p' q' | p' <- equivUnder p, q' <- equivUnder q]
-equivUnder (In x y p)            = In x y `fmap` equivUnder p
-equivUnder (Select x l p)        = Select x l `fmap` equivUnder p
-equivUnder (Case x bs)           = [Case x bs' | bs' <- equivBranches bs]
-    where equivBranches [] = [[]]
-          equivBranches ((l, p) : rest) = [(l, p') : rest' | p' <- equivUnder p, rest' <- equivBranches rest]
-equivUnder (Unroll x p)          = Unroll x `fmap` equivUnder p
-equivUnder (Roll x y a p q)      = [Roll x y a p' q' | p' <- equivUnder p, q' <- equivUnder q]
-equivUnder (Replicate x y p)     = Replicate x y `fmap` equivUnder p
-equivUnder (Derelict x y p)      = Derelict x y `fmap` equivUnder p
-equivUnder (SendProp x a p)      = SendProp x a `fmap` equivUnder p
-equivUnder (ReceiveProp x a p)   = ReceiveProp x a `fmap` equivUnder p
-equivUnder (EmptyIn x p)         = EmptyIn x `fmap` equivUnder p
-equivUnder p                     = [p]
+                    (ps, qs, rest') = part (fragment zs p) pzs (fragment zs q) qzs [] (rest ++ passed) [] False
 
-stepUnder :: (Proc -> M Proc) -> Proc -> M Proc
-stepUnder stepper p = stepper p `mplus` into p
-    where firstOf f p q =
-              (do p' <- stepUnder stepper p
-                  return (f p' q)) `mplus`
-              (do q' <- stepUnder stepper q
-                  return (f p q'))
+          loop' (Fragment zs (In x y p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ '(' : y ++ ")") $
+                                         In x y `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (Select x l p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ '/' : l) $
+                                         Select x l `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (Case x bs) : rest) passed _
+              | x `notElem` map fst zs = trace ("case " ++ x) $
+                                         Case x `fmap` sequence [(l,) `fmap` commute (fragment zs p ++ rest ++ passed) f g | (l,p) <- bs]
+          loop' (Fragment zs (Unroll x p) : rest) passed _
+              | x `notElem` map fst zs = trace ("unr " ++ x) $
+                                         Unroll x `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (Roll x y s p q) : rest) passed _
+              | x `notElem` map fst zs = trace ("roll " ++ x ++ " [" ++ y ++ ": " ++ show (pretty s)) $
+                                         flip (Roll x y s) q `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (Replicate x y p) : rest) passed _
+              | x `notElem` map fst zs, and [all (isWhyNot . snd) zs' | Fragment zs' _ <- rest ++ passed] =
+                  Replicate x y `fmap` loop (fragment zs p ++ rest) passed True
+              where isWhyNot (WhyNot _) = True
+                    isWhyNot _          = False
+          loop' (Fragment zs (Derelict x y p) : rest) passed _
+              | x `notElem` map fst zs = trace ('?' : x ++ '[' : y ++ "]") $
+                                         Derelict x y `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (SendProp x a p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ "[" ++ show (pretty a) ++ "]") $
+                                         SendProp x a `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (ReceiveProp x t p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ "(" ++ t ++ ")") $
+                                         ReceiveProp x t `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (Fragment zs (EmptyIn x p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ "()") $
+                                         EmptyIn x `fmap` loop (fragment zs p ++ rest) passed True
+          loop' (f : rest) passed b = loop rest (f : passed) b
 
-          into (Link w x) = throwError "No subexpressions"
-          into (Cut x a p q) = firstOf (Cut x a) p q
-          into (Out x y p q) = firstOf (Out x y) p q
-          into (In x y p) = In x y `fmap` stepUnder stepper p
-          into (Select x l p) = Select x l `fmap` stepUnder stepper p
-          into (Case x bs) = Case x `fmap` intoBranches bs
-              where intoBranches [] = throwError "Exhausted branches"
-                    intoBranches ((l, p) : rest) =
-                        (do p' <- stepUnder stepper p
-                            return ((l, p') : rest)) `mplus`
-                        (((l, p) :) `fmap` intoBranches rest)
-          into (Unroll x p) = Unroll x `fmap` stepUnder stepper p
-          into (Roll x y a p q) = firstOf (Roll x y a) p q
-          into (Replicate x y p) = Replicate x y `fmap` stepUnder stepper p
-          into (Derelict x y p) = Derelict x y `fmap` stepUnder stepper p
-          into (SendProp x a p) = SendProp x a `fmap` stepUnder stepper p
-          into (ReceiveProp x a p) = ReceiveProp x a `fmap` stepUnder stepper p
-          into (EmptyOut x) = throwError "No subexpressions"
-          into (EmptyIn x p) = EmptyIn x `fmap` stepUnder stepper p
-          into (EmptyCase x ys) = throwError "No subexpressions"
-          into Unk{} = throwError "No subexpressions"
+normalize :: Proc -> M (Proc, Proc)
+normalize p = trace ("Normalizing " ++ showCP p) $
+              do let fs = fragment [] p
+                     is = [1..length fs]
+                     wl = makeWorkList is []
+                 fs' <- loop wl (zip is fs) (length fs + 1)
+                 executed <- commute fs' (return . unFragment) (return . unFragment)
+                 simplified <- commute fs' recurse (return . unFragment)
+                 return (executed, simplified)
+    where recurse fs = trace (unlines ("Recursing on" : map showCP fs)) $
+                       do fs' <- loop (makeWorkList is []) (zip is fs) (length fs + 1)
+                          commute fs' recurse (return . unFragment)
+              where is = [1..length fs]
+
+          makeWorkList is js = [(i, i') | (i:is') <- tails is, i' <- is'] ++ [(i,j) | i <- is, j <- js]
 
 
--- Malization is implemented as a simple loop.  As long as one of the
--- principal cut reductions applies to the input expression, or to any
--- expression equivalent to the input expression, normalization loops on the
--- result.  Otherwise, it attempts to apply commuting conversions and finishes.
--- a thin layer of verification, this applies the checking operation both before
--- and after normalization, assuring that the normalized expression has the same
--- behavior as the un-normalized one.
+          loop [] ifs _ = trace (unlines ("Done!" : map showCP  (map snd ifs))) $
+                          return (map snd ifs)
+          loop ((i,j):wl) ifs k
+              | Just fi <- lookup i ifs, Just fj <- lookup j ifs =
+                  trace (unlines ((show ((i,j):wl)) : map showCP (map snd ifs))) $
+                  do fs' <- step fi fj
+                     case fs' of
+                       [] -> loop wl ifs k
+                       _  -> let ks = [k..k + length fs' - 1]
+                                 k' = k + length fs'
+                                 notIorJ k = i /= k && j /= k
+                                 ifs' = zip ks fs' ++ filter (notIorJ . fst) ifs
+                                 wl'  = makeWorkList ks (filter notIorJ (map fst ifs)) ++
+                                        [(i',j') | (i',j') <- wl, notIorJ i', notIorJ j']
+                             in  loop wl' ifs' k'
+              | otherwise = error "Missing fragments in loop"
 
-normalize :: Proc -> Behavior -> M (Proc, Proc)
-normalize p b = do p' <- execute p
-                   (p',) `fmap` simplify p'
-    where execute p = do stepped <- (Just `fmap` msum (map stepPrincipal ps)) `catchError` const (return Nothing)
-                         case stepped of
-                           Nothing -> msum (map stepCommuting ps) `catchError` const (return p)
-                           Just p' -> case runCheck (check p') b of
-                                        (_, Left err) -> throwError (errorMessage p p' err)
-                                        (_, Right _) -> execute p'
-
-              where ps = equiv p
-                    showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
-                    errorMessage p p' e = unlines ["Execution went wrong:",
-                                                   e,
-                                                   "Last good step was:",
-                                                   showCP p,
-                                                   "and first bad step was:",
-                                                   showCP p']
-
-          simplify p = do stepped <- (Just `fmap` msum [stepUnder stepPrincipal p' `mplus` stepUnder stepCommuting p' | p' <- equivUnder p])
-                                     `catchError` const (return Nothing)
-                          case stepped of
-                            Nothing -> return p
-                            Just p' ->
-                                case runCheck (check p') b of
-                                  (_, Left err) -> throwError (unlines ["Simplification went wrong! (" ++ err ++ ") Last good step was:",
-                                                                        "   " ++ showCP p,
-                                                                        "and first bad step was:",
-                                                                        "   " ++ showCP p'])
-                                  (_, Right _) -> simplify p'
-              where showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
+          step fi fj =
+              do fs <- stepPrincipal fi fj
+                 case fs of
+                   [] -> stepPrincipal fj fi
+                   _  -> return fs

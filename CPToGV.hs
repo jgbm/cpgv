@@ -22,6 +22,7 @@ xSession (CP.Var v []) = GV.SVar v
 xSession (CP.Neg v) = GV.Neg v
 xSession (CP.ForAll v a) = GV.InputType v (xSession a)
 xSession (CP.Exists v a) = GV.OutputType v (xSession a)
+xSession s = error ("xSession missing " ++ show s)
 
 xType :: CP.Prop -> GV.Type
 xType = GV.Lift . xSession

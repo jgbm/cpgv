@@ -1,0 +1,131 @@
+\documentclass{article}
+
+\usepackage{amsmath,infer,mathwidth,stmaryrd}
+
+\newcommand{\cut}[4]{\mathbf{cut}\: [#1:#2] \: (#3 \mid #4)}
+\newcommand{\unroll}[2]{\mathbf{unr}\:#1.#2}
+\newcommand{\roll}[5]{\mathbf{roll}\:#1 [#2:#3] (#4,#5)}
+\newcommand{\case}[2]{\mathbf{case}\:#1\:\{#2\}}
+\newcommand{\sel}[3]{#1/\mathrm{#2}.#3}
+
+\newcommand{\fragment}[2]{\langle #1 \rangle \, #2}
+
+\def\tensor{\otimes}
+\def\parr{\bindnasrepma}
+\def\with{\&}
+\def\link{\leftrightarrow}
+\def\goesto{\Longmapsto}
+\def\F{\mathcal{F}}
+
+\def\Fr{\mathbf{Fr}}
+\def\unFr{\mathbf{unFr}}
+
+\begin{document}
+
+\section{Structural equivalence}
+
+If $x \not\in fn(P)$:
+\[ \{ \fragment{x:A,Z}{P}, \F \} \goesto \{ \fragment{Z}{P}, \F \}. \]
+
+\section{Principal cut reductions}
+
+Cut rule:
+\[ \cut{x}{A \tensor B}{x[y].(P|Q)}{x(y).R} \goesto \cut{y}{A}{P}{\cut{x}{B}{Q}{R}} \]
+Fragment transformation:
+\begin{multline*}
+ \{\fragment{x:A \tensor B,Z}{x[y].(P|Q)}, \fragment{x:A \parr B,Z'}{x(y).R}, \F \} \goesto \\
+ \{\fragment{y:A,Z}{P}, \fragment{y:A^\perp,x:B,Z}{Q}, \fragment{y:A^\perp,x:B^\perp,Z'}{R}, \F \}
+\end{multline*}
+
+\noindent
+Cut rule:
+\[ \cut{x}{A \oplus B}{\sel{x}{inl}{P}}{\case{x}{Q;R}} \goesto \cut{x}{A}{P}{Q} \]
+Fragment transformation:
+\begin{multline*}
+  \{\fragment{x:A \oplus B,Z}{\sel{x}{inl}{P}}, \fragment{x:A \with B,Z'}{\case{x}{Q;R}},\F\} \goesto \\
+  \{\fragment{x:A,Z}{P}, \fragment{x:A^\perp,Z'}{Q},\F\}
+\end{multline*}
+
+\noindent
+Cut rule:
+\[ \cut{x}{\exists X.B}{x[A].P}{x(X).Q} \goesto \cut{x}{B[A/X]}{P}{Q[A/X]} \]
+Fragment transformation:
+\begin{multline*}
+  \{\fragment{x:\exists X.B,Z}{x[A].P}, \fragment{x:\forall X.B,Z'}{x(X).P}, \F \} \goesto \\
+  \{\fragment{x:B[A/X],Z}{P}, \fragment{x:(B[A/X])^\perp,Z'}{Q[A/X]}, \F\}
+\end{multline*}
+
+\noindent
+Cut rule:
+\[ \cut{x}{1}{x[].0}{x().P} \goesto P \]
+Fragment transformation:
+\[ \{ \fragment{x:1}{x[].0}, \fragment{x:\bot,Z}{x().P}, \F \} \goesto \{ \fragment{Z}{P}, \F \} \]
+
+\noindent
+Cut rule:
+\begin{multline*}
+ \cut{x}{\mu B}{\unroll{x}{P}}{\roll{x}{y}{S}{Q}{R}} \goesto \\
+ \cut{y}{S}{Q}{\cut{x}{\overline{B}S}{R}{\cut{z}{\overline{B}(\nu \overline{B})}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}{P[z/x]}}}
+\end{multline*}
+Fragment transformation:
+\begin{multline*}
+  \{\fragment{x:\mu B,Z}{\unroll{x}{P}}, \fragment{x:\nu B,Z'}{\roll{x}{y}{S}{Q}{R}}, \F \} \goesto \\
+  \{\fragment{y:S,Z'}{Q}, \fragment{y:S^\perp,x:\overline{B}S,Z'}{R},\\
+    \fragment{y:S^\perp,x:(\overline{B}S)^\perp,z:\overline{B}(\nu \overline{B}),Z'}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}, \\
+    \fragment{y:S^\perp,x:(\overline{B}S)^\perp,z:(\overline{B}(\nu \overline{B}))^\perp,Z}{P[z/x]}, \F \}
+\end{multline*}
+
+\noindent
+Cut rules
+\begin{align*}
+  \cut{x}{{!A}}{!x(y).P}{?x[y].Q} &\goesto \cut{y}{A}{P}{Q} \\
+  \cut{x}{{!A}}{!x(y).P}{Q} &\goesto Q \\
+  \cut{x}{{!A}}{!x(y).P}{Q[x/x',x/x'']} &\goesto \cut{x'}{{!A}}{!x'(y).P}{\cut{x''}{{!A}}{!x''(y).P}{Q}}
+\end{align*}
+Fragment transformation:
+\begin{multline*}
+  \{\fragment{x:{!A},Z}{!x(y).P}, \fragment{x:{?A},Z'}{?x[y].Q}, \F \} \goesto \\
+  \{\fragment{x:{!A},Z}{!x(y).P}, \fragment{y:A,Z}{P}, \fragment{y:A^\perp,Z'}{Q}, \F \}
+\end{multline*}
+and see $\unFr$ for weakening.
+
+
+\section{Commuting conversions}
+
+Commuting conversions are written $\{ \F \} \goesto \pi\,\{\F\}$, where each $\pi$ is the prefix
+of a CP expressions.  Each rule assumes the side condition $x \notin Z$.
+
+\begin{align*}
+  \{ \fragment{Z}{x(y).P}, \F \} &\goesto x(y).\{\fragment{Z}{P}, \F\} \\
+  \{ \fragment{Z}{x[y].(P|Q)}, \F \} &\goesto \{ x[y].(\{\fragment{Z}{P}, \F_1\},\{\fragment{Z}{Q}, \F_2\}),\F_3 \} \\
+  & \text{if $\forall \fragment{Z_1}{P_1} \in \F_1,\fragment{Z_2}{P_2},dom(Z_1) \cap dom(Z_2) = \emptyset$} \\
+  \{ \fragment{Z}{\sel{x}{inl}{P}}, \F \} &\goesto \sel{x}{inl}{\{\F\}} \\
+  \{ \fragment{Z}{\case{x}{P;R}}, \F \} &\goesto \case{x}{\{\fragment{Z}{P},\F\};\{\fragment{Z}{Q},\F\}} \\
+  \{ \fragment{Z}{\unroll{x}{P}}, \F \} &\goesto \unroll{x}{\{\fragment{Z}{P}, \F\}} \\
+  \{ \fragment{Z}{\roll{x}{y}{S}{P}{Q}}, \F \} &\goesto \roll{x}{y}{S}{\{\fragment{Z}{P}\}}{Q} \\
+  \{ \fragment{Z}{x().P}, \F \} &\goesto x().\{\fragment{Z}{P},\F\} \\
+  \{ \fragment{Z}{!x(y).P}, \F\} &\goesto !x(y).\{\fragment{Z}{P}, \F\} \\
+  &\text{if $\forall \fragment{Z'}{P'} \in \F,\forall x:A \in Z', A = {?B}$} \\
+  \{ \fragment{Z}{?x[y].P}, \F\} &\goesto ?x[y].\{\fragment{Z}{P}, \F\}
+\end{align*}
+
+\section{Fragment and Defragmentation}
+
+\begin{align*}
+  \Fr_Z(\cut{x}{A}{x \link y}{P}) &\mapsto \Fr_Z(P[y/x]) \\
+  \Fr_Z(\cut{x}{A}{P}{Q}) &\mapsto \Fr_{x:A,Z}(P) \cup \Fr_{x:A^\perp,Z}(Q) \\
+  \Fr_Z(P) &\mapsto \{ \fragment{Z}{P} \}
+\end{align*}
+
+\noindent
+If \[Z = x_1:A_1, x_2,A_2, \dots, x_n:A_n,\] then \[Z \setminus x_i = x_1:A_1,\dots,x_{i-1}:A_{i-1},x_{i+1}:A_{i+1},\dots,x_n:A_n.\]
+
+\begin{align*}
+  \unFr(\{\fragment{}{P}\}) &\mapsto P \\
+  \unFr(\{\fragment{x:A}{P},\F\}) &\mapsto \cut{x}{A}{P}{\unFr(\{\fragment{Z \setminus x}{Q} \mid \fragment{Z}{Q} \in \F\})} \\
+  \unFr(\{\fragment{x:{!A},Z}{P},\F\}) &\mapsto \unFr(\F) \quad \text{if $x:{?A} \notin Z'$ for all $\fragment{Z'}{Q} \in \F$}
+\end{align*}
+
+
+
+\end{document}

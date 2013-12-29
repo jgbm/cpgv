@@ -1,3 +1,5 @@
+module CPI where
+
 import Control.Monad.Error
 import Data.Char (isSpace)
 import Data.List (partition)
@@ -33,7 +35,7 @@ interp ds (Right (Assert p b isCheck)) =
     case runM $ do p' <- expandP ds p
                    b' <- expandB ds b
                    t <- into (runCheck (check p') b')
-                   (executed, simplified) <- if isCheck then return (undefined, undefined) else normalize p' b'
+                   (executed, simplified) <- if isCheck then return (undefined, undefined) else normalize p'
                    return (p', t, b', executed, simplified) of
       Left err ->
           do if isCheck then putStrLn ("Check failed: " ++ show (pretty (Assert p b isCheck))) else return ()
@@ -46,7 +48,10 @@ interp ds (Right (Assert p b isCheck)) =
           | otherwise ->
               let gvContext = [(v, xType t) | (v, t) <- b']
                   gvExpr    = xTerm [(v, t) | (v, t) <- b'] p'
-                  gvResult  = ["GV translation is: ", displayS (renderPretty 0.8 120 (pretty (GV.Assert gvContext gvExpr (GV.Lift GV.OutTerm)))) ""] ++
+                  gvResult | any (requiresRecursion . snd) b' || requiresRecursion p' =
+                              ["CP expression requires recursion; no GV translation."]
+                           | otherwise =
+                              ["GV translation is: ", displayS (renderPretty 0.8 120 (pretty (GV.Assert gvContext gvExpr (GV.Lift GV.OutTerm)))) ""] ++
                               (case GV.runCheck (GV.checkAgainst gvExpr (GV.Lift GV.OutTerm)) gvContext of
                                  Left err -> ["which is ill-typed:", err]
                                  Right _  -> [])

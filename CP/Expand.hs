@@ -57,13 +57,10 @@ expandP ds = ex
                                                 expandP ds' p
                                     else throwError ("Wrong number of arguments for " ++ v)
           ex (Link w x)            = return (Link (exn w) (exn x))
-          ex (Cut x a p q)
-              | x `elem` map snd (names ds) = do x' <- fresh x
-                                                 p' <- replace x x' p
-                                                 q' <- replace x x' q
-                                                 liftM3 (Cut x') (expandT ds a) (ex p') (ex q')
-              | otherwise          = liftM3 (Cut (exn x)) (expandT ds a) (expandP (filterNameBindings (x /=) ds) p)
-                                                                         (expandP (filterNameBindings (x /=) ds) q)
+          ex (Cut x a p q) = do x' <- fresh x
+                                p' <- replace x x' p
+                                q' <- replace x x' q
+                                liftM3 (Cut x') (expandT ds a) (ex p') (ex q')
           ex (Out x y p q)
               | y `elem` map snd (names ds) = do y' <- fresh y
                                                  p' <- replace y y' p

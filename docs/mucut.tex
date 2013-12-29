@@ -1,0 +1,110 @@
+\documentclass{article}
+
+\usepackage{amsmath,infer,pdflscape,stmaryrd}
+\usepackage[margin=0.75in]{geometry}
+
+\newcommand{\cut}[4]{\mathbf{cut}\: #1:#2 \: (#3 \mid #4)}
+\newcommand{\unroll}[2]{\mathbf{unr}\:#1.#2}
+\newcommand{\roll}[5]{\mathbf{roll}\:#1 [#2:#3] (#4,#5)}
+\newcommand{\case}[2]{\mathbf{case}\:#1\:\{#2\}}
+
+\def\parr{\bindnasrepma}
+\def\with{\&}
+\def\link{\leftrightarrow}
+
+
+\begin{document}
+\begin{landscape}
+
+\[
+\infbox{
+  \lproof[cut]
+    {\lproof[\mu]
+      {\assume{P \vdash \Gamma, x:B(\mu B)}};
+      {\unroll{x}{P} \vdash \Gamma, x:\mu B}}
+    {\lproof[\nu]
+      {\assume{Q \vdash y:S,\Delta}}
+      {\assume{R \vdash y:S^\perp, x:\overline{B}S}};
+      {\roll{x}{y}{S}{Q}{R} \vdash x:\nu \overline{B}, \Delta}};
+    {\cut{x}{\mu B}{\unroll{x}{P}}{\roll{x}{y}{S}{Q}{R}} \vdash \Gamma,\Delta}}
+\]
+
+Reduces to:
+
+\[
+\infbox{
+  \lproof[cut]
+    {\assume{Q \vdash y:S,\Delta}}
+    {\lproof[cut]
+      {\assume{R \vdash y:S^\perp,x:\overline{B}S}}
+      {\lproof[cut]
+        {\assume{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz}) \vdash x:BS^\perp,z:\overline{B}(\nu \overline{B})}}
+        {\assume{P[z/x] \vdash z:B(\mu B),\Gamma}};
+        {\cut{z}{\overline{B}(\nu \overline{B})}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}{Q} \vdash x:BS^\perp,\Gamma}};
+      {\cut{x}{\overline{B}S}{R}{\cut{z}{\overline{B}(\nu \overline{B})}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}{P[z/x]}} \vdash y:S^\perp,\Gamma}};
+    {\cut{y}{S}{Q}{\cut{x}{\overline{B}S}{R}{\cut{z}{\overline{B}(\nu \overline{B})}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}{P[z/x]}}} \vdash \Gamma,\Delta}}
+\]
+
+Where:
+
+\begin{align*}
+  F_{X.C}(Q_{xw}) &= \infbox{\lproof[init];{x \link w \vdash x:C,w:C^\perp}} \\
+  F_{X.X}(Q_{xw}) &= Q \vdash x:A,w:B \\
+  F_{X.C_1 X \otimes C_2 X}(Q_{xw}) &=
+    \infbox{
+      \lproof[\parr]
+        {\lproof[\otimes]
+          {\assume{F_{C_1}(Q_{[y/x,z/w]}) \vdash y:C_1A,z:\overline{C}_1B}}
+          {\assume{F_{C_2}(Q_{xw}) \vdash x:C_2A,w:\overline{C}_2B}};
+          {x[y].(F_{C_1}(Q_{[y/x,z/w]}) | F_{C_2}(Q_{xw})) \vdash x:C_1A \otimes C_2 z:A,\overline{C}_1B,w:\overline{C}_2B}};
+        {w(z).x[y].(F_{C_1}(Q_{[y/x,z/w]}) | F_{C_2}(Q_{xw})) \vdash x:C_1A \otimes C_2A,w:\overline{C}_1B\parr\overline{C}_2B}} \\
+  F_{X.C_1 X \parr C_2 X}(Q_{xw}) &=
+    \infbox{
+      \lproof[\parr]
+        {\lproof[\otimes]
+          {\assume{F_{C_1}(Q_{[y/x,z/w]}) \vdash y:C_1A,z:\overline{C}_1B}}
+          {\assume{F_{C_2}(Q_{xw}) \vdash x:C_2A,w:\overline{C}_2B}};
+          {w[z].(F_{C_1}(Q_{[y/x,z/w]}) | F_{C_2}(Q_{xw})) \vdash y:C_1A,x:C_2A,w:\overline{C}_1B \otimes \overline{C}_2B}};
+        {x(y).w[z].(F_{C_1}(Q_{[y/x,z/w]}) | F_{C_2}(Q_{xw})) \vdash x:C_1A \parr C_2A,w:\overline{C}_1B \otimes \overline{C}_2B}} \\
+  F_{X.C_1 X \oplus C_2 x}(Q_{xw}) &=
+    \infbox{
+      \lproof[\with]
+        {\lproof[\oplus]
+          {\assume{F_{C_1}(Q_{xw}) \vdash x:C_1A,w:\overline{C_1}B}};
+          {x/l.F_{C_1}(Q_{xw}) \vdash x:C_1A \oplus C_2A,w:\overline{C_1}B}}
+        {\lproof[\oplus]
+          {\assume{F_{C_2}(Q_{xw}) \vdash x:C_2A,w:\overline{C_2}B}};
+          {x/r.F_{C_2}(Q_{xw}) \vdash x:C_1A \oplus C_2A,w:\overline{C_2}B}};
+        {\case{w}{l: x/l.F_{C_1}(Q_{xw}); r: x/r.F_{C_2}(Q_{xw})} \vdash x:C_1A \oplus C_2A,w:\overline{C_1}B \with \overline{C_2}B}} \\
+  F_{X.C_1 X \with C_2 x}(Q_{xw}) &=
+    \infbox{
+      \lproof[\with]
+        {\lproof[\oplus]
+          {\assume{F_{C_1}(Q_{xw}) \vdash x:C_1A,w:\overline{C_2}B}};
+          {w/l.F_{C_1}(Q_{xw}) \vdash x:C_1A \oplus C_2A,w:\overline{C_1}B}}
+        {\lproof[\oplus]
+          {\assume{F_{C_2}(Q_{xw}) \vdash x:C_2A,w:\overline{C_2}B}};
+          {w/r.F_{C_2}(Q_{xw}) \vdash x:C_1A \oplus C_2A,w:\overline{C_2}B}};
+        {\case{x}{l: w/l.F_{C_1}(Q_{xw}); r: w/r.F_{C_2}(Q_{xw})} \vdash x:C_1A \with C_2A,w:\overline{C_1}B \oplus \overline{C_2}B}} \\
+  F_{X.\mu(C X)}(Q_{xw}) &=
+    \infbox{
+      \lproof[\nu]
+        {\lproof[init];
+          {x \link y \vdash x:\mu(C A),y:\nu(\overline{C} A^\perp)}}
+        {\lproof[\mu]
+          {\assume{F_{X.C X(\mu(C A))}(Q_{[y/x],w}) \vdash y:(C A)(\mu(C A)),w:(\overline{C} B)(\nu(\overline{C} A^\perp))}};
+          {\unroll{y}{F_{X.C X(\mu(C A))}(Q_{[y/x],w})} \vdash y:\mu(C A),w:(\overline{C} B)(\nu(\overline{C} A^\perp))}};
+        {\roll{w}{y}{\nu(\overline{C} A)}{x \link y}{\unroll{y}{F_{X.C X(\mu(C A))}(Q_{[y/x],w})}} \vdash x:\mu(C A),w:\nu(\overline{C} B)}} \\
+  F_{X.\nu(C X)}(Q_{xw}) &=
+    \infbox{
+      \lproof[\nu]
+        {\lproof[init];
+          {w \link y \vdash w:\mu(\overline{C} B),y:\nu(C B^\perp)}}
+        {\lproof[\mu]
+          {\assume{F_{X.C X(\nu(C B^\perp))}(Q_{x,[y/w]}) \vdash x:(C A)(\nu(C B^\perp)), y:(\overline{C} B)(\mu(\overline{C} B))}};
+          {\unroll{y}{F_{X.C X(\mu(C A))}(Q_{x,[y/w]})} \vdash x:(C A)(\nu(C B^\perp)),y:\mu(\overline{C} B)}};
+        {\roll{x}{y}{\nu(\overline{C} A)}{w \link y}{\unroll{y}{F_{X.C X(\mu(C A))}(Q_{x,[y/w]})}} \vdash x:\nu(C A),w:\mu(\overline{C} B)}}
+\end{align*}
+
+\end{landscape}
+\end{document}

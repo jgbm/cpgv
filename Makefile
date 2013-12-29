@@ -9,7 +9,7 @@ all: cpi gvi
 	happy $<
 
 cpi: $(HS_SOURCES)
-	ghc --make -o cpi -O2 -hidir obj -odir obj CPI.hs
+	ghc --make -o cpi -O2 -hidir obj -odir obj CPI.hs -main-is CPI.main
 
 gvi: $(HS_SOURCES)
 	ghc --make -o gvi -O2 -hidir obj -odir obj GVI.hs

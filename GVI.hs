@@ -26,10 +26,10 @@ interp (Assert gamma m t) =
                                        [(v, CP.dual (xType t)) | (v, t) <- gamma]
                           cpResults = case CP.runCheck (CP.check p') cpBehavior of
                                         (_, Left err) -> unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False), "But:", err]
-                                        (_, Right _)  -> let Right (normalized, simplified) = CP.runM (CP.normalize p' cpBehavior)
-                                                         in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False),
+                                        (_, Right _)  -> let Right (normalized, simplified) = CP.runM (CP.normalize p')
+                                                         in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False) {-,
                                                                      "CP normalization:", showCP normalized,
-                                                                     "CP simplification:", showCP  simplified]
+                                                                     "CP simplification:", showCP  simplified -}]
                           gvResults | null gamma = unlines ["GV execution:", show (runProgram m)]
                                     | otherwise  = "No GV execution (free variables).\n"
                       in putStrLn (gvResults ++ cpResults)
