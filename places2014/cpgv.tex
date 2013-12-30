@@ -254,9 +254,9 @@
 
 \begin{abstract}
 Recently, Wadler presented a continuation-passing translation from a session-typed functional
-language, called GV, to a process calculus, called CP, based on classical linear logic. However,
-this translation is one-way: CP is more expressive than GV. We propose an extension to GV, called
-\hgv, which bridges the expressiveness gap.
+language, GV, to a process calculus, CP, based on classical linear logic. However, this translation
+is one-way: CP is more expressive than GV. We propose \hgv, an extension to GV which bridges the
+expressiveness gap.
 %%  We provide direct translations from CP into the session
 %% fragment of \hgv, called \hgvpi, and from \hgv to \hgvpi. We prove that the original
 %% continuation-passing translation from GV to CP factors through the direct translation to \hgvpi. The
@@ -277,7 +277,7 @@ this translation is one-way: CP is more expressive than GV. We propose an extens
 
 \section{Introduction}
 
-Linear logic has long been regarded as a potential typing discipline for concurrent programming.
+Linear logic has long been regarded as a potential typing discipline for concurrency.
 Girard~\cite{Girard87} observes that the connectives of linear logic can be interpreted as parallel
 computation. Abramsky~\cite{Abramsky92} and Bellin and Scott~\cite{BellinScott94} interpret linear
 logic proofs as processes in Milner's $\pi$-calculus.
@@ -298,10 +298,10 @@ are proofs in classical linear logic.
 %
 As GV is less expressive than CP, there are proofs which do not correspond to any GV program.
 
-Our primary contribution is an extended version of GV, called \hgv, sufficient to express all proofs
-in classical linear logic.
+Our primary contribution is \hgv, an extended version of GV sufficient to express all proofs in
+classical linear logic.
 %
-We identify the session-typed fragment of \hgv, called \hgvpi and
+We identify \hgvpi, the session-typed fragment of \hgv, and
 %
 give type-preserving translations from \hgv to \hgvpi ($\lampi{-}$), from \hgvpi to CP
 ($\hgvcp{-}$), and from CP to \hgvpi ($\cptogv{-}$).
@@ -1049,16 +1049,15 @@ Replication has limited expressive power compared to recursion
 \end{mathpar}
 
 \section{Cut reduction for CP}\label{sect:cp-cut}
-~
 
-Structural cut equivalences
+\paragraph{Structural cut equivalences}
 
 \begin{equations}
 \cpCut{x}{P}{Q} &\eqto& \cpCut{x}{Q}{P} \\
 \cpCut{y}{\cpCut{x}{P}{Q}}{R} &\eqto& \cpCut{x}{P}{\cpCut{y}{Q}{R}} \\
-\end{equations}
+\end{equations}%
 
-Cut rules
+\paragraph{Cut rules}
 
 \begin{equations}
 \cpCut{x}{\cpLink{w}{x}}{P}
@@ -1077,9 +1076,9 @@ Cut rules
   &\redto& \cpCut{x}{P}{\subst{Q}{A}{X}} \\
 \cpCut{x}{\cpEmptyOut{x}}{\cpEmptyIn{x}{P}}
   &\redto& P \\
-\end{equations}
+\end{equations}%
 
-Commuting conversions
+\paragraph{Commuting conversions}
 
 \begin{equations}
 \cpCut{z}{\cpOutput{x}{y}{P}{Q}}{R}
@@ -1089,7 +1088,7 @@ Commuting conversions
 \cpCut{z}{\cpInput{x}{y}{P}}{Q}
   &\redto& \cpInput{x}{y}{\cpCut{z}{P}{Q}} \\
 \cpCut{z}{\cpInject{x}{\la}{P}}{Q}
-  &\redto& \cpInput{x}{\la}{\cpCut{z}{P}{Q}} \\
+  &\redto& \cpInject{x}{\la}{\cpCut{z}{P}{Q}} \\
 \cpCut{z}{\cpCase{x}{\row{\la_i.Q_i}{i}}}{R}
   &\redto& \cpCase{x}{\row{\la_i.\cpCut{z}{Q_i}{R}}{i}} \\
 \cpCut{z}{\cpServe{x}{y}{P}}{Q}
@@ -1102,13 +1101,13 @@ Commuting conversions
   &\redto& \cpReceiveType{x}{X}{\cpCut{z}{P}{Q}} \\
 \cpCut{z}{\cpEmptyIn{x}{P}}{Q}
   &\redto& \cpEmptyIn{x}{\cpCut{z}{P}{Q}} \\
-\end{equations}
+\end{equations}%
 
 \section{Design choices for \hgv}
 
 In this appendix we briefly summarise the rationale for some of the design choices for \hgv.
 
-\paragraph{Fork vs Connect}
+\paragraph{Fork vs connect}
 
 We choose the $\key{fork}$ construct in place of GV's equivalent $\key{connect}$ construct because
 it has a simpler typing rule.
@@ -1129,9 +1128,9 @@ The two constructs are interdefinable as follows:
 
 \paragraph{Weakening and contraction for $\gvEndInput$ vs explicit termination}
 
-GV has an explicit construct for handling an end input session type. This is inconvenient and
-unnecessary for programming in practice, as a term of this type never carries any data. Thus,
-instead we choose to make $\gvEndInput$ unlimited, admitting weakening and contraction.
+GV has an explicit $\key{terminate}$ construct for handling an end input session type. This is
+inconvenient and unnecessary for programming in practice as a term of this type never carries any
+data. Thus, instead we choose to make $\gvEndInput$ unlimited, admitting weakening and contraction.
 %
 \begin{mathpar}
 \infr[Terminate-$\otimes$]
@@ -1142,7 +1141,7 @@ instead we choose to make $\gvEndInput$ unlimited, admitting weakening and contr
 %%   {\gvj{\Phi}{\gvTerminate{M}}{\gvUnitType}}
 \end{mathpar}%
 %
-We can straightforwardly simulate explicit termination as follows:
+We can simulate explicit termination as follows:
 \[
 \gvTerminate{M} \equiv \gvLet{\gvPair{x}{y}}{M}{x} \\
 \]
@@ -1151,25 +1150,25 @@ variables of type $\gvEndInput$.
 
 \paragraph{Service creation vs server definition}
 
-The typing rule for $\key{serve}$ is anomolous because it mentions a service type but no server
-type. An alternative is to define a $\key{defServere}$ construct that specifies the definition of a
-server. We prefer the former rule because we find it more convenient to program with than the more
-uniform alternative.
+The typing rule for $\key{serve}$ is anomolous because it mentions a service type rather than a
+server type. An alternative is to define a $\key{defServer}$ construct that specifies the definition
+of a server. We prefer the former rule because we find it more convenient to program with than the
+more uniform alternative.
 \begin{mathpar}
 \infr[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
 {\gvj{\Phi}{\gvServe{x}{M}}{\gvService{\gvDual{S}}}}
 
 \infr[ServeDef]
-{\gvj{\Phi}{M}{\gvServer{S}} \\ \gvj{\Psi,y:S}{N}{\gvEndOutput} \\ \un{\Psi}}
-{\gvj{\Phi,\Psi}{\gvServeOld{M}{x}{N}}{\gvEndOutput}}
+{\gvj{\Phi}{N}{\gvServer{S}} \\ \gvj{\Psi,x:S}{M}{\gvEndOutput} \\ \un{\Psi}}
+{\gvj{\Phi,\Psi}{\gvServeOld{N}{x}{M}}{\gvEndOutput}}
 \end{mathpar}%
 %
-The two constructs are straightforwardly interdefinable:
+The two constructs are interdefinable:
 \[
-\gvServe{y}{M} \equiv \gvFork{x}{\gvServeOld{x}{y}{M}}
+\gvServe{x}{M} \equiv \gvFork{y}{\gvServeOld{y}{x}{M}}
 \qquad
-\gvServeOld{M}{x}{N} \equiv \gvLink{M}{(\gvServe{x}{N})}
+\gvServeOld{N}{x}{M} \equiv \gvLink{N}{(\gvServe{x}{M})}
 \]
 
 %% \appendix
