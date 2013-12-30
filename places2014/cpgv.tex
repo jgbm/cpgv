@@ -121,7 +121,7 @@
 \newcommand{\gvReceiveType}[2]{\key{receiveType}~{#1}~{#2}}
 
 
-\newcommand{\gvServeOld}[3]{\key{serve'}~{#1}({#2})={#3}}
+\newcommand{\gvServeOld}[3]{\key{defServer}~{#1}({#2})={#3}}
 
 \newcommand{\gvServe}[2]{\key{serve}~{#1}.{#2}}
 \newcommand{\gvRequest}[1]{\key{request}~{#1}}
@@ -1106,6 +1106,71 @@ Commuting conversions
 
 \section{Design choices for \hgv}
 
+In this appendix we briefly summarise the rationale for some of the design choices for \hgv.
+
+\paragraph{Fork vs Connect}
+
+We choose the $\key{fork}$ construct in place of GV's equivalent $\key{connect}$ construct because
+it has a simpler typing rule.
+\begin{mathpar}
+\infr[Fork]
+{\gvj{\Phi,x:S}{M}{\gvEndOutput}}
+{\gvj{\Phi}{\gvFork{x}{M}}{\gvDual{S}}}
+
+\infr[Connect]
+{\gvj{\Phi,x:S}{M}{\gvEndOutput} \\ \gvj{\Psi,x:\gvDual{S}}{N}{T}}
+{\gvj{\Phi,\Psi}{\gvWith{x}{M}{N}}{T}}
+\end{mathpar}%
+%
+The two constructs are interdefinable as follows:
+\[
+\gvFork{x}{M} \equiv \gvWith{x}{M}{x} \qquad \gvWith{x}{M}{N} \equiv \gvLet{x}{\gvFork{x}{M}}{N}
+\]
+
+\paragraph{Weakening and contraction for $\gvEndInput$ vs explicit termination}
+
+GV has an explicit construct for handling an end input session type. This is inconvenient and
+unnecessary for programming in practice, as a term of this type never carries any data. Thus,
+instead we choose to make $\gvEndInput$ unlimited, admitting weakening and contraction.
+%
+\begin{mathpar}
+\infr[Terminate-$\otimes$]
+  {\gvj{\Phi}{M}{\gvTimes{T}{\gvEndInput}}}
+  {\gvj{\Phi}{\gvTerminate{M}}{T}}
+%% \infr[Terminate-$\gvUnitType$]
+%%   {\gvj{\Phi}{M}{\gvEndInput}}
+%%   {\gvj{\Phi}{\gvTerminate{M}}{\gvUnitType}}
+\end{mathpar}%
+%
+We can straightforwardly simulate explicit termination as follows:
+\[
+\gvTerminate{M} \equiv \gvLet{\gvPair{x}{y}}{M}{x} \\
+\]
+One can also go the other way using $\key{terminate}$ to simulate weakening and contraction on
+variables of type $\gvEndInput$.
+
+\paragraph{Service creation vs server definition}
+
+The typing rule for $\key{serve}$ is anomolous because it mentions a service type but no server
+type. An alternative is to define a $\key{defServere}$ construct that specifies the definition of a
+server. We prefer the former rule because we find it more convenient to program with than the more
+uniform alternative.
+\begin{mathpar}
+\infr[Serve]
+{\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
+{\gvj{\Phi}{\gvServe{x}{M}}{\gvService{\gvDual{S}}}}
+
+\infr[ServeDef]
+{\gvj{\Phi}{M}{\gvServer{S}} \\ \gvj{\Psi,y:S}{N}{\gvEndOutput} \\ \un{\Psi}}
+{\gvj{\Phi,\Psi}{\gvServeOld{M}{x}{N}}{\gvEndOutput}}
+\end{mathpar}%
+%
+The two constructs are straightforwardly interdefinable:
+\[
+\gvServe{y}{M} \equiv \gvFork{x}{\gvServeOld{x}{y}{M}}
+\qquad
+\gvServeOld{M}{x}{N} \equiv \gvLink{M}{(\gvServe{x}{N})}
+\]
 
 %% \appendix
 
