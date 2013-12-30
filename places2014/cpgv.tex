@@ -178,6 +178,9 @@
 \newcommand{\hgvcpl}{\left\llbracket}
 \newcommand{\hgvcpr}{\right\rrbracket}
 
+\newcommand{\redto}{\longrightarrow}
+\newcommand{\eqto}{\equiv}
+
 %\newcommand{\infr}[3][]{\inferrule*[right={#1}]{#2}{#3}}
 %\newcommand{\infr}[3][]{\inferrule[#1]{#2}{#3}}
 \newcommand{\infr}[3][]{\inferrule{#2}{#3}} % save space by getting rid of labels
@@ -578,7 +581,7 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 
 Due to lack of space we omit a complete description of CP. We have included the typing rules in
 Appendix~\ref{sect:cp-typing}; a full description, including the definition of the cut relation
-$\Longrightarrow$, can be found in Wadler's work~\cite{Wadler12}. Note that the propositions of CP
+$\redto$, can be found in Wadler's work~\cite{Wadler12}. Note that the propositions of CP
 are exactly those of classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP
 enjoys all of the standard meta theoretic properties of classical linear logic.
 %% , including confluence and weak
@@ -705,7 +708,7 @@ so we can abbreviate their translations as mappings on plain terms.
 \hgvcp{\gvSelect{\la}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
 \hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
-  \cpCut{x}{\hgvcp{M}x}{\cpCase{x}{\row{\la_i.N_i}{i}}} \\
+  \cpCut{x}{\hgvcp{M}x}{\cpCase{x}{\row{\la_i.\hgvcp{N_i}z}{i}}} \\
 \hgvcp{\gvFork{x}{M}}z &=&
   \cpCut{x}{\cpCut{y}{\hgvcp{M}y}{\cpEmptyOut{y}}}{\cpLink{x}{z}} \\
 \hgvcp{\gvLink{M}{N}}z &=& \cpEmptyIn{z}{\cpCut{x}{\hgvcp{M}x}{\hgvcp{N}x}} \\
@@ -860,7 +863,7 @@ If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentat
 straightforward to show that this monolithic translation factors through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
-$\hgvcp{\lampi{M}}z \Longrightarrow^* \hgvcp{M}z$
+$\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$
 \end{theorem}
 \noindent
 The key soundness property of our translations is that if we translate a term from CP to \hgvpi and
@@ -871,7 +874,7 @@ back, then we obtain a term equivalent to the one we started with.
 %% \begin{enumerate}
 %% \item $\hgvcp{\cptogv{A}} = A$.
 %% \item
-If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \Longrightarrow^* P$.
+If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \redto^* P$.
 %%\end{enumerate}
 \end{theorem}
 \noindent
@@ -906,11 +909,11 @@ equally expressive.
 
 \section{Conclusions and Future Work}
 
-We have proposed a session-typed functional language, \hgv, building on the similar languages of
-Wadler and Gay and Vasconcelos. We have shown that \hgv is sufficient to encode arbitrary linear
-logic proofs, completing the correspondence between linear logic and session typing. We have also
-given an encoding of the non-session fragment of \hgv in terms of its session fragment, simplifying
-translation from \hgv to CP.
+We have proposed a session-typed functional language, \hgv, building on similar languages of
+Wadler~\cite{Wadler12} and of Gay and Vasconcelos~\cite{GayVasconcelos10}. We have shown that \hgv
+is sufficient to encode arbitrary linear logic proofs, completing the correspondence between linear
+logic and session typing. We have also given an encoding of the non-session fragment of \hgv in
+terms of its session fragment, simplifying translation from \hgv to CP.
 
 We highlight several areas of future work.
 %% \begin{itemize}
@@ -1045,6 +1048,63 @@ Replication has limited expressive power compared to recursion
 %% {\cpj{}{}}
 \end{mathpar}
 
+\section{Cut reduction for CP}
+~
+
+Structural cut equivalences
+
+\begin{equations}
+\cpCut{x}{P}{Q} &\eqto& \cpCut{x}{Q}{P} \\
+\cpCut{y}{\cpCut{x}{P}{Q}}{R} &\eqto& \cpCut{x}{P}{\cpCut{y}{Q}{R}} \\
+\end{equations}
+
+Cut rules
+
+\begin{equations}
+\cpCut{x}{\cpLink{w}{x}}{P}
+  &\redto& \subst{P}{w}{x} \\
+\cpCut{x}{\cpOutput{x}{y}{P}{Q}}{\cpInput{x}{y}{R}}
+  &\redto& \cpCut{y}{P}{\cpCut{x}{Q}{R}} \\
+\cpCut{x}{\cpInject{x}{\la_j}{P}}{\cpCase{x}{\row{\la_i.Q_i}{i}}}
+  &\redto& \cpCut{x}{P}{Q_j} \\
+\cpCut{x}{\cpServe{x}{y}{P}}{\cpRequest{x}{y}{Q}}
+  &\redto& \cpCut{y}{P}{Q} \\
+\cpCut{x}{\cpServe{x}{y}{P}}{Q}
+  &\redto& Q, \quad x \notin \FV{Q} \\
+\cpCut{x}{\cpServe{x}{y}{P}}{\subst{Q}{x}{x'}}
+  &\redto& \cpCut{x}{\cpServe{x}{y}{P}}{\cpCut{x'}{\cpServe{x'}{y}{P}}{Q}} \\
+\cpCut{x}{\cpSendType{x}{A}{P}}{\cpReceiveType{x}{X}{Q}}
+  &\redto& \cpCut{x}{P}{\subst{Q}{A}{X}} \\
+\cpCut{x}{\cpEmptyOut{x}}{\cpEmptyIn{x}{P}}
+  &\redto& P \\
+\end{equations}
+
+Commuting conversions
+
+\begin{equations}
+\cpCut{z}{\cpOutput{x}{y}{P}{Q}}{R}
+  &\redto& \cpOutput{x}{y}{\cpCut{z}{P}{R}}{Q}, \quad z \in \FV{P} \\
+\cpCut{z}{\cpOutput{x}{y}{P}{Q}}{R}
+  &\redto& \cpOutput{x}{y}{P}{\cpCut{z}{Q}{R}}, \quad z \in \FV{Q} \\
+\cpCut{z}{\cpInput{x}{y}{P}}{Q}
+  &\redto& \cpInput{x}{y}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpInject{x}{\la}{P}}{Q}
+  &\redto& \cpInput{x}{\la}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpCase{x}{\row{\la_i.Q_i}{i}}}{R}
+  &\redto& \cpCase{x}{\row{\la_i.\cpCut{z}{Q_i}{R}}{i}} \\
+\cpCut{z}{\cpServe{x}{y}{P}}{Q}
+  &\redto& \cpServe{x}{y}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpRequest{x}{y}{P}}{Q}
+  &\redto& \cpRequest{x}{y}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpSendType{x}{A}{P}}{Q}
+  &\redto& \cpSendType{x}{A}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpReceiveType{x}{X}{P}}{Q}
+  &\redto& \cpReceiveType{x}{X}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpEmptyIn{x}{P}}{Q}
+  &\redto& \cpEmptyIn{x}{\cpCut{z}{P}{Q}} \\
+\end{equations}
+
+\section{Design choices for \hgv}
 
 
 %% \appendix
