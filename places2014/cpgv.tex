@@ -276,6 +276,7 @@ expressiveness gap.
 
 
 \section{Introduction}
+\label{sect:introduction}
 
 Linear logic has long been regarded as a potential typing discipline for concurrency.
 Girard~\cite{Girard87} observes that the connectives of linear logic can be interpreted as parallel
@@ -333,6 +334,7 @@ We prove that \hgv, \hgvpi, and CP are all equally expressive.
 %% illuminates regularities that are not apparent in Wadler's original translation.
 
 \section{The \hgv Language}
+\label{sect:hgv}
 
 This section describes our session-typed language \hgv, constrasting it with Gay and Vasconcelos's
 functional language for asynchronous session types~\cite{GayVasconcelos10}, which we call \last, and
@@ -342,7 +344,7 @@ Wadler's GV~\cite{Wadler12}.
 In designing \hgv, we have sometimes opted for programming convenience over uniformity, while
 insisting on a tight correspondence with linear logic.
 %
-The session types of \hgv are given by the following grammar.
+The session types of \hgv are given by the following grammar:
 \begin{equations}
   S & ::= & \gvOutput{T}{S} \mid \gvInput{T}{S} \mid
            \gvPlus{\la_i:S_i}{i} \mid \gvChoice{\la_i:S_i}{i} \mid
@@ -522,6 +524,7 @@ replicating the behaviour of $M$.
 
 
 \section{From \hgv to \hgvpi}
+\label{sect:hgv-to-hgvpi}
 
 The language \hgvpi is the restriction of \hgv to session types, that is, \hgv without $\lolli$,
 $\to$, or $\otimes$. In order to avoid $\otimes$, we disallow plain $\gvReceive{M}$, but do permit
@@ -556,7 +559,7 @@ The translation on terms is given by the homomorphic extension of the following 
 \lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
 \lampi{\gvReceive{M}} &=& \lampi{M} \\
 \end{equations}%
-Formally, this is a translation on derivations. We write type annotations for the cases of $\to$
+Formally, this is a translation on derivations. We write type annotations to indicate $\to$
 introduction and elimination. For all other cases, it is unambiguous to give the translation on
 plain term syntax. Each introduction form translates to an interface $\gvFork{z}{M}$ of type
 $\gvDual{S}$, where $M : \gvEndOutput$ provides the implementation, with $z : S$ bound in $M$.
@@ -578,6 +581,7 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 
 
 \section{From \hgvpi to CP}
+\label{sect:hgvpi-to-cp}
 
 Due to lack of space we omit a complete description of CP. We have included the typing rules in
 Appendix~\ref{sect:cp-typing} and the cut relation $\redto$ in Appendix~\ref{sect:cp-cut}; a full
@@ -593,7 +597,7 @@ whereas he presents binary and nullary versions of sum and choice.
 %% The choice is superficial, but we choose the $n$-ary variants for greater uniformity between
 %% CP and \hgv.
 %
-Duality on CP types ($\cpDual{(-)}$) is standard.
+Duality on CP types ($\cpDual{(-)}$) is standard:
 \[
 \bl
   \cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}
@@ -683,8 +687,8 @@ $\cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}$.
 
 The translation on terms is formally specified as a CPS translation on derivations as in Wadler's
 presentation. Due to lack of space, we write only the translation of weakening and contraction for
-$\gvEndInput$ in this form. The other constructs depend only on the immediate syntactic structure,
-so we abbreviate their translations as mappings on plain terms.
+$\gvEndInput$ in this form; the other constructs depend only on the immediate syntactic structure,
+so we abbreviate their translations as mappings on plain terms:
 %
 \begin{equations}
 \hgvcpl \inferrule{\gvj{\Phi}{N}{S}}{\gvj{\Phi,x:\gvEndInput}{N}{S}} \hgvcpr\!\!z &=&
@@ -700,8 +704,8 @@ so we abbreviate their translations as mappings on plain terms.
 \\[3ex]
 \hgvcp{x}z &=& \cpLink{x}z \\
 \hgvcp{\gvSend{M}{N}}z &=& \cpCut{x}{\cpOutput{x}{y}{\hgvcp{M}y}{\cpLink{x}{z}}}{\hgvcp{N}x} \\
-\hgvcp{\gvReceiveK{y}{x}{M}{N}}z &=&
-  \cpCut{x}{\hgvcp{M}x}{\cpInput{x}{y}{\hgvcp{N}z}} \\
+\hgvcp{\gvReceiveK{x}{y}{M}{N}}z &=&
+  \cpCut{y}{\hgvcp{M}y}{\cpInput{y}{x}{\hgvcp{N}z}} \\
 \hgvcp{\gvSelect{\la}{M}}z &=&
   \cpCut{x}{\hgvcp{M}x}{\cpInject{x}{\la}{\cpLink{x}{z}}} \\
 \hgvcp{\gvCase{M}{\row{\la_i(x).N_i}{i}}}z &=&
@@ -731,12 +735,12 @@ The translation preserves typing.
 If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 \end{theorem}
 
-
 \section{From CP to \hgvpi}
+\label{sect:cp-to-hgvpi}
 
 %In order to demonstrate that CP and \hgvpi (and indeed \hgv) are equally expressive
 We now present the translation $\cptogv{-}$ from CP to \hgvpi. The translation on types is as
-follows.
+follows:
 %% \[
 %% \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 %% \begin{eqs}
@@ -827,7 +831,7 @@ The translation on terms is as follows:
 %\ea
 \]
 %
-As a convenience we use the following syntactic sugar in the translation.
+As a convenience we use the following syntactic sugar in the translation:
 \[
 \gvLet{x}{M}{N} \equiv \lampi{(\lambda x.N) M} \equiv \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}
 \]
@@ -854,9 +858,11 @@ If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 
 
 \section{Correctness}
+\label{sect:correctness}
 
-If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentation, then it is
-straightforward to show that this monolithic translation factors through $\lampi{-}$.
+If we extend $\hgvcp{-}$ to non-session types (Appendix~\ref{sect:hgvcp-ext}), as in Wadler's
+original presentation, then it is straightforward to show that this monolithic translation factors
+through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
 $\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$
@@ -904,6 +910,7 @@ equally expressive.
 
 
 \section{Conclusions and Future Work}
+\label{sect:conclusion}
 
 We have proposed a session-typed functional language, \hgv, building on similar languages of
 Wadler~\cite{Wadler12} and of Gay and Vasconcelos~\cite{GayVasconcelos10}. We have shown that \hgv
@@ -942,6 +949,7 @@ Replication has limited expressive power compared to recursion
 \appendix
 
 \section{Omitted typing rules for HGV}\label{sect:hgv-omitted}
+\label{sect:hgv-extra-rules}
 
 \begin{mathpar}
 \infr[$\lolli$-I]
@@ -976,7 +984,8 @@ Replication has limited expressive power compared to recursion
 %% \begin{mathpar}
 \end{mathpar}
 
-\section{Typing rules for CP}\label{sect:cp-typing}
+\section{Typing rules for CP}
+\label{sect:cp-typing}
 
 \begin{mathpar}
 \infr[Ax]
@@ -1044,7 +1053,8 @@ Replication has limited expressive power compared to recursion
 %% {\cpj{}{}}
 \end{mathpar}
 
-\section{Cut reduction for CP}\label{sect:cp-cut}
+\section{Cut reduction for CP}
+\label{sect:cp-cut}
 
 \paragraph{Structural cut equivalences}
 
@@ -1052,6 +1062,10 @@ Replication has limited expressive power compared to recursion
 \cpCut{x}{P}{Q} &\eqto& \cpCut{x}{Q}{P} \\
 \cpCut{y}{\cpCut{x}{P}{Q}}{R} &\eqto& \cpCut{x}{P}{\cpCut{y}{Q}{R}} \\
 \end{equations}%
+%
+The cut relation $\redto$ is interpreted modulo both $\alpha$-equivalence and structural cut
+equivalence. It is given by the compatible closure of the cut rules and commuting conversions
+defined below. We write $\redto^*$ for the transitive reflexive closure of $\redto$.
 
 \paragraph{Cut rules}
 
@@ -1102,7 +1116,7 @@ Replication has limited expressive power compared to recursion
 \section{Design choices for \hgv}
 \label{sect:design}
 
-In this appendix we briefly summarise the rationale for some of the design choices for \hgv.
+We briefly summarise the rationale for some of the design choices for \hgv.
 
 \paragraph{Fork vs connect}
 
@@ -1167,6 +1181,34 @@ The two constructs are interdefinable:
 \qquad
 \gvServeOld{N}{x}{M} \equiv \gvLink{N}{(\gvServe{x}{M})}
 \]
+
+\section{Extension of $\hgvcp{-}$ to non-session types}
+\label{sect:hgvcp-ext}
+
+\paragraph{Types}
+
+\begin{equations}
+\hgvcp{\gvLinFun{T}{U}} &=& \cpDual{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})} \\
+\hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\
+\hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\
+\end{equations}%
+The outer duals are present here because, as in Section~\ref{sect:hgv-to-hgvpi}, we must expose
+\emph{interfaces} rather than implementations of simulated types.
+
+\paragraph{Terms}
+
+\begin{equations}
+\hgvcp{\gvLam{x}{N}}z &=& \cpInput{z}{x}{\hgvcp{N}z} \\
+\hgvcp{\gvApp{L}{M}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpOutput{y}{x}{\hgvcp{M}x}{\cpLink{y}{z}}} \\
+\hgvcp{L : \gvUnFun{T}{U}}z &=& \cpServe{z}{y}{\hgvcp{L}y} \\
+\hgvcp{L : \gvLinFun{T}{U}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpRequest{y}{x}{\cpLink{x}{z}}} \\
+\hgvcp{\gvPair{M}{N}}z &=& \cpOutput{z}{y}{\hgvcp{M}y}{\hgvcp{N}z} \\
+\hgvcp{\gvLet{\gvPair{x}{y}}{M}{N}}z
+  &=& \cpCut{y}{\hgvcp{M}y}{\cpInput{y}{x}{\hgvcp{N}z}} \\
+\end{equations}%
+%
+As in the definition of $\lampi{-}$ in Section~\ref{sect:hgv-to-hgvpi}, we write type annotations to
+indicate $\to$ introduction and elimination.
 
 %% \appendix
 
