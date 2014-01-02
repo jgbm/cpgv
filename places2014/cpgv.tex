@@ -312,6 +312,7 @@ give type-preserving translations from \hgv to \hgvpi ($\lampi{-}$), from \hgvpi
 %
 We prove that \hgv, \hgvpi, and CP are all equally expressive.
 
+%%  We have implemented prototypes for all of these languages.
 
 
 %% %To demonstrate \hgv's expressiveness,
@@ -1121,7 +1122,7 @@ We briefly summarise the rationale for some of the design choices for \hgv.
 \paragraph{Fork vs connect}
 
 We choose the $\key{fork}$ construct in place of GV's equivalent $\key{connect}$ construct because
-it has a simpler typing rule.
+it has a simpler typing rule and seems just as convenient to use.
 \begin{mathpar}
 \infr[Fork]
 {\gvj{\Phi,x:S}{M}{\gvEndOutput}}
@@ -1161,10 +1162,10 @@ variables of type $\gvEndInput$.
 
 \paragraph{Service creation vs server definition}
 
-The typing rule for $\key{serve}$ is anomolous because it mentions a service type rather than a
-server type. An alternative is to define a $\key{defServer}$ construct that specifies the definition
-of a server. We prefer the former rule because we find it more convenient to program with than the
-more uniform alternative.
+The typing rule for $\key{serve}$ is anomolous because it has a service type in its conclusion
+rather than a server type in a premise. An alternative is to provide a $\key{defServer}$ construct
+that specifies the definition of a server. We prefer the former rule because we find it more
+convenient to program with than the more uniform alternative.
 \begin{mathpar}
 \infr[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
@@ -1192,7 +1193,7 @@ The two constructs are interdefinable:
 \hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\
 \hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\
 \end{equations}%
-The outer duals are present here because, as in Section~\ref{sect:hgv-to-hgvpi}, we must expose
+The outer duals appear here because, as in Section~\ref{sect:hgv-to-hgvpi}, we must expose
 \emph{interfaces} rather than implementations of simulated types.
 
 \paragraph{Terms}
