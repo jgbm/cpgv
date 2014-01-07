@@ -118,6 +118,9 @@ replace x y = replace'
               | x == z = y
               | otherwise = z
 
+          replace' (ProcVar z args) = ProcVar (var z) `fmap` mapM replaceArg args
+              where replaceArg (ProcArg p) = ProcArg `fmap` replace' p
+                    replaceArg (NameArg s) = return (NameArg (var s))
           replace' (Link z z') = return (Link (var z) (var z'))
           replace' (Cut z a p q)
               | x == z || y == z =
@@ -166,6 +169,7 @@ replace x y = replace'
           replace' (EmptyIn z p) = liftM (EmptyIn (var z)) (replace' p)
           replace' (EmptyCase z ws) = return (EmptyCase (var z) (map var ws))
           replace' (Unk vs) = return (Unk (map var vs))
+          replace' p = error ("Replace missing case for " ++ show p)
 
 --------------------------------------------------------------------------------
 -- Recursion

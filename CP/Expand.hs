@@ -74,7 +74,7 @@ expandP ds = ex
              | otherwise           = liftM (In (exn x) y) (ex p)
           ex (Select x l p)        = liftM (Select (exn x) l) (ex p)
           ex (Case x bs)           = liftM (Case (exn x)) (sequence [(l,) `fmap` ex p | (l, p) <- bs])
-          ex (Unroll x p)          = liftM (Unroll x) (ex p)
+          ex (Unroll x p)          = liftM (Unroll (exn x)) (ex p)
           ex (Roll x y a p q)
               | y `elem` map snd (names ds) = do y' <- fresh y
                                                  p' <- replace y y' p

@@ -5,6 +5,7 @@ import Data.List
 import CP.Syntax
 import CP.Printer
 
+import Text.PrettyPrint.Leijen (renderPretty)
 import Debug.Trace
 
 --------------------------------------------------------------------------------
@@ -203,18 +204,25 @@ unexpectedType x c p = fail ("Unexpected type " ++ show (pretty c) ++ " for " ++
 -- tedious, transcription of the typing rules.
 --------------------------------------------------------------------------------
 
+addError p c = Check (\e -> case runCheck c e of
+                              (t, Left err) -> (t, Left (err ++ "\n    while checking " ++ displayS (renderPretty 0.8 120 (pretty p)) ""))
+                              (t, Right x) -> (t, Right x))
+
 check :: Proc -> Check ()
 check p = check' p >> empty
     where check' (Link w x) =
+              addError (Link w x) $
               do a <- consume w
                  b <- consume x
                  if dual a == b
                  then return ()
                  else fail ("In " ++ show (pretty (Link w x)) ++ ": types aren't dual:\n    " ++ show (pretty a) ++ "\n    " ++ show (pretty b))
           check' (Cut x a p q) =
+              addError (Cut x a p q) $
               do provide x a (check' p)
                  provide x (dual a) (check' q)
           check' (Out x y p q) =
+              addError (Out x y p q) $
               do c <- consume x
                  case c of
                    a `Times` b ->
@@ -222,12 +230,14 @@ check p = check' p >> empty
                           provide x b (check' q)
                    _ -> unexpectedType x c (Out x y p q)
           check' (In x y p) =
+              addError (In x y p) $
               do c <- consume x
                  case c of
                    a `Par` b ->
                        provide y a (provide x b (check' p))
                    _ -> unexpectedType x c (In x y p)
           check' (Select x l p) =
+              addError (Select x l p) $
               do c <- consume x
                  case c of
                    Plus lts
@@ -235,6 +245,7 @@ check p = check' p >> empty
                        | otherwise -> fail ("Sum " ++ show (pretty (Plus lts)) ++ " does not contain label " ++ l)
                    _ -> unexpectedType x c (Select x l p)
           check' (Case x (b:bs)) =
+              addError (Case x (b:bs)) $
               do c <- consume x
                  case c of
                    With lts ->
@@ -244,11 +255,13 @@ check p = check' p >> empty
                         | Just a <- lookup l lts = provide x a (check' p)
                         | otherwise = fail ("Choice " ++ show (pretty (With lts)) ++ " does not contain label " ++ l)
           check' (Unroll x p) =
+              addError (Unroll x p) $
               do c <- consume x
                  case c of
                    Mu v a -> provide x (inst v (Mu v a) a) (check' p)
                    _      -> unexpectedType x c (Unroll x p)
           check' (Roll x z a p q) =
+              addError (Roll x z a p q) $
               do c <- consume x
                  case c of
                    Nu v b ->
@@ -256,39 +269,46 @@ check p = check' p >> empty
                           withOnly (const False) (provide z (dual a) (provide x (inst v a b) (check' q)))
                    _ -> unexpectedType x c (Roll x z a p q)
           check' (Replicate x y p) =
+              addError (Replicate x y p) $
               do c <- consume x
                  case c of
                    OfCourse a ->
                        withOnly isWhyNot (provide y a (check' p))
                    _ -> unexpectedType x c (Replicate x y p)
           check' (Derelict x y p) =
+              addError (Derelict x y p) $
               do c <- consume x
                  case c of
                    WhyNot a ->
                        provide y a (check' p)
                    _ -> unexpectedType x c (Derelict x y p)
           check' (SendProp x a p) =
+              addError (SendProp x a p) $
               do c <- consume x
                  case c of
                    Exists z b ->
                        provide x (inst z a b) (check' p)
                    _ -> unexpectedType x c (SendProp x a p)
           check' (ReceiveProp x a p) =
+              addError (ReceiveProp x a p) $
               do c <- consume x
                  case c of
                    ForAll a' b | a == a' -> withOnly ((a `notElem`) . ftv) (provide x b (check' p))
                    _ -> unexpectedType x c (ReceiveProp x a p)
           check' (EmptyOut x) =
+              addError (EmptyOut x) $
               do c <- consume x
                  case c of
                    One -> return ()
                    _   -> unexpectedType x c (EmptyOut x)
           check' (EmptyIn x p) =
+              addError (EmptyIn x p) $
               do c <- consume x
                  case c of
                    Bottom -> check' p
                    _      -> unexpectedType x c (EmptyIn x p)
           check' (EmptyCase x ys) =
+              addError (EmptyCase x ys) $
               do c <- consume x
                  case c of
                    With [] -> mapM_ consume ys

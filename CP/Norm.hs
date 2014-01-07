@@ -9,8 +9,9 @@ import CP.Syntax
 import CP.Printer
 import Text.PrettyPrint.Leijen
 
-import Debug.Trace
---trace s x = x
+-- import Debug.Trace
+
+trace s x = x
 showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
 
 --------------------------------------------------------------------------------
