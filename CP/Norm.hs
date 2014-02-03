@@ -181,7 +181,6 @@ commute fs f g = loop fs [] False
 
           loop' [] passed True = f passed
           loop' [] passed False = g passed
-          loop' (Fragment [] p : rest) passed b = loop' rest (Fragment [] p : passed) b
           loop' (Fragment zs (Out x y p q) : rest) passed _
               | x `notElem` map fst zs, not (null ps && null qs) =
                   trace (x ++ '[' : y ++ "]") $
