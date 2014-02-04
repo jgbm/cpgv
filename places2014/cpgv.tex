@@ -193,59 +193,20 @@
 %%
 \begin{document}
 
-\title{Sessions as propositions (draft January 2014)}
-
-% \titlerunning{} has to be set to either the main title or its shorter
-% version for the running heads. When processed by
-% EasyChair, this command is mandatory: a document without \titlerunning
-% will be rejected by EasyChair
-
+\title{Sessions as propositions}
 \titlerunning{Sessions as propositions (draft January 2014)}
 
-% Authors are joined by \and. Their affiliations are given by \inst, which indexes
-% into the list defined using \institute
-%
 \author{
   Sam Lindley
   \and
   J. Garrett Morris
 }
-%% \author{
-%% Serguei A. Mokhov\inst{1}\thanks{Designed and implemented the class style}
-%% \and
-%%     Geoff Sutcliffe\inst{2}\thanks{Did numerous tests and provided a lot of suggestions}
-%% \and
-%%    Andrei Voronkov\inst{3}\thanks{Masterminded EasyChair and created versions
-%%      3.0--3.1 of the class style}\\
-%% \and
-%%    Graham Gough\inst{3}\thanks{Changed author list format.}\\
-%% }
 
-
-% Institutes for affiliations are also joined by \and,
 \institute{The University of Edinburgh \\
-           \email{Sam.Lindley@ed.ac.uk, Garrett.Morris@ed.ac.uk}
+  \email{\{Sam.Lindley,Garrett.Morris\}@ed.ac.uk}
 }
-%% \institute{
-%%   Concordia University,
-%%   Montreal, Quebec, Canada\\
-%%   \email{mokhov@cse.concordia.ca}
-%% \and
-%%    University of Miami,
-%%    Miami, Florida, U.S.A.\\
-%%    \email{geoff@cs.miami.edu}\\
-%% \and
-%%    University of Manchester,
-%%    Manchester, U.K.\\
-%%    \email{andrei@voronkov.com, graham@cs.man.ac.uk}\\
-%%  }
-%  \authorrunning{} has to be set for the shorter version of the authors' names;
-% otherwise a warning will be rendered in the running heads. When processed by
-% EasyChair, this command is mandatory: a document without \authorrunning
-% will be rejected by EasyChair
 
 \authorrunning{Lindley and Morris}
-
 
 \clearpage
 
@@ -253,27 +214,12 @@
 
 
 \begin{abstract}
-Recently, Wadler presented a continuation-passing translation from a session-typed functional
-language, GV, to a process calculus based on classical linear logic, CP. However, this translation
-is one-way: CP is more expressive than GV. We propose \hgv, an extension to GV which bridges the
-expressiveness gap.
-%%  We provide direct translations from CP into the session
-%% fragment of \hgv, called \hgvpi, and from \hgv to \hgvpi. We prove that the original
-%% continuation-passing translation from GV to CP factors through the direct translation to \hgvpi. The
-%% new translations shed light both on the original translation from GV to CP, and on the limitations
-%% in expressiveness of GV.
+  Recently, Wadler presented a continuation-passing translation from a session-typed functional
+  language, GV, to a process calculus based on classical linear logic, CP. However, this translation
+  is one-way: CP is more expressive than GV. We propose an extension of GV, called \hgv, and give
+  translations showing that it is as expressive as CP. The new translations shed light both on the
+  original translation from GV to CP, and on the limitations in expressiveness of GV.
 \end{abstract}
-
-
-%\section{To mention}
-%
-%Processing in EasyChair - number of pages.
-%
-%Examples of how EasyChair processes papers. Caveats (replacement of EC
-%class, errors).
-
-% \pagestyle{empty}
-
 
 \section{Introduction}
 \label{sect:introduction}
@@ -281,36 +227,24 @@ expressiveness gap.
 Linear logic has long been regarded as a potential typing discipline for concurrency.
 Girard~\cite{Girard87} observes that the connectives of linear logic can be interpreted as parallel
 computation. Abramsky~\cite{Abramsky92} and Bellin and Scott~\cite{BellinScott94} interpret linear
-logic proofs as processes in Milner's $\pi$-calculus.
-%
-%% While they provide $\pi$-calculus
-%% interprations of all linear logic proofs, they do not provide a proof-theoretic interpretation for
-%% arbitrary $\pi$-calculus terms.
-%
-Caires and Pfenning~\cite{CairesPfenning10} observe that the multiplicative connectives can be
-interpreted as session types. Their process calculus, based on intuitionistic linear logic, is
-closer to $\pi$-calculus than are traditional session-typed languages. Wadler~\cite{Wadler12} shows
-that a core session-typed linear functional language, GV, patterned after a similar language due to
-Gay and Vasconcelos~\cite{GayVasconcelos10}, may be translated into a process calculus, CP, whose
-terms are proofs in classical linear logic.
-%
-%% Wadler's work shows that linear session-typed programs can be interpreted as proofs in classical
-%% linear logic.
-%
-As GV is less expressive than CP, there are proofs which do not correspond to any GV program.
+logic proofs as processes in Milner's $\pi$-calculus. While they provide $\pi$-calculus
+interprations of all linear logic proofs, they do not provide a proof-theoretic interpretation for
+arbitrary $\pi$-calculus terms. Caires and Pfenning~\cite{CairesPfenning10} observe that the
+multiplicative connectives can be interpreted as session types. Their process calculus, based on
+intuitionistic linear logic, is closer to $\pi$-calculus than are traditional session-typed
+languages. Wadler~\cite{Wadler12} shows that a core session-typed linear functional language, GV,
+patterned after a similar language due to Gay and Vasconcelos~\cite{GayVasconcelos10}, may be
+translated into a process calculus, CP, whose terms are proofs in classical linear logic.  However,
+GV is less expressive than CP: there are proofs which do not correspond to any GV program.
 
-Our primary contribution is \hgv, an extended version of GV sufficient to express all proofs in
-classical linear logic.
-%
-We identify \hgvpi, the session-typed fragment of \hgv, and
-%
-give type-preserving translations from \hgv to \hgvpi ($\lampi{-}$), from \hgvpi to CP
-($\hgvcp{-}$), and from CP to \hgvpi ($\cptogv{-}$).
-%
-%% Factoring the translation of \hgv into CP through $\lampi{-}$ simplifies the presentation, and
-%% illuminates regularities that are not apparent in Wadler's original translation.
-%
-We prove that \hgv, \hgvpi, and CP are all equally expressive.
+Our primary contribution is \hgv (Harmonious GV), a version of GV extended with constructs for
+session forwarding, replication, and polymorphism. We identify \hgvpi, the session-typed fragment of
+\hgv, and give a type-preserving translations from \hgv to \hgvpi ($\lampi{-}$); this translation
+depends crucially on the new constructs of \hgv.  We show that \hgv is sufficient to express all
+linear logic proofs by giving type-preserving translations from \hgvpi to CP ($\hgvcp{-}$), and from
+CP to \hgvpi ($\cptogv{-}$). Factoring the translation of \hgv into CP through $\lampi{-}$
+simplifies the presentation, and illuminates regularities that are not apparent in Wadler's original
+translation of GV into CP.  Finally, we show that \hgv, \hgvpi, and CP are all equally expressive.
 
 %%  We have implemented prototypes for all of these languages.
 
@@ -339,11 +273,8 @@ We prove that \hgv, \hgvpi, and CP are all equally expressive.
 
 This section describes our session-typed language \hgv, constrasting it with Gay and Vasconcelos's
 functional language for asynchronous session types~\cite{GayVasconcelos10}, which we call \last, and
-Wadler's GV~\cite{Wadler12}. 
-%% \hgv's features are closer to those of \last, but it retains a type
-%% system corresponding closely to linear logic. 
-In designing \hgv, we have sometimes opted for programming convenience over uniformity, while
-insisting on a tight correspondence with linear logic.
+Wadler's GV~\cite{Wadler12}.  In designing \hgv, we have opted for programming convenience over
+uniformity, while insisting on a tight correspondence with linear logic.
 %
 The session types of \hgv are given by the following grammar:
 \begin{equations}
@@ -360,12 +291,11 @@ output ($\gvEndOutput$) and input ($\gvEndInput$) session ends; this matches the
 logic, where there is no conveniently self-dual proposition to represent the end of a
 session. Variables and their duals ($X,\gvDual{X}$) and type input ($\gvInputType{X}{S}$) and output
 ($\gvOutputType{X}{S}$), permit definition of polymorphic sessions. We include a notion of
-replicated sessions, corresponding to exponentials in linear logic: a session of type
-$\gvService{S}$ is a ``service'', providing any number of copies of a session of type $S$; a session
-of type $\gvServer{S}$ is the ``server'' providing such a service.
+replicated sessions, corresponding to exponentials in linear logic: a channel of type
+$\gvService{S}$ is a ``service'', providing any number of channels of type $S$; a channel of type
+$\gvServer{S}$ is the ``server'' providing such a service.
 %
-Each session type $S$ has a dual $\gvDual{S}$:
-%, with the expected addition for services and theirservers:
+Each session type $S$ has a dual $\gvDual{S}$ (with the obvious dual for variables $X$):
 \[
 \bl
   \gvDual{\gvOutput{T}{S}} = \gvInput{T}{\gvDual{S}}
@@ -401,11 +331,9 @@ services ($\un{\gvService{S}}$), unlimited functions ($\un{\gvUnFun{T}{U}}$), an
 types ($\un{\gvEndInput}$).
 %
 In GV, $\gvEndInput$ is linear. We choose to make it unlimited in \hgv because then we can dispense
-with GV's explicit $\key{terminate}$ construct (see Appendix~\ref{sect:design}),
-%% yielding a language that is more convenient to
-%% program with,
-while maintaining a strong correspondence with CP---$\gvEndInput$ corresponds to $\cpBottom$ in CP,
-for which weakening and contraction rules are derivable.
+with GV's explicit $\key{terminate}$ construct while maintaining a strong correspondence with
+CP---$\gvEndInput$ corresponds to $\cpBottom$ in CP, for which weakening and contraction are
+derivable.
 
 \begin{figure}
 \begin{mathpar}
@@ -420,17 +348,38 @@ for which weakening and contraction rules are derivable.
 \infr[Contract]
 {\gvj{\Phi,x:T,x':T}{N}{U} \\ \un{T}}
 {\gvj{\Phi,x:T}{\subst{N}{x}{x'}}{U}}
-\\
+\end{mathpar}%
+\hrule
+\begin{mathpar}
+\infr[$\lolli$-I]
+{\gvj{\Phi,x:T}{N}{U}}
+{\gvj{\Phi}{\gvLam{x}{N}}{\gvLinFun{T}{U}}}
 
-%% \end{mathpar}%
-%% \hrule
-%% \begin{mathpar}
+\infr[$\lolli$-E]
+{\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \gvj{\Psi}{M}{T}}
+{\gvj{\Phi,\Psi}{\gvApp{L}{M}}{U}}
+
+\infr[$\to$-I]
+{\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \un{\Phi}}
+{\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
+
+\infr[$\to$-E]
+{\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
+{\gvj{\Phi}{L}{\gvLinFun{T}{U}}}
+
+\infr[$\otimes$-I]
+{\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{U}}
+{\gvj{\Phi,\Psi}{\gvPair{M}{N}}{\gvTimes{T}{U}}}
+
+\infr[$\otimes$-E]
+{\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
+{\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
+\end{mathpar}%
+\hrule
+\begin{mathpar}
 \infr[Send]
 {\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{\gvOutput{T}{S}}}
 {\gvj{\Phi}{\gvSend{M}{N}}{S}}
-%% \infr[Receive]
-%% {\gvj{\Phi}{M}{\gvInput{T}{S}} \\ \gvj{\Psi,x:T,y:S}{N}{V}}
-%% {\gvj{\Phi,\Psi}{\gvReceiveK{x}{y}{M}{N}}{V}}
 
 \infr[Receive]
 {\gvj{\Phi}{M}{\gvInput{T}{S}}}
@@ -480,39 +429,30 @@ for which weakening and contraction rules are derivable.
 
 \end{figure}
 
-Figure~\ref{fig:hgv-typing} gives the terms and typing rules for the session-typed fragment of \hgv;
-the remaining rules are standard, and included in Appendix~\ref{sect:hgv-omitted}. The $\key{fork}$
-construct fills the role of GV's $\key{with}\dots\key{connect}$ structure, but without the asymmetry
-of the latter.  The two are interdefinable, as follows:
+Figure~\ref{fig:hgv-typing} gives the terms and typing rules for \hgv; the first block contains the
+structural rules, the second contains the (standard) rules for lambda terms, and the third contains
+the session-typed fragment.  The $\key{fork}$ construct provides session initiation, filling the
+role of GV's $\key{with}\dots\key{connect}$ structure, but without the asymmetry of the latter.  The
+two are interdefinable, as follows:
 \[
 \gvFork{x}{M} \equiv \gvWith{x}{M}{x} \qquad \gvWith{x}{M}{N} \equiv \gvLet{x}{\gvFork{x}{M}}{N}
 \]
 We add a construct $\gvLink{M}{N}$ to implement channel forwarding; this form is provided in neither
-GV nor \last, but is necessary to match the expressive power of CP. We add terms $\gvSendType{S}{M}$
-and $\gvReceiveType{X}{M}$ to provide session polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$
-for replicated sessions. Note that, as the body $M$ of $\gvServe{x}{M}$ may be arbitrarily
-replicated, it can only refer to the unlimited portion of the environment.
+GV nor \last, but is necessary to match the expressive power of CP. (Note that while we could define
+session forwarding in GV or LAST for any particular session type, it is not possible to do so in a
+generic fashion.)  We add terms $\gvSendType{S}{M}$ and $\gvReceiveType{X}{M}$ to provide session
+polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$ for replicated sessions. Note that, as the
+body $M$ of $\gvServe{x}{M}$ may be arbitrarily replicated, it can only refer to the unlimited
+portion of the environment.
 %
-The rule for $\key{serve}$ parallels that for $\key{fork}$: as $\gvFork{x}{M}$ returns the dual of
-the channel defined by $M$, so $\gvServe{x}{M}$ returns the dual of the server defined by
-replicating the behaviour of $M$.
-
-%% BEGONE, FOUL BEAST!
-%%
-%% The rule for $\key{serve}$ is anomolous because it mentions a service type but no server type. We
-%% choose the current rule because we find it more convenient than the more uniform alternative:
-%% \[
-%% \bl
-%% \infr[Serve']
-%% {\gvj{\Phi}{M}{\gvServer{S}} \\ \gvj{\Psi,y:S}{N}{\gvEndOutput} \\ \un{\Psi}}
-%% {\gvj{\Phi,\Psi}{\gvServeOld{M}{x}{N}}{\gvEndOutput}}
-%% \\[3ex]
-%% \gvServe{y}{M} \equiv \gvFork{x}{\gvServeOld{x}{y}{M}}
-%% \qquad
-%% \gvServeOld{M}{x}{N} \equiv \gvLink{M}{(\gvServe{x}{N})}
-%% \\
-%% \el
-%% \]
+Channels of type $\gvService{S}$ offer arbitrarily many sessions of type $S$; correspondingly,
+channels of type $\gvServer{S}$ must consume arbitrarily many $S$ sessions.  The rule for
+$\gvServe{x}{M}$ parallels that for $\key{fork}$: it defines the server (which replicates $M$) and
+returns the channel by which it may be used (of type $\gvDual{\gvServer{S}} =
+\gvService{\gvDual{S}}$).  As a consequence, there is no term of type $\gvServer{S}$.  We
+experimented with having such a term, but found that it was always used immediately inside a
+$\key{fork}$, suggesting that the construct we adopted would be more natural.  The original
+construct could be recovered by a combination of $\key{fork}$ and $\key{serve}$.
 
 %% We argue that the new features add expressive power to \hgv. Channel forwarding may be implemented in
 %% a type-directed fashion for any monomorphic channel in either GV or \last, but neither allows a
@@ -564,13 +504,11 @@ Formally, this is a translation on derivations. We write type annotations to ind
 introduction and elimination. For all other cases, it is unambiguous to give the translation on
 plain term syntax. Each introduction form translates to an interface $\gvFork{z}{M}$ of type
 $\gvDual{S}$, where $M : \gvEndOutput$ provides the implementation, with $z : S$ bound in $M$.
-%
-The translation on contexts is pointwise.
-%% \begin{equations}
-%% \lampi{x_1:T_1, \dots, x_n:T_n} &=& x_1:\lampi{T_1}, \dots, x_n:\lampi{T_n} \\
-%% \end{equations}%
-%It is straightforward to verify that
-The translation preserves typing.
+We can extend the translation on types to a translation on contexts:
+\begin{equations}
+\lampi{x_1:T_1, \dots, x_n:T_n} &=& x_1:\lampi{T_1}, \dots, x_n:\lampi{T_n} \\
+\end{equations}%
+Finally, it is straightforward to verify that our translation preserves typing.
 \begin{theorem}
 If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 \end{theorem}
@@ -584,19 +522,76 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 \section{From \hgvpi to CP}
 \label{sect:hgvpi-to-cp}
 
-Due to lack of space we omit a complete description of CP. We have included the typing rules in
-Appendix~\ref{sect:cp-typing} and the cut relation $\redto$ in Appendix~\ref{sect:cp-cut}; a full
-description can be found in Wadler's work~\cite{Wadler12}. Note that the propositions of CP are
-exactly those of classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP
-enjoys all of the standard meta theoretic properties of classical linear logic.
-%% , including confluence and weak
-%% normalisation.
+\begin{figure}
+\begin{mathpar}
+\infr[Ax]
+{ }
+{\cpj{\cpLink{w}{x}}{w:\cpDual{A},x:A}}
+
+\infr[Cut]
+{\cpj{P}{\G,x:A} \\ \cpj{Q}{\D,x:\cpDual{A}}}
+{\cpj{\cpCut{x}{P}{Q}}{\G,\D}}
+
+\infr[$\otimes$]
+  {\cpj{P}{\G,y:A} \\ \cpj{Q}{\D,x:B}}
+  {\cpj{\cpOutput{x}{y}{P}{Q}}{\G,\D,x:\cpTimes{A}{B}}}
+
+\infr[$\bindnasrepma$]
+{\cpj{R}{\Theta,y:A,x:B}}
+{\cpj{\cpInput{x}{y}{R}}{\Theta,x:\cpPar{A}{B}}}
+
+\infr[$\oplus$]
+{\cpj{P}{\G,x:A_i}}
+{\cpj{\cpInject{x}{\la_i}{P}}{\G,x:\cpPlus{\la_i:A_i}{i}}}
+
+\infr[$\binampersand$]
+{\row{\cpj{Q_i}{\D,x_i:A_i}}{i}}
+{\cpj{\cpCase{x}{\row{\la_i.Q_i}{i}}}{\D,x:\cpWith{\la_i:A_i}{i}}}
+
+\infr[$!$]
+{\cpj{P}{\cpWhyNot{\G},y:A}}
+{\cpj{\cpServe{x}{y}{P}}{\cpWhyNot{\G},x:\cpOfCourse{A}}}
+
+\infr[$?$]
+{\cpj{Q}{\D,y:A}}
+{\cpj{\cpRequest{x}{y}{Q}}{\D,x:\cpWhyNot{A}}}
+
+\infr[Weaken]
+{\cpj{Q}{\D}}
+{\cpj{Q}{\D,x:\cpWhyNot{A}}}
+
+\infr[Contract]
+{\cpj{Q}{\D,x:\cpWhyNot{A},x':\cpWhyNot{A}}}
+{\cpj{\subst{Q}{x}{x'}}{\D,x:\cpWhyNot{A}}}
+
+\infr[$\exists$]
+{\cpj{P}{\G,x:\subst{B}{A}{X}}}
+{\cpj{\cpSendType{x}{A}{P}}{\G,x:\cpExists{X}{B}}}
+
+\infr[$\forall$]
+{\cpj{Q}{\D,x:B} \\ X \notin \D}
+{\cpj{\cpReceiveType{x}{X}{Q}}{\D,x:\cpForall{X}{B}}}
+
+\infr[$\cpOne$]
+{ }
+{\cpj{\cpEmptyOut{x}}{x:\cpOne}}
+
+\infr[$\cpBottom$]
+{\cpj{P}{\G}}
+{\cpj{\cpEmptyIn{x}{P}}{\G,x:\cpBottom}}
+\end{mathpar}
+\caption{Typing rules for CP}\label{fig:cp-typing}
+\end{figure}
+
+We give the typing rules of CP in Figure~\ref{fig:cp-typing}; a full description of CP, including
+its cut reduction, can be found in Wadler's work~\cite{Wadler12}.  Note that the propositions of CP
+are exactly those of classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP
+enjoys all of the standard meta theoretic properties of classical linear logic, including confluence
+and weak normalisation.
 %
 A minor syntactic difference between our presentation and Wadler's is that our sum ($\oplus$) and
 choice ($\binampersand$) types are $n$-ary, matching the corresponding session types in \hgv,
 whereas he presents binary and nullary versions of sum and choice.
-%% The choice is superficial, but we choose the $n$-ary variants for greater uniformity between
-%% CP and \hgv.
 %
 Duality on CP types ($\cpDual{(-)}$) is standard:
 \[
@@ -628,30 +623,6 @@ We now give a translation from \hgvpi to CP. Post composing this with the embedd
 \hgvpi yields a semantics for \hgv.
 %
 The translation on session types is as follows:
-%% \[
-%% \ba{@{}c@{\qquad}c@{\qquad}c@{}}
-%% \begin{eqs}
-%% \hgvcp{\gvOutput{T}{S}}         &=& \cpTimes{\cpDual{\hgvcp{T}}}{\hgvcp{S}} \\
-%% \hgvcp{\gvInput{T}{S}}          &=& \cpPar{\hgvcp{T}}{\hgvcp{S}} \\
-%% \hgvcp{\gvPlus{\la_i:S_i}{i}}   &=& \cpPlus{\la_i:\hgvcp{S_i}}{i} \\
-%% \hgvcp{\gvChoice{\la_i:S_i}{i}} &=& \cpWith{\la_i:\hgvcp{S_i}}{i} \\
-%% \end{eqs}
-%% &
-%% \begin{eqs}
-%% \hgvcp{\gvEndOutput}  &=& \cpOne \\
-%% \hgvcp{\gvEndInput}   &=& \cpBottom \\
-%% \hgvcp{\gvServer{S}}  &=& \cpOfCourse{\hgvcp{S}} \\
-%% \hgvcp{\gvService{S}} &=& \cpWhyNot{\hgvcp{S}} \\
-%% \end{eqs}
-%% &
-%% \begin{eqs}
-%% \hgvcp{\gvOutputType{X}{S}} &=& \cpExists{X}{\hgvcp{S}} \\
-%% \hgvcp{\gvInputType{X}{S}}  &=& \cpForall{X}{\hgvcp{S}} \\
-%% \hgvcp{X}                   &=& X \\
-%% \hgvcp{\gvDual{X}}          &=& \cpDual{X} \\
-%% \end{eqs}
-%% \ea
-%% \]
 \[
 \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
@@ -687,9 +658,9 @@ $\cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}$.
 %% translation.
 
 The translation on terms is formally specified as a CPS translation on derivations as in Wadler's
-presentation. Due to lack of space, we write only the translation of weakening and contraction for
-$\gvEndInput$ in this form; the other constructs depend only on the immediate syntactic structure,
-so we abbreviate their translations as mappings on plain terms:
+presentation. We provide the full translations of weakening and contraction for $\gvEndInput$, as
+these steps are implicit in the syntax of GV terms.  The other constructs depend only on the
+immediate syntactic structure, so we abbreviate their translations as mappings on plain terms:
 %
 \begin{equations}
 \hgvcpl \inferrule{\gvj{\Phi}{N}{S}}{\gvj{\Phi,x:\gvEndInput}{N}{S}} \hgvcpr\!\!z &=&
@@ -727,11 +698,10 @@ Channel $z$ provides a continuation, consuming the output of the process represe
 \hgvpi term.
 %
 The translation on contexts is pointwise.
-%% \begin{equations}
-%% \hgvcp{x_1:T_1, \dots, x_n:T_n} &=& x_1:\hgvcp{T_1}, \dots, x_n:\hgvcp{T_n} \\
-%% \end{equations}%
-%It is straightforward to verify that
-The translation preserves typing.
+\begin{equations}
+\hgvcp{x_1:T_1, \dots, x_n:T_n} &=& x_1:\hgvcp{T_1}, \dots, x_n:\hgvcp{T_n} \\
+\end{equations}%
+As with the translation from \hgv to \hgvpi, we can show that this translation preserves typing.
 \begin{theorem}
 If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 \end{theorem}
@@ -793,7 +763,11 @@ follows:
 \end{eqs}
 \ea
 \]
-The translation on terms is as follows:
+The translation on terms is as follows.  We have made use of $\key{let}$ expressions to simplify the
+presentation of the translation; these can be expanded to \hgvpi by observing that
+\[
+\gvLet{x}{M}{N} \equiv \lampi{(\lambda x.N) M} \equiv \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}.
+\]
 \[
 %\ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
@@ -831,28 +805,8 @@ The translation on terms is as follows:
 \end{eqs}
 %\ea
 \]
-%
-As a convenience we use the following syntactic sugar in the translation:
-\[
-\gvLet{x}{M}{N} \equiv \lampi{(\lambda x.N) M} \equiv \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}
-\]
-%
-%% This may look surprising, but the $\gvLet{x}{M}{N}$ is commonly used as syntactic sugar for
-%% $\gvApp{(\gvLam{x}{N})}{M}$, and the right hand side is identical to
-%% $\lampi{\gvApp{(\gvLam{x}{N})}{M}}$ where the translation $\lampi{-}$ is defined in the next
-%% section.
-%
-%% Judgements
-%% \begin{equations}
-%% \cptogv{\cpj{P}{\G}} = \gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}
-%% \end{equations}
-%
-The translation on contexts is pointwise.
-%% \begin{equations}
-%% \cptogv{x_1:A_1, \dots, x_n:A_n} &=& x_1:\cptogv{A_1}, \dots, x_n:\cptogv{A_n} \\
-%% \end{equations}%
-%It is straightforward to verify that
-The translation preserves typing.
+Again, we can extend the translation on types to a translation on contexts, and show that the
+translation preserves typing.
 \begin{theorem}
 If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 \end{theorem}
@@ -861,9 +815,8 @@ If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 \section{Correctness}
 \label{sect:correctness}
 
-If we extend $\hgvcp{-}$ to non-session types (Appendix~\ref{sect:hgvcp-ext}), as in Wadler's
-original presentation, then it is straightforward to show that this monolithic translation factors
-through $\lampi{-}$.
+If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentation, then it is
+straightforward to show that this monolithic translation factors through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
 $\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$
@@ -919,144 +872,35 @@ is sufficient to encode arbitrary linear logic proofs, completing the correspond
 logic and session types. We have also given an embedding of all of \hgv into its session-typed
 fragment, simplifying translation from \hgv to CP.
 
-We highlight several areas of future work.
-%% \begin{itemize}
-%% \item
-The semantics of \hgv is given only by cut elimination in CP. We would like to give \hgv a semantics
-directly, in terms of reductions of configurations of processes, and then prove a formal
-correspondence with cut elimination in CP.
-%% \item
-Replication has limited expressive power compared to recursion
-%% ; in particular, it cannot
-%%   express services whose behavior changes over time or in response to client requests.
-  We believe that the study of fixed points in linear logic provides a mechanism to support more
-  expressive recursive behavior without sacrificing the logical interpretation of \hgv.
-%% \item
- As classical linear logic proofs, and hence CP processes, enjoy confluence, \hgv programs are
-  deterministic. We hope to identify natural extensions of \hgv that give rise to non-determinism,
-  and thus allow programs to exhibit more interesting concurrent behaviour, while preserving the
-  underlying connection to linear logic.
-%% \end{itemize}
+We highlight several areas of future work.  First, the semantics of \hgv is given only by cut
+elimination in CP. We would like to give \hgv a semantics directly, in terms of reductions of
+configurations of processes, and then prove a formal correspondence with cut elimination in CP.
+Second, replication has limited expressive power compared to recursion; in particular, it cannot
+express services whose behavior changes over time or in response to client requests.  We believe
+that the study of fixed points in linear logic provides a mechanism to support more expressive
+recursive behavior without sacrificing the logical interpretation of \hgv.  Finally, as classical
+linear logic proofs, and hence CP processes, enjoy confluence, \hgv programs are deterministic. We
+hope to identify natural extensions of \hgv that give rise to non-determinism, and thus allow
+programs to exhibit more interesting concurrent behaviour, while preserving the underlying
+connection to linear logic.
 
 \paragraph{Acknowledgements}
-We would like to thank Philip Wadler for helpful feedback. This work was funded by EPSRC grant
-number EP/K034413/1.
+We would like to thank Philip Wadler for his suggestions on the direction of this work, and for his
+helpful feedback on the results. This work was funded by EPSRC grant number EP/K034413/1.
 
 \label{sect:bib}
 \bibliographystyle{plain}
-%\bibliographystyle{alpha}
-%\bibliographystyle{unsrt}
-%\bibliographystyle{abbrv}
 \bibliography{cpgv}
 
+
+\end{document}
 
 
 \appendix
 
-\section{Omitted typing rules for HGV}\label{sect:hgv-omitted}
-\label{sect:hgv-extra-rules}
-
-\begin{mathpar}
-\infr[$\lolli$-I]
-{\gvj{\Phi,x:T}{N}{U}}
-{\gvj{\Phi}{\gvLam{x}{N}}{\gvLinFun{T}{U}}}
-
-\infr[$\lolli$-E]
-{\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \gvj{\Psi}{M}{T}}
-{\gvj{\Phi,\Psi}{\gvApp{L}{M}}{U}}
-
-\infr[$\to$-I]
-{\gvj{\Phi}{L}{\gvLinFun{T}{U}} \\ \un{\Phi}}
-{\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
-
-\infr[$\to$-E]
-{\gvj{\Phi}{L}{\gvUnFun{T}{U}}}
-{\gvj{\Phi}{L}{\gvLinFun{T}{U}}}
-
-\infr[$\otimes$-I]
-{\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{U}}
-{\gvj{\Phi,\Psi}{\gvPair{M}{N}}{\gvTimes{T}{U}}}
-
-\infr[$\otimes$-E]
-{\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
-{\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
-%%
-%% \infr[Unit]
-%% { }
-%% {\gvj{}{\gvUnit}{\gvUnitType}}
-%% \end{mathpar}%
-%% \hrule
-%% \begin{mathpar}
-\end{mathpar}
-
 \section{Typing rules for CP}
 \label{sect:cp-typing}
 
-\begin{mathpar}
-\infr[Ax]
-{ }
-{\cpj{\cpLink{w}{x}}{w:\cpDual{A},x:A}}
-
-\infr[Cut]
-{\cpj{P}{\G,x:A} \\ \cpj{Q}{\D,x:\cpDual{A}}}
-{\cpj{\cpCut{x}{P}{Q}}{\G,\D}}
-
-\infr[$\otimes$]
-  {\cpj{P}{\G,y:A} \\ \cpj{Q}{\D,x:B}}
-  {\cpj{\cpOutput{x}{y}{P}{Q}}{\G,\D,x:\cpTimes{A}{B}}}
-
-\infr[$\bindnasrepma$]
-{\cpj{R}{\Theta,y:A,x:B}}
-{\cpj{\cpInput{x}{y}{R}}{\Theta,x:\cpPar{A}{B}}}
-
-\infr[$\oplus$]
-{\cpj{P}{\G,x:A_i}}
-{\cpj{\cpInject{x}{\la_i}{P}}{\G,x:\cpPlus{\la_i:A_i}{i}}}
-
-\infr[$\binampersand$]
-{\row{\cpj{Q_i}{\D,x_i:A_i}}{i}}
-{\cpj{\cpCase{x}{\row{\la_i.Q_i}{i}}}{\D,x:\cpWith{\la_i:A_i}{i}}}
-
-\infr[$!$]
-{\cpj{P}{\cpWhyNot{\G},y:A}}
-{\cpj{\cpServe{x}{y}{P}}{\cpWhyNot{\G},x:\cpOfCourse{A}}}
-
-\infr[$?$]
-{\cpj{Q}{\D,y:A}}
-{\cpj{\cpRequest{x}{y}{Q}}{\D,x:\cpWhyNot{A}}}
-
-\infr[Weaken]
-{\cpj{Q}{\D}}
-{\cpj{Q}{\D,x:\cpWhyNot{A}}}
-
-\infr[Contract]
-{\cpj{Q}{\D,x:\cpWhyNot{A},x':\cpWhyNot{A}}}
-{\cpj{\subst{Q}{x}{x'}}{\D,x:\cpWhyNot{A}}}
-
-\infr[$\exists$]
-{\cpj{P}{\G,x:\subst{B}{A}{X}}}
-{\cpj{\cpSendType{x}{A}{P}}{\G,x:\cpExists{X}{B}}}
-
-\infr[$\forall$]
-{\cpj{Q}{\D,x:B} \\ X \notin \D}
-{\cpj{\cpReceiveType{x}{X}{Q}}{\D,x:\cpForall{X}{B}}}
-
-\infr[$\cpOne$]
-{ }
-{\cpj{\cpEmptyOut{x}}{x:\cpOne}}
-
-\infr[$\cpBottom$]
-{\cpj{P}{\G}}
-{\cpj{\cpEmptyIn{x}{P}}{\G,x:\cpBottom}}
-%
-%% \infr[$\cpZero$]
-%% {\cpj{}{}}
-%% {\cpj{}{}}
-%%
-%% \infr[$\cpTop$]
-%% {\cpj{}{}}
-%% {\cpj{}{}}
-\end{mathpar}
 
 \section{Cut reduction for CP}
 \label{sect:cp-cut}
@@ -1611,7 +1455,9 @@ indicate $\to$ introduction and elimination.
 %\printindex
 
 %------------------------------------------------------------------------------
-\end{document}
+
+d{document}
+
 
 Composing the translations
 
