@@ -228,7 +228,7 @@ Linear logic has long been regarded as a potential typing discipline for concurr
 Girard~\cite{Girard87} observes that the connectives of linear logic can be interpreted as parallel
 computation. Abramsky~\cite{Abramsky92} and Bellin and Scott~\cite{BellinScott94} interpret linear
 logic proofs as processes in Milner's $\pi$-calculus. While they provide $\pi$-calculus
-interprations of all linear logic proofs, they do not provide a proof-theoretic interpretation for
+interpretations of all linear logic proofs, they do not provide a proof-theoretic interpretation for
 arbitrary $\pi$-calculus terms. Caires and Pfenning~\cite{CairesPfenning10} observe that the
 multiplicative connectives can be interpreted as session types. Their process calculus, based on
 intuitionistic linear logic, is closer to $\pi$-calculus than are traditional session-typed
@@ -271,7 +271,7 @@ translation of GV into CP.  Finally, we show that \hgv, \hgvpi, and CP are all e
 \section{The \hgv Language}
 \label{sect:hgv}
 
-This section describes our session-typed language \hgv, constrasting it with Gay and Vasconcelos's
+This section describes our session-typed language \hgv, contrasting it with Gay and Vasconcelos's
 functional language for asynchronous session types~\cite{GayVasconcelos10}, which we call \last, and
 Wadler's GV~\cite{Wadler12}.  In designing \hgv, we have opted for programming convenience over
 uniformity, while insisting on a tight correspondence with linear logic.
@@ -917,9 +917,9 @@ In addition we highlight several other areas of future work.  First, the semanti
 only by cut elimination in CP. We would like to give \hgv a semantics directly, in terms of
 reductions of configurations of processes, and then prove a formal correspondence with cut
 elimination in CP.  Second, replication has limited expressive power compared to recursion; in
-particular, it cannot express services whose behavior changes over time or in response to client
+particular, it cannot express services whose behaviour changes over time or in response to client
 requests.  We believe that the study of fixed points in linear logic provides a mechanism to support
-more expressive recursive behavior without sacrificing the logical interpretation of \hgv.  Finally,
+more expressive recursive behaviour without sacrificing the logical interpretation of \hgv.  Finally,
 as classical linear logic proofs, and hence CP processes, enjoy confluence, \hgv programs are
 deterministic. We hope to identify natural extensions of \hgv that give rise to non-determinism, and
 thus allow programs to exhibit more interesting concurrent behaviour, while preserving the
@@ -1051,7 +1051,7 @@ variables of type $\gvEndInput$.
 
 \paragraph{Service creation vs server definition}
 
-The typing rule for $\key{serve}$ is anomolous because it has a service type in its conclusion
+The typing rule for $\key{serve}$ is anomalous because it has a service type in its conclusion
 rather than a server type in a premise. An alternative is to provide a $\key{defServer}$ construct
 that specifies the definition of a server. We prefer the former rule because we find it more
 convenient to program with than the more uniform alternative.
@@ -1774,3 +1774,9 @@ G |- receiveType M : S'
 %% %
 %% %% In fact, we will be more interested in going the other way,
 %% %% translating away functions as sessions.
+
+%%  LocalWords:  Lindley Wadler GV CP Girard Abramsky Bellin Milner's Caires Pfenning Vasconcelos
+%%  LocalWords:  intuitionistic polymorphism Wadler's Vasconcelos's duals exponentials dualisation
+%%  LocalWords:  GV's SendType ReceiveType interdefinable homomorphic Ax ary nullary dualised et al
+%%  LocalWords:  pointwise expressivity Felleisen's Felleisen Dardha EPSRC EP cpgv defServer
+%%  LocalWords:  ServeDef
