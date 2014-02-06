@@ -445,19 +445,21 @@ two are interdefinable, as follows:
 We add a construct $\gvLink{M}{N}$ to implement channel forwarding; this form is provided in neither
 GV nor \last, but is necessary to match the expressive power of CP. (Note that while we could define
 session forwarding in GV or LAST for any particular session type, it is not possible to do so in a
-generic fashion.)  We add terms $\gvSendType{S}{M}$ and $\gvReceiveType{X}{M}$ to provide session
+generic fashion.) We add terms $\gvSendType{S}{M}$ and $\gvReceiveType{X}{M}$ to provide session
 polymorphism, and $\gvServe{x}{M}$ and $\gvRequest{M}$ for replicated sessions. Note that, as the
 body $M$ of $\gvServe{x}{M}$ may be arbitrarily replicated, it can only refer to the unlimited
 portion of the environment.
 %
 Channels of type $\gvService{S}$ offer arbitrarily many sessions of type $S$; correspondingly,
-channels of type $\gvServer{S}$ must consume arbitrarily many $S$ sessions.  The rule for
+channels of type $\gvServer{S}$ must consume arbitrarily many $S$ sessions. The rule for
 $\gvServe{x}{M}$ parallels that for $\key{fork}$: it defines the server (which replicates $M$) and
 returns the channel by which it may be used (of type $\gvDual{\gvServer{S}} =
-\gvService{\gvDual{S}}$).  As a consequence, there is no term of type $\gvServer{S}$.  We
-experimented with having such a term, but found that it was always used immediately inside a
-$\key{fork}$, suggesting that the construct we adopted would be more natural.  The original
-construct could be recovered by a combination of $\key{fork}$ and $\key{serve}$.
+\gvService{\gvDual{S}}$). As a consequence, there is no rule involving type $\gvServer{S}$. We
+experimented with having such a rule, but found that it was always used immediately inside a
+$\key{fork}$, while providing no extra expressive power. Hence we opted for the rule presented here.
+
+%% , suggesting that the construct we adopt here is more natural. The original construct may be
+%% recovered by a combination of $\key{fork}$ and $\key{serve}$.
 
 %% We argue that the new features add expressive power to \hgv. Channel forwarding may be implemented in
 %% a type-directed fashion for any monomorphic channel in either GV or \last, but neither allows a
@@ -664,7 +666,7 @@ $\cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}$.
 
 The translation on terms is formally specified as a CPS translation on derivations as in Wadler's
 presentation. We provide the full translations of weakening and contraction for $\gvEndInput$, as
-these steps are implicit in the syntax of GV terms.  The other constructs depend only on the
+these steps are implicit in the syntax of \hgv terms. The other constructs depend only on the
 immediate syntactic structure, so we abbreviate their translations as mappings on plain terms:
 %
 \begin{equations}
@@ -708,7 +710,7 @@ The translation on contexts is pointwise.
 \end{equations}%
 As with the translation from \hgv to \hgvpi, we can show that this translation preserves typing.
 \begin{theorem}
-If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
+If $\gvj{\Phi}{M}{S}$ then $\cpj{\hgvcp{M}z}{\hgvcp{\Phi},z:\cpDual{\hgvcp{S}}}$.
 \end{theorem}
 
 \section{From CP to \hgvpi}
@@ -768,8 +770,8 @@ follows:
 \end{eqs}
 \ea
 \]
-The translation on terms is as follows.  We have made use of $\key{let}$ expressions to simplify the
-presentation of the translation; these can be expanded to \hgvpi by observing that
+The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
+can be expanded to \hgvpi by observing that:
 \[
 \gvLet{x}{M}{N} \equiv \lampi{(\lambda x.N) M} \equiv \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}.
 \]
@@ -820,8 +822,9 @@ If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 \section{Correctness}
 \label{sect:correctness}
 
-If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentation, then it is
-straightforward to show that this monolithic translation factors through $\lampi{-}$.
+If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentation
+(Figure~\ref{fig:hgvcp-ext}), then it is straightforward to show that this monolithic translation
+factors through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
 $\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$
@@ -841,6 +844,8 @@ If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \redto^* P
 \noindent
 Together, Theorem~\ref{th:factor}~and~\ref{th:soundness} tell us that \hgv, \hgvpi, and CP are
 equally expressive.
+
+
 
 %% SL: commented out for space-saving
 
@@ -896,6 +901,37 @@ helpful feedback on the results. This work was funded by EPSRC grant number EP/K
 \label{sect:bib}
 \bibliographystyle{plain}
 \bibliography{cpgv}
+
+\begin{figure}
+\[
+\ba{@{}cc@{}}
+\begin{eqs}
+\multicolumn{3}{@{}l@{}}{\textbf{Types}} \\
+\hgvcp{\gvLinFun{T}{U}} &=& \cpDual{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})} \\[2ex]
+\hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\[2ex]
+\hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\[2ex]
+\end{eqs}%
+&
+\begin{eqs}
+\multicolumn{3}{@{}l@{}}{\textbf{Terms}} \\
+\hgvcp{\gvLam{x}{N}}z &=& \cpInput{z}{x}{\hgvcp{N}z} \\
+\hgvcp{\gvApp{L}{M}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpOutput{y}{x}{\hgvcp{M}x}{\cpLink{y}{z}}} \\
+\hgvcp{L : \gvUnFun{T}{U}}z &=& \cpServe{z}{y}{\hgvcp{L}y} \\
+\hgvcp{L : \gvLinFun{T}{U}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpRequest{y}{x}{\cpLink{x}{z}}} \\
+\hgvcp{\gvPair{M}{N}}z &=& \cpOutput{z}{y}{\hgvcp{M}y}{\hgvcp{N}z} \\
+\hgvcp{\gvLet{\gvPair{x}{y}}{M}{N}}z
+  &=& \cpCut{y}{\hgvcp{M}y}{\cpInput{y}{x}{\hgvcp{N}z}} \\
+\end{eqs}%
+\ea
+\]
+\footnotesize {The outer duals appear in the type translation because, as in
+  Section~\ref{sect:hgv-to-hgvpi}, we must expose \emph{interfaces} rather than implementations of
+  simulated types. As in the definition of $\lampi{-}$ in Section~\ref{sect:hgv-to-hgvpi}, we write
+  type annotations to indicate $\to$ introduction and elimination.}
+
+\caption{Extension of $\hgvcp{-}$ to non-session types}
+\label{fig:hgvcp-ext}
+\end{figure}
 
 
 \end{document}
