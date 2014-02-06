@@ -336,6 +336,7 @@ CP---$\gvEndInput$ corresponds to $\cpBottom$ in CP, for which weakening and con
 derivable.
 
 \begin{figure}
+Structural rules
 \begin{mathpar}
 \infr[Id]
 { }
@@ -349,7 +350,9 @@ derivable.
 {\gvj{\Phi,x:T,x':T}{N}{U} \\ \un{T}}
 {\gvj{\Phi,x:T}{\subst{N}{x}{x'}}{U}}
 \end{mathpar}%
-\hrule
+%% \hrule
+%% \medskip
+Lambda rules
 \begin{mathpar}
 \infr[$\lolli$-I]
 {\gvj{\Phi,x:T}{N}{U}}
@@ -375,7 +378,9 @@ derivable.
 {\gvj{\Phi}{M}{\gvTimes{T}{U}} \\ \gvj{\Psi,x:T,y:U}{N}{V}}
 {\gvj{\Phi,\Psi}{\gvLet{\gvPair{x}{y}}{M}{N}}{V}}
 \end{mathpar}%
-\hrule
+%% \hrule
+%% \medskip
+Session rules
 \begin{mathpar}
 \infr[Send]
 {\gvj{\Phi}{M}{T} \\ \gvj{\Psi}{N}{\gvOutput{T}{S}}}
