@@ -603,25 +603,25 @@ whereas he presents binary and nullary versions of sum and choice.
 Duality on CP types ($\cpDual{(-)}$) is standard:
 \[
 \bl
-  \cpDual{(\cpTimes{A}{B})} = \cpPar{\cpDual{A}}{\cpDual{B}}
+  \cpDual{(\cpTimes{A}{B})} \!=\! \cpPar{\cpDual{A}}{\cpDual{B}}
 ~~
-  \cpDual{(\cpPlus{\la_i:A_i}{i})} = \cpWith{\la_i:\cpDual{A_i}}{i}
+  \cpDual{(\cpPlus{\la_i:A_i}{i})} \!=\! \cpWith{\la_i:\cpDual{A_i}}{i}
 ~~
-  \cpDual{\cpOne} = \cpBottom
+  \cpDual{\cpOne} \!=\! \cpBottom
 ~~
-  \cpDual{(\cpExists{X}{B})} = \cpForall{X}{\cpDual{B}}
+  \cpDual{(\cpExists{X}{B})} \!=\! \cpForall{X}{\cpDual{B}}
 ~~
-  \cpDual{(\cpOfCourse{A})} = \cpWhyNot{\cpDual{A}}
+  \cpDual{(\cpOfCourse{A})} \!=\! \cpWhyNot{\cpDual{A}}
 \\
-  \cpDual{(\cpPar{A}{B})} = \cpTimes{\cpDual{A}}{\cpDual{B}}
+  \cpDual{(\cpPar{A}{B})} \!=\! \cpTimes{\cpDual{A}}{\cpDual{B}}
 ~~
-  \cpDual{(\cpWith{\la_i:A_i}{i})} = \cpPlus{\la_i:\cpDual{A_i}}{i}
+  \cpDual{(\cpWith{\la_i:A_i}{i})} \!=\! \cpPlus{\la_i:\cpDual{A_i}}{i}
 ~~
-  \cpDual{\cpBottom} = \cpOne
+  \cpDual{\cpBottom} \!=\! \cpOne
 ~~
-  \cpDual{(\cpForall{X}{B})} = \cpExists{X}{\cpDual{B}}
+  \cpDual{(\cpForall{X}{B})} \!=\! \cpExists{X}{\cpDual{B}}
 ~~
-  \cpDual{(\cpWhyNot{A})} = \cpOfCourse{\cpDual{A}}
+  \cpDual{(\cpWhyNot{A})} \!=\! \cpOfCourse{\cpDual{A}}
 \\
 \el
 \]
@@ -771,7 +771,7 @@ follows:
 \ea
 \]
 The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
-can be expanded to \hgvpi by observing that:
+are expanded to \hgvpi as follows:
 \[
 \gvLet{x}{M}{N} \equiv \lampi{(\lambda x.N) M} \equiv \gvSend{M}{(\gvFork{z}{\gvReceiveK{x}{z}{z}{\gvLink{N}{z}}})}.
 \]
