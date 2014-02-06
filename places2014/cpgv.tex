@@ -590,9 +590,9 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 \caption{Typing rules for CP}\label{fig:cp-typing}
 \end{figure}
 
-We give the typing rules of CP in Figure~\ref{fig:cp-typing}. The cut relation $\redto$ is given in
-Appendix~\ref{sect:cp-cut}; a detailed description of CP can be found in Wadler's
-work~\cite{Wadler12}.  Note that the propositions of CP are exactly those of classical linear logic,
+We present the typing rules of CP in Figure~\ref{fig:cp-typing} and the cut relation $\redto$ in
+Appendix~\ref{sect:cp-cut}. A detailed description of CP can be found in Wadler's
+work~\cite{Wadler12}. Note that the propositions of CP are exactly those of classical linear logic,
 as are the cut rules (if we ignore the terms). Thus, CP enjoys all of the standard meta theoretic
 properties of classical linear logic, including confluence and weak normalisation.
 %
@@ -867,6 +867,38 @@ is more expressive, in the Felleisen sense, than CP.
 %% \end{equations}
 
 
+\begin{figure}
+\[
+\ba{@{}cc@{}}
+\begin{eqs}
+\multicolumn{3}{@{}l@{}}{\textbf{Types}} \\
+\hgvcp{\gvLinFun{T}{U}} &=& \cpDual{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})} \\[2ex]
+\hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\[2ex]
+\hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\[2ex]
+\end{eqs}%
+&
+\begin{eqs}
+\multicolumn{3}{@{}l@{}}{\textbf{Terms}} \\
+\hgvcp{\gvLam{x}{N}}z &=& \cpInput{z}{x}{\hgvcp{N}z} \\
+\hgvcp{\gvApp{L}{M}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpOutput{y}{x}{\hgvcp{M}x}{\cpLink{y}{z}}} \\
+\hgvcp{L : \gvUnFun{T}{U}}z &=& \cpServe{z}{y}{\hgvcp{L}y} \\
+\hgvcp{L : \gvLinFun{T}{U}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpRequest{y}{x}{\cpLink{x}{z}}} \\
+\hgvcp{\gvPair{M}{N}}z &=& \cpOutput{z}{y}{\hgvcp{M}y}{\hgvcp{N}z} \\
+\hgvcp{\gvLet{\gvPair{x}{y}}{M}{N}}z
+  &=& \cpCut{y}{\hgvcp{M}y}{\cpInput{y}{x}{\hgvcp{N}z}} \\
+\end{eqs}%
+\ea
+\]
+\footnotesize {The outer duals appear in the type translation because, as in
+  Section~\ref{sect:hgv-to-hgvpi}, we must expose \emph{interfaces} rather than implementations of
+  simulated types. As in the definition of $\lampi{-}$ in Section~\ref{sect:hgv-to-hgvpi}, we write
+  type annotations to indicate $\to$ introduction and elimination.}
+
+\caption{Extension of $\hgvcp{-}$ to non-session types}
+\label{fig:hgvcp-ext}
+\end{figure}
+
+
 \section{Conclusions and Future Work}
 \label{sect:conclusion}
 
@@ -900,37 +932,6 @@ helpful feedback on the results. This work was funded by EPSRC grant number EP/K
 \label{sect:bib}
 \bibliographystyle{plain}
 \bibliography{cpgv}
-
-\begin{figure}
-\[
-\ba{@{}cc@{}}
-\begin{eqs}
-\multicolumn{3}{@{}l@{}}{\textbf{Types}} \\
-\hgvcp{\gvLinFun{T}{U}} &=& \cpDual{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})} \\[2ex]
-\hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\[2ex]
-\hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\[2ex]
-\end{eqs}%
-&
-\begin{eqs}
-\multicolumn{3}{@{}l@{}}{\textbf{Terms}} \\
-\hgvcp{\gvLam{x}{N}}z &=& \cpInput{z}{x}{\hgvcp{N}z} \\
-\hgvcp{\gvApp{L}{M}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpOutput{y}{x}{\hgvcp{M}x}{\cpLink{y}{z}}} \\
-\hgvcp{L : \gvUnFun{T}{U}}z &=& \cpServe{z}{y}{\hgvcp{L}y} \\
-\hgvcp{L : \gvLinFun{T}{U}}z &=& \cpCut{y}{\hgvcp{L}y}{\cpRequest{y}{x}{\cpLink{x}{z}}} \\
-\hgvcp{\gvPair{M}{N}}z &=& \cpOutput{z}{y}{\hgvcp{M}y}{\hgvcp{N}z} \\
-\hgvcp{\gvLet{\gvPair{x}{y}}{M}{N}}z
-  &=& \cpCut{y}{\hgvcp{M}y}{\cpInput{y}{x}{\hgvcp{N}z}} \\
-\end{eqs}%
-\ea
-\]
-\footnotesize {The outer duals appear in the type translation because, as in
-  Section~\ref{sect:hgv-to-hgvpi}, we must expose \emph{interfaces} rather than implementations of
-  simulated types. As in the definition of $\lampi{-}$ in Section~\ref{sect:hgv-to-hgvpi}, we write
-  type annotations to indicate $\to$ introduction and elimination.}
-
-\caption{Extension of $\hgvcp{-}$ to non-session types}
-\label{fig:hgvcp-ext}
-\end{figure}
 
 \newpage
 \appendix
