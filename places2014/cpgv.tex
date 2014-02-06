@@ -846,7 +846,7 @@ Together, Theorem~\ref{th:factor}~and~\ref{th:soundness} tell us that \hgv, \hgv
 equally expressive, in the sense that every $X$ program can always be translated to an equivalent
 $Y$ program, where $X,Y \in \{$\hgv, \hgvpi, CP$\}$.
 
-Here our notion of expressiveness is agnostic to the nature of the translations. It is instructive
+Here our notion of expressivity is agnostic to the nature of the translations. It is instructive
 also to consider Felleisen's more refined notion of expressivity~\cite{Felleisen91}. Both
 $\lampi{-}$ and $\cptogv{-}$ are local translations, thus both \hgv and CP are
 \emph{macro-expressible}~\cite{Felleisen91} in \hgvpi. However, the need for a global CPS
@@ -867,7 +867,6 @@ is more expressive, in the Felleisen sense, than CP.
 %% \end{equations}
 
 
-
 \section{Conclusions and Future Work}
 \label{sect:conclusion}
 
@@ -877,17 +876,22 @@ is sufficient to encode arbitrary linear logic proofs, completing the correspond
 logic and session types. We have also given an embedding of all of \hgv into its session-typed
 fragment, simplifying translation from \hgv to CP.
 
-We highlight several areas of future work.  First, the semantics of \hgv is given only by cut
-elimination in CP. We would like to give \hgv a semantics directly, in terms of reductions of
-configurations of processes, and then prove a formal correspondence with cut elimination in CP.
-Second, replication has limited expressive power compared to recursion; in particular, it cannot
-express services whose behavior changes over time or in response to client requests.  We believe
-that the study of fixed points in linear logic provides a mechanism to support more expressive
-recursive behavior without sacrificing the logical interpretation of \hgv.  Finally, as classical
-linear logic proofs, and hence CP processes, enjoy confluence, \hgv programs are deterministic. We
-hope to identify natural extensions of \hgv that give rise to non-determinism, and thus allow
-programs to exhibit more interesting concurrent behaviour, while preserving the underlying
-connection to linear logic.
+Dardha et al~\cite{DardhaGS12} offers an alternative foundation for session types through a CPS
+translation of $\pi$-calculus with session types into a linear $\pi$-calculus. There appear to be
+strong similarities between their CPS translation and ours. We would like to make the correspondence
+precise by studying translations between their systems and ours.
+
+In addition we highlight several other areas of future work.  First, the semantics of \hgv is given
+only by cut elimination in CP. We would like to give \hgv a semantics directly, in terms of
+reductions of configurations of processes, and then prove a formal correspondence with cut
+elimination in CP.  Second, replication has limited expressive power compared to recursion; in
+particular, it cannot express services whose behavior changes over time or in response to client
+requests.  We believe that the study of fixed points in linear logic provides a mechanism to support
+more expressive recursive behavior without sacrificing the logical interpretation of \hgv.  Finally,
+as classical linear logic proofs, and hence CP processes, enjoy confluence, \hgv programs are
+deterministic. We hope to identify natural extensions of \hgv that give rise to non-determinism, and
+thus allow programs to exhibit more interesting concurrent behaviour, while preserving the
+underlying connection to linear logic.
 
 \paragraph{Acknowledgements}
 We would like to thank Philip Wadler for his suggestions on the direction of this work, and for his
