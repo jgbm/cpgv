@@ -843,20 +843,15 @@ If $\cpj{P}{\G}$ then $\cpCut{z}{\cpEmptyOut{z}}{\hgvcp{\cptogv{P}}z} \redto^* P
 \end{theorem}
 \noindent
 Together, Theorem~\ref{th:factor}~and~\ref{th:soundness} tell us that \hgv, \hgvpi, and CP are
-equally expressive.
+equally expressive, in the sense that every $X$ program can always be translated to an equivalent
+$Y$ program, where $X,Y \in \{$\hgv, \hgvpi, CP$\}$.
 
-
-
-%% SL: commented out for space-saving
-
-%% , in the sense that every $X$ program can always be translated to an equivalent
-%% $Y$ program, where $X,Y \in \{$\hgv, \hgvpi, CP$\}$.
-
-%% It is interesting also to consider Felleisen's more refined notion of
-%% expressivity~\cite{Felleisen91}.  Both $\lampi{-}$ and $\cptogv{-}$ are local translations, thus
-%% both \hgv and CP are macro-expressible~\cite{Felleisen91} in \hgvpi. However, the apparent need for
-%% CPS in translating from \hgvpi to CP indicates that \hgvpi is not macro-expressible in CP; hence
-%% \hgvpi is more expressive (in the Felleisen sense) than CP.
+Here our notion of expressiveness is agnostic to the nature of the translations. It is instructive
+also to consider Felleisen's more refined notion of expressivity~\cite{Felleisen91}. Both
+$\lampi{-}$ and $\cptogv{-}$ are local translations, thus both \hgv and CP are
+\emph{macro-expressible}~\cite{Felleisen91} in \hgvpi. However, the need for a global CPS
+translation from \hgvpi to CP illustrates that \hgvpi is not macro-expressible in CP; hence \hgvpi
+is more expressive, in the Felleisen sense, than CP.
 %
 
 
