@@ -590,11 +590,12 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 \caption{Typing rules for CP}\label{fig:cp-typing}
 \end{figure}
 
-We present the typing rules of CP in Figure~\ref{fig:cp-typing} and the cut relation $\redto$ in
-Appendix~\ref{sect:cp-cut}. A detailed description of CP can be found in Wadler's
-work~\cite{Wadler12}. Note that the propositions of CP are exactly those of classical linear logic,
-as are the cut rules (if we ignore the terms). Thus, CP enjoys all of the standard meta theoretic
-properties of classical linear logic, including confluence and weak normalisation.
+We present the typing rules of CP in Figure~\ref{fig:cp-typing}. Due to lack of space we omit the
+definition of the cut relation $\redto$. A detailed description of CP, including the cut rules, can
+be found in Wadler's work~\cite{Wadler12}. Note that the propositions of CP are exactly those of
+classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP enjoys all of the
+standard meta theoretic properties of classical linear logic, including confluence and weak
+normalisation.
 %
 A minor syntactic difference between our presentation and Wadler's is that our sum ($\oplus$) and
 choice ($\binampersand$) types are $n$-ary, matching the corresponding session types in \hgv,
@@ -827,7 +828,7 @@ If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentat
 factors through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
-$\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$
+$\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$ (where $\redto^*$ is the transitive reflexive closure of $\redto$).
 \end{theorem}
 \noindent
 The key soundness property of our translations is that if we translate a term from CP to \hgvpi and
@@ -933,6 +934,8 @@ helpful feedback on the results. This work was funded by EPSRC grant number EP/K
 \bibliographystyle{plain}
 \bibliography{cpgv}
 
+\end{document}
+
 \newpage
 \appendix
 
@@ -1001,7 +1004,6 @@ defined below. We write $\redto^*$ for the transitive reflexive closure of $\red
   &\redto& \cpEmptyIn{x}{\cpCut{z}{P}{Q}} \\
 \end{equations}%
 
-\end{document}
 
 
 \section{Design choices for \hgv}
