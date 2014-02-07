@@ -24,7 +24,7 @@ interp (Assert gamma m t) =
                           showCP c = (displayS (renderPretty 0.8 120 (pretty c))) ""
                           cpBehavior = ("z'0", xType t) :
                                        [(v, CP.dual (xType t)) | (v, t) <- gamma]
-                          cpResults = case CP.runCheck (CP.check p') cpBehavior of
+                          cpResults = case CP.runCheck (CP.check p') (cpBehavior, []) of
                                         (_, Left err) -> unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False), "But:", err]
                                         (_, Right _)  -> let Right (normalized, simplified) = CP.runM (CP.normalize p')
                                                          in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False) {-,

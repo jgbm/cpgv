@@ -2,8 +2,6 @@ module CPToGV where
 
 import Data.Maybe
 
-import qualified CP.Check as CPCheck (dual, inst)
-
 import qualified CP.Syntax as CP
 import CP.Printer
 import GV.Syntax (dual)
@@ -20,8 +18,8 @@ xSession (CP.OfCourse a) = GV.Server (xSession a)
 xSession (CP.WhyNot a) = GV.Service (xSession a)
 xSession (CP.Var v []) = GV.SVar v
 xSession (CP.Neg v) = GV.Neg v
-xSession (CP.ForAll v a) = GV.InputType v (xSession a)
-xSession (CP.Exists v a) = GV.OutputType v (xSession a)
+xSession (CP.Univ v a) = GV.InputType v (xSession a)
+xSession (CP.Exist v a) = GV.OutputType v (xSession a)
 xSession s = error ("xSession missing " ++ show s)
 
 xType :: CP.Prop -> GV.Type
@@ -44,7 +42,7 @@ xTerm env (CP.ProcVar x [])  = GV.Var x
 xTerm env (CP.Link x y)      = GV.Link (GV.Var x) (GV.Var y)
 xTerm env (CP.Cut x t p q)   = GV.Let (GV.BindName x)
                                       (GV.Fork x (xSession t) (xTerm (extend env (x, t)) p))
-                                      (xTerm (extend env (x, CPCheck.dual t)) q)
+                                      (xTerm (extend env (x, CP.dual t)) q)
 xTerm env (CP.Out x y p q) =
   GV.Let (GV.BindName x)
          (GV.Send (GV.Fork y (xSession yt) (xTerm (extend env (y, yt)) p)) (GV.Var x))
@@ -90,13 +88,13 @@ xTerm env (CP.SendProp x a p)      =
   GV.Let (GV.BindName x') (GV.SendType (xSession a) (GV.Var x')) (xTerm (extend env (x, xt)) p)
   where
     x' = xId x
-    (CP.Exists v t) = find x env
-    xt = CPCheck.inst v a t
+    (CP.Exist v t) = find x env
+    xt = CP.inst v a t
 xTerm env (CP.ReceiveProp x v p)   =
   GV.Let (GV.BindName x') (GV.ReceiveType (GV.Var x')) (xTerm (extend env (x, xt)) p)
   where
     x' = xId x
-    (CP.ForAll v xt) = find x env
+    (CP.Univ v xt) = find x env
 xTerm env (CP.EmptyOut x)          = GV.Var (xId x)
 xTerm env (CP.EmptyIn x p)         = xTerm env p
 xTerm _ t = error $ "No xTerm case for " ++ show (pretty t)

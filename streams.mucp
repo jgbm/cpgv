@@ -92,6 +92,8 @@ check Nats(x) |- x:Source(Church).
 cut [x:Source(Church)]
   (Nats(x) |
    unr x.x/more.x(y).
-   unr a.a/c.a(b).
-   c[d].(Ping(y,b,d) | unr x.x/more.x(y).unr x.x/end.x().Ping(y,a,c)))
- |- a:Quest(bot),c:1*1.
+   unr x.x/more.x(z).
+   unr a.a/c.a(b).unr a.a/c.a(c).
+   d[e].(e[f].(Ping(y,b,f) | Ping(z,c,e)) |
+         unr x.x/more.x(y).unr x.x/end.x().Ping(y,a,d)))
+ |- a:Quest(bot),d:(1*1)*1.

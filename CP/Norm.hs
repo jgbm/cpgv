@@ -1,8 +1,9 @@
-{-# LANGUAGE TupleSections, PatternGuards #-}
+{-# LANGUAGE FlexibleInstances, TupleSections, PatternGuards #-}
 module CP.Norm where
 
 import Control.Monad.Error
 import CP.Check
+import CP.Expand (expandP)
 import Data.List (intercalate, nub, partition, tails)
 import Data.Maybe
 import CP.Syntax
@@ -58,12 +59,20 @@ data Fragment = Fragment [(String, Prop)] Proc
 instance Pretty Fragment
     where pretty (Fragment zs p) = group (hang 2 (text "<" <> cat (punctuate (comma <> space) [text z <> colon <+> pretty a | (z,a) <- zs]) <> text ">" <$> pretty p))
 
-addVar :: String -> Prop -> [Fragment] -> [Fragment]
-addVar v a = concatMap add
-    where add (Fragment vs p)
-              | v `elem` fn p = fragment ((v, a) : vs') p
-              | otherwise     = fragment vs p
-              where vs' = filter ((v /=) . fst) vs
+ms <++> ns = liftM2 (++) ms ns
+
+class Fragments t
+    where addVar :: String -> Prop -> t -> M [Fragment]
+
+instance Fragments [Fragment]
+    where addVar v a fs = concat `fmap` mapM add fs
+              where add (Fragment vs p)
+                        | v `elem` fn p = fragment ((v, a) : vs') p
+                        | otherwise     = fragment vs p
+                        where vs' = filter ((v /=) . fst) vs
+
+instance Fragments (M [Fragment])
+    where addVar v a mfs = addVar v a =<< mfs
 
 renameBoundVariable :: String -> Proc -> String -> Proc -> M (String, Proc, Proc)
 renameBoundVariable x p x' p'
@@ -77,10 +86,10 @@ stepPrincipal :: Fragment -> Fragment -> M [Fragment]
 stepPrincipal (Fragment zs (Link x y)) (Fragment zs' p)
     | x `elem` map fst zs', Just a <- lookup x zs, not (isWhyNot a) =
         do p' <- replace x y p
-           return (fragment (add y zs') p')
+           fragment (add y zs') p'
     | y `elem` map fst zs', Just a <- lookup y zs, not (isWhyNot a) =
         do p' <- replace y x p
-           return (fragment (add x zs') p')
+           fragment (add x zs') p'
     where isWhyNot WhyNot{} = True
           isWhyNot _        = False
           add z = case lookup z zs of
@@ -89,20 +98,24 @@ stepPrincipal (Fragment zs (Link x y)) (Fragment zs' p)
 stepPrincipal (Fragment zs (Out x y p q)) (Fragment zs' (In x' y' r))
     | x == x', Just (a `Times` b) <- lookup x zs =
         do (y'', p', r') <- renameBoundVariable y p y' r
-           return (addVar y'' a (fragment zs p') ++
-                   addVar y'' (dual a) (addVar x b (fragment zs q)) ++
-                   addVar y'' (dual a) (addVar x (dual b) (fragment zs' r')))
+           addVar y'' a (fragment zs p') <++>
+               addVar y'' (dual a) (addVar x b (fragment zs q)) <++>
+               addVar y'' (dual a) (addVar x (dual b) (fragment zs' r'))
 stepPrincipal (Fragment zs (Select x l p)) (Fragment zs' (Case x' bs))
     | x == x', Just (Plus bts) <- lookup x zs, Just q <- lookup l bs, Just a <- lookup l bts =
-        return (addVar x a (fragment zs p) ++
-                addVar x (dual a) (fragment zs' q))
+        addVar x a (fragment zs p) <++>
+        addVar x (dual a) (fragment zs' q)
 stepPrincipal (Fragment zs (SendProp x a p)) (Fragment zs' (ReceiveProp x' t' q))
-    | x == x', Just (Exists t b) <- lookup x zs, t == t' =
-        return (addVar x (inst t a b) (fragment [(z,inst t a c) | (z,c) <- zs] p) ++
-                addVar x (dual (inst t a b)) (fragment [(z,inst t a c) | (z,c) <- zs'] (inst t a q)))
+    | x == x', Just (Exist t b) <- lookup x zs, t == t' =
+        addVar x (inst t a b) (fragment [(z,inst t a c) | (z,c) <- zs] p) <++>
+        addVar x (dual (inst t a b)) (fragment [(z,inst t a c) | (z,c) <- zs'] (inst t a q))
+stepPrincipal (Fragment zs (SendTerm x m p)) (Fragment zs' (ReceiveTerm x' i q))
+    | x == x', Just (FOExist t b) <- lookup x zs =
+        addVar x b (fragment zs p) <++>
+        addVar x (dual b) (fragment zs' (instProc i m q))
 stepPrincipal (Fragment zs (EmptyOut x)) (Fragment zs' (EmptyIn x' p))
     | x == x', Just One <- lookup x zs =
-        return (fragment (filter ((x' /=) . fst) zs') p)
+        fragment (filter ((x' /=) . fst) zs') p
 stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
     | x == x', Just (Mu t a) <- lookup x zs =
         let b = (t, a)
@@ -116,18 +129,18 @@ stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
                then do y' <- fresh y
                        q' <- replace y y' q
                        r' <- replace y y' r
-                       return (addVar y' s (fragment zs' q') ++
-                               addVar y' (dual s) (addVar x (bbar `appl` s) (fragment zs' r')) ++
-                               addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) ++
-                               addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p'))))
-               else return (addVar y s (fragment zs' q) ++
-                            addVar y (dual s) (addVar x (bbar `appl` s) (fragment zs' r)) ++
-                            addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) ++
-                            addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p'))))
+                       addVar y' s (fragment zs' q') <++>
+                           addVar y' (dual s) (addVar x (bbar `appl` s) (fragment zs' r')) <++>
+                           addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) <++>
+                           addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p')))
+               else addVar y s (fragment zs' q) <++>
+                    addVar y (dual s) (addVar x (bbar `appl` s) (fragment zs' r)) <++>
+                    addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) <++>
+                    addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p')))
     where -- assuming that there are propositions A and B such that q |- x:A,w:B,
           -- funct c x w q |- x:c A,w:cbar B
           funct (t,c) x w q
-              | t `notElem` ftv c = return (Link x w)
+              | t `notElem` fpv c = return (Link x w)
           funct (t, Var t' []) x w q
               | t == t' = return q
           funct (t, c1 `Times` c2) x w q =
@@ -152,14 +165,16 @@ stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
 stepPrincipal (Fragment zs (Replicate x y p)) (Fragment zs' (Derelict x' y' q))
     | x == x', Just (OfCourse a) <- lookup x zs =
         do (y'', p', q') <- renameBoundVariable y p y' q
-           return (Fragment zs (Replicate x y p) :
-                   addVar y'' a (fragment zs p') ++
-                   addVar y'' (dual a) (fragment zs' q'))
+           return [Fragment zs (Replicate x y p)] <++>
+               addVar y'' a (fragment zs p') <++>
+               addVar y'' (dual a) (fragment zs' q')
 stepPrincipal _ _ = return []
 
-fragment :: [(String, Prop)] -> Proc -> [Fragment]
-fragment zs (Cut x a p q) = fragment ((x,a) : zs) p ++ fragment ((x, dual a) : zs) q
-fragment zs p             = [Fragment (filter ((`elem` vs) . fst) zs) p]
+fragment :: [(String, Prop)] -> Proc -> M [Fragment]
+fragment zs (Quote m (Just ds)) = let EQuote p _ = reduce m
+                                  in  fragment zs =<< expandP ds p
+fragment zs (Cut x a p q) = fragment ((x,a) : zs) p <++> fragment ((x, dual a) : zs) q
+fragment zs p             = return [Fragment (filter ((`elem` vs) . fst) zs) p]
     where vs = fn p
 
 unFragment :: [Fragment] -> Proc
@@ -179,14 +194,23 @@ commute :: [Fragment] -> ([Fragment] -> M Proc) -> ([Fragment] -> M Proc) -> M P
 commute fs f g = loop fs [] False
     where loop pending passed = trace (unlines ("Commute pending" : map showCP pending ++ "Commute passed": map showCP passed)) (loop' pending passed)
 
+          loop' :: [Fragment] -> [Fragment] -> Bool -> M Proc
           loop' [] passed True = f passed
           loop' [] passed False = g passed
-          loop' (Fragment zs (Out x y p q) : rest) passed _
-              | x `notElem` map fst zs, not (null ps && null qs) =
+          loop' (f@(Fragment zs (Out x y p q)) : rest) passed b
+              | x `notElem` map fst zs =
                   trace (x ++ '[' : y ++ "]") $
-                  do p' <- loop ps [] True
-                     q' <- loop qs [] True
-                     if null rest' then return (Out x y p' q') else loop rest' (fragment zs (Out x y p' q')) (p /= p' || q /= q')
+                  do pfs <- fragment zs p
+                     qfs <- fragment zs q
+                     let (ps, qs, rest') = part pfs pzs qfs qzs [] (rest ++ passed) [] False
+                     if null ps && null qs
+                     then loop rest (f : passed) b
+                     else do p' <- loop ps [] True
+                             q' <- loop qs [] True
+                             if null rest'
+                             then return (Out x y p' q')
+                             else do fs <- fragment zs (Out x y p' q')
+                                     loop rest' fs (p /= p' || q /= q')
               where pns = fn p
                     qns = fn q
                     pzs = filter (`elem` pns) (map fst zs)
@@ -204,47 +228,59 @@ commute fs f g = loop fs [] False
                         | any (`elem` pzs) (map fst zs) && all (`notElem` qzs) (map fst zs) = part (Fragment zs r : ps) (map fst zs ++ pzs) qs qzs ss rs passed True
                         | any (`elem` qzs) (map fst zs) && all (`notElem` pzs) (map fst zs) = part ps pzs (Fragment zs r : qs) (map fst zs ++ qzs) ss rs passed True
                         | otherwise = part ps pzs qs qzs rs ss (Fragment zs r : passed) b
-
-                    (ps, qs, rest') = part (fragment zs p) pzs (fragment zs q) qzs [] (rest ++ passed) [] False
-
           loop' (Fragment zs (In x y p) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ '(' : y ++ ")") $
-                                         In x y `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            In x y `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (Select x l p) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ '/' : l) $
-                                         Select x l `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            Select x l `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (Case x bs) : rest) passed _
               | x `notElem` map fst zs = trace ("case " ++ x) $
-                                         Case x `fmap` sequence [(l,) `fmap` commute (fragment zs p ++ rest ++ passed) f g | (l,p) <- bs]
+                                         Case x `fmap` sequence [do fs <- fragment zs p
+                                                                    (l,) `fmap` commute (fs ++ rest ++ passed) f g
+                                                                 | (l,p) <- bs]
           loop' (Fragment zs (Unroll x p) : rest) passed _
               | x `notElem` map fst zs = trace ("unr " ++ x) $
-                                         Unroll x `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            Unroll x `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (Roll x y s p q) : rest) passed _
               | x `notElem` map fst zs = trace ("roll " ++ x ++ " [" ++ y ++ ": " ++ show (pretty s)) $
-                                         flip (Roll x y s) q `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            flip (Roll x y s) q `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (Replicate x y p) : rest) passed _
               | x `notElem` map fst zs, and [all (isWhyNot . snd) zs' | Fragment zs' _ <- rest ++ passed] =
-                  Replicate x y `fmap` loop (fragment zs p ++ rest) passed True
+                  do fs <- fragment zs p
+                     Replicate x y `fmap` loop (fs ++ rest) passed True
               where isWhyNot (WhyNot _) = True
                     isWhyNot _          = False
           loop' (Fragment zs (Derelict x y p) : rest) passed _
               | x `notElem` map fst zs = trace ('?' : x ++ '[' : y ++ "]") $
-                                         Derelict x y `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            Derelict x y `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (SendProp x a p) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ "[" ++ show (pretty a) ++ "]") $
-                                         SendProp x a `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            SendProp x a `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (ReceiveProp x t p) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ "(" ++ t ++ ")") $
-                                         ReceiveProp x t `fmap` loop (fragment zs p ++ rest) passed True
-          loop' (Fragment zs (EmptyIn x p) : rest) passed _
+                                         do fs <- fragment zs p
+                                            ReceiveProp x t `fmap` loop (fs ++ rest) passed True
+          loop' (f@(Fragment zs (EmptyIn x p)) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ "()") $
-                                         EmptyIn x `fmap` loop (fragment zs p ++ rest) passed True
+                                         do fs <- fragment zs p
+                                            EmptyIn x `fmap` loop (fs ++ rest) passed True
+          loop' (Fragment zs (Quote m (Just ds)) : rest) passed _ =
+              let EQuote p _ = reduce m
+              in  do pfs <- fragment zs =<< expandP ds p
+                     loop (pfs ++ rest) passed True
           loop' (f : rest) passed b = loop rest (f : passed) b
 
 normalize :: Proc -> M (Proc, Proc)
 normalize p = trace ("Normalizing " ++ showCP p) $
-              do let fs = fragment [] p
-                     is = [1..length fs]
+              do fs <- fragment [] p
+                 let is = [1..length fs]
                      wl = makeWorkList is []
                  fs' <- loop wl (zip is fs) (length fs + 1)
                  executed <- commute fs' (return . unFragment) (return . unFragment)
@@ -280,3 +316,43 @@ normalize p = trace ("Normalizing " ++ showCP p) $
                  case fs of
                    [] -> stepPrincipal fj fi
                    _  -> return fs
+
+----------------------------------------------------------------------------------------------------
+
+instProc i m (ProcVar x args) = ProcVar x (map instArg args)
+    where instArg (ProcArg p) = ProcArg (instProc i m p)
+          instArg (NameArg x) = NameArg x
+instProc i m (Cut x a p q) = Cut x a (instProc i m p) (instProc i m q)
+instProc i m (In x y p) = In x y (instProc i m p)
+instProc i m (Out x y p q) = Out x y (instProc i m p) (instProc i m q)
+instProc i m (Select x l p) = Select x l (instProc i m p)
+instProc i m (Case x bs) = Case x [(l, instProc i m p) | (l, p) <- bs]
+instProc i m (Unroll x p) = Unroll x (instProc i m p)
+instProc i m (Roll x y a p q) = Roll x y a (instProc i m p) (instProc i m q)
+instProc i m (Replicate x y p) = Replicate x y (instProc i m p)
+instProc i m (Derelict x y p) = Derelict x y (instProc i m p)
+instProc i m (SendProp x a p) = SendProp x a (instProc i m p)
+instProc i m (ReceiveProp x y p) = ReceiveProp x y (instProc i m p)
+instProc i m (SendTerm x n p) = SendTerm x (reduce (instTerm i m n)) (instProc i m p)
+instProc i m (ReceiveTerm x j p)
+    | i == j = ReceiveTerm x j p
+    | otherwise = ReceiveTerm x j (instProc i m p)
+instProc i m (EmptyIn x p) = EmptyIn x (instProc i m p)
+instProc i m (Quote n ds) = Quote (instTerm i m n) ds
+instProc _ _ p = p
+
+instTerm i m (EApp n n') = EApp (instTerm i m n) (instTerm i m n')
+instTerm i m (ELam j t n)
+    | i == j = ELam j t n
+    | otherwise = ELam j t (instTerm i m n)
+instTerm i m (EVar j)
+    | i == j = m
+    | otherwise = EVar j
+instTerm i m (EQuote p b) = EQuote (instProc i m p) b
+instTerm _ _ n = n
+
+reduce (EApp (EApp (EVar "+") (EInt i)) (EInt j)) = EInt (i + j)
+reduce (EApp (EApp (EVar "*") (EInt i)) (EInt j)) = EInt (i * j)
+reduce (EApp (ELam x t m) n) = reduce (instTerm x n m)
+reduce (EIf m n o) = if reduce m == EBool True then reduce n else reduce o
+reduce m = m

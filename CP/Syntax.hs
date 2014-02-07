@@ -5,8 +5,8 @@ import Control.Monad
 import Control.Monad.Error
 import Control.Monad.State
 
-data Prop = ForAll String Prop
-          | Exists String Prop
+data Prop = Univ String Prop
+          | Exist String Prop
           | Mu String Prop
           | Nu String Prop
           | OfCourse Prop
@@ -19,8 +19,102 @@ data Prop = ForAll String Prop
           | With [(String, Prop)]
           | Var String [Prop]
           | Neg String
+          | FOUniv FOType Prop
+          | FOExist FOType Prop
           | Dual Prop
     deriving (Eq, Show)
+
+type Behavior = [(String, Prop)]
+
+--------------------------------------------------------------------------------
+-- Dualizing types
+dual :: Prop -> Prop
+dual (Dual p)      = p
+-- Variables
+dual (Var s [])    = Neg s
+dual (Neg s)       = Var s []
+-- Multiplicative combinators
+dual (a `Times` b) = dual a `Par` dual b
+dual (a `Par` b)   = dual a `Times` dual b
+dual One           = Bottom
+dual Bottom        = One
+-- Additive combinators
+dual (Plus lts)    = With [(l, dual t) | (l, t) <- lts]
+dual (With lts)    = Plus [(l, dual t) | (l, t) <- lts]
+-- Fixed-point combinators
+dual (Mu x a)      = Nu x (dual (inst x (Neg x) a))
+dual (Nu x a)      = Mu x (dual (inst x (Neg x) a))
+-- Exponentials
+dual (OfCourse a)  = WhyNot (dual a)
+dual (WhyNot a)    = OfCourse (dual a)
+-- Quantifiers
+dual (Univ x a)    = Exist x (dual a)
+dual (Exist x a)   = Univ x (dual a)
+dual (FOUniv t a)  = FOExist t (dual a)
+dual (FOExist t a) = FOUniv t (dual a)
+
+--------------------------------------------------------------------------------
+-- Free propositional variables
+fpv :: Prop -> [String]
+-- Variables
+fpv (Var s []) = [s]
+fpv (Neg s)    = [s]
+-- Multiplicative combinators
+fpv (a `Times` b) = concatMap fpv [a,b]
+fpv (a `Par` b) = concatMap fpv [a,b]
+fpv One = []
+fpv Bottom = []
+-- Additive combinators
+fpv (Plus ls) = concatMap (fpv . snd) ls
+fpv (With ls) = concatMap (fpv . snd) ls
+-- Fixed-point combinators
+fpv (Mu x a) = filter (x /=) (fpv a)
+fpv (Nu x a) = filter (x /=) (fpv a)
+-- Exponentials
+fpv (OfCourse a) = fpv a
+fpv (WhyNot a) = fpv a
+-- Quantifiers
+fpv (Univ x a) = filter (x /=) (fpv a)
+fpv (Exist x a) = filter (x /=) (fpv a)
+fpv (FOUniv x a) = fpv a
+fpv (FOExist x a) = fpv a
+
+--------------------------------------------------------------------------------
+-- Instantiating type variables
+--------------------------------------------------------------------------------
+
+class HasTyVars t
+    where inst :: String -> Prop -> t -> t
+
+instBinder x c b x' a
+    | x == x' = b x a
+    | otherwise = b x' (inst x c a)
+
+instance HasTyVars Prop
+    where -- Variables
+          inst x c (Var x' []) | x == x' = c
+                               | otherwise = Var x' []
+          inst x c (Neg x') | x == x' = dual c
+                            | otherwise = Neg x'
+          -- Multiplicative combinators
+          inst x c (a `Times` b) = inst x c a `Times` inst x c b
+          inst x c (a `Par` b) = inst x c a `Par` inst x c b
+          inst _ _ One = One
+          inst _ _ Bottom = Bottom
+          -- Additive combinators
+          inst x c (Plus lts) = Plus [(l, inst x c t) | (l, t) <- lts]
+          inst x c (With lts) = With [(l, inst x c t) | (l, t) <- lts]
+          -- Fixed-point combinators
+          inst x c (Mu x' a) = instBinder x c Mu x' a
+          inst x c (Nu x' a) = instBinder x c Nu x' a
+          -- Exponentials
+          inst x c (OfCourse a) = OfCourse (inst x c a)
+          inst x c (WhyNot a) = WhyNot (inst x c a)
+          -- Quantifiers
+          inst x c (Univ x' a) = instBinder x c Univ x' a
+          inst x c (Exist x' a) = instBinder x c Exist x' a
+          inst x c (FOUniv t a) = FOUniv t (inst x c a)
+          inst x c (FOExist t a) = FOExist t (inst x c a)
 
 data Param = ProcParam String | NameParam String
     deriving (Eq, Show)
@@ -41,15 +135,25 @@ data Proc = ProcVar String [Arg]
           | Derelict String String Proc
           | SendProp String Prop Proc
           | ReceiveProp String String Proc
+          | SendTerm String FOTerm Proc
+          | ReceiveTerm String String Proc
           | EmptyOut String
           | EmptyIn String Proc
           | EmptyCase String [String]
+          | Quote FOTerm (Maybe Defns)
           | Unk [String]
     deriving (Eq, Show)
 
 data Defn = ProcDef String [Param] Proc
           | PropDef String [String] Prop
     deriving (Eq, Show)
+
+data Defns = D { procs :: [(String, ([Param], Proc))],
+                 names :: [(String, String)],
+                 types :: [(String, ([String], Prop))] }
+    deriving (Eq, Show)
+
+emptyDefns = D [] [] []
 
 data Assertion = Assert Proc [(String, Prop)] Bool
     deriving (Eq, Show)
@@ -83,9 +187,12 @@ fn (Replicate x y p)   = x : filter (y /=) (fn p)
 fn (Derelict x y p)    = x : filter (y /=) (fn p)
 fn (SendProp x a p)    = x : fn p
 fn (ReceiveProp x a p) = x : fn p
+fn (SendTerm x m p)    = x : fn p
+fn (ReceiveTerm x i p) = x : fn p
 fn (EmptyOut x)        = [x]
 fn (EmptyIn x p)       = x : fn p
 fn (EmptyCase x ys)    = x : ys
+fn Quote{}             = []
 fn (Unk ys)            = ys
 
 -- 'fln p' returns the free names in 'p' that are not subject to implicit
@@ -106,9 +213,12 @@ fln (Replicate x y p)   = x : filter (y /=) (fln p)
 fln (Derelict x y p)    = filter (y /=) (fln p)
 fln (SendProp x a p)    = x : fln p
 fln (ReceiveProp x a p) = x : fln p
+fln (SendTerm x m p)    = x : fln p
+fln (ReceiveTerm x i p) = x : fln p
 fln (EmptyOut x)        = [x]
 fln (EmptyIn x p)       = x : fln p
 fln (EmptyCase x ys)    = x : ys
+fln Quote{}             = []
 fln (Unk ys)            = ys
 
 -- Replace one name by another, avoiding variable capture.
@@ -165,54 +275,73 @@ replace x y = replace'
               | otherwise = liftM (Derelict (var z) w) (replace' p)
           replace' (SendProp z a p) = liftM (SendProp (var z) a) (replace' p)
           replace' (ReceiveProp z a p) = liftM (ReceiveProp (var z) a) (replace' p)
+          replace' (SendTerm z m p) = liftM (SendTerm (var z) m) (replace' p)
+          replace' (ReceiveTerm z i p) = liftM (ReceiveTerm (var z) i) (replace' p)
           replace' (EmptyOut z) = return (EmptyOut (var z))
           replace' (EmptyIn z p) = liftM (EmptyIn (var z)) (replace' p)
           replace' (EmptyCase z ws) = return (EmptyCase (var z) (map var ws))
+          replace' (Quote m ds) = return (Quote m ds)
           replace' (Unk vs) = return (Unk (map var vs))
           replace' p = error ("Replace missing case for " ++ show p)
 
 --------------------------------------------------------------------------------
 -- Recursion
 
-class RequiresRecursion t
-    where requiresRecursion :: t -> Bool
+class HasGVTranslation t
+    where hasGVTranslation :: t -> Bool
 
-instance RequiresRecursion Prop
-    where requiresRecursion (ForAll _ a) = requiresRecursion a
-          requiresRecursion (Exists _ a) = requiresRecursion a
-          requiresRecursion Mu{}         = True
-          requiresRecursion Nu{}         = True
-          requiresRecursion (OfCourse a) = requiresRecursion a
-          requiresRecursion (WhyNot a)   = requiresRecursion a
-          requiresRecursion (Times a b)  = requiresRecursion a || requiresRecursion b
-          requiresRecursion (Par a b)    = requiresRecursion a || requiresRecursion b
-          requiresRecursion One          = False
-          requiresRecursion Bottom       = False
-          requiresRecursion (Plus lts)   = any (requiresRecursion . snd) lts
-          requiresRecursion (With lts)   = any (requiresRecursion . snd) lts
-          requiresRecursion (Var s ps)   = any requiresRecursion ps
-          requiresRecursion (Neg s)      = False
-          requiresRecursion (Dual p)     = requiresRecursion p
+instance HasGVTranslation Prop
+    where hasGVTranslation (Univ _ a)    = hasGVTranslation a
+          hasGVTranslation (Exist _ a)   = hasGVTranslation a
+          hasGVTranslation Mu{}          = False
+          hasGVTranslation Nu{}          = False
+          hasGVTranslation (OfCourse a)  = hasGVTranslation a
+          hasGVTranslation (WhyNot a)    = hasGVTranslation a
+          hasGVTranslation (Times a b)   = hasGVTranslation a || hasGVTranslation b
+          hasGVTranslation (Par a b)     = hasGVTranslation a || hasGVTranslation b
+          hasGVTranslation One           = True
+          hasGVTranslation Bottom        = True
+          hasGVTranslation (Plus lts)    = any (hasGVTranslation . snd) lts
+          hasGVTranslation (With lts)    = any (hasGVTranslation . snd) lts
+          hasGVTranslation (Var s ps)    = any hasGVTranslation ps
+          hasGVTranslation (Neg s)       = True
+          hasGVTranslation (FOUniv _ p)  = False
+          hasGVTranslation (FOExist _ p) = False
+          hasGVTranslation (Dual p)      = hasGVTranslation p
 
-instance RequiresRecursion Arg
-    where requiresRecursion (ProcArg p) = requiresRecursion p
-          requiresRecursion NameArg{}   = False
+instance HasGVTranslation Arg
+    where hasGVTranslation (ProcArg p) = hasGVTranslation p
+          hasGVTranslation NameArg{}   = True
 
-instance RequiresRecursion Proc
-    where requiresRecursion (ProcVar _ args)    = any requiresRecursion args
-          requiresRecursion Link{}              = False
-          requiresRecursion (Cut x a p q)       = requiresRecursion a || requiresRecursion p || requiresRecursion q
-          requiresRecursion (Out _ _ p q)       = requiresRecursion p || requiresRecursion q
-          requiresRecursion (In _ _ p)          = requiresRecursion p
-          requiresRecursion (Select _ _ p)      = requiresRecursion p
-          requiresRecursion (Case _ bs)         = any (requiresRecursion . snd) bs
-          requiresRecursion Unroll{}            = True
-          requiresRecursion Roll{}              = True
-          requiresRecursion (Replicate _ _ p)   = requiresRecursion p
-          requiresRecursion (Derelict _ _ p)    = requiresRecursion p
-          requiresRecursion (SendProp _ a p)    = requiresRecursion a || requiresRecursion p
-          requiresRecursion (ReceiveProp _ _ p) = requiresRecursion p
-          requiresRecursion EmptyOut{}          = False
-          requiresRecursion (EmptyIn _ p)       = requiresRecursion p
-          requiresRecursion EmptyCase{}         = False
-          requiresRecursion Unk{}               = False
+instance HasGVTranslation Proc
+    where hasGVTranslation (ProcVar _ args)    = any hasGVTranslation args
+          hasGVTranslation Link{}              = True
+          hasGVTranslation (Cut x a p q)       = hasGVTranslation a || hasGVTranslation p || hasGVTranslation q
+          hasGVTranslation (Out _ _ p q)       = hasGVTranslation p || hasGVTranslation q
+          hasGVTranslation (In _ _ p)          = hasGVTranslation p
+          hasGVTranslation (Select _ _ p)      = hasGVTranslation p
+          hasGVTranslation (Case _ bs)         = any (hasGVTranslation . snd) bs
+          hasGVTranslation Unroll{}            = False
+          hasGVTranslation Roll{}              = False
+          hasGVTranslation (Replicate _ _ p)   = hasGVTranslation p
+          hasGVTranslation (Derelict _ _ p)    = hasGVTranslation p
+          hasGVTranslation (SendProp _ a p)    = hasGVTranslation a || hasGVTranslation p
+          hasGVTranslation (ReceiveProp _ _ p) = hasGVTranslation p
+          hasGVTranslation SendTerm{}          = False
+          hasGVTranslation ReceiveTerm{}       = False
+          hasGVTranslation EmptyOut{}          = True
+          hasGVTranslation (EmptyIn _ p)       = hasGVTranslation p
+          hasGVTranslation EmptyCase{}         = True
+          hasGVTranslation Quote{}             = False
+          hasGVTranslation Unk{}               = True
+
+----------------------------------------------------------------------------------------------------
+-- First-order structure
+
+data FOType = Int | Bool | Unit | FOType `To` FOType | TQuote Behavior
+    deriving (Eq, Show)
+data FOTerm = EVar String | EInt Integer | EBool Bool | EUnit
+            | EApp FOTerm FOTerm | ELam String FOType FOTerm
+            | EIf FOTerm FOTerm FOTerm
+            | EQuote Proc Behavior
+    deriving (Eq, Show)

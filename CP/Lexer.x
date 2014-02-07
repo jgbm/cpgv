@@ -11,53 +11,67 @@ $any    = [$upper $lower $digit _]
 
 @uident = $upper $any*
 @lident = $lower $any*
+@number = [\-]? $digit+
 
 :-
 
-     $white+      ;  -- Skip white space
-     "--".*       ;  -- Skip single-line comments
+         $white+      ;  -- Skip white space
+         "--".*       ;  -- Skip single-line comments
 
-     ":"          { lexeme COLON }
-     ";"          { lexeme SEMI }
-     ","          { lexeme COMMA }
-     "."          { lexeme DOT }
-     "/"          { lexeme SLASH }
-     "("          { lexeme LPAREN }
-     ")"          { lexeme RPAREN }
-     "["          { lexeme LBRACK }
-     "]"          { lexeme RBRACK }
-     "{"          { lexeme LBRACE }
-     "}"          { lexeme RBRACE }
-     "|"          { lexeme BAR }
-     "<->"        { lexeme LINK }
-     "cut"        { lexeme CUT }
-     "case"       { lexeme CASE }
-     "roll"       { lexeme ROLL }
-     "unr"        { lexeme UNROLL }
-     "0"          { lexeme ZERO }
-     "?"          { lexeme QUERY }
-     "!"          { lexeme BANG }
+         ":"          { lexeme COLON }
+         ";"          { lexeme SEMI }
+         ","          { lexeme COMMA }
+         "."          { lexeme DOT }
+         "/"          { lexeme SLASH }
+         "("          { lexeme LPAREN }
+         ")"          { lexeme RPAREN }
+         "["          { lexeme LBRACK }
+         "]"          { lexeme RBRACK }
+         "{"          { lexeme LBRACE }
+         "}"          { lexeme RBRACE }
+         "|"          { lexeme BAR }
+         "<->"        { lexeme LINK }
+         "cut"        { lexeme CUT }
+         "case"       { lexeme CASE }
+         "roll"       { lexeme ROLL }
+         "unr"        { lexeme UNROLL }
+         "?"          { lexeme QUERY }
+         "!"          { lexeme BANG }
 
-     "forall"     { lexeme FORALL }
-     "exists"     { lexeme EXISTS }
-     "mu"         { lexeme MU }
-     "nu"         { lexeme NU }
-     "*"          { lexeme TIMES }
-     "||"         { lexeme PAR }
-     "+"          { lexeme PLUS }
-     "&"          { lexeme WITH }
-     "1"          { lexeme ONE }
-     "bot"        { lexeme BOTTOM }
-     "~"          { lexeme TILDE }
+         "forall"     { lexeme FORALL }
+         "exists"     { lexeme EXISTS }
+         "mu"         { lexeme MU }
+         "nu"         { lexeme NU }
+         "*"          { lexeme TIMES }
+         "||"         { lexeme PAR }
+         "+"          { lexeme PLUS }
+         "&"          { lexeme WITH }
+         "bot"        { lexeme BOTTOM }
+         "~"          { lexeme TILDE }
 
-     "def"        { lexeme DEF }
-     "type"       { lexeme TYPE }
-     "|-"         { lexeme TURNSTILE }
-     "="          { lexeme EQUALS }
-     "check"      { lexeme CHECK }
+         "def"        { lexeme DEF }
+         "type"       { lexeme TYPE }
+         "|-"         { lexeme TURNSTILE }
+         "="          { lexeme EQUALS }
+         "check"      { lexeme CHECK }
 
-     @uident      { identifier UIDENT }
-     @lident      { identifier LIDENT }
+         "\"          { lexeme LAMBDA }
+         "bool"       { lexeme BOOL }
+         "true"       { lexeme TRUE }
+         "false"      { lexeme FALSE }
+         "int"        { lexeme INT }
+         "->"         { lexeme TO }
+         "if"         { lexeme IF }
+         "then"       { lexeme THEN }
+         "else"       { lexeme ELSE }
+
+         "<"          { lexeme LANGLE }
+         ">"          { lexeme RANGLE }
+
+         @uident      { identifier UIDENT }
+         @lident      { identifier LIDENT }
+         @number      { number }
+
 
 {
 
@@ -80,7 +94,6 @@ data Token = LIDENT String
            | CASE
            | ROLL
            | UNROLL
-           | ZERO
            | QUERY
            | BANG
 
@@ -92,7 +105,6 @@ data Token = LIDENT String
            | PAR
            | PLUS
            | WITH
-           | ONE
            | BOTTOM
            | TILDE
 
@@ -101,6 +113,20 @@ data Token = LIDENT String
            | TURNSTILE
            | EQUALS
            | CHECK
+
+           | LAMBDA
+           | BOOL
+           | TRUE
+           | FALSE
+           | INT
+           | INTCONST Integer
+           | TO
+           | IF
+           | THEN
+           | ELSE
+
+           | LANGLE
+           | RANGLE
 
            | EOF
 
@@ -111,6 +137,9 @@ lexeme t _ len = return t
 
 identifier :: (String -> Token) -> AlexInput -> Int -> Alex Token
 identifier t (_, _, _, s) len = return (t (take len s))
+
+number :: AlexInput -> Int -> Alex Token
+number (_, _, _, s) len = return (INTCONST (read (take len s)))
 
 alexEOF = return EOF
 

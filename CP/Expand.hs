@@ -1,20 +1,11 @@
 {-# LANGUAGE TupleSections, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
 module CP.Expand where
 
-import CP.Check (Behavior, dual)
 import Control.Monad
 import Control.Monad.Error
 import Data.List
 import CP.Syntax
 import CP.Printer
-
-import Debug.Trace
-
-data Defns = D { procs :: [(String, ([Param], Proc))],
-                 names :: [(String, String)],
-                 types :: [(String, ([String], Prop))] }
-
-emptyDefns = D [] [] []
 
 getBinding :: String -> [(String, v)] -> Either String v
 getBinding k ds = case lookup k ds of
@@ -58,9 +49,8 @@ expandP ds = ex
                                     else throwError ("Wrong number of arguments for " ++ v)
           ex (Link w x)            = return (Link (exn w) (exn x))
           ex (Cut x a p q) = do x' <- fresh x
-                                p' <- replace x x' p
-                                q' <- replace x x' q
-                                liftM3 (Cut x') (expandT ds a) (ex p') (ex q')
+                                let ds' = addNameBinding ds x x'
+                                liftM3 (Cut x') (expandT ds a) (expandP ds' p) (expandP ds' q)
           ex (Out x y p q)
               | y `elem` map snd (names ds) = do y' <- fresh y
                                                  p' <- replace y y' p
@@ -86,9 +76,12 @@ expandP ds = ex
           ex (Derelict x y p)      = liftM (Derelict (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
           ex (SendProp x a p)      = liftM2 (SendProp (exn x)) (expandT ds a) (ex p)
           ex (ReceiveProp x a p)   = liftM (ReceiveProp (exn x) a) (expandP (filterTypeDefns (a /=) ds) p)
+          ex (SendTerm x m p)      = liftM (SendTerm (exn x) m) (ex p)
+          ex (ReceiveTerm x i p)   = liftM (ReceiveTerm (exn x) i) (ex p)
           ex (EmptyOut x)          = return (EmptyOut (exn x))
           ex (EmptyIn x p)         = liftM (EmptyIn (exn x)) (ex p)
           ex (EmptyCase x ys)      = return (EmptyCase (exn x) (map exn ys))
+          ex (Quote m _)           = return (Quote m (Just ds))
           ex (Unk ys)              = return (Unk ys)
 
           exn x = case getBinding x (names ds) of
@@ -98,8 +91,8 @@ expandP ds = ex
 expandBinder ds f x t = liftM (f x) (expandT (filterTypeDefns (x /=) ds) t)
 
 expandT :: Defns -> Prop -> M Prop
-expandT ds (Exists x t)   = expandBinder ds Exists x t
-expandT ds (ForAll x t)   = expandBinder ds ForAll x t
+expandT ds (Exist x t)    = expandBinder ds Exist x t
+expandT ds (Univ x t)     = expandBinder ds Univ x t
 expandT ds (Mu x t)       = expandBinder ds Mu x t
 expandT ds (Nu x t)       = expandBinder ds Nu x t
 expandT ds (Times t u)    = liftM2 Times (expandT ds t) (expandT ds u)
@@ -123,9 +116,14 @@ expandT ds (Var v ts) = case getBinding v (types ds) of
                                                       (zip vs ts')
                                       in  expandT ds' t
                                  else throwError ("Wrong number of arguments for " ++ v)
+expandT ds (FOUniv t a)   = liftM (FOUniv t) (expandT ds a)
+expandT ds (FOExist t a)  = liftM (FOExist t) (expandT ds a)
 expandT ds (Dual t)       = liftM dual (expandT ds t)
 expandT ds One            = return One
 expandT ds Bottom         = return Bottom
 
 expandB :: Defns -> Behavior -> M Behavior
-expandB ds b = sequence [liftM (v,) (expandT ds t) | (v, t) <- b]
+expandB ds b = sequence [liftM (exn v,) (expandT ds t) | (v, t) <- b]
+    where exn x = case getBinding x (names ds) of
+                    Left _ -> x
+                    Right y -> y

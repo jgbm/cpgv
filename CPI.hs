@@ -5,7 +5,7 @@ import Data.Char (isSpace)
 import Data.List (partition)
 import CP.Check
 import CP.Expand
-import CP.Norm
+import CP.Norm hiding (trace)
 import CP.Syntax
 import CP.Printer
 import CP.Parser
@@ -34,7 +34,7 @@ interp ds (Left d) = return (addDefn ds d)
 interp ds (Right (Assert p b isCheck)) =
     case runM $ do p' <- expandP ds p
                    b' <- expandB ds b
-                   t <- into (runCheck (check p') b')
+                   t <- into (runCheck (check p') (b', []))
                    (executed, simplified) <- if isCheck then return (undefined, undefined) else normalize p'
                    return (p', t, b', executed, simplified) of
       Left err ->
@@ -48,8 +48,8 @@ interp ds (Right (Assert p b isCheck)) =
           | otherwise ->
               let gvContext = [(v, xType t) | (v, t) <- b']
                   gvExpr    = xTerm [(v, t) | (v, t) <- b'] p'
-                  gvResult | any (requiresRecursion . snd) b' || requiresRecursion p' =
-                              ["CP expression requires recursion; no GV translation."]
+                  gvResult | any (not . hasGVTranslation . snd) b' || not (hasGVTranslation p') =
+                              ["CP expression has no GV translation."]
                            | otherwise =
                               ["GV translation is: ", displayS (renderPretty 0.8 120 (pretty (GV.Assert gvContext gvExpr (GV.Lift GV.OutTerm)))) ""] ++
                               (case GV.runCheck (GV.checkAgainst gvExpr (GV.Lift GV.OutTerm)) gvContext of

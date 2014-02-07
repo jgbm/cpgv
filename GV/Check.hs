@@ -9,7 +9,6 @@ import GV.Syntax
 import GV.Printer
 
 import GV.CPBuilder
-import qualified CP.Check as CP (dual)
 import qualified CP.Syntax as CP
 
 -------------------------------------------------------------------------------
@@ -109,8 +108,8 @@ xSession (Server s)   = CP.WhyNot (xSession s)
 xSession (Service s)  = CP.OfCourse (xSession s)
 xSession (SVar s)     = CP.Var s []
 xSession (Neg s)      = CP.Neg s
-xSession (OutputType x s) = CP.Exists x (xSession s)
-xSession (InputType x s) = CP.ForAll x (xSession s)
+xSession (OutputType x s) = CP.Exist x (xSession s)
+xSession (InputType x s) = CP.Univ x (xSession s)
 
 xType :: Type -> CP.Prop
 xType (Lift s)     = xSession s

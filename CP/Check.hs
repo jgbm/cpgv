@@ -1,99 +1,13 @@
 module CP.Check where
 
 import Control.Monad
+import Control.Monad.State (evalStateT)
 import Data.List
+import CP.Expand (expandB)
 import CP.Syntax
 import CP.Printer
 
 import Text.PrettyPrint.Leijen (renderPretty)
-import Debug.Trace
-
---------------------------------------------------------------------------------
--- Utility operations on types
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- Negating types
-
-dual :: Prop -> Prop
-dual (Dual p)      = p
--- Variables
-dual (Var s [])    = Neg s
-dual (Neg s)       = Var s []
--- Multiplicative combinators
-dual (a `Times` b) = dual a `Par` dual b
-dual (a `Par` b)   = dual a `Times` dual b
-dual One           = Bottom
-dual Bottom        = One
--- Additive combinators
-dual (Plus lts)    = With [(l, dual t) | (l, t) <- lts]
-dual (With lts)    = Plus [(l, dual t) | (l, t) <- lts]
--- Fixed-point combinators
-dual (Mu x a)      = Nu x (dual (inst x (Neg x) a))
-dual (Nu x a)      = Mu x (dual (inst x (Neg x) a))
--- Exponentials
-dual (OfCourse a) = WhyNot (dual a)
-dual (WhyNot a) = OfCourse (dual a)
--- Quantifiers
-dual (ForAll x a)  = Exists x (dual a)
-dual (Exists x a)  = ForAll x (dual a)
-
---------------------------------------------------------------------------------
--- Free type variables
-ftv :: Prop -> [String]
--- Variables
-ftv (Var s []) = [s]
-ftv (Neg s)    = [s]
--- Multiplicative combinators
-ftv (a `Times` b) = concatMap ftv [a,b]
-ftv (a `Par` b) = concatMap ftv [a,b]
-ftv One = []
-ftv Bottom = []
--- Additive combinators
-ftv (Plus ls) = concatMap (ftv . snd) ls
-ftv (With ls) = concatMap (ftv . snd) ls
--- Fixed-point combinators
-ftv (Mu x a) = filter (x /=) (ftv a)
-ftv (Nu x a) = filter (x /=) (ftv a)
--- Exponentials
-ftv (OfCourse a) = ftv a
-ftv (WhyNot a) = ftv a
--- Quantifiers
-ftv (ForAll x a) = filter (x /=) (ftv a)
-ftv (Exists x a) = filter (x /=) (ftv a)
-
---------------------------------------------------------------------------------
--- Instantiating type variables
-class HasTyVars t
-    where inst :: String -> Prop -> t -> t
-
-instBinder x c b x' a
-    | x == x' = b x a
-    | otherwise = b x' (inst x c a)
-
-instance HasTyVars Prop
-    where -- Variables
-          inst x c (Var x' []) | x == x' = c
-                               | otherwise = Var x' []
-          inst x c (Neg x') | x == x' = dual c
-                            | otherwise = Neg x'
-          -- Multiplicative combinators
-          inst x c (a `Times` b) = inst x c a `Times` inst x c b
-          inst x c (a `Par` b) = inst x c a `Par` inst x c b
-          inst _ _ One = One
-          inst _ _ Bottom = Bottom
-          -- Additive combinators
-          inst x c (Plus lts) = Plus [(l, inst x c t) | (l, t) <- lts]
-          inst x c (With lts) = With [(l, inst x c t) | (l, t) <- lts]
-          -- Fixed-point combinators
-          inst x c (Mu x' a) = instBinder x c Mu x' a
-          inst x c (Nu x' a) = instBinder x c Nu x' a
-          -- Exponentials
-          inst x c (OfCourse a) = OfCourse (inst x c a)
-          inst x c (WhyNot a) = WhyNot (inst x c a)
-          -- Quantifiers
-          inst x c (ForAll x' a) = instBinder x c ForAll x' a
-          inst x c (Exists x' a) = instBinder x c Exists x' a
 
 isWhyNot (WhyNot _) = True
 isWhyNot _          = False
@@ -104,8 +18,8 @@ isWhyNot _          = False
 -- arguments as a result.
 --------------------------------------------------------------------------------
 
-type Behavior = [(String, Prop)]
-newtype Check t = Check { runCheck :: Behavior                -- initial context
+type Environment = [(String, FOType)]
+newtype Check t = Check { runCheck :: (Behavior, Environment) -- initial context
                                    -> ([Behavior],            -- traced contexts
                                        Either String          -- typing failure
                                               (t, Behavior))  -- remaining context
@@ -117,25 +31,25 @@ instance Functor Check
                                             (t, Right (v, b')) -> (t, Right (f v, b')))
 
 instance Monad Check
-    where return v = Check (\b -> ([], Right (v, b)))
-          Check f >>= g = Check (\b -> case f b of
-                                         (t, Left err) -> (t, Left err)
-                                         (t, Right (v, b')) ->
-                                             case runCheck (g v) b' of
-                                               (t', Left err) -> (t ++ t', Left err)
-                                               (t', Right (v', b'')) -> (t ++ t', Right (v', b'')))
+    where return v = Check (\(b, e) -> ([], Right (v, b)))
+          Check f >>= g = Check (\(b, e) -> case f (b, e) of
+                                              (t, Left err) -> (t, Left err)
+                                              (t, Right (v, b')) ->
+                                                 case runCheck (g v) (b', e) of
+                                                   (t', Left err) -> (t ++ t', Left err)
+                                                   (t', Right (v', b'')) -> (t ++ t', Right (v', b'')))
           fail s = Check (\_ -> ([], Left s))
 
 -- Looks up the provided identifier in the assumptions, removing its typing from
 -- the assumption list.
 
 consume :: String -> Check Prop
-consume x = Check (\b -> ([], case partition ((x ==) . fst) b of
-                                ([], _) -> Left ("No type for " ++ x)
-                                ([(_, t)], b')
-                                    | isWhyNot t -> Right (t, b)
-                                    | otherwise  -> Right (t, b')
-                                _ -> error ("Internal failure: multiple bindings of " ++ x ++ " in behavior.")))
+consume x = Check (\(b, e) -> ([], case partition ((x ==) . fst) b of
+                                     ([], _) -> Left ("No type for " ++ x)
+                                     ([(_, t)], b')
+                                         | isWhyNot t -> Right (t, b)
+                                         | otherwise  -> Right (t, b')
+                                     _ -> error ("Internal failure: multiple bindings of " ++ x ++ " in behavior.")))
 
 -- Adds a binding to the assumption list for the purposes of the subcomputation.
 -- Two wrinkles:
@@ -145,21 +59,21 @@ consume x = Check (\b -> ([], case partition ((x ==) . fst) b of
 --    reintroduced in the result of provide.
 
 provide :: String -> Prop -> Check t -> Check t
-provide x t c = Check (\b -> let (included, excluded) = partition ((x /=) . fst) b
-                             in  case runCheck c ((x, t) : included) of
-                                   (t, Left err) -> (t, Left err)
-                                   (t, Right (v, b')) -> (t, let (xs, b'') = partition ((x ==) . fst) b'
-                                                             in  if any (not . isWhyNot . snd) xs
-                                                                 then Left ("Failed to consume bindings " ++ intercalate "," [x ++ ": " ++ show (pretty t) | (x, t) <- xs])
-                                                                 else Right (v, b'' ++ excluded)))
+provide x t c = Check (\(b, e) -> let (included, excluded) = partition ((x /=) . fst) b
+                                  in  case runCheck c ((x, t) : included, e) of
+                                        (t, Left err) -> (t, Left err)
+                                        (t, Right (v, b')) -> (t, let (xs, b'') = partition ((x ==) . fst) b'
+                                                                  in  if any (not . isWhyNot . snd) xs
+                                                                      then Left ("Failed to consume bindings " ++ intercalate "," [x ++ ": " ++ show (pretty t) | (x, t) <- xs])
+                                                                      else Right (v, b'' ++ excluded)))
 
 -- Restricts the assumptions for the purposes of the subcomputation.
 
 withOnly :: (Prop -> Bool) -> Check t -> Check t
-withOnly p c = Check (\b -> let (included, excluded) = partition (p . snd) b
-                            in  case runCheck c included of
-                                  (t, Left err) -> (t, Left err)
-                                  (t, Right (v, b')) -> (t, Right (v, b' ++ excluded)))
+withOnly p c = Check (\(b, e) -> let (included, excluded) = partition (p . snd) b
+                                 in  case runCheck c (included, e) of
+                                       (t, Left err) -> (t, Left err)
+                                       (t, Right (v, b')) -> (t, Right (v, b' ++ excluded)))
 
 -- Performs two subcomputations with the same assumptions; insists that the
 -- unused bindings from each match.  This could be generalized to combine the
@@ -168,15 +82,15 @@ withOnly p c = Check (\b -> let (included, excluded) = partition (p . snd) b
 
 andAlso :: Check () -> Check () -> Check ()
 andAlso c c' =
-    Check (\b -> case (runCheck c b, runCheck c' b) of
-                   ((t, Left err), (t', _)) -> (t ++ t', Left err)
-                   ((t, _), (t', Left err)) -> (t ++ t', Left err)
-                   ((t, Right (_, b)), (t', Right (_, b')))
-                       | same (filterNonlinear b) (filterNonlinear b') -> (t ++ t', Right ((), b))
-                       | otherwise -> (t ++ t',
-                                       let leftOver = filter (`notElem` b') b ++ filter (`notElem` b) b'
-                                       in  Left (unlines ("Failed to consume bindings:" :
-                                                          ["    " ++ x ++ ": " ++ show (pretty t) | (x, t) <- leftOver]))))
+    Check (\(b, e) -> case (runCheck c (b, e), runCheck c' (b, e)) of
+                        ((t, Left err), (t', _)) -> (t ++ t', Left err)
+                        ((t, _), (t', Left err)) -> (t ++ t', Left err)
+                        ((t, Right (_, b)), (t', Right (_, b')))
+                            | same (filterNonlinear b) (filterNonlinear b') -> (t ++ t', Right ((), b))
+                            | otherwise -> (t ++ t',
+                                            let leftOver = filter (`notElem` b') b ++ filter (`notElem` b) b'
+                                            in  Left (unlines ("Failed to consume bindings:" :
+                                                               ["    " ++ x ++ ": " ++ show (pretty t) | (x, t) <- leftOver]))))
     where domain = map fst
           equalAsSet xs ys = all (`elem` xs) ys && all (`elem` ys) xs
           getBinding x b = case partition ((x ==) . fst) b of
@@ -186,26 +100,31 @@ andAlso c c' =
           same b b' = equalAsSet (domain b) (domain b') && and [getBinding x b == getBinding x b' | x <- domain b]
 
 -- Checks that there are no remaining linear bindings in the assumptions.
-
-
 empty :: Check ()
-empty = Check (\b -> let (nlb, lb) = partition (isWhyNot . snd) b
-                     in  if null lb
-                         then ([], Right ((), b))
-                         else ([], Left (unlines ("Failed to consume bindings:" : ["    " ++ x ++ ": " ++ show (pretty t) | (x, t) <- b]))))
+empty = Check (\(b, _) -> let (nlb, lb) = partition (isWhyNot . snd) b
+                          in  if null lb
+                              then ([], Right ((), b))
+                              else ([], Left (unlines ("Failed to consume bindings:" : ["    " ++ x ++ ": " ++ show (pretty t) | (x, t) <- b]))))
 
 -- Generates error message.
-
 unexpectedType :: String -> Prop -> Proc -> Check ()
 unexpectedType x c p = fail ("Unexpected type " ++ show (pretty c) ++ " for " ++ x ++ " in "  ++ show (pretty p))
 
+introduce v t c = Check (\(b, e) -> runCheck c (b, (v, t) : e))
+typeOf v = Check (\(b, e) -> case lookup v e of
+                               Nothing -> ([], Left ("Missing type for " ++ v))
+                               Just t  -> ([], Right (t, b)))
+
+
 --------------------------------------------------------------------------------
--- Prop-checking CP expressions; this is a straight-forward, and somewhat
+-- Type-checking CP expressions; this is a straight-forward, and somewhat
 -- tedious, transcription of the typing rules.
 --------------------------------------------------------------------------------
 
 addError p c = Check (\e -> case runCheck c e of
-                              (t, Left err) -> (t, Left (err ++ "\n    while checking " ++ displayS (renderPretty 0.8 120 (pretty p)) ""))
+                              (t, Left err)
+                                  | '\n' `notElem` err -> (t, Left (err ++ "\n    while checking " ++ displayS (renderPretty 0.8 120 (pretty p)) ""))
+                                  | otherwise -> (t, Left err)
                               (t, Right x) -> (t, Right x))
 
 check :: Proc -> Check ()
@@ -286,15 +205,29 @@ check p = check' p >> empty
               addError (SendProp x a p) $
               do c <- consume x
                  case c of
-                   Exists z b ->
+                   Exist z b ->
                        provide x (inst z a b) (check' p)
                    _ -> unexpectedType x c (SendProp x a p)
           check' (ReceiveProp x a p) =
               addError (ReceiveProp x a p) $
               do c <- consume x
                  case c of
-                   ForAll a' b | a == a' -> withOnly ((a `notElem`) . ftv) (provide x b (check' p))
+                   Univ a' b | a == a' -> withOnly ((a `notElem`) . fpv) (provide x b (check' p))
                    _ -> unexpectedType x c (ReceiveProp x a p)
+          check' (SendTerm x m p) =
+              addError (SendTerm x m p) $
+              do c <- consume x
+                 case c of
+                   FOExist t a -> do t' <- focheck m
+                                     when (t /= t') (fail ("Expected type " ++ show (pretty t) ++ " for " ++ show (pretty m)))
+                                     provide x a (check' p)
+                   _           -> unexpectedType x c (SendTerm x m p)
+          check' (ReceiveTerm x i p) =
+              addError (ReceiveTerm x i p) $
+              do c <- consume x
+                 case c of
+                   FOUniv t a -> introduce i t (provide x a (check' p))
+                   _          -> unexpectedType x c (ReceiveTerm x i p)
           check' (EmptyOut x) =
               addError (EmptyOut x) $
               do c <- consume x
@@ -313,7 +246,46 @@ check p = check' p >> empty
                  case c of
                    With [] -> mapM_ consume ys
                    _       -> unexpectedType x c (EmptyCase x ys)
+          check' (Quote m (Just ds)) =
+              do t <- focheck m
+                 case t of
+                   TQuote b -> mapM_ checkVar (runM (expandB ds b))
+                   _ -> fail ("Quoted expression " ++ show (pretty m) ++ " does not have behavior type")
+              where runM c = case evalStateT (unM c) 0 of
+                               Left err -> error err
+                               Right t  -> t
+                    checkVar (v, t) =
+                        addError ("the binding " ++ v ++ ": " ++ show (pretty t)) $
+                        do t' <- consume v
+                           when (t /= t') (fail ("Expected channel " ++ v ++ " to have type " ++ show (pretty t) ++ ", not " ++ show (pretty t')))
           check' (Unk []) =
-              Check (\b -> ([b], Right ((), filter (isWhyNot . snd) b)))
+              Check (\(b, _) -> ([b], Right ((), filter (isWhyNot . snd) b)))
           check' (Unk ys) =
-              Check (\b -> ([filter ((`elem` ys) . fst) b], Right ((), [(x,t) | (x,t) <- b, x `notElem` ys || isWhyNot t])))
+              Check (\(b, _) -> ([filter ((`elem` ys) . fst) b], Right ((), [(x,t) | (x,t) <- b, x `notElem` ys || isWhyNot t])))
+
+focheck :: FOTerm -> Check FOType
+focheck (EVar s)
+    | s == "+" || s == "*" = return (Int `To` (Int `To` Int))
+    | otherwise = typeOf s
+focheck (EInt _) = return Int
+focheck (EBool _) = return Bool
+focheck EUnit = return Unit
+focheck (EApp m n) =
+    do t <- focheck m
+       u <- focheck n
+       case t of
+         u' `To` v
+             | u == u' -> return v
+             | otherwise -> fail ("Argument type " ++ show (pretty u) ++ " does not match expected " ++ show (pretty u') ++ " in application " ++ show (pretty (EApp m n)))
+         _ -> fail ("Non-function type " ++ show (pretty t) ++ " in application " ++ show (pretty (EApp m n)))
+focheck (EIf m n o) =
+    do tm <- focheck m
+       tn <- focheck n
+       to <- focheck o
+       when (tm /= Bool) (fail ("Condition does not have boolean type: " ++ show (pretty (EIf m n o))))
+       when (tn /= to)   (fail ("Branches have disparate types " ++ show (pretty tn) ++ " and " ++ show (pretty to) ++ " in conditional " ++ show (pretty (EIf m n o))))
+       return tn
+focheck (ELam x t m) = liftM (t `To`) (introduce x t (focheck m))
+focheck (EQuote p b) = Check (\(b', e) -> case runCheck (check p) (b, e) of
+                                            (t, Right ((), _)) -> (t, Right (TQuote b, b'))
+                                            (t, Left err) -> (t, Left err))

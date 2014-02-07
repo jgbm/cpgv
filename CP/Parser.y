@@ -5,11 +5,13 @@ import Control.Monad.Error
 import Control.Monad.State
 import CP.Lexer
 import CP.Syntax
+import Data.Maybe (fromMaybe)
 }
 
 %name proc Proc
 %name prop Prop
 %name tops Tops
+%name foterm FOTerm
 %tokentype { Token }
 %monad { StateT AlexState (Either String) }
 %lexer { scan } { EOF }
@@ -33,7 +35,6 @@ import CP.Syntax
     'case'    { CASE }
     'roll'    { ROLL }
     'unr'     { UNROLL }
-    '0'       { ZERO }
     '?'       { QUERY }
     '!'       { BANG }
 
@@ -45,9 +46,18 @@ import CP.Syntax
     '||'      { PAR }
     '+'       { PLUS }
     '&'       { WITH }
-    '1'       { ONE }
     'bot'     { BOTTOM }
     '~'       { TILDE }
+
+    '\\'      { LAMBDA }
+    'bool'    { BOOL }
+    'true'    { TRUE }
+    'false'   { FALSE }
+    'int'     { INT }
+    '->'      { TO }
+    'if'      { IF }
+    'then'    { THEN }
+    'else'    { ELSE }
 
     'def'     { DEF }
     'type'    { TYPE }
@@ -55,10 +65,17 @@ import CP.Syntax
     '='       { EQUALS }
     'check'   { CHECK }
 
+    '<'       { LANGLE }
+    '>'       { RANGLE }
+
     UIdent   { UIDENT $$ }
     LIdent   { LIDENT $$ }
+    IntConst { INTCONST $$ }
 
 %%
+
+opt(p)       : {- empty -}                    { Nothing }
+             | p                              { Just $1 }
 
 fst(p,q)     : p q                            { $1 }
 snd(p,q)     : p q                            { $2 }
@@ -75,13 +92,17 @@ sep(p,q)     : {- empty -}                    { [] }
 sep1(p,q)    : p list(snd(q,p))               { $1 : $2 }
 
 optSepDelim(p,q,l,r) : {- empty -}            { [] }
-             | l sep(p,q) r                   { $2 }
+                                  | l sep(p,q) r                   { $2 }
 
 labeledList(p,q) : sep(pair(p,snd(':',q)),',') { $1 }
 
+Quant        :: { (String -> Prop -> Prop) -> (FOType -> Prop -> Prop) -> Prop }
+             : UIdent '.' Prop                { \so fo -> so $1 $3 }
+             | FOType '.' Prop                { \so fo -> fo $1 $3 }
+
 Prop         :: { Prop }
-             : 'exists' UIdent '.' Prop       { Exists $2 $4 }
-             | 'forall' UIdent '.' Prop       { ForAll $2 $4 }
+             : 'exists' Quant                 { $2 Exist FOExist }
+             | 'forall' Quant                 { $2 Univ FOUniv }
              | 'mu' UIdent '.' Prop           { Mu $2 $4 }
              | 'nu' UIdent '.' Prop           { Nu $2 $4 }
              | Prop1                          { $1 }
@@ -89,8 +110,10 @@ Prop         :: { Prop }
 Prop1        :: { Prop }
              : Prop2 '*' Prop2                { Times $1 $3 }
              | Prop2 '||' Prop2               { Par $1 $3 }
-             | '+' '{' labeledList(LIdent, Prop) '}' { Plus $3 }
-             | '&' '{' labeledList(LIdent, Prop) '}' { With $3 }
+             | '+' '{' labeledList(LIdent, Prop) '}'
+                                              { Plus $3 }
+             | '&' '{' labeledList(LIdent, Prop) '}'
+                                              { With $3 }
              | Prop2                          { $1 }
 
 Prop2        :: { Prop }
@@ -99,9 +122,19 @@ Prop2        :: { Prop }
              | '~' Prop2                      { Dual $2 }
              | '!' Prop2                      { OfCourse $2 }
              | '?' Prop2                      { WhyNot $2 }
-             | '1'                            { One }
+             | IntConst                       {% if $1 == 1 then return One else throwError ("Unexpected " ++ show $1) }
              | 'bot'                          { Bottom }
              | '(' Prop ')'                   { $2 }
+
+FOType       :: { FOType }
+             : FOType1 '->' FOType            { $1 `To` $3 }
+             | FOType1                        { $1 }
+
+FOType1      :: { FOType }
+             : 'int'                          { Int }
+             | 'bool'                         { Bool }
+             | '[' Behavior ']'               { TQuote $2 }
+             | '(' opt(FOType) ')'            { fromMaybe Unit $2 }
 
 Arg          :: { Arg }
              : LIdent                         { NameArg $1 }
@@ -124,16 +157,42 @@ Proc         :: { Proc }
                                               { Roll $2 $4 $6 $9 $11 }
              | LIdent '[' Prop ']' '.' Proc   { SendProp $1 $3 $6 }
              | LIdent '(' UIdent ')' '.' Proc { ReceiveProp $1 $3 $6 }
+             | LIdent '*' '[' FOTerm ']' '.' Proc
+                                              { SendTerm $1 $4 $7 }
+             | LIdent '*' '(' LIdent ')' '.' Proc
+                                              { ReceiveTerm $1 $4 $7 }
              | LIdent '(' ')' '.' Proc        { EmptyIn $1 $5 }
-             | LIdent '[' ']' '.' '0'         { EmptyOut $1 }
+             | LIdent '[' ']' '.' IntConst    {% if $5 == 0 then return (EmptyOut $1) else throwError ("Unexpected " ++ show $5) }
              | 'case' LIdent '(' sep(LIdent, ',') ')' '{' '}'
                                               { EmptyCase $2 $4 }
              | '!' LIdent '(' LIdent ')' '.' Proc
                                               { Replicate $2 $4 $7 }
+             | '[' FOTerm ']'                 { Quote $2 Nothing }
              | '?' LIdent '[' LIdent ']' '.' Proc
                                               { Derelict $2 $4 $7 }
              | '?' optSepDelim(LIdent, ',', '(', ')')
                                               { Unk $2 }
+
+FOTerm       :: { FOTerm }
+             : FOApp '+' FOTerm               { EApp (EApp (EVar "+") $1) $3 }
+             | FOApp '*' FOTerm               { EApp (EApp (EVar "*") $1) $3 }
+             | '\\' LIdent ':' FOType '.' FOTerm
+                                              { ELam $2 $4 $6 }
+             | 'if'FOTerm 'then' FOTerm 'else' FOTerm
+                                              { EIf $2 $4 $6 }
+             | FOApp                          { $1 }
+
+FOApp        :: { FOTerm }
+             : FOApp FOAtom                   { EApp $1 $2 }
+             | FOAtom                         { $1 }
+
+FOAtom       :: { FOTerm }
+             : 'true'                         { EBool True }
+             | 'false'                        { EBool False }
+             | LIdent                         { EVar $1 }
+             | IntConst                       { EInt $1 }
+             | '[' Proc '|-' Behavior ']'     { EQuote $2 $4 }
+             | '(' opt(FOTerm) ')'            { fromMaybe EUnit $2 }
 
 Param        :: { Param }
              : LIdent                         { NameParam $1 }
@@ -145,13 +204,16 @@ Defn         :: { Defn }
              | 'type' UIdent optSepDelim(UIdent, ',', '(', ')') '=' Prop '.'
                                               { PropDef $2 $3 $5 }
 
+Behavior     :: { Behavior }
+             : sep1(pair(LIdent,snd(':', Prop)),',')
+                                              { $1 }
+
 Assertion    :: { Assertion }
              : 'check' Assertion1             { $2 True }
              | Assertion1                     { $1 False }
 
 Assertion1   :: { Bool -> Assertion }
-             : Proc '|-' sep1(pair(LIdent,snd(':', Prop)),',') '.'
-                                              { Assert $1 $3 }
+             : Proc '|-' Behavior '.'         { Assert $1 $3 }
 
 Top          :: { Either Defn Assertion}
              : Defn                           { Left $1 }
