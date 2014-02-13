@@ -7,6 +7,8 @@
 \newcommand{\unroll}[2]{\mathbf{unr}\:#1.#2}
 \newcommand{\roll}[5]{\mathbf{roll}\:#1 [#2:#3] (#4,#5)}
 \newcommand{\case}[2]{\mathbf{case}\:#1\:\{#2\}}
+\newcommand{\interm}[3]{#1^\star(#2).#3}
+\newcommand{\outterm}[3]{#1^\star[#2].#3}
 
 \def\parr{\bindnasrepma}
 \def\with{\&}
@@ -86,6 +88,20 @@ Where:
           {\assume{F_{C_2}(Q_{xw}) \vdash x:C_2A,w:\overline{C_2}B}};
           {w/r.F_{C_2}(Q_{xw}) \vdash x:C_1A \oplus C_2A,w:\overline{C_2}B}};
         {\case{x}{l: w/l.F_{C_1}(Q_{xw}); r: w/r.F_{C_2}(Q_{xw})} \vdash x:C_1A \with C_2A,w:\overline{C_1}B \oplus \overline{C_2}B}} \\
+  F_{X.\exists \tau.C}(Q_{xw}) &=
+    \infbox{
+      \lproof[\forall]
+        {\lproof[\exists]
+          {\assume{F_C(Q_{xw})\vdash x:CA, w:\overline{C}B}};
+          {\outterm{x}{m}{F_C(Q_{xw})}\vdash x:\exists \tau.CA, w: \overline{C}B}};
+        {\interm{w}{m}{\outterm{x}{m}{F_C(Q_{xw})}} \vdash x:\exists \tau. CA, w:\forall \tau. \overline{C}B}} \\
+  F_{X.\forall \tau.C}(Q_{xw}) &=
+    \infbox{
+      \lproof[\forall]
+        {\lproof[\exists]
+          {\assume{F_C(Q_{xw}) \vdash x:CA, w:\overline{C}B}};
+          {\outterm{w}{m}{F_C(Q_{xw})} \vdash x:CB, w:\exists \tau.\overline{C}B}};
+        {\interm{x}{m}{\outterm{w}{m}{F_C(Q_{xw})}} \vdash x:\forall \tau. CA, w:\exists \tau.\overline{C}B}} \\
   F_{X.\mu(C X)}(Q_{xw}) &=
     \infbox{
       \lproof[\nu]

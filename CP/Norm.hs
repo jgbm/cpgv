@@ -112,7 +112,7 @@ stepPrincipal (Fragment zs (SendProp x a p)) (Fragment zs' (ReceiveProp x' t' q)
 stepPrincipal (Fragment zs (SendTerm x m p)) (Fragment zs' (ReceiveTerm x' i q))
     | x == x', Just (FOExist t b) <- lookup x zs =
         addVar x b (fragment zs p) <++>
-        addVar x (dual b) (fragment zs' (instProc i m q))
+        addVar x (dual b) (fragment zs' (instProc i (reduce m) q))
 stepPrincipal (Fragment zs (EmptyOut x)) (Fragment zs' (EmptyIn x' p))
     | x == x', Just One <- lookup x zs =
         fragment (filter ((x' /=) . fst) zs') p
@@ -267,6 +267,14 @@ commute fs f g = loop fs [] False
               | x `notElem` map fst zs = trace (x ++ "(" ++ t ++ ")") $
                                          do fs <- fragment zs p
                                             ReceiveProp x t `fmap` loop (fs ++ rest) passed True
+          loop' (Fragment zs (SendTerm x m p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ "*[" ++ show (pretty m) ++ "]") $
+                                         do fs <- fragment zs p
+                                            SendTerm x m `fmap` loop (fs ++ rest) passed True
+          loop' (Fragment zs (ReceiveTerm x y p) : rest) passed _
+              | x `notElem` map fst zs = trace (x ++ "*(" ++ y ++ ")") $
+                                         do fs <- fragment zs p
+                                            ReceiveTerm x y `fmap` loop (fs ++ rest) passed True
           loop' (f@(Fragment zs (EmptyIn x p)) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ "()") $
                                          do fs <- fragment zs p
@@ -351,8 +359,13 @@ instTerm i m (EVar j)
 instTerm i m (EQuote p b) = EQuote (instProc i m p) b
 instTerm _ _ n = n
 
-reduce (EApp (EApp (EVar "+") (EInt i)) (EInt j)) = EInt (i + j)
-reduce (EApp (EApp (EVar "*") (EInt i)) (EInt j)) = EInt (i * j)
-reduce (EApp (ELam x t m) n) = reduce (instTerm x n m)
+reduce (EApp e f) =
+    case (e', f') of
+      (EApp (EVar "+") (EInt i), EInt j) -> EInt (i + j)
+      (EApp (EVar "*") (EInt i), EInt j) -> EInt (i * j)
+      (ELam x t m, n) -> reduce (instTerm x n m)
+      _ -> EApp e' f'
+    where e' = reduce e
+          f' = reduce f
 reduce (EIf m n o) = if reduce m == EBool True then reduce n else reduce o
 reduce m = m

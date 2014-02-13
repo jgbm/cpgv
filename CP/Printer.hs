@@ -51,43 +51,45 @@ instance Pretty Arg
     where pretty (ProcArg p) = pretty p
           pretty (NameArg n) = text n
 
+name s = text (takeWhile ('\'' /=) s)
+
 instance Pretty Proc
-    where pretty (ProcVar v []) = text v
-          pretty (ProcVar v args) = hang 2 (text v <> parens (fillCat (punctuate (comma <> space) (map pretty args))))
-          pretty (Link x w) = text x <> "<->" <> text w
-          pretty (Cut x a p q) = hang 2 (group ("cut" <+> brackets (text x <> colon <+> pretty a) <$>
+    where pretty (ProcVar v []) = name v
+          pretty (ProcVar v args) = hang 2 (name v <> parens (fillCat (punctuate (comma <> space) (map pretty args))))
+          pretty (Link x w) = name x <> "<->" <> name w
+          pretty (Cut x a p q) = hang 2 (group ("cut" <+> brackets (name x <> colon <+> pretty a) <$>
                                                 parens (align (pretty p <+> bar <$> pretty q))))
-          pretty (Out x y p q) = hang 2 (group (text x <> brackets (text y) <> dot <$$>
+          pretty (Out x y p q) = hang 2 (group (name x <> brackets (name y) <> dot <$$>
                                                 parens (align (pretty p <+> bar <$> pretty q))))
-          pretty (In x y p) = hang 2 (text x <> parens (text y) <> dot <//> pretty p)
-          pretty (Select x l p) = hang 2 (text x <> slash <> text l <> dot <//> pretty p)
-          pretty (Case x bs) = hang 2 (group ("case" <+> text x <$> braces (align (cat (punctuate (semi <> space ) [text l <> colon <+> pretty p | (l, p) <- bs])))))
-          pretty (Unroll x p) = hang 2 ("unr" <+> text x <> dot <//> pretty p)
-          pretty (Roll x y a p q) = hang 2 (group ("roll" <+> text x <+> brackets (text y <> colon <+> pretty a) <$>
+          pretty (In x y p) = hang 2 (name x <> parens (name y) <> dot <//> pretty p)
+          pretty (Select x l p) = hang 2 (name x <> slash <> text l <> dot <//> pretty p)
+          pretty (Case x bs) = hang 2 (group ("case" <+> name x <$> braces (align (cat (punctuate (semi <> space ) [text l <> colon <+> pretty p | (l, p) <- bs])))))
+          pretty (Unroll x p) = hang 2 ("unr" <+> name x <> dot <//> pretty p)
+          pretty (Roll x y a p q) = hang 2 (group ("roll" <+> name x <+> brackets (name y <> colon <+> pretty a) <$>
                                                    parens (pretty p <> comma <$> pretty q)))
-          pretty (Replicate x y p) = hang 2 ("!" <> text x <> parens (text y) <> dot <//> pretty p)
-          pretty (Derelict x y p) = hang 2 ("?" <> text x <> brackets (text y) <> dot <//> pretty p)
-          pretty (SendProp x a p) = hang 2 (text x <> brackets (pretty a) <> dot <//> pretty p)
-          pretty (ReceiveProp x a p) = hang 2 (text x <> parens (pretty a) <> dot <//> pretty p)
-          pretty (SendTerm x m p) = hang 2 (text x <> text "*" <> brackets (pretty m) <> dot <//> pretty p)
-          pretty (ReceiveTerm x i p) = hang 2 (text x <> text "*" <> parens (text i) <> dot <//> pretty p)
-          pretty (EmptyOut x) = text x <> "[].0"
-          pretty (EmptyIn x p) = hang 2 (text x <> "()." <//> pretty p)
-          pretty (EmptyCase x ys) = "case" <+> text x <> parens (cat (punctuate (comma <> space) (map text ys))) <> "{}"
+          pretty (Replicate x y p) = hang 2 ("!" <> name x <> parens (name y) <> dot <//> pretty p)
+          pretty (Derelict x y p) = hang 2 ("?" <> name x <> brackets (name y) <> dot <//> pretty p)
+          pretty (SendProp x a p) = hang 2 (name x <> brackets (pretty a) <> dot <//> pretty p)
+          pretty (ReceiveProp x a p) = hang 2 (name x <> parens (pretty a) <> dot <//> pretty p)
+          pretty (SendTerm x m p) = hang 2 (name x <> text "*" <> brackets (pretty m) <> dot <//> pretty p)
+          pretty (ReceiveTerm x i p) = hang 2 (name x <> text "*" <> parens (name i) <> dot <//> pretty p)
+          pretty (EmptyOut x) = name x <> "[].0"
+          pretty (EmptyIn x p) = hang 2 (name x <> "()." <//> pretty p)
+          pretty (EmptyCase x ys) = "case" <+> name x <> parens (cat (punctuate (comma <> space) (map name ys))) <> "{}"
           pretty (Quote m _) = brackets (pretty m)
           pretty (Unk []) = "?"
-          pretty (Unk ys) = "?" <> parens (cat (punctuate (comma <> space) (map text ys)))
+          pretty (Unk ys) = "?" <> parens (cat (punctuate (comma <> space) (map name ys)))
 
 instance Pretty Param
-    where pretty (ProcParam s) = text s
-          pretty (NameParam s) = text s
+    where pretty (ProcParam s) = name s
+          pretty (NameParam s) = name s
 
-foterm (ELam x t m) = prec 0 (hang 2 (text "\\" <+> text x <> colon <+> pretty t <> dot <//> foterm m 0))
+foterm (ELam x t m) = prec 0 (hang 2 (text "\\" <+> name x <> colon <+> pretty t <> dot <//> foterm m 0))
 foterm (EIf m n o) = prec 0 (text "if" <+> foterm m 0 </> text "then" <+> foterm n 0 </> text "else" <+> foterm o 0)
 foterm (EApp (EApp (EVar "+") e) e') = prec 1 (foterm e 1 <+> text "+" <+> foterm e' 1)
 foterm (EApp (EApp (EVar "*") e) e') = prec 2 (foterm e 2 <+> text "*" <+> foterm e' 2)
 foterm (EApp e e') = prec 3 (foterm e 3 <+> foterm e' 2)
-foterm (EVar s) = const (text s)
+foterm (EVar s) = const (name s)
 foterm (EBool True) = const (text "true")
 foterm (EBool False) = const (text "false")
 foterm (EInt i) = const (integer i)
@@ -98,15 +100,15 @@ instance Pretty FOTerm
     where pretty x = foterm x 0
 
 
-defn x [] z = text x <+> equals <+> pretty z
-defn x ps z = text x <> parens (cat (punctuate (comma <> space) (map pretty ps))) <+> equals <+> pretty z
+defn x [] z = name x <+> equals <+> pretty z
+defn x ps z = name x <> parens (cat (punctuate (comma <> space) (map pretty ps))) <+> equals <+> pretty z
 
 instance Pretty Defn
     where pretty (ProcDef x ps p) = "def" <+> defn x ps p
           pretty (PropDef x ps a) = "type" <+> defn x ps a
 
 instance Pretty Behavior
-    where pretty b = align (fillCat (punctuate (comma <> space) [text v <> colon <+> pretty a | (v,a) <- b]))
+    where pretty b = align (fillCat (punctuate (comma <> space) [name v <> colon <+> pretty a | (v,a) <- b]))
 
 instance Pretty Assertion
     where pretty (Assert p b check) = hang 2 (group ((if check then "check " else empty) <>
