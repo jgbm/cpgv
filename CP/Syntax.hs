@@ -345,3 +345,4 @@ data FOTerm = EVar String | EInt Integer | EBool Bool | EUnit
             | EIf FOTerm FOTerm FOTerm
             | EQuote Proc Behavior
     deriving (Eq, Show)
+            | EFix FOTerm

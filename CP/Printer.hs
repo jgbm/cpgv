@@ -95,6 +95,7 @@ foterm (EBool False) = const (text "false")
 foterm (EInt i) = const (integer i)
 foterm EUnit = const (text "()")
 foterm (EQuote p b) = const (brackets (pretty p </> text "|-" <+> pretty b))
+foterm (EFix e) = prec 0 (hang 2 (foterm e 1))
 
 instance Pretty FOTerm
     where pretty x = foterm x 0

@@ -279,6 +279,11 @@ focheck (EApp m n) =
              | u == u' -> return v
              | otherwise -> fail ("Argument type " ++ show (pretty u) ++ " does not match expected " ++ show (pretty u') ++ " in application " ++ show (pretty (EApp m n)))
          _ -> fail ("Non-function type " ++ show (pretty t) ++ " in application " ++ show (pretty (EApp m n)))
+focheck (EFix e) =
+    do t <- focheck e
+       case t of
+         u `To` v | u == v -> return v
+         _ -> fail ("Unexpected argument " ++ show (pretty e) ++ " to fix of type " ++ show (pretty t))
 focheck (EIf m n o) =
     do tm <- focheck m
        tn <- focheck n

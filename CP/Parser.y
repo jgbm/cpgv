@@ -58,6 +58,7 @@ import Data.Maybe (fromMaybe)
     'if'      { IF }
     'then'    { THEN }
     'else'    { ELSE }
+    'fix'     { FIX }
 
     'def'     { DEF }
     'type'    { TYPE }
@@ -174,16 +175,23 @@ Proc         :: { Proc }
                                               { Unk $2 }
 
 FOTerm       :: { FOTerm }
-             : FOApp '+' FOTerm               { EApp (EApp (EVar "+") $1) $3 }
-             | FOApp '*' FOTerm               { EApp (EApp (EVar "*") $1) $3 }
-             | '\\' LIdent ':' FOType '.' FOTerm
+             : '\\' LIdent ':' FOType '.' FOTerm
                                               { ELam $2 $4 $6 }
-             | 'if'FOTerm 'then' FOTerm 'else' FOTerm
+             | 'if' FOTerm 'then' FOTerm 'else' FOTerm
                                               { EIf $2 $4 $6 }
              | FOApp                          { $1 }
 
 FOApp        :: { FOTerm }
-             : FOApp FOAtom                   { EApp $1 $2 }
+             : FOApp1 '+' FOApp               { EApp (EApp (EVar "+") $1) $3 }
+             | FOApp1                         { $1 }
+
+FOApp1       :: { FOTerm }
+             : FOApp2 '*' FOApp1              { EApp (EApp (EVar "*") $1) $3 }
+             | FOApp2                         { $1 }
+
+FOApp2       :: { FOTerm }
+             : FOApp2 FOAtom                  { EApp $1 $2 }
+             | 'fix' FOAtom                   { EFix $2 }
              | FOAtom                         { $1 }
 
 FOAtom       :: { FOTerm }

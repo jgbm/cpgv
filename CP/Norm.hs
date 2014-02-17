@@ -357,6 +357,8 @@ instTerm i m (EVar j)
     | i == j = m
     | otherwise = EVar j
 instTerm i m (EQuote p b) = EQuote (instProc i m p) b
+instTerm i m (EIf n0 n1 n2) = EIf (instTerm i m n0) (instTerm i m n1) (instTerm i m n2)
+instTerm i m (EFix n) = EFix (instTerm i m n)
 instTerm _ _ n = n
 
 reduce (EApp e f) =
@@ -369,4 +371,7 @@ reduce (EApp e f) =
     where e' = reduce e
           f' = reduce f
 reduce (EIf m n o) = if reduce m == EBool True then reduce n else reduce o
+reduce (EFix m) =
+    case reduce m of
+      ELam x t n -> reduce (instTerm x (EFix (ELam x t n)) n)
 reduce m = m

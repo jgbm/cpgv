@@ -64,6 +64,7 @@ $any    = [$upper $lower $digit _]
          "if"         { lexeme IF }
          "then"       { lexeme THEN }
          "else"       { lexeme ELSE }
+         "fix"        { lexeme FIX }
 
          "<"          { lexeme LANGLE }
          ">"          { lexeme RANGLE }
@@ -124,6 +125,7 @@ data Token = LIDENT String
            | IF
            | THEN
            | ELSE
+           | FIX
 
            | LANGLE
            | RANGLE
