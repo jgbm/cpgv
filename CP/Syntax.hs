@@ -4,6 +4,8 @@ module CP.Syntax where
 import Control.Monad
 import Control.Monad.Error
 import Control.Monad.State
+import Data.List (intercalate)
+import Data.Maybe (fromMaybe)
 
 data Prop = Univ String Prop
           | Exist String Prop
@@ -155,6 +157,32 @@ data Defns = D { procs :: [(String, ([Param], Proc))],
 
 emptyDefns = D [] [] []
 
+
+getBinding :: String -> [(String, v)] -> Either String v
+getBinding k ds = case lookup k ds of
+                    Nothing -> Left ("Unable to find definition of " ++ k ++ "; defined symbols are " ++ intercalate ", " (map fst ds))
+                    Just v  -> Right v
+
+getBinding' k ds = case getBinding k ds of
+                     Left err -> throwError err
+                     Right v  -> return v
+
+addDefn :: Defns -> Defn -> Defns
+addDefn ds (ProcDef id vs p) = ds{ procs = (id, (vs, p)) : procs ds }
+addDefn ds (PropDef id vs t) = ds{ types = (id, (vs, t)) : types ds }
+
+addNameBinding :: Defns -> String -> String -> Defns
+addNameBinding ds x y = ds{ names = (x, y) : map (second exn) (names ds) }
+    where exn z | z == x = y
+                | otherwise = z
+          second f (x, y) = (x, f y)
+
+filterTypeDefns :: (String -> Bool) -> Defns -> Defns
+filterTypeDefns p ds = ds{ types = filter (p . fst) (types ds) }
+
+filterNameBindings :: (String -> Bool) -> Defns -> Defns
+filterNameBindings p ds = ds{ names = filter (p . fst) (names ds) }
+
 data Assertion = Assert Proc [(String, Prop)] Bool
     deriving (Eq, Show)
 
@@ -280,7 +308,11 @@ replace x y = replace'
           replace' (EmptyOut z) = return (EmptyOut (var z))
           replace' (EmptyIn z p) = liftM (EmptyIn (var z)) (replace' p)
           replace' (EmptyCase z ws) = return (EmptyCase (var z) (map var ws))
-          replace' (Quote m ds) = return (Quote m ds)
+          replace' (Quote m ds) = return (Quote m (replaceBindings `fmap` ds))
+              where exn z | z == x = y
+                          | otherwise = z
+                    second f (x, y) = (x, f y)
+                    replaceBindings ds = ds{ names = map (second exn) (names ds) }
           replace' (Unk vs) = return (Unk (map var vs))
           replace' p = error ("Replace missing case for " ++ show p)
 
@@ -344,5 +376,13 @@ data FOTerm = EVar String | EInt Integer | EBool Bool | EUnit
             | EApp FOTerm FOTerm | ELam String FOType FOTerm
             | EIf FOTerm FOTerm FOTerm
             | EQuote Proc Behavior
-    deriving (Eq, Show)
             | EFix FOTerm
+    deriving (Eq, Show)
+
+channels :: FOTerm -> [String]
+channels (EApp e e')    = channels e ++ channels e'
+channels (ELam _ _ e)   = channels e
+channels (EIf e e' e'') = concatMap channels [e, e', e'']
+channels (EQuote p b)   = map fst b
+channels (EFix e)       = channels e
+channels _              = []

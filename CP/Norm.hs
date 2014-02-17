@@ -125,18 +125,13 @@ stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
                r' <- replace x z r
                recurse <- funct b x z (Roll z y s (Link x y) r')
                p' <- replace x z p
-               if y `elem` fn p
-               then do y' <- fresh y
-                       q' <- replace y y' q
-                       r' <- replace y y' r
-                       addVar y' s (fragment zs' q') <++>
-                           addVar y' (dual s) (addVar x (bbar `appl` s) (fragment zs' r')) <++>
-                           addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) <++>
-                           addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p')))
-               else addVar y s (fragment zs' q) <++>
-                    addVar y (dual s) (addVar x (bbar `appl` s) (fragment zs' r)) <++>
-                    addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) <++>
-                    addVar y (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p')))
+               y' <- fresh y
+               q' <- replace y y' q
+               r' <- replace y y' r
+               addVar y' s (fragment zs' q') <++>
+                   addVar y' (dual s) (addVar x (bbar `appl` s) (fragment zs' r')) <++>
+                   addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (bbar `appl` nu bbar) (fragment zs' recurse))) <++>
+                   addVar y' (dual s) (addVar x (dual (bbar `appl` s)) (addVar z (dual (bbar `appl` nu bbar)) (fragment zs p')))
     where -- assuming that there are propositions A and B such that q |- x:A,w:B,
           -- funct c x w q |- x:c A,w:cbar B
           funct (t,c) x w q
@@ -161,6 +156,10 @@ stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
               where branch (l, c) = ((l,) . Select x l) `fmap` funct (t, c) x w q
           funct (t, With lts) x w q = Case x `fmap` mapM branch lts
               where branch (l, c) = ((l,) . Select w l) `fmap` funct (t, c) x w q
+          funct (t, FOExist _ c) x w q = do m <- fresh "m"
+                                            (ReceiveTerm w m . SendTerm x (EVar m)) `fmap` funct (t, c) x w q
+          funct (t, FOUniv _ c) x w q = do m <- fresh "m"
+                                           (ReceiveTerm x m . SendTerm w (EVar m)) `fmap` funct (t, c) x w q
           funct (t, a) _ _ _ = error ("Unimplemented: functoriality for " ++ t ++ "." ++ show (pretty a))
 stepPrincipal (Fragment zs (Replicate x y p)) (Fragment zs' (Derelict x' y' q))
     | x == x', Just (OfCourse a) <- lookup x zs =
@@ -306,7 +305,6 @@ normalize p = trace ("Normalizing " ++ showCP p) $
                           return (map snd ifs)
           loop ((i,j):wl) ifs k
               | Just fi <- lookup i ifs, Just fj <- lookup j ifs =
-                  trace (unlines ((show ((i,j):wl)) : map showCP (map snd ifs))) $
                   do fs' <- step fi fj
                      case fs' of
                        [] -> loop wl ifs k
@@ -316,7 +314,9 @@ normalize p = trace ("Normalizing " ++ showCP p) $
                                  ifs' = zip ks fs' ++ filter (notIorJ . fst) ifs
                                  wl'  = makeWorkList ks (filter notIorJ (map fst ifs)) ++
                                         [(i',j') | (i',j') <- wl, notIorJ i', notIorJ j']
-                             in  loop wl' ifs' k'
+                             in  trace (replicate 120 '-' ++ '\n' :
+                                        showCP (unFragment (map snd ifs'))) $
+                                 loop wl' ifs' k'
               | otherwise = error "Missing fragments in loop"
 
           step fi fj =

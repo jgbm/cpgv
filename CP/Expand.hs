@@ -7,28 +7,6 @@ import Data.List
 import CP.Syntax
 import CP.Printer
 
-getBinding :: String -> [(String, v)] -> Either String v
-getBinding k ds = case lookup k ds of
-                    Nothing -> Left ("Unable to find definition of " ++ k ++ "; defined symbols are " ++ intercalate ", " (map fst ds))
-                    Just v  -> Right v
-
-getBinding' k ds = case getBinding k ds of
-                     Left err -> throwError err
-                     Right v  -> return v
-
-addDefn :: Defns -> Defn -> Defns
-addDefn ds (ProcDef id vs p) = ds{ procs = (id, (vs, p)) : procs ds }
-addDefn ds (PropDef id vs t) = ds{ types = (id, (vs, t)) : types ds }
-
-addNameBinding :: Defns -> String -> String -> Defns
-addNameBinding ds x y = ds{ names = (x, y) : names ds }
-
-filterTypeDefns :: (String -> Bool) -> Defns -> Defns
-filterTypeDefns p ds = ds{ types = filter (p . fst) (types ds) }
-
-filterNameBindings :: (String -> Bool) -> Defns -> Defns
-filterNameBindings p ds = ds{ names = filter (p . fst) (names ds) }
-
 expandA :: Defns -> Arg -> M Arg
 expandA ds (NameArg v) = case lookup v (names ds) of
                           Nothing -> return (NameArg v)
@@ -51,27 +29,18 @@ expandP ds = ex
           ex (Cut x a p q) = do x' <- fresh x
                                 let ds' = addNameBinding ds x x'
                                 liftM3 (Cut x') (expandT ds a) (expandP ds' p) (expandP ds' q)
-          ex (Out x y p q)
-              | y `elem` map snd (names ds) = do y' <- fresh y
-                                                 p' <- replace y y' p
-                                                 liftM2 (Out (exn x) y') (ex p') (ex q)
-              | otherwise          = liftM2 (Out (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
-                                                            (ex q)
-          ex (In x y p)
-             | y `elem` map snd (names ds) = do y' <- fresh y
-                                                p' <- replace y y' p
-                                                liftM (In (exn x) y') (ex p')
-             | otherwise           = liftM (In (exn x) y) (ex p)
+          ex (Out x y p q) = do y' <- fresh y
+                                let ds' = addNameBinding ds y y'
+                                liftM2 (Out (exn x) y') (expandP ds' p) (ex q)
+          ex (In x y p) = do y' <- fresh y
+                             let ds' = addNameBinding ds y y'
+                             liftM (In (exn x) y') (expandP ds' p)
           ex (Select x l p)        = liftM (Select (exn x) l) (ex p)
           ex (Case x bs)           = liftM (Case (exn x)) (sequence [(l,) `fmap` ex p | (l, p) <- bs])
           ex (Unroll x p)          = liftM (Unroll (exn x)) (ex p)
-          ex (Roll x y a p q)
-              | y `elem` map snd (names ds) = do y' <- fresh y
-                                                 p' <- replace y y' p
-                                                 q' <- replace y y' q
-                                                 liftM3 (Roll (exn x) y') (expandT ds a) (ex p') (ex q')
-              | otherwise          = liftM3 (Roll (exn x) y) (expandT ds a) (expandP ds' p) (expandP ds' q)
-              where ds' = filterNameBindings (y /=) ds
+          ex (Roll x y a p q)      = do y' <- fresh y
+                                        let ds' = addNameBinding ds y y'
+                                        liftM3 (Roll (exn x) y') (expandT ds a) (expandP ds' p) (expandP ds' q)
           ex (Replicate x y p)     = liftM (Replicate (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
           ex (Derelict x y p)      = liftM (Derelict (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
           ex (SendProp x a p)      = liftM2 (SendProp (exn x)) (expandT ds a) (ex p)
@@ -81,7 +50,10 @@ expandP ds = ex
           ex (EmptyOut x)          = return (EmptyOut (exn x))
           ex (EmptyIn x p)         = liftM (EmptyIn (exn x)) (ex p)
           ex (EmptyCase x ys)      = return (EmptyCase (exn x) (map exn ys))
-          ex (Quote m _)           = return (Quote m (Just ds))
+          ex (Quote m _)           = return (Quote m (Just ds{ names = units ++ names' }))
+              where cs = channels m
+                    names' = filter ((`elem` cs) . fst) (names ds)
+                    units  = [(x, x) | x <- cs, x `notElem` map fst names']
           ex (Unk ys)              = return (Unk ys)
 
           exn x = case getBinding x (names ds) of
@@ -127,3 +99,11 @@ expandB ds b = sequence [liftM (exn v,) (expandT ds t) | (v, t) <- b]
     where exn x = case getBinding x (names ds) of
                     Left _ -> x
                     Right y -> y
+
+expandTop :: Defns -> Proc -> Behavior -> M (Proc, Behavior)
+expandTop ds p b = do vs' <- mapM fresh vs
+                      let ds' = foldl (\ds (x, y) -> addNameBinding ds x y) ds (zip vs vs')
+                      p'  <- expandP ds' p
+                      b'  <- expandB ds' b
+                      return (p', b')
+    where vs = map fst b

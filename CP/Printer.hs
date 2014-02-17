@@ -12,12 +12,12 @@ instance IsString Doc
 prec m p n | m <= n    = parens p
            | otherwise = p
 
-propBinder k x a = hang 2 (group (text k <+> text x <> dot <$> prop a 0))
+propBinder k x a = hang 2 (group (text k <+> text x <> dot <$> prop a (-1)))
 
 prop (Univ x a)    = prec 0 (propBinder "forall" x a)
 prop (Exist x a)   = prec 0 (propBinder "exists" x a)
-prop (FOUniv t a)  = prec 0 (text "forall" <+> pretty t <> dot <$> prop a 0)
-prop (FOExist t a) = prec 0 (text "forall" <+> pretty t <> dot <$> prop a 0)
+prop (FOUniv t a)  = prec 0 (text "forall" <+> pretty t <> dot <$> prop a (-1))
+prop (FOExist t a) = prec 0 (text "forall" <+> pretty t <> dot <$> prop a (-1))
 prop (Mu x a)      = prec 0 (propBinder "mu" x a)
 prop (Nu x a)      = prec 0 (propBinder "nu" x a)
 prop (OfCourse a)  = prec 2 ("!" <> prop a 2)
@@ -51,6 +51,7 @@ instance Pretty Arg
     where pretty (ProcArg p) = pretty p
           pretty (NameArg n) = text n
 
+-- name = text
 name s = text (takeWhile ('\'' /=) s)
 
 instance Pretty Proc
@@ -76,7 +77,7 @@ instance Pretty Proc
           pretty (EmptyOut x) = name x <> "[].0"
           pretty (EmptyIn x p) = hang 2 (name x <> "()." <//> pretty p)
           pretty (EmptyCase x ys) = "case" <+> name x <> parens (cat (punctuate (comma <> space) (map name ys))) <> "{}"
-          pretty (Quote m _) = brackets (pretty m)
+          pretty (Quote m ds) = brackets (pretty m <+> bar </> cat (punctuate (comma <> space) [text x <+> "->" <+> text y | (x, y) <- maybe [] names ds]))
           pretty (Unk []) = "?"
           pretty (Unk ys) = "?" <> parens (cat (punctuate (comma <> space) (map name ys)))
 
