@@ -266,6 +266,7 @@ check p = check' p >> empty
 focheck :: FOTerm -> Check FOType
 focheck (EVar s)
     | s == "+" || s == "*" = return (Int `To` (Int `To` Int))
+    | s == "isZero" = return (Int `To` Bool)
     | otherwise = typeOf s
 focheck (EInt _) = return Int
 focheck (EBool _) = return Bool

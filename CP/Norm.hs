@@ -363,6 +363,7 @@ reduce (EApp e f) =
     case (e', f') of
       (EApp (EVar "+") (EInt i), EInt j) -> EInt (i + j)
       (EApp (EVar "*") (EInt i), EInt j) -> EInt (i * j)
+      (EVar "isZero", EInt i) -> EBool (i == 0)
       (ELam x t m, n) -> reduce (instTerm x n m)
       _ -> EApp e' f'
     where e' = reduce e
