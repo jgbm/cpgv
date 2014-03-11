@@ -31,7 +31,7 @@ import Data.Maybe (fromMaybe)
     '}'       { RBRACE }
     '|'       { BAR }
     '<->'     { LINK }
-    'cut'     { CUT }
+    'new'     { NEW }
     'case'    { CASE }
     'roll'    { ROLL }
     'unr'     { UNROLL }
@@ -145,7 +145,7 @@ Proc         :: { Proc }
              : UIdent optSepDelim(Arg, ',', '(', ')')
                                               { ProcVar $1 $2 }
              | LIdent '<->' LIdent            { Link $1 $3 }
-             | 'cut' '[' LIdent ':' Prop ']' '(' Proc '|' Proc ')'
+             | 'new' '[' LIdent ':' Prop ']' '(' Proc '|' Proc ')'
                                               { Cut $3 $5 $8 $10 }
              | LIdent '[' LIdent ']' '.' '(' Proc '|' Proc ')'
                                               { Out $1 $3 $7 $9 }

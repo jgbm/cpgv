@@ -19,7 +19,7 @@ check Bottoms(y,x) |- y:bot, x:Source(1).
 def Ones(z,x) = unr x.x/more.x(v).z[w].(w<->v | unr x.x/end.x<->z).
 check Ones(z,x) |- x:Sink(1), z:1*1.
 
-check cut [x:Source(1)] (Bottoms(y,x) | Ones(z,x)) |- y:bot, z:1*1.
+check new [x:Source(1)] (Bottoms(y,x) | Ones(z,x)) |- y:bot, z:1*1.
 
 -- Encodings of exponentials, for Church numerals.
 
@@ -52,21 +52,20 @@ check Two(x) |- x:Church.
 
 def Two_(x) = x(A).x(s).x(z).
               unr s.s/c.s(f).unr f.f/d.f[a].
-              (a<->z | cut [y:Church] (One(y) | y[A].y[w].(w <-> s | y[v].(v<->f | y<->x)))).
+              (a<->z | new [y:Church] (One(y) | y[A].y[w].(w <-> s | y[v].(v<->f | y<->x)))).
 check Two_(x) |- x:Church.
-check cut [x:Church] (Two_(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
+check new [x:Church] (Two_(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
 
 -- Increment, based on above.
 
 def Inc(x,y) = y(A).y(s).y(z).
                unr s.s/c.s(f).unr f.f/d.f[a].
                (a<->z | x[A].x[w].(w<->s | x[v].(v<->f | y<->x))).
-
 check Inc(x,y) |- x:~Church,y:Church.
 
 -- Demonstrate that Inc of One behaves as Two.
 
-check cut [y:Church] (cut [x:Church] (One(x) | Inc(x,y)) |
+check new [y:Church] (new [x:Church] (One(x) | Inc(x,y)) |
                       Ping(y,a,b)) |- a:Quest(bot),b:1.
 
 def Zeroes(y) = roll y [z:1]
@@ -89,7 +88,7 @@ def Nats(x) = roll x [y:Bang(Church)]
                           more: unr y.y/c.y(z).x[w].(unr z.z/d.z<->w | LiftIncr(y,x)) }).
 check Nats(x) |- x:Source(Church).
 
-cut [x:Source(Church)]
+new [x:Source(Church)]
   (Nats(x) |
    unr x.x/more.x(y).
    unr x.x/more.x(z).

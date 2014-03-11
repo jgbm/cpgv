@@ -31,7 +31,7 @@ $any    = [$upper $lower $digit _]
          "}"          { lexeme RBRACE }
          "|"          { lexeme BAR }
          "<->"        { lexeme LINK }
-         "cut"        { lexeme CUT }
+         "new"        { lexeme NEW }
          "case"       { lexeme CASE }
          "roll"       { lexeme ROLL }
          "unr"        { lexeme UNROLL }
@@ -91,7 +91,7 @@ data Token = LIDENT String
            | RBRACE
            | BAR
            | LINK
-           | CUT
+           | NEW
            | CASE
            | ROLL
            | UNROLL

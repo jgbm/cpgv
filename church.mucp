@@ -24,6 +24,6 @@ def Ping(x,y,w) =
 
 check Ping(x,y,w) |- x:~Church,y:Quest(bot),w:1.
 
-cut [x:Church] (Zero(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
-cut [x:Church] (One(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
-cut [x:Church] (Two(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
+new [x:Church] (Zero(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
+new [x:Church] (One(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
+new [x:Church] (Two(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.

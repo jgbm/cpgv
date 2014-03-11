@@ -27,7 +27,7 @@ def Node(i,y,n) =
               halt: unr x.x/halt.x().n[].0 }).
 
 check Node(i,x,n) |- i: forall int.bot, x: ~CImp, n:CImp.
-check cut [i:exists int.1] (i*[0].i[].0 | Node(i,x,n)) |- x:~CImp,n:CImp.
+check new [i:exists int.1] (i*[0].i[].0 | Node(i,x,n)) |- x:~CImp,n:CImp.
 
 type Counter = nu X. &{val: exists int.X, inc:X, halt:1}.
 
@@ -38,8 +38,8 @@ def Counter(y,z) =
                    x*[0].x*(n).
                    z*[n].z<->x;
               inc: unr x.x/inc.
-                   case x { carry: cut [n:CImp]
-                                     (cut [i:exists int.1]
+                   case x { carry: new [n:CImp]
+                                     (new [i:exists int.1]
                                        (i*[1].i[].0 | Node(i,x,n)) |
                                         z<->n);
                             done: z<->x };
@@ -48,10 +48,10 @@ def Counter(y,z) =
 check Counter(x,z) |- x:~CImp,z:Counter.
 
 
-cut [z:CImp]
-  (cut [y:CImp]
-    (cut [x:CImp] (Epsilon(x) | cut [i:exists int.1] (i*[0].i[].0 | Node(i,x,y))) |
-     cut [i:exists int.1] (i*[1].i[].0 | Node(i,y,z))) |
+new [z:CImp]
+  (new [y:CImp]
+    (new [x:CImp] (Epsilon(x) | new [i:exists int.1] (i*[0].i[].0 | Node(i,x,y))) |
+     new [i:exists int.1] (i*[1].i[].0 | Node(i,y,z))) |
    unr z.z/val.z*[0].z*(i).
    unr z.z/inc.
    case z { carry: unr z.z/val.z*[0].z*(j).
@@ -62,8 +62,8 @@ cut [z:CImp]
                    a*[i].a*[j].a[].0 })
  |- a:exists int.exists int.1.
 
-cut [z:Counter]
-  (cut [x:CImp]
+new [z:Counter]
+  (new [x:CImp]
      (Epsilon(x) | Counter(x,z)) |
    unr z.z/val.z*(i).
    unr z.z/inc.
