@@ -55,6 +55,7 @@ instance HasTyVars Proc
                     go (Unk ys) = Unk ys
 
 data Fragment = Fragment [(String, Prop)] Proc
+cutVars (Fragment zs p) = map fst zs
 
 instance Pretty Fragment
     where pretty (Fragment zs p) = group (hang 2 (text "<" <> cat (punctuate (comma <> space) [text z <> colon <+> pretty a | (z,a) <- zs]) <> text ">" <$> pretty p))
@@ -201,32 +202,46 @@ commute fs f g = loop fs [] False
                   trace (x ++ '[' : y ++ "]") $
                   do pfs <- fragment zs p
                      qfs <- fragment zs q
-                     let (ps, qs, rest') = part pfs pzs qfs qzs [] (rest ++ passed) [] False
+                     let pns = concatMap cutVars pfs
+                         qns = concatMap cutVars qfs
+                         pzs = filter (`elem` pns) (map fst zs)
+                         qzs = filter (`elem` qns) (map fst zs)
+                         (ps, qs, rest') = part pfs pzs qfs qzs [] (rest ++ passed) [] False
                      if null ps && null qs
                      then loop rest (f : passed) b
-                     else do p' <- loop ps [] True
+                     else trace ("Partitioned into:\n\n" ++
+                                 "(" ++ intercalate "," (map show pns) ++ ")\n" ++
+                                 unlines (map showCP ps) ++
+                                 "\n\nand\n\n" ++
+                                 "(" ++ intercalate "," (map show qns) ++ ")\n" ++
+                                 unlines (map showCP qs)) $
+                          do p' <- loop ps [] True
                              q' <- loop qs [] True
                              if null rest'
                              then return (Out x y p' q')
                              else do fs <- fragment zs (Out x y p' q')
                                      loop rest' fs (p /= p' || q /= q')
-              where pns = fn p
-                    qns = fn q
-                    pzs = filter (`elem` pns) (map fst zs)
-                    qzs = filter (`elem` qns) (map fst zs)
+              where part ps pzs qs qzs ss rest passed b =
+                        trace ("Partitioning into:\n\n" ++
+                               "(" ++ intercalate "," (map show pzs) ++ ")\n" ++
+                               unlines (map showCP ps) ++
+                               "\n\nand\n\n" ++
+                               "(" ++ intercalate "," (map show qzs) ++ ")\n" ++
+                               unlines (map showCP qs)) $
+                        part' ps pzs qs qzs ss rest passed b
 
-                    part ps pzs qs qzs ss [] passed False
+                    part' ps pzs qs qzs ss [] passed False
                         | null passed = (ps' ++ ss, qs' ++ ss, [])
                         | otherwise   = (ps' ++ ss, qs' ++ ss, passed ++ ss)
                         where pvs = concat [map fst vs | Fragment vs p <- passed]
                               ps' = [Fragment (filter ((`notElem` pvs) . fst) vs) p | Fragment vs p <- ps]
                               qs' = [Fragment (filter ((`notElem` pvs) . fst) vs) q | Fragment vs q <- qs]
-                    part ps pzs qs qzs ss [] passed True = part ps pzs qs qzs ss passed [] False
-                    part ps pzs qs qzs ss (Fragment zs (Replicate x y p) : rs) passed b = part ps pzs qs qzs (Fragment zs (Replicate x y p) : ss) rs passed b
-                    part ps pzs qs qzs ss (Fragment zs r:rs) passed b
+                    part' ps pzs qs qzs ss [] passed True = part ps pzs qs qzs ss passed [] False
+                    part' ps pzs qs qzs ss (Fragment zs (Replicate x y p) : rs) passed b = part ps pzs qs qzs (Fragment zs (Replicate x y p) : ss) rs passed b
+                    part' ps pzs qs qzs ss (Fragment zs r:rs) passed b
                         | any (`elem` pzs) (map fst zs) && all (`notElem` qzs) (map fst zs) = part (Fragment zs r : ps) (map fst zs ++ pzs) qs qzs ss rs passed True
                         | any (`elem` qzs) (map fst zs) && all (`notElem` pzs) (map fst zs) = part ps pzs (Fragment zs r : qs) (map fst zs ++ qzs) ss rs passed True
-                        | otherwise = part ps pzs qs qzs rs ss (Fragment zs r : passed) b
+                        | otherwise = part ps pzs qs qzs ss rs (Fragment zs r : passed) b
           loop' (Fragment zs (In x y p) : rest) passed _
               | x `notElem` map fst zs = trace (x ++ '(' : y ++ ")") $
                                          do fs <- fragment zs p
