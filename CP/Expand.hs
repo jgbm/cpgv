@@ -54,7 +54,7 @@ expandP ds = ex
               where cs = channels m
                     names' = filter ((`elem` cs) . fst) (names ds)
                     units  = [(x, x) | x <- cs, x `notElem` map fst names']
-          ex (Unk ys)              = return (Unk ys)
+          ex (Unk ys)              = return (Unk (map exn ys))
 
           exn x = case getBinding x (names ds) of
                     Left _ -> x

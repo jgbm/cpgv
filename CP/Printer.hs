@@ -17,7 +17,7 @@ propBinder k x a = hang 2 (group (text k <+> text x <> dot <$> prop a (-1)))
 prop (Univ x a)    = prec 0 (propBinder "forall" x a)
 prop (Exist x a)   = prec 0 (propBinder "exists" x a)
 prop (FOUniv t a)  = prec 0 (text "forall" <+> pretty t <> dot <$> prop a (-1))
-prop (FOExist t a) = prec 0 (text "forall" <+> pretty t <> dot <$> prop a (-1))
+prop (FOExist t a) = prec 0 (text "exists" <+> pretty t <> dot <$> prop a (-1))
 prop (Mu x a)      = prec 0 (propBinder "mu" x a)
 prop (Nu x a)      = prec 0 (propBinder "nu" x a)
 prop (OfCourse a)  = prec 2 ("!" <> prop a 2)
@@ -58,7 +58,7 @@ instance Pretty Proc
     where pretty (ProcVar v []) = name v
           pretty (ProcVar v args) = hang 2 (name v <> parens (fillCat (punctuate (comma <> space) (map pretty args))))
           pretty (Link x w) = name x <> "<->" <> name w
-          pretty (Cut x a p q) = hang 2 (group ("cut" <+> brackets (name x <> colon <+> pretty a) <$>
+          pretty (Cut x a p q) = hang 2 (group ("new" <+> brackets (name x <> colon <+> pretty a) <$>
                                                 parens (align (pretty p <+> bar <$> pretty q))))
           pretty (Out x y p q) = hang 2 (group (name x <> brackets (name y) <> dot <$$>
                                                 parens (align (pretty p <+> bar <$> pretty q))))

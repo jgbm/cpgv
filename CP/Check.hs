@@ -7,7 +7,7 @@ import CP.Expand (expandB)
 import CP.Syntax
 import CP.Printer
 
-import Text.PrettyPrint.Leijen (renderPretty)
+import Text.PrettyPrint.Leijen ((<+>), (<$>), text, pretty, renderPretty)
 
 isWhyNot (WhyNot _) = True
 isWhyNot _          = False
@@ -108,7 +108,10 @@ empty = Check (\(b, _) -> let (nlb, lb) = partition (isWhyNot . snd) b
 
 -- Generates error message.
 unexpectedType :: String -> Prop -> Proc -> Check ()
-unexpectedType x c p = fail ("Unexpected type " ++ show (pretty c) ++ " for " ++ x ++ " in "  ++ show (pretty p))
+unexpectedType x c p = fail (displayS (renderPretty 0.8 120 msg) "")
+    where msg = text "Unexpected type" <+> pretty c <$>
+                text "for" <+> text x <$>
+                text "in" <+> pretty p
 
 introduce v t c = Check (\(b, e) -> runCheck c (b, (v, t) : e))
 typeOf v = Check (\(b, e) -> case lookup v e of
