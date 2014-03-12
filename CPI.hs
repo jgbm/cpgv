@@ -2,6 +2,7 @@ module CPI where
 
 import Control.Monad.Error
 import Data.Char (isSpace)
+import Data.IORef
 import Data.List (partition)
 import CP.Check
 import CP.Expand
@@ -17,7 +18,7 @@ import CPToGV
 import qualified GV.Syntax as GV
 import qualified GV.Check as GV
 
-import Debug.Trace
+import CP.Trace
 
 traceBehavior i b =
     case b of
@@ -86,6 +87,8 @@ parseFile ds fn =
          Right ts -> foldM interp ds ts
 
 main = do args <- getArgs
-          let (interactive, files) = partition ("-i" ==) args
+          let (interactive, rest) = partition ("-i" ==) args
+          let (enableTracing, files) = partition ("-t" ==) rest
+          when (not (null enableTracing)) (writeIORef doTrace True)
           ds <- foldM parseFile emptyDefns files
           if not (null interactive) || null files then runInputT defaultSettings (repl ds) else return ()
