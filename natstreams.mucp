@@ -1,0 +1,137 @@
+----------------------------------------------------------------------------------------------------
+-- Start with simple streams of nats, using built-in first order integers.
+
+type NatSource = nu X.&{end:1, more: exists int.X}.
+type NatSink   = mu X.+{end:1, more: forall int.X}.
+
+def Zeros(y) = roll y [z:1] (z[].0, z().case y {end: y[].0; more: y*[0].y[].0}).
+check Zeros(y) |- y:NatSource.
+
+new [x:NatSource] (Zeros(x) | unr x.x/more.x*(i).unr x.x/more.x*(j).unr x.x/end.x().a*[i].a*[j].a[].0)
+ |- a: exists int.exists int.1.
+
+def Nats(y) = roll y [z:exists int.1]
+                (z*[0].z[].0,
+                 z*(i).z().case y { end: y[].0; more: y*[i].y*[i+1].y[].0 }).
+check Nats(y) |- y:NatSource.
+
+new [x:NatSource] (Nats(x) | unr x.x/more.x*(i).unr x.x/more.x*(j).unr x.x/end.x().a*[i].a*[j].a[].0)
+ |- a: exists int.exists int.1.
+
+----------------------------------------------------------------------------------------------------
+-- Now, re-do with Church numerals:
+
+type Quest(A) = mu P.+{w: bot, c: P || P, d: A}.
+type Bang(A)  = nu P.&{w:1, c:P * P, d: A}.
+type Church = forall A. (Quest(A * ~A) || (~A || A)).
+
+def CZero(x) = x(A).x(s).x(z).unr s.s/w.s().z<->x.
+def CInc(x,y) = y(A).y(s).y(z).
+                unr s.s/c.s(f).unr f.f/d.f[a].
+                (a<->z | x[A].x[w].(w<->s | x[v].(v<->f | y<->x))).
+check CInc(x,y) |- x:~Church,y:Church.
+
+def CLiftInc(x,y) = roll y [z:Bang(Church)]
+                      (x<->z,
+                       case y { w: unr z.z/w.z().y[].0;
+                                d: unr z.z/d.CInc(z,y);
+                                c: unr z.z/c.z(w).y[x].(x<->w|y<->z) }).
+check CLiftInc(x,y) |- x:Quest(~Church),y:Bang(Church).
+
+
+type Source(A) = nu X.&{end:1, more: A * X}.
+type Sink(A)   = mu X.+{end:1, more: ~A || X}.
+
+def CZeros(y) = roll y [z:1]
+                  (z[].0,
+                   z().case y { end: y[].0; more: y[x].(CZero(x) | y[].0) }).
+check CZeros(y) |- y:Source(Church).
+
+def CNats(y) = roll y [z:Bang(Church)]
+                 (roll z [a:1]
+                    (a[].0,
+                     a().case z { w: z[].0;
+                                  c: z[w].(w[].0 | z[].0);
+                                  d: CZero(z) }),
+                  case y { end: unr z.z/w.z().y[].0;
+                           more: unr z.z/c.z(w).y[x].(unr w.w/d.x<->w | CLiftInc(z,y)) }).
+check CNats(y) |- y:Source(Church).
+
+-- And now, figure out something useful to do with Church numerals.  Since we have first-order
+-- terms, we don't have to mess about with pings any more...
+
+def CCount(x,y) =
+  x[exists int.1].x[s].(
+    roll s [t:1]
+      (t[].0,
+       t().case s { w: s[].0;
+                    c: s[s1].(s1[].0 | s[].0);
+                    d: s(s1).s1*(i).s*[i+1].s1().s[].0 }) |
+    x[z].(z*[0].z[].0 | x<->y)).
+check CCount(x,y) |- x:~Church,y:exists int.1.
+
+def CTwo(x) = new [y:Church] (new [z:Church] (CZero(z) | CInc(z,y)) | CInc(y,x)).
+new [x:Church] (CTwo(x) | CCount(x,y)) |- y:exists int.1.
+
+new [x:Source(Church)] (CNats(x) |
+   unr x.x/more.x(a).
+   unr x.x/more.x(b).
+   unr x.x/more.x(c).
+   unr x.x/end.x().
+   new [ya:exists int.1] (CCount(a,ya) |
+     new [yb:exists int.1] (CCount(b,yb) |
+       new [yc: exists int.1] (CCount(c,yc) |
+         ya*(ia).ya().yb*(ib).yb().yc*(ic).yc().
+         y*[ia].y*[ib].y*[ic].y[].0))))
+ |- y: exists int.exists int.exists int.1.
+
+----------------------------------------------------------------------------------------------------
+-- Of course, we don't need to fool about with Church encoding when we have recursive types... we
+-- can build Peano numerals instead!
+
+type Peano = mu X.+{zero: 1, succ: X}.
+
+def PZero(x) = unr x.x/zero.x[].0.
+check PZero(x) |- x:Peano.
+
+def PInc(x,y) = unr y.y/succ.y<->x.
+check PInc(x,y) |- x:~Peano,y:Peano.
+
+def PCount(x,y) =
+  roll x [z:forall int.bot]
+   (y<->z,
+    case x { zero: x().z*[0].z[].0;
+             succ: x*(i).x().z*[i + 1].z[].0 }).
+check PCount(x,y) |- x:~Peano, y:exists int.1.
+
+def PTwo(x) = new [y:Peano] (new [z:Peano] (PZero(z) | PInc(z,y)) | PInc(y,x)).
+new [x:Peano] (PTwo(x) | PCount(x,y)) |- y:exists int.1.
+
+def PLiftInc(x,y) =
+  roll y [z:Bang(Peano)]
+    (z<->x,
+     case y { w: unr z.z/w.z().y[].0;
+              d: unr z.z/d.PInc(z,y);
+              c: unr z.z/c.z(z1).y[y1].(z1 <-> y1 | z <-> y) }).
+check PLiftInc(x,y) |- x:~Bang(Peano),y:Bang(Peano).
+
+def PNats(x) =
+  roll x [y:Bang(Peano)]
+    (roll y [z:1]
+       (z[].0,
+        z().case y { w: y[].0; d: PZero(y); c: y[y1].(y1[].0 | y[].0) }),
+     case x { end: unr y.y/w.y().x[].0;
+              more: unr y.y/c.y(y1).x[x1].(unr y1.y1/d.y1<->x1 | PLiftInc(y,x)) }).
+check PNats(x) |- x:Source(Peano).
+
+new [x:Source(Peano)] (PNats(x) |
+   unr x.x/more.x(a).
+   unr x.x/more.x(b).
+   unr x.x/more.x(c).
+   unr x.x/end.x().
+   new [ya:exists int.1] (PCount(a,ya) |
+     new [yb:exists int.1] (PCount(b,yb) |
+       new [yc: exists int.1] (PCount(c,yc) |
+         ya*(ia).ya().yb*(ib).yb().yc*(ic).yc().
+         y*[ia].y*[ib].y*[ic].y[].0))))
+ |- y: exists int.exists int.exists int.1.
