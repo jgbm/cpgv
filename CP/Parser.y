@@ -102,15 +102,19 @@ Quant        :: { (String -> Prop -> Prop) -> (FOType -> Prop -> Prop) -> Prop }
              | FOType '.' Prop                { \so fo -> fo $1 $3 }
 
 Prop         :: { Prop }
-             : 'exists' Quant                 { $2 Exist FOExist }
-             | 'forall' Quant                 { $2 Univ FOUniv }
+             : 'exists' UIdent '.' Prop       { Exist $2 $4 }
+             | 'forall' UIdent '.' Prop       { Univ $2 $4 }
              | 'mu' UIdent '.' Prop           { Mu $2 $4 }
              | 'nu' UIdent '.' Prop           { Nu $2 $4 }
              | Prop1                          { $1 }
 
+PropOrType   :: { Prop -> (Prop -> Prop -> Prop) -> (FOType -> Prop -> Prop) -> Prop }
+             : Prop                           { \b p t -> p $1 b }
+             | FOType                         { \b p t -> t $1 b }
+
 Prop1        :: { Prop }
-             : Prop2 '*' Prop2                { Times $1 $3 }
-             | Prop2 '||' Prop2               { Par $1 $3 }
+             : PropOrType '*' Prop2           { $1 $3 Times FOExist }
+             | PropOrType '||' Prop2          { $1 $3 Par FOUniv }
              | '+' '{' labeledList(LIdent, Prop) '}'
                                               { Plus $3 }
              | '&' '{' labeledList(LIdent, Prop) '}'

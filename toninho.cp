@@ -1,4 +1,4 @@
-type CImp = nu X. &{ val: forall int. exists int. X,
+type CImp = nu X. &{ val: int || (int * X),
                      inc: +{carry: X, done: X},
                      halt: 1}.
 
@@ -44,10 +44,10 @@ new [z:CImp]
             done: unr z.z/val.z*[0].z*(j).
                    unr z.z/halt.z().
                    a*[i].a*[j].a[].0 })
- |- a:exists int.exists int.1.
+ |- a: int*(int*1).
 
 
-type Counter = nu X. &{val: exists int.X, inc:X, halt:1}.
+type Counter = nu X. &{val: int * X, inc:X, halt:1}.
 
 def Counter(z) =
   roll z [x:CImp]
@@ -72,4 +72,4 @@ new [z:Counter]
    unr z.z/inc.unr z.z/inc.
    unr z.z/val.z*(k).
    unr z.z/halt.z().a*[i].a*[j].a*[k].a[].0)
- |- a:exists int.exists int.exists int.1.
+ |- a:int * (int * (int * 1)).
