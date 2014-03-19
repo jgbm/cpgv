@@ -1,0 +1,5 @@
+|- let g = let x = fork x:end!.x in
+           let f = !\y:end?. x in
+           f in
+   g (fork x:end!.x)
+ :end?.

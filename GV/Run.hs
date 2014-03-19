@@ -9,7 +9,7 @@ import Data.Maybe
 
 data Value =
    VUnit
- | VFun Var Term
+ | VClosure Var Term VEnv
  | VPair Value Value
  | VLabel Label
  | VChannel Chan
@@ -99,12 +99,12 @@ runPure env e = runPure' env e where
     do (VChannel c1) <- rp e1
        (VChannel c2) <- rp e2
        slink c1 c2
-  runPure' env (LinLam x _ e) = return (VFun x e)
-  runPure' env (UnlLam x _ e) = return (VFun x e)
+  runPure' env (LinLam x _ m) = return (VClosure x m env)
+  runPure' env (UnlLam x _ m) = return (VClosure x m env)
   runPure' env (App f a) =
-    do VFun x e <- rp f
+    do VClosure x e env' <- rp f
        v <- rp a
-       runPure (extend env (x, v)) e
+       runPure (extend env' (x, v)) e
   runPure' env (Pair e1 e2) =
     do v1 <- rp e1
        v2 <- rp e2
