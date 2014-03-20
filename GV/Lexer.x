@@ -21,6 +21,7 @@ $any    = [$upper $lower $digit _]
      ";"          { lexeme SEMI }
      ","          { lexeme COMMA }
      "."          { lexeme DOT }
+     "=>"         { lexeme RIGHTARROW }
      "("          { lexeme LPAREN }
      ")"          { lexeme RPAREN }
      "["          { lexeme LBRACK }
@@ -73,6 +74,7 @@ data Token = LIDENT String
            | SEMI
            | COMMA
            | DOT
+           | RIGHTARROW
            | SLASH
            | LPAREN
            | RPAREN

@@ -1,36 +1,36 @@
 -- GV test file
 
-|- let c = fork c:?end?->end?.!end?.end!.
+|- let c = fork c:?end?->end?.!end?.end! =>
              let (f,c) = receive c in
-             send (f (fork x:end!. x)) c in
-   let (v,c) = receive (send (!\x:end?.x) c) in v : end? .
+             send (f (fork x:end! => x)) c in
+   let (v,c) = receive (send (!\x:end? => x) c) in v : end? .
 
-|- let c = fork c: +{frog:?end?->end?.!end?.end!, goat:end!}.
+|- let c = fork c: +{frog:?end?->end?.!end?.end!, goat:end!} =>
              let c = select frog c in
              let (f,c) = receive c in
-             send (f (fork x:end!. x)) c in
+             send (f (fork x:end! => x)) c in
    case c of {
-     frog:c.let (v,c) = receive (send (!\x:end?.x) c) in v;
-     goat:c.c } : end?.
+     frog c => let (v,c) = receive (send (!\x:end? => x) c) in v;
+     goat c => c } : end?.
 
 zed : end? * end? |-
-  let c = fork c: +{frog:?end?->end?.!end?.end!, goat:end!}.
+  let c = fork c: +{frog:?end?->end?.!end?.end!, goat:end!} =>
             let c = select frog c in
             let (f,c) = receive c in
-            send (f (fork x:end!.x)) c in
+            send (f (fork x:end! => x)) c in
   case c of {
-    frog:c.let (v,c) = receive (send (let (a,b) = zed in !\x:end?.x) c) in v;
-    goat:c.let (a,b) = zed in a } : end? .
+    frog c => let (v,c) = receive (send (let (a,b) = zed in !\x:end? => x) c) in v;
+    goat c => let (a,b) = zed in a } : end? .
 
 
-|- let c = fork c: &{gimme:+{tenner:end!}}.
-             case c of { gimme:d.select tenner d } in
+|- let c = fork c: &{gimme:+{tenner:end!}} =>
+             case c of { gimme d => select tenner d } in
    let c = select gimme c in
-   case c of {tenner:e.e} : end?.
+   case c of {tenner e => e} : end?.
 
 
-|- let s = serve c:&{gimme:+{tenner:end!}}.
-             case c of {gimme:c.select tenner c} in
+|- let s = serve c:&{gimme:+{tenner:end!}} =>
+             case c of {gimme c => select tenner c} in
    let c = request s in
    let c = select gimme c in
-   case c of {tenner:c. c} : end?.
+   case c of {tenner c => c} : end?.

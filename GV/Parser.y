@@ -20,6 +20,7 @@ import GV.Syntax
      ';'          { SEMI }
      ','          { COMMA }
      '.'          { DOT }
+     '=>'         { RIGHTARROW }
      '('          { LPAREN }
      ')'          { RPAREN }
      '['          { LBRACK }
@@ -122,21 +123,21 @@ Pattern     :: { Pattern }
 
 Term        :: { Term }
             : 'link' Term1 Term1              { Link $2 $3 }
-            | '\\' LIdent ':' Type '.' Term   { LinLam $2 $4 $6 }
-            | '!' '\\' LIdent ':' Type '.' Term
+            | '\\' LIdent ':' Type '=>' Term  { LinLam $2 $4 $6 }
+            | '!' '\\' LIdent ':' Type '=>' Term
                                               { UnlLam $3 $5 $7 }
             | Term Term1                      { App $1 $2 }
             | 'let' Pattern '=' Term 'in' Term { Let $2 $4 $6 }
             | 'send' Term1 Term               { Send $2 $3 }
             | 'receive' Term1                 { Receive $2 }
             | 'select' LIdent Term            { Select $2 $3 }
-            | 'case' Term 'of' '{' sep(triple(LIdent, snd(':', LIdent), snd('.', Term)), ';') '}'
+            | 'case' Term 'of' '{' sep(triple(LIdent, fst(LIdent, '=>'), Term), ';') '}'
                                               { Case $2 $5 }
             | 'case' Term '(' sep(LIdent, ',') ')' ':' Type '{' '}'
                                               { EmptyCase $2 $4 $7 }
-            | 'fork' LIdent ':' Session '.' Term
+            | 'fork' LIdent ':' Session '=>' Term
                                               { Fork $2 $4 $6 }
-            | 'serve' LIdent ':' Session '.' Term
+            | 'serve' LIdent ':' Session '=>' Term
                                               { Serve $2 $4 $6 }
             | 'request' Term                  { Request $2 }
             | 'sendType' Session Term         { SendType $2 $3 }
