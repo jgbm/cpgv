@@ -5,20 +5,25 @@
 This provides a small interpreter for Wadler's language CP and GV (although see later notes on
 syntax and differences.)
 
+Building
+========
+
+Building the CP and GV interpreters requires GHC and the following packages from
+Hackage (all of which should be obtainable using cabal-install):
+
+  alex
+  happy
+  wl-pprint
+  haskeline
+
+If you are building on Linux, the latter will probably require you to install
+ncurses headers.  Once you have the necessary packages, the interpreters can be
+built by running
+
+  make
+
 CP
 ==
-
-Building
---------
-
-Building the tool requires the compiler tool bnfc[1], a recent version of GHC,
-and the readline package.  'make' should build an executable 'cpi' in the
-current directory; 'make clean' should remove it.  You may need to update the
-Makefile to point to wherever you've installed bnfc, if you haven't gotten it by
-'cabal install --user bnfc'
-
-[1] http://bnfc.digitalgrammars.com/
-
 
 Using
 -----
@@ -66,6 +71,7 @@ Differences from Wadler's language
 
 The notation for linear duals and the par combinator is difficult to type.
 Instead, the tool uses "~A" to indicate the dual of A, and "P || Q" for P par Q.
+Selection is indicated with a slash instead of brackets to simplifying parsing.
 
 The form "x.case()" is not sufficient to determine the structure of a proof, as
 the top rule allows arbitrary further linear assumptions to be discharged.
