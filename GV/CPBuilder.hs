@@ -49,3 +49,7 @@ sendType x a m = do x' <- reference x
                     liftM (SendProp x' a) m
 receiveType x z m = do x' <- reference x
                        liftM (ReceiveProp x' z) m
+sendTerm x v m = do x' <- reference x
+                    liftM (SendTerm x' v) m
+receiveTerm x z m = do x' <- reference x
+                       liftM (ReceiveTerm x' z) m

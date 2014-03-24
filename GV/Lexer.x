@@ -11,6 +11,7 @@ $any    = [$upper $lower $digit _]
 
 @uident = $upper $any*
 @lident = $lower $any*
+@number = [\-]? $digit+
 
 :-
 
@@ -45,7 +46,6 @@ $any    = [$upper $lower $digit _]
      "fork"       { lexeme FORK }
      "unit"       { lexeme UNIT }
 
-
      "?"          { lexeme QUERY }
      "!"          { lexeme BANG }
      "*"          { lexeme TIMES }
@@ -60,11 +60,15 @@ $any    = [$upper $lower $digit _]
      "->"         { lexeme UNLFUN }
      "Unit"       { lexeme UNITTYPE }
 
+     "Int"        { lexeme INT }
+
      "|-"         { lexeme TURNSTILE }
      "="          { lexeme EQUALS }
 
      @uident      { identifier UIDENT }
      @lident      { identifier LIDENT }
+     @number      { number }
+
 
 {
 
@@ -116,6 +120,9 @@ data Token = LIDENT String
            | UNLFUN
            | UNITTYPE
 
+           | INT
+           | INTCONST Integer
+
            | TURNSTILE
            | EQUALS
 
@@ -128,6 +135,9 @@ lexeme t _ len = return t
 
 identifier :: (String -> Token) -> AlexInput -> Int -> Alex Token
 identifier t (_, _, _, s) len = return (t (take len s))
+
+number :: AlexInput -> Int -> Alex Token
+number (_, _, _, s) len = return (INTCONST (read (take len s)))
 
 alexEOF = return EOF
 

@@ -9,6 +9,7 @@ import Data.Maybe
 
 data Value =
    VUnit
+ | VInt Integer
  | VClosure Var Term VEnv
  | VPair Value Value
  | VLabel Label
@@ -91,6 +92,7 @@ runPure :: VEnv -> Term -> Thread
 runPure env e = runPure' env e where
   rp = runPure env
   runPure' env Unit = return VUnit
+  runPure' env (EInt n) = return (VInt n)
   runPure' env (Var x) =
     case lookup x env of
       Nothing -> error ("Unbound variable: " ++ show x)

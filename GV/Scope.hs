@@ -26,6 +26,7 @@ class HasScopedVariables t
 
 instance HasScopedVariables Term
     where rename Unit = return Unit
+          rename (EInt n) = return (EInt n)
           rename (Var v) = liftM Var (reference v)
           rename (Link m n) = liftM2 Link (rename m) (rename n)
           rename (LinLam x t m) = binder x (\x' -> LinLam x' t `fmap` rename m)

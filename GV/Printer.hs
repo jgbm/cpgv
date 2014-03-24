@@ -30,7 +30,8 @@ ptyp :: Type -> Int -> Doc
 ptyp (LinFun t u) = prec 1 (ptyp t 2 <+> "-@" <+> ptyp u 1)
 ptyp (UnlFun t u) = prec 1 (ptyp t 2 <+> "->" <+> ptyp u 1)
 ptyp (Tensor t u) = prec 2 (ptyp t 3 <+> "*" <+> ptyp u 2)
-ptyp UnitType     = const "unit"
+ptyp UnitType     = const "Unit"
+ptyp Int          = const "Int"
 ptyp (Lift s)     = const (pretty s)
 
 instance Pretty Pattern
@@ -59,6 +60,7 @@ pterm (Request x) = prec 1 ("request" <+> pretty x)
 pterm (SendType s t) = prec 1 ("sendType" <+> pretty s <+> pretty t)
 pterm (ReceiveType t) = prec 2 ("receiveType" <+> pretty t)
 pterm Unit = const "unit"
+pterm (EInt n) = const (text (show n))
 
 instance Pretty Term
     where pretty t = pterm t 0

@@ -33,6 +33,7 @@ data Type = LinFun Type Type
           | Tensor Type Type
           | UnitType
           | Lift Session
+          | Int
     deriving (Eq, Ord, Show)
 
 --------------------------------------------------------------------------------
@@ -70,6 +71,7 @@ ftv (LinFun t u) = ftv t ++ ftv u
 ftv (UnlFun t u) = ftv t ++ ftv u
 ftv (Tensor t u) = ftv t ++ ftv u
 ftv (Lift s) = fsv s
+ftv Int = []
 
 --------------------------------------------------------------------------------
 -- Instantiating session variables
@@ -95,8 +97,9 @@ instType :: String -> Session -> Type -> Type
 instType x s (LinFun t u) = LinFun (instType x s t) (instType x s u)
 instType x s (UnlFun t u) = LinFun (instType x s t) (instType x s u)
 instType x s (Tensor t u) = LinFun (instType x s t) (instType x s u)
-instType x s UnitType         = UnitType
-instType x s (Lift s') = Lift (instSession x s s')
+instType x s UnitType     = UnitType
+instType x s (Lift s')    = Lift (instSession x s s')
+instType x s Int          = Int
 
 data Pattern = BindName String
              | BindPair String String
@@ -120,6 +123,7 @@ data Term = Var String
           | SendType Session Term
           | ReceiveType Term
           | Unit
+          | EInt Integer
     deriving (Eq, Ord, Show)
 
 fv :: Term -> [String]
@@ -142,5 +146,6 @@ fv (Request m)              = fv m
 fv (SendType _ m)           = fv m
 fv (ReceiveType m)          = fv m
 fv Unit                     = []
+fv (EInt n)                 = []
 
 data Assertion = Assert [(String, Type)] Term Type

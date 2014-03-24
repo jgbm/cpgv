@@ -58,11 +58,15 @@ import GV.Syntax
      '->'         { UNLFUN }
      'Unit'       { UNITTYPE }
 
+     'int'        { INT }
+
      '|-'         { TURNSTILE }
      '='          { EQUALS }
 
      UIdent       { UIDENT $$ }
      LIdent       { LIDENT $$ }
+     IntConst     { INTCONST $$ }
+
 
 
 %%
@@ -107,6 +111,7 @@ Type        :: { Type }
             : Type1 '-@' Type                 { LinFun $1 $3 }
             | Type1 '->' Type                 { UnlFun $1 $3 }
             | 'Unit'                          { UnitType }
+            | 'int'                           { Int }
             | Type1                           { $1 }
 
 Type1       :: { Type }
@@ -147,6 +152,7 @@ Term        :: { Term }
 
 Term1       :: { Term }
             : LIdent                          { Var $1 }
+            | IntConst                        { EInt $1 }
             | '(' Term ',' Term ')'           { Pair $2 $4 }
             | '(' Term ')'                    { $2 }
 
