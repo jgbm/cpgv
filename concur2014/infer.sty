@@ -1,0 +1,197 @@
+% A first attempt to typeset inference rule proofs in TeX/LaTeX
+%
+% Author: Mark P. Jones    31st May 1990
+%
+%
+\typeout{This is `infer.sty' for typesetting inference rules and proofs}
+%
+\newdimen\infskip\infskip=1em% default hspace between adjacent proof trees
+\newdimen\rulskip\rulskip=3pt% vspace between rules and text
+
+%---------------------------------------------------------------------------
+% `private part' (also known as internal definitions....)
+%
+\newbox\topb@x\newbox\bottomb@x\newbox\nameb@x\newbox\sideb@x
+\newbox\@nleft\newbox\@nright
+\dimendef\space@nl=1\dimendef\space@nr=3
+\dimendef\ke@pleft=4\dimendef\ke@pright=6
+\newdimen\rul@length\newdimen\t@pleft\newdimen\t@pright
+
+% \@ligncalcs calculates how to align the components of an inference rule
+%             described by a box:
+%
+%             \topb@x = +------------------------------------+
+%                       |                                    |
+%                       |\space@nl|                |\space@nr|
+%                       +---------+----------------+---------+
+%             which will appear above the rule, a box \nameb@x which
+%             should be displayed beside the rule (to label the particular
+%             inference rule being used) and a box \bottomb@x which
+%             is the result of the inference.
+%
+%             The values calculated are illustrated by the following:
+%             +-------------------------------------------------------+
+%             | \t@pleft   |      \topb@x               |   \t@pright |
+%             +-------------------------------------------------------+
+%             | \ke@pleft    |    \rul@length  | \nameb@x | \ke@pright|
+%             +-------------------------------------------------------+
+%             | \space@nl       | \bottomb@x  |             \space@nr |
+%             +-------------------------------------------------------+
+%             (actually, \nameb@x is ignored (i.e. assumed to have \wd=0)
+%             and this must be compensated for by a later \@allowinfname
+%             or similar).
+
+\def\@ligncalcs{\rul@length=\wd\topb@x
+  \advance\rul@length by-\space@nl\advance\rul@length by-\space@nr
+%
+\ifdim\wd\bottomb@x<\rul@length
+  \dimen0=\rul@length
+  \advance\dimen0 by -\wd\bottomb@x\divide\dimen0 by 2\ke@pleft=\space@nl
+  \t@pleft=0pt\t@pright=0pt\ke@pright=\space@nr
+  \global\advance\space@nl by\dimen0\global\advance\space@nr by\dimen0%
+\else
+  \dimen0=\wd\bottomb@x
+  \advance\dimen0 by-\rul@length\divide\dimen0 by2\rul@length=\wd\bottomb@x
+%
+\ifdim\dimen0>\space@nl
+  \t@pleft=\dimen0\advance\t@pleft by-\space@nl\global\space@nl=0pt
+\else
+  \t@pleft=0pt\global\advance\space@nl by -\dimen0
+\fi
+\ke@pleft=\space@nl
+%
+\ifdim\dimen0>\ke@pright
+  \t@pright=\dimen0\advance\t@pright by-\space@nr\global\space@nr=0pt%
+\else
+  \t@pright=0pt\global\advance\space@nr by-\dimen0%
+\fi
+\ke@pright=\space@nr
+\fi}
+
+\def\@nullcalcs{\global\space@nl=0pt\global\space@nr=0pt%
+\rul@length=0pt\t@pleft=0pt\t@pright=0pt\ke@pleft=0pt\ke@pright=0pt%
+\setbox\topb@x=\hbox{}\setbox\bottomb@x=\hbox{}\setbox0=\hbox{}}
+
+%---------------------------------------------------------------------------
+% support for putting names and side conditions on right or left of
+% inference rulers
+
+\def\@addonright#1{\setbox0=\hbox{\lower.5ex\box#1}%
+\ifdim\ke@pright>\wd0\advance\ke@pright by-\wd0%
+\else\dimen0=\wd0\advance\dimen0 by-\ke@pright\ke@pright=0pt%
+\advance\t@pright by\dimen0\global\advance\space@nr by\dimen0%
+\fi
+\setbox\@nright=\box0}
+
+\def\@addonleft#1{\setbox0=\hbox{\lower.5ex\box#1}%
+\ifdim\ke@pleft>\wd0\advance\ke@pleft by-\wd0%
+\else\dimen0=\wd0\advance\dimen0 by-\ke@pleft\ke@pleft=0pt%
+\advance\t@pleft by\dimen0\global\advance\space@nl by\dimen0%
+\fi
+\setbox\@nleft=\box0}
+
+\def\d@rule{%
+\setbox0=\hbox{\hskip\ke@pleft
+               \box\@nleft
+               \leaders\hrule height0.2pt depth0pt\hskip\rul@length
+               \box\@nright
+               \hskip\ke@pright}%
+\ht0=0.25pt\dp0=0pt}
+
+\def\infonright{\let\@placename=\@addonright\let\@placeside=\@addonleft}
+\def\infonleft{\let\@placename=\@addonleft\let\@placeside=\@addonright}
+
+%---------------------------------------------------------------------------
+% support for drawing proof trees with root at top or bottom
+
+\def\@rulskip{\nointerlineskip\vskip\rulskip\nointerlineskip}
+
+\def\inferdown{\let\@build=\@rootlo}
+\def\@rootlo{%
+\d@rule
+\vbox{\hbox{\hskip\t@pleft\box\topb@x\hskip\t@pright}
+      \@rulskip\box0\@rulskip
+      \hbox{\hskip\space@nl\box\bottomb@x\hskip\space@nr}}}
+
+\def\inferup{\let\@build=\@roothi}
+\def\@roothi{%
+\d@rule
+\vbox{\hbox{\hskip\space@nl\box\bottomb@x\hskip\space@nr}
+      \@rulskip\box0\@rulskip
+      \hbox{\hskip\t@pleft\box\topb@x\hskip\t@pright}}}
+
+%---------------------------------------------------------------------------
+% Interface to LaTeX:
+%
+
+\inferdown  % by default, inference flows down the page
+\infonleft  % by default, inference rule names go on the left
+
+\def\infnamebox#1{\ #1\ }  % how to format name of inference rules
+\def\sidecond#1{\ (\(#1\))\ }% how to format side conditions
+%\def\infbox#1{\leavevmode\hbox{#1}}% surprisingly similar to \mbox !!
+\def\infbox#1{\leavevmode\lower0.8em\hbox{#1}}
+\def\displayinf#1{\begin{center}\infbox{#1}\end{center}}
+
+% most inference rules are set using the \infer command:
+%     \infer[optional name]{hyp1}...{hypn};{conclusion}
+%     \infer[optional name]{hyp1}*{space}...*{space}{hypn};{conclusion}
+%
+%     add a side condition by tagging "!{sidecond}" onto the end ...
+%
+%     where name = name to place on right of inference rule
+%                  (empty name used if no name supplied).
+%           hypi = hypotheses (which must be given by further \infer
+%                  or \assume commands).
+%           conc = conclusion -- will be typeset in math mode.
+%
+%     all but the first hypothesis of an inference rule may be preceeded
+%     by an (optional) argument *{space} which specifies the horizontal
+%     separation between two hypotheses in an inference rule.  This will
+%     normally be negative, used to tuck one prooftree inside another, but
+%     its all a bit hacky as it relies on some form of visual formatting...
+%     better to be able to hack and solve a problem than to be stuck
+%     without any solution I hope...
+%
+
+\def\irule{\let\@formhyp=\@doassump\@infer} \def\@doassump#1{\assume{#1}}
+\def\iproof{\let\@formhyp=\@doproof\@infer} \def\@doproof{}
+\def\lproof{\def\infnamebox##1{\ $##1 =$\ }\iproof}
+
+\def\@infer{\ke@pleft=0pt\ke@pright=0pt\setbox\topb@x=\hbox{}%
+\@ifnextchar[{\@infera}{\setbox\nameb@x=\hbox{}\@inferb}}
+
+\def\@infera[#1]{\setbox\nameb@x=\hbox{\infnamebox{#1}}\@inferb}
+\def\@inferb{\@ifnextchar;{\@conclude}{\@inferfirst}}
+\def\@inferfirst#1{\setbox\topb@x=\hbox{\@formhyp{#1}}\@infloop}
+\def\@infloop{%
+\@ifnextchar;{\@conclude}{\@ifnextchar*{\@infnexta}{\@infnext}}}
+\def\@infnext#1{\ke@pleft=\space@nl\setbox2=\box\topb@x
+\setbox0=\hbox{\@formhyp{#1}}%
+\setbox\topb@x=\hbox{\unhbox2\hskip\infskip\unhbox0}%
+\global\space@nl=\ke@pleft\@infloop}
+
+\def\@infnexta*#1#2{\ke@pleft=\space@nl\setbox2=\box\topb@x
+\setbox0=\hbox{\@formhyp{#2}}%
+\setbox\topb@x=\hbox{\unhbox2\hskip#1\unhbox0}%
+\global\space@nl=\ke@pleft\@infloop}
+
+\def\@conclude;#1{%
+\@ifnextchar!{\@sidecond{#1}}{\setbox\sideb@x=\hbox{}\@concl{#1}}}
+\def\@sidecond#1!#2{\setbox\sideb@x=\hbox{\sidecond{#2}}\@concl{#1}}
+\def\@concl#1{\ke@pleft=\space@nl\ke@pright=\space@nr
+  \setbox\bottomb@x=\hbox{$#1$}\global\space@nl=\ke@pleft
+  \global\space@nr=\ke@pright\@ligncalcs
+  \@placename\nameb@x\@placeside\sideb@x
+  \@build}
+
+% Each of the hypotheses of an inference rule MUST be an inference
+% rule; i.e. must be typeset using an \infer macro described above,
+% or the macro \assume, which I like to think of as the natural
+% embedding: \assume :: (formulae) --> (inference rules)
+% (maybe I'm just crazy).
+
+\def\assume#1{\@nullcalcs\setbox\bottomb@x=\hbox{$#1$}\@build}
+
+% Thats all folks......
+%---------------------------------------------------------------------------

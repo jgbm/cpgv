@@ -1,0 +1,543 @@
+\documentclass[envcountsame]{llncs}
+
+\usepackage{amsmath,infer,mathwidth,stmaryrd,xcolor}
+
+\newcommand{\with}{\mathbin\binampersand}
+\newcommand{\parr}{\mathbin\bindnasrepma}
+\newcommand{\dual}[1]{#1^\perp}
+\newcommand{\trule}[1]{(\textit{#1})}
+\newcommand{\tjud}[2]{#1 \vdash #2}
+
+\newcommand{\expand}[3]{\mathbf{expand}^{#1}_{#2}(#3)}
+
+\newcommand{\mkwd}[1]{\mathsf{#1}}
+\newcommand{\tkwd}[1]{\textsf{#1}}
+\newcommand{\link}[2]{#1 \leftrightarrow #2}
+\newcommand{\cut}[4]{\mkwd{new}\:#1 \: (#3 \mid #4)}
+\newcommand{\unr}[1]{\mkwd{unr}\:#1}
+\newcommand{\roll}[5]{\mkwd{roll}\:#1 \langle #2 \rangle (#4,#5)}
+\newcommand{\clabel}[1]{\mathrm{#1}}
+\renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
+\newcommand{\sel}[2]{#1[\clabel{#2}]}
+
+\newcommand{\mucp}{$\mu\mathrm{CP}$}
+\newcommand{\mugv}{$\mu\mathrm{GV}$}
+
+\title{Recursive Sessions and Linear Logic}
+\author{ABCD People}
+\institute{ABCD Places}
+
+\newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Pants!
+\end{abstract}
+
+\section{Introduction}
+
+\section{\mucp{} Syntax}
+
+\todo{
+\begin{itemize}
+\item There are a couple of changes from previous presentations of CP.  First, I've changed the
+  scoping operator from $\nu$ to \tkwd{new} to avoid confusion with fixed points.  Second, I've
+  attempted to make $.$ mean sequencing, as it does in $\pi$-calculus; this meant changing the
+  syntax of \tkwd{new} and \tkwd{case} to eliminate extra $.$'s.
+\item The biggest continuing pain point is the keywords for greatest and least fixed points (note at
+  end of section).
+\item I'm unsure on whether to prefer a minimal presentation, to simplify the later technical
+  development, or a full presentation, to make it look most like a complete language.  For example,
+  as it is, I've left out second-order quantification; this isn't because there's any particular
+  problem with it, but because I haven't used it in any of the examples and it doesn't interact
+  surprisingly with any of the new features.  Some places the paper is schizophrenic: the syntax and
+  cut rules use binary sums, but the examples assume $n$-ary sums.
+\end{itemize}\vspace{-2mm}}
+
+Types and terms:
+
+\[\small\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
+   & & \mid & X \mid \dual{X} \mid \mu F \mid \nu F \\
+   & F,G & ::= & X.A \\
+  \text{Terms} & P,Q & ::= & \link{x}{y} \mid x(y).P \mid x[y].(P \mid Q) \mid x().P \mid x[].0 \\
+   & & \mid & \sel{x}{inl}.P \mid \sel{x}{inr}.Q \mid \case{x}{P;Q} \mid \case{x}{} \\
+   & & \mid & \cut{x}{A}{P}{Q} \mid \unr{x}.P \mid \roll{x}{y}{A}{P}{Q}
+\end{array}\]
+
+If $F = X.A$, define $F(B) = A[B/X]$.  Definition of duality is standard:
+
+{\small\begin{gather*}
+\begin{aligned}
+  \dual{(A \otimes B)} &= \dual{A} \parr \dual{B} & \dual{1} &= \bot & \dual{(A \oplus B)} &= \dual{A} \with \dual{B} & \dual{\top} &= 0 \\
+  \dual{(A \parr B)} &= \dual{A} \otimes \dual{B} & \dual{\bot} &= 1 & \dual{(A \with B)} &= \dual{A} \oplus \dual{B} & \dual{0} &= \top
+\end{aligned}\\
+\begin{aligned}
+\dual{F} &= X.\dual{(F(\dual{X}))} & \dual{(\nu F)} &= \mu \dual{F} & \dual{(\mu F)} &= \nu \dual{F}
+\end{aligned}
+\end{gather*}}
+
+\todo{Is it useful/interesting to show that $\dual{(F(A))} = \dual{F}(\dual{A})$?} \\
+
+The typing rules are mostly unchanged from previous presentations of CP:
+
+{\small\begin{gather*}
+\infbox{\irule;{\tjud{\link{x}{y}}{x:A,y:\dual{A}}}}
+\hspace{\infskip}
+\infbox{\irule{\tjud{P}{\Gamma,x:A}}
+              {\tjud{Q}{x:\dual{A},\Delta}};
+              {\tjud{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}}
+\hspace{\infskip}
+\infbox{\irule;{\tjud{x[].0}{x:1}}}
+\\
+\infbox{\irule{\tjud{P}{y:A,\Gamma}}
+              {\tjud{Q}{x:B,\Delta}};
+              {\tjud{x[y].(P \mid Q)}{x:A \otimes B,\Gamma,\Delta}}}
+\hspace{\infskip}
+\infbox{\irule{\tjud{P}{y:A,x:B,\Gamma}};
+              {\tjud{x(y).P}{x:A \parr B,\Gamma}}}
+\hspace{\infskip}
+\infbox{\irule{\tjud{P}{\Gamma}};
+              {\tjud{x().P}{x:\bot,\Gamma}}}
+\\
+\infbox{\irule{\tjud{P}{x:A,\Gamma}};
+              {\tjud{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}}
+\hspace{\infskip}
+\infbox{\irule{\tjud{P}{x:A,\Gamma}}
+              {\tjud{Q}{x:B,\Gamma}};
+              {\tjud{\case{x}{P;Q}}{x:A \with B,\Gamma}}}
+\hspace{\infskip}
+\infbox{\irule;{\tjud{\case{x}{}}{x:\top,\Gamma}}}
+\\
+\infbox{\irule{\tjud{P}{x:F(\mu F), \Gamma}};
+              {\tjud{\unr{x}.P}{x:\mu F,\Gamma}}}
+\hspace{\infskip}
+\infbox{\irule{\tjud{P}{y:A,\Gamma}}
+              {\tjud{Q}{y:\dual{A},x:F(A)}};
+              {\tjud{\roll{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}}
+\end{gather*}}
+
+\todo{Show that rules for introduction and elimination of $\mu$ and $\nu$ collapse?}
+
+The new bits are to do with $\mu,\nu$.  The rule for $\mu$ is straightforward---given a process of
+type $\mu F$, it unfolds the recursive type once giving a process of type $F(\mu F)$.  The rule for
+$\nu$ is less obvious: it implements one expansion of the recursive type, along with an initial
+coinvariant.  As a simple example, consider a Haskell definition of the stream of Fibonacci numbers:
+\begin{verbatim}
+fibs = iter (0,1)
+  where iter (m,n) = m : iter (n, m+n)
+\end{verbatim}
+In this case, the pair \texttt{(m,n)} is the coinvariant, and the \texttt{iter} function behaves
+like the step function (albeit with the recursion inlined).
+\\\todo{That example is miserable, and assumes familiarity with Haskell.}
+
+
+\todo{The pain point with the $\mu$ rule, for example, is that while the typing rule looks like the
+  rule for fold (from $F(\mu F)$ conclude $\mu F$), the term is used in the opposite way (because
+  processes read left-to-right)---do something to $x$ and then continue as $P$.  I originally named
+  the term {\it un}roll because of the latter interpretation, and named the $\nu$ term \tkwd{roll}
+  because the two types are dual. \tkwd{iter} or \tkwd{coiter} would be good replacements for
+  \tkwd{roll}, I think.  Wadler's Law is relevant here, I think.}
+
+
+\section{Examples}
+
+We will use $n$-ary sums $\oplus\{\overline{l:A}\}$,$\with\{\overline{l:A}\}$ with correspondingly
+generalized \tkwd{case} and selection expressions.
+
+\subsection{Church Numerals}
+
+\todo{Leave this section out entirely and introduce replication when introducing streams?}
+
+Basic idea: can code a type $?A$ by a least fixed point, and its dual $!(\dual{A})$ by the dual
+greatest fixed point.  Will replicate Phil's Church numeral example using this coding.  Begin with
+type abbreviations:
+%
+{\small\begin{align*}
+  Query(A) &= \mu X.\oplus\{\clabel{w}:\bot,\clabel{c}:X \parr X,\clabel{d}:A\}, \\
+  Bang(A) &= \nu X.\with\{\clabel{w}:1,\clabel{c}:X \otimes X,\clabel{d}:A\}.
+\end{align*}}
+%
+Can translate type of Church numerals:
+{\small\[
+  Church = \forall A. Query(A \otimes \dual{A}) \parr (\dual{A} \parr A).
+\]}
+\todo{This requires second-order quantification.  To me, this argues for its removal.}
+Now, expressing numbers is sarcasm-quotes obvious:
+{\small\begin{align*}
+  Zero_x &= x(A).x(s).x(z).\unr{s}.\sel{s}{w}.s().\link{z}{x}, \\
+  One_x &= x(A).x(s).x(z).\unr{s}.\sel{s}{d}.s[a].(\link{a}{z} \mid \link{s}{x}).
+\end{align*}}
+Note the two different uses of the value $s$ of type $Query(A)$.  In $Zero$, we have no use of $s$,
+so we select weakening and discard the resulting value of type $\bot$.  In $One$, we make one use of
+it, and so select dereliction instead.
+
+Of course, we don't want to have to code all the numbers manually.  Instead, we can devise a general
+pattern for incrementing a Church numeral:
+{\small\begin{align*}
+  Inc_{x,y} =\ &y(A).y(s).y(z).\unr{s}.\sel{s}{c}.s(f).\unr{f}.\sel{f}{d}. \\
+             &f[a].(\link{a}{z} \mid x[A].x[w].(\link{w}{s} \mid x[v].(\link{v}{f} \mid \link{y}{x}))).
+\end{align*}}
+%
+We have that $\tjud{Inc_{x,y}}{x:\dual{Church},y:Church}$, confirming that $Inc_{x,y}$ has the
+expected type.  Finally, we can confirm that $Inc$ behaves as expected by showing, for example, that
+{\small\[
+  \cut{x}{Church}{Zero_x}{Inc_{x,y}} \Longrightarrow^\star One_{y}.
+\]}
+\todo{Use of $\Longrightarrow^\star$ before definition.}
+
+\subsection{Peano Numerals}
+
+As an alternative to the Church encodings in the previous section, we could use recursive types
+directly to express Peano encodings of the naturals.  The type is natural:
+%
+{\small\[
+  Peano = \mu X.\oplus\{zero: 1, succ: X\}.
+\]}
+%
+The representation of values is more natural in this encoding, however.  For example, we have 0 and
+increment encoded as follows:
+%
+{\small\begin{align*}
+  Zero_x &= \unr{x}.\sel{x}{zero}.x[].0 \\
+  Inc_{x,y} &= \unr{y}.\sel{y}{succ}.\link{x}{y}
+\end{align*}}
+Again, we can show that increment behaves as we expect; for example, we have that
+%
+{\small\[
+  \cut{x}{Peano}{Zero_x}{Inc_{x,y}} \Longrightarrow^\star \unr{y}.\sel{y}{succ}.\unr{y}.\sel{y}{zero}.y[].0.
+\]}
+
+{\small\[\begin{array}{rcl@{\hspace{0mm}}ll}
+  Add_{x,y,z} & = & \multicolumn{3}{l}{\mkwd{roll}\:x\langle a \rangle} \\
+  & & \quad (&\multicolumn{2}{l}{a[y].\link{a}{z},} \\
+  & & & a(b).\mkwd{case}\:x\:\{&\clabel{zero}: x().\link{a}{b}; \\
+  & & & & \clabel{succ}: x[b'].(Inc_{b,b'} \mid  \link{a}{x}) \}).
+\end{array}\]}
+We can show that $\tjud{Add_{x,y,z}}{x:\dual{Peano}, y:\dual{Peano}, z:Peano}$ and, for instance,
+that
+%
+{\small\[
+  \cut{x}{Peano}{One_x}{\cut{y}{Peano}{One_y}{Add_{x,y,z}}} \Longrightarrow^\star Two_z.
+\]}
+
+\subsection{Streams}
+
+Another obvious thing to do with a recursion is streams.  The types are again quite intuitive:
+{\small\begin{align*}
+  Sink(A) &= \mu X. \oplus \{ \clabel{end}: \bot, \clabel{more}: \dual{A} \parr X \}, \\
+  Source(A) &= \nu X. \with \{ \clabel{end}: 1, \clabel{more}: A \otimes X \}.
+\end{align*}}
+Note the use of the dual in $Sink$; as a result, we have that $\dual{(Sink(A))} = Source(A)$ (and
+not $Source(\dual{A})$: would the other formulation make more sense, tho).
+
+Now, let's define some streams of naturals!  Let $Nat$ stand in for either of the encodings of
+naturals.  We'll start with a stream of zeros.  Our form for defining greatest fixed points, called
+\tkwd{roll}, allows an arbitrary coinvariant; in this case, we don't need one, so we'll just use 1:
+%
+{\small\begin{align*}
+  Zeros_y =\ &\roll{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
+\end{align*}}
+%
+In the \textrm{more} case, we rely on our earier definition of $Zero$.  Building the stream of
+naturals $0,1,2,\dots$ is more involved, but little more complicated. Note that we will need two
+copies of each number in the stream: the one that appears in the stream itself, and the one used to
+generate the remainder of the stream.  Therefore, we'll use a $Bang(Nat)$ as our coinvariant.  We
+begin by lifting $Zero$ to type $Bang(Nat)$:
+%
+{\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
+  LiftZero_z & = & \multicolumn{3}{l}{\mkwd{roll} \: z \langle a \rangle (a[].0,} \\
+  & & \quad & a().\mkwd{case}\: z \: \{ &\clabel{w}: z[].0; \\
+  & & & & \clabel{d}: Zero_z; \\
+  & & & & \clabel{c}: z[w].(w[].0 \mid z[].0) \}).
+\end{array}\]}
+%
+Again, we don't need a coinvariant, so we use 1.  The only interesting behavior is in the case of
+dereliction, in which we rely (again) on our existing definition of $Zero$.  Next, we can lift the
+$Inc$ definition above to operate on $Bang(Nat)$ processes:
+%
+{\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
+  LiftInc_{x,y} & = & \multicolumn{3}{l}{\mkwd{roll} \: y \langle z \rangle (\link{x}{z},} \\
+  & & \quad & \mkwd{case} \: y \: \{ & \clabel{w}: \unr{z}.\sel{z}{w}.y[].0; \\
+  & & & & \clabel{d}: \unr{z}.\sel{z}{d}.Inc_{z,y}; \\
+  & & & & \clabel{c}: \unr{z}.\sel{z}{c}.z(w).y[x].(\link{x}{w} \mid \link{y}{z}) \}).
+\end{array}\]}
+%
+The invariant $z$ is of type $Bang(Nat)$.  In the case of dereliction, $LiftInc$ behaves as
+$Inc$; the other cases are implemented in terms of the corresponding cases of the coinvariant.
+Thus, we have that
+\[
+  \tjud{LiftInc_{x,y}}{x:Query(\dual{Nat}),y:Bang(Nat)}.
+\]
+Finally, we can define a stream of naturals: the invariant is of type $Bang(Church)$, initialized by
+$LiftZero$, and the \textrm{more} case relies on $LiftInc$:
+%
+{\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
+  CNats_y & = & \multicolumn{3}{l}{\mkwd{roll} \: y \langle z \rangle (Zero_z,} \\
+  & & \quad & \mkwd{case}\:y \{ & \clabel{end}: \unr{z}.\sel{z}{w}.z().y[].0; \\
+  & & & & \clabel{more}: \unr{z}.\sel{z}{c}.z(w).y[x].\\
+  & & & & \quad (\unr{w}.\sel{w}{d}.\link{x}{w} \mid LiftInc_{z,y}) \}).
+\end{array}\]}
+%
+As we expect, we have that $\tjud{CNats_y}{y:Stream(Nat)}$.
+\\\todo{Example of using streams?  They're not terribly surprising.}
+
+\subsection{Bit Strings of DOOM!}
+
+Introducing some more syntactic sugar: the restriction of output to bound output is tedious in
+practice.  For example, to read a value from channel $m$, send it on $n$, and continue as process
+$P$ requires an unintuitive use of link: $m(x).n[x'].(\link{x}{x'} \mid P)$.  In this section, I'll
+write $x[y].P$ as syntactic sugar for $x[x'].(\link{x'}{y} \mid P)$.  I'll assume that we have a
+collection of mathematical operations on naturals built up, and apply similar syntactic sugar, so I
+can write $x[m + 1].P$, for instance, instead of $x[x'].(Inc_{m,x'} \mid P)$.
+
+We begin with the type of intermediate nodes in the chain.  Each supports three operations: one to
+compute the value of the string, one to increment the string, and one to dispose of the bit string:
+%
+{\small\[\begin{array}{l@{\hspace{1mm}}l}
+ NodeT = \nu X. \with \{ &\clabel{val}: \dual{Nat} \parr (Nat \otimes X), \\
+ & \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \\
+ & \clabel{halt}: 1 \}.
+\end{array}\]}
+
+The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
+cannot store a value so it must respond to increment requests with carry.
+%
+{\small\[\begin{array}{rcll}
+  Epsilon_x & = & \multicolumn{2}{l}{\mkwd{roll}\:x\langle y \rangle ( y[].0,} \\
+  & & \quad \mkwd{case}\:x\: \{ &\clabel{val}: x(n).x[n].\link{y}{x}; \\
+  & & &\clabel{inc}:\sel{x}{carry}.\link{y}{x}; \\
+  & & &\clabel{halt}: \link{y}{x} \}).
+\end{array}\]}
+
+To give internal nodes in the string, we need some representation of the bit each stores.  Let's use
+Booleans!
+%
+{\small\begin{align*}
+Bool &= \oplus \{ \clabel{t}:1, \clabel{f}:1 \}. \\
+True_x &= \sel{x}{t}.x[].0. \\
+False_x &= \sel{x}{f}.x[].0.
+\end{align*}}
+%
+As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
+
+We're now set to define internal nodes.  Again, the intuition is relatively simple.  In response to
+an increment request, the bit flips, passing on a carry option if needed.  In response to a value
+request, it adds its value to the value so far and passes the result down the string.  The syntax is
+complicated by several side concerns: in particular, since our Booleans are linear, we have to use
+the stored Boolean in all cases (even, like halt, when it is not strictly speaking needed).  Note
+that the coinvariant $x$ is of type $Bool \otimes NodeT$: it contains both the stored bit and the
+remainder of the string.
+%
+{\small\[\begin{array}{rcllll}
+  Node_{i,y,n} & = & \multicolumn{4}{l}{\mkwd{roll}\:n \langle x \rangle (x[j].(\link{j}{i} \mid \link{x}{y}),} \\
+  & & \quad x(b).\mkwd{case}\:n\: \{ &\multicolumn{3}{l}{\clabel{val}: \unr{x}.\sel{x}{val}.n(m).} \\
+  & & & \quad \mkwd{case}\:b\: \{ &\multicolumn{2}{l}{\clabel{t}: b().x[2m + 1].x(m).} \\
+  & & & & \multicolumn{2}{l}{\quad n[m].n[True].\link{x}{n};} \\
+  & & & & \multicolumn{2}{l}{\clabel{f}: b().x[2m].x(m).} \\
+  & & & & \multicolumn{2}{l}{\quad n[m].n[False].\link{x}{n} \};} \\
+  & & & \multicolumn{3}{l}{\clabel{inc}: \unr{x}.\sel{x}{inc}.} \\
+  & & & \quad \mkwd{case}\:x\:\{ &\multicolumn{2}{l}{\clabel{done}: \sel{n}{done}.n[b].\link{x}{n}} \\
+  & & & &\clabel{carry}: \mkwd{case}\:b\: \{ &\clabel{t}: b().\sel{n}{carry}.n[False].\link{x}{n} \\
+  & & & & &\clabel{f}: b().\sel{n}{done}.n[True].\link{x}{n} \} \}; \\
+  & & &\clabel{halt}: \\
+  & & &\quad \mkwd{case}\:b\:\{ &\multicolumn{2}{l}{\clabel{t}: b().\unr{x}.\sel{x}{halt}.x().n[].0;} \\
+  & & & &\multicolumn{2}{l}{\clabel{f}: b().\unr{x}.\sel{x}{halt}.x().n[].0 \} \})}.
+\end{array}\]}
+We have that
+{\small\[
+  \tjud{Node_{i,y,n}}{i:\dual{Bool},y:\dual{NodeT},n:NodeT}
+\]}
+\\\todo{The ugliest part of the preceeding example, I think, is the treatment of Booleans.  First,
+  there's the annoying $b().$ bits to use the $\bot$ part of $\dual{Bool}$.  More significantly, the
+  need to use the boolean in the halt case results in duplicating the code for the branch.  There
+  are two alternatives:
+  \begin{itemize}
+  \item Push the elimination of $b$ to the end: $\unr{x}.\sel{x}{halt}.x().\case{x}{\clabel{t}: b().n[].0; \clabel{f}: b().n[].0}.$
+  \item Introduce syntactic sugar like $Drop_b.M = \case{b}{\clabel{t}: b().M; \clabel{f}: b().M}$;
+    however, this sugar would be used exactly once, so it seems a bit excessive.
+  \end{itemize}\vspace{-2mm}}
+
+
+Now, we define a top level interface to bit strings.  We support three operations: one to compute
+the value of the string, one to increment the string, and one to dispose of the string.
+%
+{\small\[
+ CounterT = \nu X. \with \{ \clabel{val}: Nat \otimes X, \clabel{inc}:X, \clabel{halt}:1 \}.
+\]}
+
+
+The implementation of the top-level interface is less complex than that for the internal nodes; the
+only complication arises when an increment results in a carry, and so a new node needs to be added
+to the string.  The coinvariant $x$ stores the first internal node in the string, and is of type
+$NodeT$.
+%
+{\small\[\begin{array}{rclll}
+  Counter_z & = & \multicolumn{3}{l}{\mkwd{roll}\:z \langle x \rangle (Epsilon_x,} \\
+  & & \quad \mkwd{case}\:z\:\{ &\multicolumn{2}{l}{\clabel{val}: \unr{x}.\sel{x}{val}.x[Zero].x(n).z[n].\link{z}{x};} \\
+  & & &  \multicolumn{2}{l}{\clabel{inc}: \unr{x}.\sel{x}{inc}.} \\
+  & & & \quad \mkwd{case}\:x\:\{ &\clabel{carry}: \cut{n}{CImp}{\cut{i}{Bool}{True_i}{Node_{i,x,n}}}{\link{z}{n}}; \\
+  & & & &\clabel{done}: \link{z}{x} \} \\
+  & & &\multicolumn{2}{l}{\clabel{halt}:\unr{x}.\sel{x}{halt}.x().z[].0 \}).}
+\end{array}\]}
+
+Here's the example from the source file.  I don't think it's necessarily the best thing, so I can't
+be bothered to typeset it right now.
+\begin{verbatim}
+new [z:Counter]
+  (Counter(z) |
+   unr z.z[val].z(i).
+   unr z.z[inc].
+   unr z.z[val].z(j).
+   unr z.z[inc].unr z.z[inc].
+   unr z.z[val].z(k).
+   unr z.z[halt].z().a[i].a[j].a[k].a[].0)
+ |- a:int * (int * (int * 1)).
+\end{verbatim}
+\todo{This example may demonstrate my point of view on the $\mu$ and $\nu$ terms: it makes no sense
+  to me to think of this process as repeatedly {\it folding} \texttt{x}.}
+
+\subsection{Example with Parallelism}
+
+\todo{Given how much I've ranted about the bit strings example not demonstrating any interesting
+  non-sequential behavior, it would be touch ironic to rely on the same example myself.}
+
+\subsection{Practical Example}
+
+\todo{Something like a book store with a shopping cart; the coinvariant would be the list of
+  products purchased (or, to simplify, the total amount of the bill).  I don't think this example
+  would make anything clear that wasn't already in the earlier examples, but might it improve the
+  presentation to have a less ``artificial'' example?}
+
+\section{\mucp{} Cut Reduction}
+
+Standard rules (identical to earlier presentations):
+{\small\begin{multline*}
+\infbox
+  {\iproof
+    {\iproof
+      {\assume{\tjud{P}{y:A,\Gamma}}}
+      {\assume{\tjud{Q}{x:B,\Gamma'}}};
+      {\tjud{x[y].(P \mid Q)}{x: A \otimes B,\Gamma,\Gamma'}}}
+    {\iproof
+      {\assume{\tjud{R}{x:\dual{B},y:\dual{A},\Delta}}};
+      {\tjud{x(y).R}{x:\dual{A} \parr \dual{B},\Delta}}};
+    {\tjud{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}}{\Gamma,\Gamma',\Delta}}}
+  \Longrightarrow \\
+\infbox
+  {\iproof
+    {\assume{\tjud{Q}{y:A,\Gamma}}}
+    {\iproof
+      {\assume{\tjud{P}{x:B,\Gamma'}}}
+      {\assume{\tjud{R}{x:\dual{B},y:\dual{A},\Delta}}};
+      {\tjud{\cut{x}{B}{P}{R}}{y:\dual{A},\Gamma',\Delta}}};
+    {\tjud{\cut{y}{A}{Q}{\cut{x}{B}{P}{R}}}{\Gamma,\Gamma',\Delta}}}
+\end{multline*}}
+
+{\small\begin{multline*}
+\infbox
+  {\iproof
+    {\iproof
+      {\assume{\tjud{P}{x:A,\Gamma}}};
+      {\tjud{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}}
+    {\iproof
+      {\assume{\tjud{Q}{x:\dual{A},\Delta}}}
+      {\assume{\tjud{R}{x:\dual{B},\Delta}}};
+      {\tjud{\case{x}{Q;R}}{x:\dual{A} \with \dual{B},\Delta}}};
+    {\tjud{\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}}{\Gamma,\Delta}}} \Longrightarrow \\
+\infbox
+  {\iproof
+    {\assume{\tjud{P}{x:A,\Gamma}}}
+    {\assume{\tjud{Q}{x:\dual{A},\Delta}}};
+    {\tjud{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}}
+\end{multline*}}
+
+{\small\[
+\infbox
+  {\iproof
+    {\iproof;{\tjud{x[].0}{x:1}}}
+    {\iproof
+      {\assume{\tjud{P}{\Gamma}}};
+      {\tjud{x().P}{x:\bot,\Gamma}}};
+    {\tjud{\cut{x}{1}{x[].0}{x().P}}{\Gamma}}} \Longrightarrow
+\tjud{P}{\Gamma}
+\]}
+
+Cut reduction for fixed points corresponds to one step of unrolling, and depends on a subsidiary
+function $\mathbf{expand}$, defined below:
+
+{\small\begin{multline*}
+\infbox
+  {\iproof
+    {\iproof
+      {\assume{\tjud{P}{y:B,\Gamma}}}
+      {\assume{\tjud{Q}{y:\dual{B},x:F(B)}}};
+      {\tjud{\roll{x}{y}{B}{P}{Q}}{x:\nu F,\Gamma}}}
+    {\iproof
+      {\assume{\tjud{R}{x:\dual{F}(\mu (\dual{F})),\Delta}}};
+      {\tjud{\unr{x}.R}{x:\mu (\dual{F}),\Delta}}};
+    {\tjud{\cut{x}{\nu F}{\roll{x}{y}{B}{P}{Q}}{\unr{x}.R}}{\Gamma,\Delta}}} \Longrightarrow \\
+\infbox
+  {\iproof
+    {\assume{\tjud{P}{y:B,\Gamma}}}
+    {\iproof
+      {\assume{\tjud{Q}{y:\dual{B},x:F(B)}}}
+      {\iproof
+        {\assume{\tjud{E}{x:\dual{F}(\dual{B}),z:F(\nu F)}}}
+        {\assume{\tjud{R}{z:\dual{F}(\mu \dual{F}),\Delta}}};
+        {\tjud{\cut{z}{F(\nu F)}{E}{R}}{x:\dual{F}(\dual{B}),\Delta}}};
+      {\tjud{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R}}}{y:\dual{B},\Delta}}};
+    {\tjud{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R}}}}{\Gamma,\Delta}}}
+\end{multline*}}
+
+where $E = \expand{F}{z,x}{\roll{z}{y}{B}{\link{x}{y}}{Q}}$.
+
+The cases of $\mathbf{expand}$ for the positive combinators are as follow:
+{\small\begin{align*}
+  \expand{X.C}{x,w}{Q} &= \link{x}{w} \\
+  \expand{X.X}{x,w}{Q} &= Q \\
+  \expand{X.C_1 \otimes C_2}{x,w}{Q} &= w(z).x[y].(\expand{X.C_1}{y,z}{Q[y/x,z/w]} \mid \expand{X.C_2}{x,w}{Q}) \\
+  \expand{X.C_1 \oplus C_2}{x,w}{Q} &= \case{w}{\sel{x}{inl}.\expand{X.C_1}{x,w}{Q}; \sel{x}{inr}.\expand{X.C_2}{x,w}{Q}} \\
+  \expand{X.\mu G}{x,w}{Q} &= \roll{w}{y}{\nu(\dual{C}(A))}{\link{x}{y}}{\unr{y}.\expand{X.G (\mu G)}{y,w}{Q[y/x]}}
+\end{align*}}
+The remaining cases can be obtained by exchanging channels $x$ and $w$.
+
+
+\begin{lemma}
+  If $\tjud{Q}{x:A,w:B}$ then \(\tjud{\expand{F}{x,w}{Q}}{x:F(A), w:\dual{F}(B)}.\)
+\end{lemma}
+
+Commuting conversions are unsurprising:
+{\small\begin{align*}
+  \cut{x}{A}{z(y).P}{Q} &\Longrightarrow z(y).\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(\cut{x}{A}{P}{R} \mid Q) &&\text{if $x \not\in fn(Q)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(P \mid \cut{x}{A}{Q}{R}) &&\text{if $x \not\in fn(P)$} \\
+  \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
+  \cut{x}{A}{\unr{z}.P}{Q} &\Longrightarrow \unr{z}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\roll{z}{y}{B}{P}{Q}}{R} &\Longrightarrow \roll{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
+\end{align*}}
+
+\begin{theorem}
+  If $\tjud{P}{\Gamma}$ and $P \Longrightarrow Q$, then $\tjud{Q}{\Gamma}.$
+\end{theorem}
+
+Define $\Longrightarrow^\star$ to be the reflexive, transitive closure of $\Longrightarrow$.
+
+\begin{theorem}
+  If $\tjud{P}{\Gamma}$ is not a cut-free process, then there is a cut-free process
+  $\tjud{Q}{\Gamma}$ such that $P \Longrightarrow^\star Q$.
+\end{theorem}
+
+\section{\mugv{} Syntax}
+
+\section{\mugv{} Translation}
+
+\section{Related Work}
+
+\section{Conclusion and Future Work}
+
+\end{document}
