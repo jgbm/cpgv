@@ -117,8 +117,7 @@ xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
 xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
 xType (Tensor t u) = xType t `CP.Times` xType u
 xType UnitType     = CP.OfCourse (CP.With [])
-xType Int          = undefined
--- TODO: define a translation for integers
+xType Int          = CP.OfCourse (CP.FOExist CP.Int CP.One)
 
 --------------------------------------------------------------------------------
 -- With all that out of the way, type checking itself can be implemented
@@ -128,7 +127,13 @@ check :: Term -> Check (Type, String -> Builder CP.Proc)
 check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' te)
     where check' :: Term -> Check (Type, String -> Builder CP.Proc)
           check' Unit = return (UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
-          check' (EInt n) = return (Int, \z -> undefined)
+          check' (EInt n) =            
+            return (Int, \z -> replicate z x 
+                                  (nu y (CP.Bottom)
+                                      (sendTerm x (CP.EInt n) (link x y))
+                                      (emptyOut y)))
+            where x = V "x"
+                  y = V "y"
           check' (Var x)   = do ty <- consume x
                                 return (ty, \z -> link x z)
           check' (Link m n) =
