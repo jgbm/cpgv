@@ -80,8 +80,8 @@
 \newcommand{\gvServer}[1]{\flat {#1}}
 \newcommand{\gvService}[1]{\sharp {#1}}
 \newcommand{\gvDual}[1]{\overline{#1}}
-\newcommand{\gvOutputType}[2]{![{#1}].{#2}}
-\newcommand{\gvInputType}[2]{?[{#1}].{#2}}
+\newcommand{\gvOutputType}[2]{\mathord{!}[{#1}].{#2}}
+\newcommand{\gvInputType}[2]{\mathord{?}[{#1}].{#2}}
 
 \newcommand{\cpj}[2]{{#1} \vdash {#2}}
 \newcommand{\gvj}[3]{{#1} \vdash {#2} : {#3}}
@@ -227,15 +227,33 @@
 Linear logic has long been regarded as a potential typing discipline for concurrency.
 Girard~\cite{Girard87} observes that the connectives of linear logic can be interpreted as parallel
 computation. Abramsky~\cite{Abramsky92} and Bellin and Scott~\cite{BellinScott94} interpret linear
-logic proofs as processes in Milner's $\pi$-calculus. While they provide $\pi$-calculus
-interpretations of all linear logic proofs, they do not provide a proof-theoretic interpretation for
-arbitrary $\pi$-calculus terms. Caires and Pfenning~\cite{CairesPfenning10} observe that the
-multiplicative connectives can be interpreted as session types. Their process calculus, based on
-intuitionistic linear logic, is closer to $\pi$-calculus than are traditional session-typed
-languages. Wadler~\cite{Wadler12} shows that a core session-typed linear functional language, GV,
-patterned after a similar language due to Gay and Vasconcelos~\cite{GayVasconcelos10}, may be
-translated into a process calculus, CP, whose terms are proofs in classical linear logic.  However,
-GV is less expressive than CP: there are proofs which do not correspond to any GV program.
+logic proofs as $\pi$-calculus processes.
+%
+%% While they provide $\pi$-calculus interpretations of all
+%% linear logic proofs, they do not provide a proof-theoretic interpretation for arbitrary
+%% $\pi$-calculus terms.
+%
+Caires and Pfenning~\cite{CairesPfenning10} give a Curry-Howard correspondence between
+intuitionistic linear logic and session types, interpreting proofs as processes in a restricted
+$\pi$-calculus, $\pi$DILL.
+%
+%% Caires and Pfenning~\cite{CairesPfenning10} observe that the multiplicative
+%% connectives can be interpreted as session types. Their process calculus, based on intuitionistic
+%% linear logic, is closer to $\pi$-calculus than are traditional session-typed
+%% languages.
+
+Wadler~\cite{Wadler12} adapts Caires and Pfenning's work to classical linear logic, interpreting
+proofs as processes in a restricted $\pi$-calculus, CP.
+%
+Furthermore, Wadler shows that a core session-typed linear functional language, GV, patterned after
+a similar language due to Gay and Vasconcelos~\cite{GayVasconcelos10}, may be translated into
+CP. However, GV is less expressive than CP: there are proofs which do not correspond to any GV
+program.
+%
+%% Wadler~\cite{Wadler12} shows that a core session-typed linear functional language, GV,
+%% patterned after a similar language due to Gay and Vasconcelos~\cite{GayVasconcelos10}, may be
+%% translated into a process calculus, CP, whose terms are proofs in classical linear logic.  However,
+%% GV is less expressive than CP: there are proofs which do not correspond to any GV program.
 
 Our primary contribution is \hgv (Harmonious GV), a version of GV extended with constructs for
 session forwarding, replication, and polymorphism. We identify \hgvpi, the session-typed fragment of
@@ -437,8 +455,8 @@ Session rules
 Figure~\ref{fig:hgv-typing} gives the terms and typing rules for \hgv; the first block contains the
 structural rules, the second contains the (standard) rules for lambda terms, and the third contains
 the session-typed fragment.  The $\key{fork}$ construct provides session initiation, filling the
-role of GV's $\key{with}\dots\key{connect}$ structure, but without the asymmetry of the latter.  The
-two are interdefinable, as follows:
+role of GV's $\key{with}\dots\key{connect}\dots\key{to}\dots$ structure, but without the asymmetry
+of the latter. The two are interdefinable, as follows:
 \[
 \gvFork{x}{M} \equiv \gvWith{x}{M}{x} \qquad \gvWith{x}{M}{N} \equiv \gvLet{x}{\gvFork{x}{M}}{N}
 \]
