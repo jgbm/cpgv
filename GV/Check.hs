@@ -285,21 +285,6 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                                           (receiveType (V "x") v (link (V "x") z))
                                           (m' =<< reference (V "x")))
                    _ -> fail ("    Channel of receive type operation has unexpected type " ++ show (pretty mty))
-            
-
--- [[send S M]](z : !V.S') = nu x.(x[ [[S]] ].[[M]]x | link x z)
--- [[receive M]](z : ?V.S) = nu x.(x(V).[[M]]x | link x z)
-
---           check' (Send m n) =
---               do (mty, m') <- check m
---                  (nty, n') <- check n
---                  case nty of
---                    Lift (Output v w)
---                         | mty == v -> return (Lift w, \z -> nu (V "x") (xType v `CP.Times` CP.dual (xSession w))
---                                                                    (out (V "x") (V "y") (m' =<< reference (V "y")) (link (V "x") z)) (n' =<< reference (V "x")))
---                         | otherwise -> fail ("    Sent value has type " ++ printTree mty ++ " but expected " ++ printTree v)
---                    _ -> fail ("    Channel of send operation has unexpected type " ++ printTree nty)
-
 
 lookupLabel :: String -> [(String, Session)] -> Check Session
 lookupLabel l [] = fail ("    Unable to find label " ++ l)
