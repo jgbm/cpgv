@@ -19,6 +19,8 @@ instance Pretty Session
           pretty (Choice bs) = "&{" <> align (fillCat (punctuate (comma <> space) [ text v <> colon <+> pretty t | (v, t) <- bs ])) <> "}"
           pretty OutTerm = "end!"
           pretty InTerm = "end?"
+          pretty (Mu x s) = "mu" <+> text x <> dot <> pretty s
+          pretty (Nu x s) = "nu" <+> text x <> dot <> pretty s
           pretty (Server s) = "%" <> pretty s
           pretty (Service s) = "#" <> pretty s
           pretty (SVar v) = text v
@@ -49,6 +51,8 @@ pterm (UnlLam x a t) = prec 1 ("!\\" <> text x <> colon <> pretty a <+> "=>" <+>
 pterm (App t u) = prec 1 (pterm t 1 <+> pterm u 2)
 pterm (Pair t u) = prec 2 (pterm t 1 <> comma <+> pterm u 1)
 pterm (Let p t u) = prec 1 (group (align ("let" <+> pretty p <+> equals <+> pretty t <+> "in" <$> pretty u)))
+pterm (LetRec (x, b) f ps c m n) = prec 1 (group (align ("let rec" <+> brackets (text x <> dot <> pretty b) <+> text f <+> hsep [parens (text v <> colon <+> pretty t) | (v,t) <- ps] <+> text c <+> equals <+> pretty n <+> "in" <$> pretty n)))
+pterm (Corec c ci ts m n) = prec 1 (hang 2 ("corec" <+> text c <+> brackets (text ci <> colon <+> hsep (map pretty ts)) <+> pterm m 2 <+> pterm n 2))
 pterm (Send t u) = prec 1 ("send" <+> pterm t 2 <+> pterm u 2)
 pterm (Receive t) = prec 1 ("receive" <+> pretty t)
 pterm (Select l t) = prec 1 ("select" <+> text l <+> pretty t)

@@ -30,6 +30,8 @@ import GV.Syntax
      'link'       { LINK }
      '\\'         { LAMBDA }
      'let'        { LET }
+     'rec'        { REC }
+     'corec'      { COREC }
      'in'         { IN }
      'send'       { SEND }
      'receive'    { RECEIVE }
@@ -53,7 +55,9 @@ import GV.Syntax
      '%'          { SERVER }
      '#'          { SERVICE }
      'end!'       { OUTTERM }
-     'end?'       { INTERM}
+     'end?'       { INTERM }
+     'mu'         { MU }
+     'nu'         { NU }
      '-@'         { LINFUN }
      '->'         { UNLFUN }
      'Unit'       { UNITTYPE }
@@ -103,6 +107,8 @@ Session      :: { Session }
              | '%' Session                    { Server $2 }
              | '#' Session                    { Service $2 }
              | '~' Session                    { dual $2 }
+             | 'nu' UIdent '.' Session        { Nu $2 $4 }
+             | 'mu' UIdent '.' Session        { Mu $2 $4 }
              | UIdent                         { SVar $1 }
              | '!' '[' UIdent ']' '.' Session { OutputType $3 $6 }
              | '?' '[' UIdent ']' '.' Session { InputType $3 $6 }
@@ -132,7 +138,12 @@ Term        :: { Term }
             | '!' '\\' LIdent ':' Type '=>' Term
                                               { UnlLam $3 $5 $7 }
             | Term Term1                      { App $1 $2 }
-            | 'let' Pattern '=' Term 'in' Term { Let $2 $4 $6 }
+            | 'let' Pattern '=' Term 'in' Term
+                                              { Let $2 $4 $6 }
+            | 'let' 'rec' '[' UIdent '.' Session ']' LIdent list(fst(snd('(',pair(fst(LIdent, ':'), Type)),')')) LIdent '=' Term 'in' Term
+                                              { LetRec ($4,$6) $8 $9 $10 $12 $14 }
+            | 'corec' LIdent '[' LIdent ':' list(Type) ']' Term Term
+                                              { Corec $2 $4 $6 $8 $9 }
             | 'send' Term1 Term               { Send $2 $3 }
             | 'receive' Term1                 { Receive $2 }
             | 'select' LIdent Term            { Select $2 $3 }

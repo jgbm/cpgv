@@ -146,6 +146,30 @@ data Proc = ProcVar String [Arg]
           | Unk [String]
     deriving (Eq, Show)
 
+-- Instantiate some type variable whenever it appears in a term---used in
+-- ReceiveProp.
+
+instance HasTyVars Proc
+    where inst x b = go
+              where go (Link y z) = Link y z
+                    go (Cut z a p q) = Cut z (inst x b a) (go p) (go q)
+                    go (Out z y p q) = Out z y (go p) (go q)
+                    go (In z y p) = In z y (go p)
+                    go (Select x l p) = Select x l (go p)
+                    go (Case z bs) = Case z [(l,) (go p) | (l, p) <- bs]
+                    go (Unroll z p) = Unroll z (go p)
+                    go (Roll z w a p q) = Roll z w (inst x b a) (go p) (go q)
+                    go (Replicate z y p) = Replicate z y (go p)
+                    go (Derelict z y p) = Derelict z y (go p)
+                    go (SendProp z a p) = SendProp z (inst x b a) (go p)
+                    go (ReceiveProp z x' p)
+                        | x == x' = ReceiveProp z x' p
+                        | otherwise = ReceiveProp z x' (go p)
+                    go (EmptyOut z) = EmptyOut z
+                    go (EmptyIn z p) = EmptyIn z (go p)
+                    go (EmptyCase z ys) = EmptyCase z ys
+                    go (Unk ys) = Unk ys
+
 data Defn = ProcDef String [Param] Proc
           | PropDef String [String] Prop
     deriving (Eq, Show)

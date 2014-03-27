@@ -32,6 +32,8 @@ $any    = [$upper $lower $digit _]
      "link"       { lexeme LINK }
      "\"          { lexeme LAMBDA }
      "let"        { lexeme LET }
+     "rec"        { lexeme REC }
+     "corec"      { lexeme COREC }
      "in"         { lexeme IN }
      "send"       { lexeme SEND }
      "receive"    { lexeme RECEIVE }
@@ -56,6 +58,8 @@ $any    = [$upper $lower $digit _]
      "#"          { lexeme SERVICE }
      "end!"       { lexeme OUTTERM }
      "end?"       { lexeme INTERM}
+     "mu"         { lexeme MU }
+     "nu"         { lexeme NU }
      "-@"         { lexeme LINFUN }
      "->"         { lexeme UNLFUN }
      "Unit"       { lexeme UNITTYPE }
@@ -89,6 +93,8 @@ data Token = LIDENT String
            | LINK
            | LAMBDA
            | LET
+           | REC
+           | COREC
            | IN
            | SEND
            | RECEIVE
@@ -101,7 +107,7 @@ data Token = LIDENT String
            | SENDTYPE
            | RECEIVETYPE
            | FORK
-           | UNIT 
+           | UNIT
 
            | BANG
            | QUERY
@@ -116,6 +122,8 @@ data Token = LIDENT String
            | SERVICE
            | OUTTERM
            | INTERM
+           | MU
+           | NU
            | LINFUN
            | UNLFUN
            | UNITTYPE

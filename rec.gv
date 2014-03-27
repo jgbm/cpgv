@@ -1,0 +1,23 @@
+c: nu X.&{done:end!,more:!end?.X} |-
+  corec c [ci:] ci (case c of { done c => c;
+                                more c => let c = send (fork x:end! => x) c in
+                                          c })
+  : end!.
+
+|- let d = fork c : nu X.&{done:end!,more:!end?.X} =>
+               corec c [ci:] ci (case c of { done c => c;
+                                             more c => let c = send (fork x:end! => x) c in
+                                                       c }) in
+   let d = select more d in
+   let (z, d) = receive d in
+   select done d : end?.
+
+|- let rec [X.&{done:end!,more:!end?.X}] f c =
+       case c of { done c => c;
+                   more c => let c = send (fork x:end! => x) c in
+                             f c } in
+   let d = fork x:nu X.&{done:end!,more:!end?.X} => f x in
+   let d = select more d in
+   let (z, d) = receive d in
+   select done d
+ : end?.
