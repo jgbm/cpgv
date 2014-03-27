@@ -17,7 +17,7 @@ import qualified CP.Syntax as CP
 type Typing = (String, Type)
 type Environment = [Typing]
 
-newtype Check t = C{ runCheck :: Environment -> Either String (t, Environment) }
+newtype Check t = C{ runCheck :: (Environment, Int) -> Either String (t, (Environment, Int)) }
 instance Functor Check
     where fmap f (C g) = C (\e -> case g e of
                                     Left err -> Left err
@@ -35,52 +35,55 @@ typeFrom = snd
 nameFrom :: Typing -> String
 nameFrom = fst
 
+fresh :: String -> Check String
+fresh s = C (\(e, z) -> Right (s ++ '$' : show z, (e, z+ 1)))
+
 checkLinear :: Check ()
-checkLinear = C (\e -> case filter (linear . typeFrom) e of
-                         [] -> Right ((), e)
-                         e' -> Left ("    Failed to consume bindings for " ++ intercalate "," (map nameFrom e')))
+checkLinear = C (\(e, z) -> case filter (linear . typeFrom) e of
+                              [] -> Right ((), (e, z))
+                              e' -> Left ("    Failed to consume bindings for " ++ intercalate "," (map nameFrom e')))
 
 -- Limits the environment to only those typings satisfying the given predicate;
 -- excluded bindings and restored after the subcomputation is evaluated.
 restrict :: (Typing -> Bool) -> Check t -> Check t
-restrict p c = C (\e -> let (eIn, eOut) = partition p e
-                        in  case runCheck c eIn of
-                              Left err -> Left err
-                              Right (v, eIn') -> Right (v, eIn' ++ eOut))
+restrict p c = C (\(e, z) -> let (eIn, eOut) = partition p e
+                             in  case runCheck c (eIn, z) of
+                                   Left err -> Left err
+                                   Right (v, (eIn', z')) -> Right (v, (eIn' ++ eOut, z')))
 
 -- Find the type of a variable; if its type is linear, remove it from the
 -- environment.
 consume :: String -> Check Type
-consume x = C (\e -> case partition ((x ==) . nameFrom) e of
-                       ([], _)            -> Left ("    Failed to find binding for " ++ x)
-                       ([(_, t)], e')
-                           | unlimited t  -> Right (t, e)
-                           | otherwise    -> Right (t, e')
-                       _                  -> error ("Multiple bindings for " ++ x))
+consume x = C (\(e, z) -> case partition ((x ==) . nameFrom) e of
+                            ([], _)            -> Left ("    Failed to find binding for " ++ x)
+                            ([(_, t)], e')
+                                | unlimited t  -> Right (t, (e, z))
+                                | otherwise    -> Right (t, (e', z))
+                            _                  -> error ("Multiple bindings for " ++ x))
 
 -- Add a new binding to the environment; if its type is linear, assure that it
 -- is consumed in the provided subcomputation.  If this shadows an existing
 -- binding, the existing binding is restored after the subcomputation finishes.
 provide :: String -> Type -> Check t -> Check t
-provide x t c = C (\e -> let (included, excluded) = partition ((x /=) . nameFrom) e
-                         in  case runCheck c ((x, t) : included) of
-                               Left err -> Left err
-                               Right (y, e')
-                                   | unlimited t -> Right (y, excluded ++ filter ((x /=) . nameFrom) e')
-                                   | otherwise   -> case partition ((x ==) . nameFrom) e' of
-                                                      ([], _) -> Right (y, excluded ++ e')
-                                                      _       -> Left ("    Failed to consume binding for " ++ x))
+provide x t c = C (\(e, z) -> let (included, excluded) = partition ((x /=) . nameFrom) e
+                              in  case runCheck c ((x, t) : included, z) of
+                                    Left err -> Left err
+                                    Right (y, (e', z'))
+                                        | unlimited t -> Right (y, (excluded ++ filter ((x /=) . nameFrom) e', z'))
+                                        | otherwise   -> case partition ((x ==) . nameFrom) e' of
+                                                           ([], _) -> Right (y, (excluded ++ e', z'))
+                                                           _       -> Left ("    Failed to consume binding for " ++ x))
 
 mapPar :: (t -> Check u) -> [t] -> Check [u]
 mapPar f xs =
-    C (\e -> case runCheck (unzip `fmap` mapM (withEnvironment e . f) xs) e of
-               Left err -> Left err
-               Right ((ys, es), e')
-                   | all (same (filterUnlimited e')) (map filterUnlimited es) ->  Right (ys, e')
-                   | otherwise -> Left ("    Branches make inconsistent demands on linear environment"))
-    where withEnvironment e c = C (\_ -> case runCheck c e of
-                                           Left err -> Left err
-                                           Right (y, e) -> Right ((y, e), e))
+    C (\(e, z) -> case runCheck (unzip `fmap` mapM (withEnvironment e . f) xs) (e, z) of
+                    Left err -> Left err
+                    Right ((ys, es), (e', z'))
+                        | all (same (filterUnlimited e')) (map filterUnlimited es) ->  Right (ys, (e', z'))
+                        | otherwise -> Left ("    Branches make inconsistent demands on linear environment"))
+    where withEnvironment e c = C (\(_, z) -> case runCheck c (e, z) of
+                                                Left err -> Left err
+                                                Right (y, (e', z)) -> Right ((y, e'), (e', z)))
           filterUnlimited = filter (linear . snd)
           domain = map nameFrom
           equalAsSet xs ys = all (`elem` xs) ys && all (`elem` ys) xs
@@ -104,6 +107,8 @@ xSession (Sum cs)     = CP.With [(l, xSession st) | (l, st) <- cs]
 xSession (Choice cs)  = CP.Plus [(l, xSession st) | (l, st) <- cs]
 xSession OutTerm      = CP.Bottom
 xSession InTerm       = CP.One
+xSession (Mu x s)     = CP.Nu x (xSession s)
+xSession (Nu x s)     = CP.Mu x (xSession s)
 xSession (Server s)   = CP.WhyNot (xSession s)
 xSession (Service s)  = CP.OfCourse (xSession s)
 xSession (SVar s)     = CP.Var s []
@@ -124,8 +129,22 @@ xType Int          = CP.OfCourse (CP.FOExist CP.Int CP.One)
 -- directly.
 
 check :: Term -> Check (Type, String -> Builder CP.Proc)
-check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' te)
-    where check' :: Term -> Check (Type, String -> Builder CP.Proc)
+check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (show (pretty te))))) (check' te)
+    where checkUnrolling :: Term -> Check (Type, String -> Builder CP.Proc)
+          checkUnrolling (Var x) = do ty <- consume x
+                                      case ty of
+                                        Lift (Mu v s) -> return (Lift (instSession v (Mu v s) s), \z -> unroll x (link x z))
+                                        _ -> return (ty, \z -> link x z)
+          checkUnrolling m       = check' m
+
+          -- TODO: I'm unconvinced that this is necessarily enough---it doesn't unroll fixed points
+          -- below the top levels of types when comparing for equality.
+          equals (Lift (Mu x s)) (Lift (Mu x' s')) = s == instSession x' (SVar x) s'
+          equals (Lift (Mu x s)) (Lift s') = equals (Lift (instSession x (Mu x s) s)) (Lift s')
+          equals (Lift s') (Lift (Mu x s)) = equals (Lift (instSession x (Mu x s) s)) (Lift s')
+          equals t t'                      = t == t'
+
+          check' :: Term -> Check (Type, String -> Builder CP.Proc)
           check' Unit = return (UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
           check' (EInt n) =            
             return (Int, \z -> replicate z x 
@@ -141,17 +160,22 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                  (t', n') <- check n
                  case (t, t') of
                    (Lift s, Lift s')
-                       | s == dual s' -> return (Lift OutTerm,
-                                                 \z -> nu (V "x") (xSession s)
-                                                          (m' =<< reference (V "x"))
-                                                          (nu (V "y") (xSession s')
-                                                              (n' =<< reference (V "y"))
-                                                              (emptyIn z (link (V "x") (V "y")))))
+                       | duals s s' -> return (Lift OutTerm,
+                                               \z -> nu (V "x") (xSession s)
+                                                        (m' =<< reference (V "x"))
+                                                        (nu (V "y") (xSession s')
+                                                            (n' =<< reference (V "y"))
+                                                            (emptyIn z (link (V "x") (V "y")))))
                        | otherwise -> fail ("    Sessions in link are not dual: " ++ show (pretty s) ++ " and " ++ show (pretty s'))
                    _ -> fail ("    Non-session arguments to link: " ++ show (pretty t) ++ " and " ++ show (pretty t'))
+              where duals (Mu x s) (Nu y s') = duals s (instSession y (SVar x) s')
+                    duals (Nu y s) (Mu x s') = duals s (instSession y (SVar x) s')
+                    duals (Mu x s) s'        = duals (instSession x (Mu x s) s) s'
+                    duals s (Mu x s')        = duals s (instSession x (Mu x s') s')
+                    duals s s'               = s == dual s'
           check' (UnlLam x t m) =
               do (u, m') <- restrict (unlimited . typeFrom) (provide x t (check m))
-                 return (UnlFun t t, \z -> replicate z (V "y") (in_ (V "y") x (m' =<< reference (V "y"))))
+                 return (UnlFun t u, \z -> replicate z (V "y") (in_ (V "y") x (m' =<< reference (V "y"))))
           check' (LinLam x t m) =
               do (u, m') <- provide x t (check m)
                  return (LinFun t u, \z -> in_ z x (m' z))
@@ -160,12 +184,12 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                  (nty, n') <- check n
                  case mty of
                    v `LinFun` w
-                       | v == nty -> return (w, \z -> nu (V "w") (xType mty) (m' =<< reference (V "w")) (out (V "w") (V "x") (n' =<< reference (V "x")) (link (V "w") z)))
+                       | equals v nty -> return (w, \z -> nu (V "w") (xType mty) (m' =<< reference (V "w")) (out (V "w") (V "x") (n' =<< reference (V "x")) (link (V "w") z)))
                        | otherwise -> fail ("   Argument has type " ++ show (pretty nty) ++ " but expected " ++ show (pretty v))
                    v `UnlFun` w
-                       | v == nty -> return (w, \z -> nu (V "y") (xType (v `LinFun` w))
-                                                         (nu (V "w") (xType (v `UnlFun` w)) (m' =<< reference (V "w")) (derelict (V "w") (V "x") (link (V "x") (V "y"))))
-                                                         (out (V "y") (V "x") (n' =<< reference (V "x")) (link (V "y") z)))
+                       | equals v nty -> return (w, \z -> nu (V "y") (xType (v `LinFun` w))
+                                                             (nu (V "w") (xType (v `UnlFun` w)) (m' =<< reference (V "w")) (derelict (V "w") (V "x") (link (V "x") (V "y"))))
+                                                             (out (V "y") (V "x") (n' =<< reference (V "x")) (link (V "y") z)))
                        | otherwise -> fail ("   Argument has type " ++ show (pretty nty) ++ " but expected " ++ show (pretty v))
                    _ -> fail ("   Application of non-function of type " ++ show (pretty mty))
           check' (Pair m n) =
@@ -180,7 +204,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                  else do (u, n') <- provide x t (check n)
                          return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
           check' (Let (BindPair x y) m n) =
-              do (mty, m') <- check m
+              do (mty, m') <- checkUnrolling m
                  case mty of
                    Tensor xty yty ->
                        let isWeakened z zty = if zty == Lift InTerm && z `notElem` fv n then (z :) else id
@@ -188,22 +212,68 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                        in  do (nty, n') <- provide x xty (provide y yty (check n))
                               return (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
                    _ -> fail ("    Attempted to pattern-match non-pair of type " ++ show (pretty mty))
+          check' (LetRec (x,b) f ps c m n) =
+              do q <- fresh "Q"
+                 ci <- fresh "ci"
+                 (mty, _) <- provide f (foldr UnlFun (Lift (SVar q) `UnlFun` Lift OutTerm) ts) $
+                             provide c (Lift (instSession x (SVar q) b)) $
+                             foldr (\(x, t) m -> provide x t m) (check m) ps
+                 (nty, _) <- provide f (foldr UnlFun (Lift (Nu x b) `UnlFun` Lift OutTerm) ts) (check n)
+                 case mty of
+                   Lift OutTerm ->
+                       let m' = Let (BindName f)
+                                    ((foldr (\(v, t) rest m -> UnlLam v t (rest (Send (Var v) m)))
+                                            id
+                                            ps) (UnlLam c (Lift (foldr Output OutTerm ts)) (Var c)))
+                                    (foldr (\v m -> Let (BindPair v ci) (Receive (Var ci)) m)
+                                           m
+                                           vs)
+                           n' = Let (BindName f)
+                                    (foldr (\(v, t) m -> UnlLam v t m)
+                                           (UnlLam c (Lift (Nu x b)) (Corec c ci ts
+                                                                            (foldl (\m v -> Send (Var v) m) (Var ci) vs)
+                                                                            m'))
+                                           ps)
+                                    n
+                       in  do (_, result) <- check n'
+                              return (nty, result)
+              where (vs, ts) = unzip ps
+          check' (Corec c ci ts m n) =
+              do cty <- consume c
+                 case cty of
+                   Lift (Nu x b) ->
+                       do (mty, m') <- provide ci (Lift tsOut) (check m)
+                          case mty of
+                            Lift OutTerm ->
+                                do (nty, n') <- provide ci (Lift tsIn) (restrict (const False) (provide c (Lift (instSession x tsOut b)) (check n)))
+                                   case nty of
+                                     Lift OutTerm -> let mterm = nu (V "z") CP.One (emptyOut (V "z")) (m' =<< reference (V "z"))
+                                                         ciWeakened = tsIn == InTerm || ci `notElem` fv n
+                                                         nterm | ciWeakened = nu (V "z") CP.One (emptyOut (V "z")) (emptyIn ci (n' =<< reference (V "z")))
+                                                               | otherwise = nu (V "z") CP.One (emptyOut (V "z")) (n' =<< reference (V "z"))
+                                                     in return (Lift OutTerm,
+                                                                \z -> emptyIn z (roll c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
+                                     _ -> fail ("    Result of step term has unexpected type " ++ show (pretty nty))
+                            _ -> fail ("    Result of establishing term has unexpected type " ++ show (pretty mty))
+                   _ -> fail ("    Recursive channel in corec has unexpected type " ++ show (pretty cty))
+              where tsOut = foldr Output OutTerm ts
+                    tsIn  = foldr Input InTerm ts
           check' (Send m n) =
               do (mty, m') <- check m
-                 (nty, n') <- check n
+                 (nty, n') <- checkUnrolling n
                  case nty of
                    Lift (Output v w)
-                        | mty == v -> return (Lift w, \z -> nu (V "x") (xType v `CP.Times` CP.dual (xSession w))
+                        | equals mty v -> return (Lift w, \z -> nu (V "x") (xType v `CP.Times` CP.dual (xSession w))
                                                                    (out (V "x") (V "y") (m' =<< reference (V "y")) (link (V "x") z)) (n' =<< reference (V "x")))
                         | otherwise -> fail ("    Sent value has type " ++ show (pretty mty) ++ " but expected " ++ show (pretty v))
                    _ -> fail ("    Channel of send operation has unexpected type " ++ show (pretty nty))
           check' (Receive m) =
-              do (mty, m') <- check m
+              do (mty, m') <- checkUnrolling m
                  case mty of
                    Lift (Input v w) -> return (v `Tensor` Lift w, m')
                    _ -> fail ("    Channel of receive operation has unexpected type " ++ show (pretty mty))
           check' (Select l m) =
-              do (mty, m') <- check m
+              do (mty, m') <- checkUnrolling m
                  case mty of
                    Lift (Sum cs) -> do st <- lookupLabel l cs
                                        return (Lift st, \z -> nu (V "x") (xType mty) (m' =<< reference (V "x")) (inj (V "x") l (link (V "x") z)))
@@ -211,7 +281,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
               where
           check' (Case m bs@(_:_))
               | Just l <- duplicated bs = fail ("    Duplicated case label " ++ show (pretty l))
-              | otherwise = do (mty, m') <- check m
+              | otherwise = do (mty, m') <- checkUnrolling m
                                case mty of
                                  Lift (Choice cs) -> do (t:ts, bs') <- unzip `fmap` mapPar (checkBranch cs) bs
                                                         if all (t ==) ts
@@ -262,13 +332,13 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                    _ -> fail ("    Argument to serve has unexpected type " ++ show (pretty t))
 
           check' (Request m) =
-              do (t, m') <- check m
+              do (t, m') <- checkUnrolling m
                  case t of
                    Lift (Service ty) ->
                      return (Lift ty, \z -> nu (V "x") (CP.OfCourse (xSession ty)) (m' =<< reference (V "x")) (derelict (V "x") (V "y") (link (V "y") z)))
                    _ -> fail("    Unexpected type of service channel " ++ show (pretty t))
           check' (SendType s m) =
-              do (mty, m') <- check m
+              do (mty, m') <- checkUnrolling m
                  case mty of
                    Lift (OutputType v s') ->
                         return (Lift (instSession v s s'),
@@ -277,7 +347,7 @@ check te = addErrorContext ("Checking \"" ++ show (pretty te) ++ "\"") (check' t
                                           (m' =<< reference (V "x")))
                    _ -> fail ("    Channel of send type operation has unexpected type " ++ show (pretty mty))
           check' (ReceiveType m) =
-              do (mty, m') <- check m
+              do (mty, m') <- checkUnrolling m
                  case mty of
                    Lift (InputType v s') ->
                         return (Lift s',

@@ -1,4 +1,7 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module GV.Syntax where
+
+import Data.Generics
 
 data Session = Output Type Session
              | Input Type Session
@@ -6,13 +9,15 @@ data Session = Output Type Session
              | Choice [(String, Session)]
              | OutTerm
              | InTerm
+             | Mu String Session
+             | Nu String Session
              | Server Session
              | Service Session
              | SVar String
              | Neg String
              | OutputType String Session
              | InputType String Session
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Data, Typeable)
 
 dual :: Session -> Session
 dual (Output t s) = Input t (dual s)
@@ -21,6 +26,8 @@ dual (Sum cs)     = Choice [(l, dual s) | (l, s) <- cs]
 dual (Choice cs)  = Sum [(l, dual s) | (l, s) <- cs]
 dual InTerm       = OutTerm
 dual OutTerm      = InTerm
+dual (Mu x s)     = Nu x (dual (instSession x (Neg x) s))
+dual (Nu x s)     = Mu x (dual (instSession x (Neg x) s))
 dual (Server s)   = Service (dual s)
 dual (Service s)  = Server (dual s)
 dual (SVar x)     = Neg x
@@ -34,7 +41,7 @@ data Type = LinFun Type Type
           | UnitType
           | Lift Session
           | Int
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Data, Typeable)
 
 --------------------------------------------------------------------------------
 -- Types, substitutions, and unifications
@@ -103,7 +110,7 @@ instType x s Int          = Int
 
 data Pattern = BindName String
              | BindPair String String
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Data, Typeable)
 
 data Term = Var String
           | Link Term Term
@@ -112,6 +119,8 @@ data Term = Var String
           | App Term Term
           | Pair Term Term
           | Let Pattern Term Term
+          | LetRec (String, Session) String [(String, Type)] String Term Term
+          | Corec String String [Type] Term Term
           | Send Term Term
           | Receive Term
           | Select String Term
@@ -124,7 +133,7 @@ data Term = Var String
           | ReceiveType Term
           | Unit
           | EInt Integer
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Data, Typeable)
 
 fv :: Term -> [String]
 fv (Var s)                  = [s]

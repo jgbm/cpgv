@@ -12,7 +12,7 @@ def Add(x,y,z) =
   roll x [a:Peano*~Peano]
     (a[y0].(y <-> y0 | a <-> z),
      a(b).case x {zero: x().a<->b;
-                  succ: x[b0].(unr b0.b0/succ.b<->b0 | a<->x)}).
+                  succ: x[b0].(Inc(b,b0) | a<->x)}).
 check Add(x,y,z) |- x:~Peano,y:~Peano,z:Peano.
 
 def Count(x,y) =

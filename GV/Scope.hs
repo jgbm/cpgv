@@ -38,6 +38,17 @@ instance HasScopedVariables Term
                  case p of
                    BindName x   -> binder x (\x' -> Let (BindName x') m' `fmap` rename n)
                    BindPair x y -> binder x (\x' -> binder y (\y' -> Let (BindPair x' y') m' `fmap` rename n))
+          rename (LetRec b f ps c m n) =
+              binder f $ \f' ->
+                do (ps', c', m') <-
+                       foldr (\(v, t) m -> binder v (\v' -> do (ps', c', m') <- m
+                                                               return ((v', t) : ps', c', m')))
+                             (binder c (\c' -> do m' <- rename m; return ([], c', m'))) ps
+                   n' <- rename n
+                   return (LetRec b f' ps' c' m' n')
+          rename (Corec c ci ts m n) =
+              binder ci $ \ci' -> do c' <- reference c
+                                     liftM2 (Corec c' ci' ts) (rename m) (rename n)
           rename (Send m n) = liftM2 Send (rename m) (rename n)
           rename (Receive m) = liftM Receive (rename m)
           rename (Select l m) = liftM (Select l) (rename m)

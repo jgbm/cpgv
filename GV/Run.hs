@@ -46,7 +46,6 @@ data Susp a =
  | SReceive Chan                            (Value -> Susp a)
  | SSelect Label Chan                       (Value -> Susp a)
  | SCase Chan (Env Label (Value -> Thread)) (Value -> Susp a)
--- | SServe Chan (Chan -> Thread)             (Value -> Susp a)
  | SServe (Chan -> Thread)                  (Value -> Susp a)
  | SRequest Chan                            (Value -> Susp a)
  | SServeMore Chan (Chan -> Thread)
@@ -117,6 +116,13 @@ runPure env e = runPure' env e where
   runPure' env (Let (BindPair x1 x2) e e') =
     do (VPair v1 v2) <- rp e
        runPure (extend (extend env (x1, v1)) (x2, v2)) e'
+  runPure' env (LetRec _ f ps c m n) = runPure env' n
+    where (v:vs) = map fst ps ++ [c]
+          lamExp = foldr (\v m -> UnlLam v undefined m) m vs
+          fun = VClosure v lamExp env'
+          env' = extend env (f, fun)
+  runPure' env (Corec{}) = -- TODO: not sure how to execute Corec yet.
+                           return VUnit
   runPure' env (Fork x _ e) =
     sfork (\(p1, p2) -> runPure (extend env (x, VChannel (p1, p2))) e)
   runPure' env (Send m n) =

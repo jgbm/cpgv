@@ -1,5 +1,6 @@
 import Control.Monad.Trans
 import Data.Char (isSpace)
+import Data.Generics
 import Data.List (partition)
 import GV.Check
 import GV.CPBuilder
@@ -18,11 +19,11 @@ import System.Console.Haskeline
 import System.Environment (getArgs)
 
 interp (Assert gamma m t) =
-    case runCheck (checkAgainst (renameTerm m) t) gamma of
+    case runCheck (checkAgainst (renameTerm m) t) (gamma, 0) of
       Left err -> putStrLn err
       Right (p, _) -> let p' = build p
                           showCP c = (displayS (renderPretty 0.8 120 (pretty c))) ""
-                          cpBehavior = ("z'0", xType t) :
+                          cpBehavior = ("z!0", xType t) :
                                        [(v, CP.dual (xType t)) | (v, t) <- gamma]
                           cpResults = case CP.runCheck (CP.check p') (cpBehavior, []) of
                                         (_, Left err) -> unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False), "But:", err]
@@ -30,10 +31,13 @@ interp (Assert gamma m t) =
                                                          in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False) {-,
                                                                      "CP normalization:", showCP normalized,
                                                                      "CP simplification:", showCP  simplified -}]
-                          gvResults | null gamma = unlines ["GV execution:", show (runProgram m)]
-                                    | otherwise  = "No GV execution (free variables).\n"
+                          gvResults | null gamma && noCorec m = unlines ["GV execution:", show (runProgram m)]
+                                    | otherwise  = "No GV execution (free variables or corec).\n"
                       in putStrLn (gvResults ++ cpResults)
     where build b = fst (runBuilder b [] 0)
+          noCorec = everything (&&) (mkQ True (not . isCorec))
+              where isCorec Corec{} = True
+                    isCorec _       = False
 
 repl = do s <- getInputLine "> "
           case trim `fmap` s of
