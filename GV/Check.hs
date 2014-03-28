@@ -326,8 +326,8 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
 
           check' :: Term -> Check (Type, String -> Builder CP.Proc)
           check' Unit = return (UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
-          check' (EInt n) =            
-            return (Int, \z -> replicate z x 
+          check' (EInt n) =
+            return (Int, \z -> replicate z x
                                   (nu y (CP.Bottom)
                                       (sendTerm x (CP.EInt n) (link x y))
                                       (emptyOut y)))
@@ -399,15 +399,16 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                              provide c (Lift (instSession x (SVar q) b)) $
                              foldr (\(x, t) m -> provide x t m) (check m) ps
                  (nty, _) <- provide f (foldr UnlFun (Lift (Nu x b) `UnlFun` Lift OutTerm) ts) (check n)
+                 cis <- mapM (const (fresh "ci")) vs
                  case mty of
                    Lift OutTerm ->
                        let m' = Let (BindName f)
                                     ((foldr (\(v, t) rest m -> UnlLam v t (rest (Send (Var v) m)))
-                                            id
-                                            ps) (UnlLam c (Lift (foldr Output OutTerm ts)) (Var c)))
-                                    (foldr (\v m -> Let (BindPair v ci) (Receive (Var ci)) m)
+                                            (UnlLam c (Lift (foldr Output OutTerm ts)))
+                                            ps) (Var c))
+                                    (foldr (\(v, ci1, ci2) m -> Let (BindPair v ci2) (Receive (Var ci1)) m)
                                            m
-                                           vs)
+                                           (zip3 vs (ci:cis) cis))
                            n' = Let (BindName f)
                                     (foldr (\(v, t) m -> UnlLam v t m)
                                            (UnlLam c (Lift (Nu x b)) (Corec c ci ts
@@ -425,7 +426,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                        do (mty, m') <- provide ci (Lift tsOut) (check m)
                           case mty of
                             Lift OutTerm ->
-                                do (nty, n') <- provide ci (Lift tsIn) (restrict (const False) (provide c (Lift (instSession x tsOut b)) (check n)))
+                                do (nty, n') <- restrict (const False) (provide ci (Lift tsIn) (provide c (Lift (instSession x tsOut b)) (check n)))
                                    case nty of
                                      Lift OutTerm -> let mterm = nu (V "z") CP.One (emptyOut (V "z")) (m' =<< reference (V "z"))
                                                          ciWeakened = tsIn == InTerm || ci `notElem` fv n
