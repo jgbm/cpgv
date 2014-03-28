@@ -9,6 +9,7 @@ import GV.Printer
 import GV.Run
 import GV.Scope
 import GV.Syntax
+import GVToCP
 
 import qualified CP.Syntax as CP
 import qualified CP.Printer as CP
@@ -19,21 +20,23 @@ import System.Console.Haskeline
 import System.Environment (getArgs)
 
 interp (Assert gamma m t) =
-    case runCheck (checkAgainst (renameTerm m) t) (gamma, 0) of
+    let m' = renameTerm m in
+    case runCheck (checkAgainst m' t) (gamma, 0) of
       Left err -> putStrLn err
-      Right (p, _) -> let p' = build p
-                          showCP c = (displayS (renderPretty 0.8 120 (pretty c))) ""
-                          cpBehavior = ("z!0", xType t) :
-                                       [(v, CP.dual (xType t)) | (v, t) <- gamma]
-                          cpResults = case CP.runCheck (CP.check p') (cpBehavior, []) of
-                                        (_, Left err) -> unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False), "But:", err]
-                                        (_, Right _)  -> let Right (normalized, simplified) = CP.runM (CP.normalize p')
-                                                         in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False) {-,
-                                                                     "CP normalization:", showCP normalized,
-                                                                     "CP simplification:", showCP  simplified -}]
-                          gvResults | null gamma && noCorec m = unlines ["GV execution:", show (runProgram m)]
-                                    | otherwise  = "No GV execution (free variables or corec).\n"
-                      in putStrLn (gvResults ++ cpResults)
+      Right _ ->  let ((_, p), _) = runTrans (xTerm m') (gamma, 0)
+                      p' = build (binder (V "z") p)
+                      showCP c = (displayS (renderPretty 0.8 120 (pretty c))) ""
+                      cpBehavior = ("z!0", xType t) :
+                                   [(v, CP.dual (xType t)) | (v, t) <- gamma]
+                      cpResults = case CP.runCheck (CP.check p') (cpBehavior, []) of
+                                    (_, Left err) -> unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False), "But:", err]
+                                    (_, Right _)  -> let Right (normalized, simplified) = CP.runM (CP.normalize p')
+                                                     in unlines ["CP translation:", showCP (CP.Assert p' cpBehavior False) {-,
+                                                                 "CP normalization:", showCP normalized,
+                                                                 "CP simplification:", showCP  simplified -}]
+                      gvResults | null gamma && noCorec m = unlines ["GV execution:", show (runProgram m)]
+                                | otherwise  = "No GV execution (free variables or corec).\n"
+                  in putStrLn (gvResults ++ cpResults)
     where build b = fst (runBuilder b [] 0)
           noCorec = everything (&&) (mkQ True (not . isCorec))
               where isCorec Corec{} = True

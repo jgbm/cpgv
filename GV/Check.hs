@@ -100,29 +100,29 @@ addErrorContext s c = C (\e -> case runCheck c e of
 --------------------------------------------------------------------------------
 -- Translating types
 
-xSession :: Session -> CP.Prop
-xSession (Output t s) = CP.dual (xType t) `CP.Par` xSession s
-xSession (Input t s)  = xType t `CP.Times` xSession s
-xSession (Sum cs)     = CP.With [(l, xSession st) | (l, st) <- cs]
-xSession (Choice cs)  = CP.Plus [(l, xSession st) | (l, st) <- cs]
-xSession OutTerm      = CP.Bottom
-xSession InTerm       = CP.One
-xSession (Mu x s)     = CP.Nu x (xSession s)
-xSession (Nu x s)     = CP.Mu x (xSession s)
-xSession (Server s)   = CP.WhyNot (xSession s)
-xSession (Service s)  = CP.OfCourse (xSession s)
-xSession (SVar s)     = CP.Var s []
-xSession (Neg s)      = CP.Neg s
-xSession (OutputType x s) = CP.Exist x (xSession s)
-xSession (InputType x s) = CP.Univ x (xSession s)
+xSession' :: Session -> CP.Prop
+xSession' (Output t s) = CP.dual (xType' t) `CP.Par` xSession' s
+xSession' (Input t s)  = xType' t `CP.Times` xSession' s
+xSession' (Sum cs)     = CP.With [(l, xSession' st) | (l, st) <- cs]
+xSession' (Choice cs)  = CP.Plus [(l, xSession' st) | (l, st) <- cs]
+xSession' OutTerm      = CP.Bottom
+xSession' InTerm       = CP.One
+xSession' (Mu x s)     = CP.Nu x (xSession' s)
+xSession' (Nu x s)     = CP.Mu x (xSession' s)
+xSession' (Server s)   = CP.WhyNot (xSession' s)
+xSession' (Service s)  = CP.OfCourse (xSession' s)
+xSession' (SVar s)     = CP.Var s []
+xSession' (Neg s)      = CP.Neg s
+xSession' (OutputType x s) = CP.Exist x (xSession' s)
+xSession' (InputType x s) = CP.Univ x (xSession' s)
 
-xType :: Type -> CP.Prop
-xType (Lift s)     = xSession s
-xType (LinFun t u) = CP.dual (xType t) `CP.Par` xType u
-xType (UnlFun t u) = CP.OfCourse (xType (LinFun t u))
-xType (Tensor t u) = xType t `CP.Times` xType u
-xType UnitType     = CP.OfCourse (CP.With [])
-xType Int          = CP.OfCourse (CP.FOExist CP.Int CP.One)
+xType' :: Type -> CP.Prop
+xType' (Lift s)     = xSession' s
+xType' (LinFun t u) = CP.dual (xType' t) `CP.Par` xType' u
+xType' (UnlFun t u) = CP.OfCourse (xType' (LinFun t u))
+xType' (Tensor t u) = xType' t `CP.Times` xType' u
+xType' UnitType     = CP.OfCourse (CP.With [])
+xType' Int          = CP.OfCourse (CP.FOExist CP.Int CP.One)
 
 --------------------------------------------------------------------------------
 -- With all that out of the way, type checking itself can be implemented
@@ -206,6 +206,7 @@ checker te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (
                  nty <- provide f (foldr UnlFun (Lift (Nu x b) `UnlFun` Lift OutTerm) ts) (checker n)
                  case mty of
                    Lift OutTerm -> return nty
+                   _ -> fail ("    Unexpected type in letrec " ++ show (pretty mty))
               where (_, ts) = unzip ps
           check' (Corec c ci ts m n) =
               do cty <- consume c
@@ -340,9 +341,9 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                  case (t, t') of
                    (Lift s, Lift s')
                        | duals s s' -> return (Lift OutTerm,
-                                               \z -> nu (V "x") (xSession s)
+                                               \z -> nu (V "x") (xSession' s)
                                                         (m' =<< reference (V "x"))
-                                                        (nu (V "y") (xSession s')
+                                                        (nu (V "y") (xSession' s')
                                                             (n' =<< reference (V "y"))
                                                             (emptyIn z (link (V "x") (V "y")))))
                        | otherwise -> fail ("    Sessions in link are not dual: " ++ show (pretty s) ++ " and " ++ show (pretty s'))
@@ -363,11 +364,11 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                  (nty, n') <- check n
                  case mty of
                    v `LinFun` w
-                       | equals v nty -> return (w, \z -> nu (V "w") (xType mty) (m' =<< reference (V "w")) (out (V "w") (V "x") (n' =<< reference (V "x")) (link (V "w") z)))
+                       | equals v nty -> return (w, \z -> nu (V "w") (xType' mty) (m' =<< reference (V "w")) (out (V "w") (V "x") (n' =<< reference (V "x")) (link (V "w") z)))
                        | otherwise -> fail ("   Argument has type " ++ show (pretty nty) ++ " but expected " ++ show (pretty v))
                    v `UnlFun` w
-                       | equals v nty -> return (w, \z -> nu (V "y") (xType (v `LinFun` w))
-                                                             (nu (V "w") (xType (v `UnlFun` w)) (m' =<< reference (V "w")) (derelict (V "w") (V "x") (link (V "x") (V "y"))))
+                       | equals v nty -> return (w, \z -> nu (V "y") (xType' (v `LinFun` w))
+                                                             (nu (V "w") (xType' (v `UnlFun` w)) (m' =<< reference (V "w")) (derelict (V "w") (V "x") (link (V "x") (V "y"))))
                                                              (out (V "y") (V "x") (n' =<< reference (V "x")) (link (V "y") z)))
                        | otherwise -> fail ("   Argument has type " ++ show (pretty nty) ++ " but expected " ++ show (pretty v))
                    _ -> fail ("   Application of non-function of type " ++ show (pretty mty))
@@ -379,9 +380,9 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
               do (t, m') <- check m
                  if t == Lift InTerm && x `notElem` fv n
                  then do (u, n') <- check n
-                         return (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
+                         return (u, \z -> nu x (xType' t) (m' =<< reference x) (emptyIn x (n' z)))
                  else do (u, n') <- provide x t (check n)
-                         return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
+                         return (u, \z -> nu x (xType' t) (m' =<< reference x) (n' z))
           check' (Let (BindPair x y) m n) =
               do (mty, m') <- checkUnrolling m
                  case mty of
@@ -389,7 +390,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                        let isWeakened z zty = if zty == Lift InTerm && z `notElem` fv n then (z :) else id
                            weakened = isWeakened x xty (isWeakened y yty [])
                        in  do (nty, n') <- provide x xty (provide y yty (check n))
-                              return (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
+                              return (nty, \z -> nu y (xType' mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
                    _ -> fail ("    Attempted to pattern-match non-pair of type " ++ show (pretty mty))
           check' (LetRec (x,b) f ps c m n) =
               do q <- fresh "Q"
@@ -432,7 +433,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                                                          nterm | ciWeakened = nu (V "z") CP.One (emptyOut (V "z")) (emptyIn ci (n' =<< reference (V "z")))
                                                                | otherwise = nu (V "z") CP.One (emptyOut (V "z")) (n' =<< reference (V "z"))
                                                      in return (Lift OutTerm,
-                                                                \z -> emptyIn z (roll c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
+                                                                \z -> emptyIn z (roll c ci (foldr CP.Times CP.One (map xType' ts)) mterm nterm))
                                      _ -> fail ("    Result of step term has unexpected type " ++ show (pretty nty))
                             _ -> fail ("    Result of establishing term has unexpected type " ++ show (pretty mty))
                    _ -> fail ("    Recursive channel in corec has unexpected type " ++ show (pretty cty))
@@ -443,7 +444,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                  (nty, n') <- checkUnrolling n
                  case nty of
                    Lift (Output v w)
-                        | equals mty v -> return (Lift w, \z -> nu (V "x") (xType v `CP.Times` CP.dual (xSession w))
+                        | equals mty v -> return (Lift w, \z -> nu (V "x") (xType' v `CP.Times` CP.dual (xSession' w))
                                                                    (out (V "x") (V "y") (m' =<< reference (V "y")) (link (V "x") z)) (n' =<< reference (V "x")))
                         | otherwise -> fail ("    Sent value has type " ++ show (pretty mty) ++ " but expected " ++ show (pretty v))
                    _ -> fail ("    Channel of send operation has unexpected type " ++ show (pretty nty))
@@ -456,7 +457,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
               do (mty, m') <- checkUnrolling m
                  case mty of
                    Lift (Sum cs) -> do st <- lookupLabel l cs
-                                       return (Lift st, \z -> nu (V "x") (xType mty) (m' =<< reference (V "x")) (inj (V "x") l (link (V "x") z)))
+                                       return (Lift st, \z -> nu (V "x") (xType' mty) (m' =<< reference (V "x")) (inj (V "x") l (link (V "x") z)))
                    _             -> fail ("    Channel of select operation has unexepcted type " ++ show (pretty mty))
               where
           check' (Case m bs@(_:_))
@@ -465,7 +466,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                                case mty of
                                  Lift (Choice cs) -> do (t:ts, bs') <- unzip `fmap` mapPar (checkBranch cs) bs
                                                         if all (t ==) ts
-                                                        then return (t, \z -> nu (V "x") (xType mty)
+                                                        then return (t, \z -> nu (V "x") (xType' mty)
                                                                                      (m' =<< reference (V "x"))
                                                                                      (case_ (V "x") (sequence [reference (V "x") >>= flip b' z | b' <- bs'])))
                                                         else fail ("   Divergent results of case branches:" ++ intercalate ", " (map (show . pretty) (nub (t:ts))))
@@ -490,7 +491,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
              do (mty, m') <- check m
                 case mty of
                   Lift (Choice []) -> do mapM_ consume xs
-                                         return (t, \z -> nu (V "x") (xType mty)
+                                         return (t, \z -> nu (V "x") (xType' mty)
                                                                  (m' =<< reference (V "x"))
                                                                  (emptyCase (V "x") xs))
                   _                -> fail ("    Channel of empty case operation has unexpected type " ++ show (pretty mty))
@@ -498,7 +499,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
           check' (Fork x a m) =
               do (mty, m') <- provide x (Lift a) (check m)
                  case mty of
-                   Lift OutTerm -> return (Lift (dual a), \z -> nu x (xSession (dual a))
+                   Lift OutTerm -> return (Lift (dual a), \z -> nu x (xSession' (dual a))
                                                                    (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y")))
                                                                    (link x z))
                    _ -> fail ("    Argument to fork has unexpected type " ++ show (pretty mty))
@@ -515,15 +516,15 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
               do (t, m') <- checkUnrolling m
                  case t of
                    Lift (Service ty) ->
-                     return (Lift ty, \z -> nu (V "x") (CP.OfCourse (xSession ty)) (m' =<< reference (V "x")) (derelict (V "x") (V "y") (link (V "y") z)))
+                     return (Lift ty, \z -> nu (V "x") (CP.OfCourse (xSession' ty)) (m' =<< reference (V "x")) (derelict (V "x") (V "y") (link (V "y") z)))
                    _ -> fail("    Unexpected type of service channel " ++ show (pretty t))
           check' (SendType s m) =
               do (mty, m') <- checkUnrolling m
                  case mty of
                    Lift (OutputType v s') ->
                         return (Lift (instSession v s s'),
-                                \z -> nu (V "x") (CP.dual (xType mty))
-                                          (sendType (V "x") (xSession s) (link (V "x") z))
+                                \z -> nu (V "x") (CP.dual (xType' mty))
+                                          (sendType (V "x") (xSession' s) (link (V "x") z))
                                           (m' =<< reference (V "x")))
                    _ -> fail ("    Channel of send type operation has unexpected type " ++ show (pretty mty))
           check' (ReceiveType m) =
@@ -531,7 +532,7 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                  case mty of
                    Lift (InputType v s') ->
                         return (Lift s',
-                                \z -> nu (V "x") (CP.dual (xType mty))
+                                \z -> nu (V "x") (CP.dual (xType' mty))
                                           (receiveType (V "x") v (link (V "x") z))
                                           (m' =<< reference (V "x")))
                    _ -> fail ("    Channel of receive type operation has unexpected type " ++ show (pretty mty))
@@ -542,8 +543,14 @@ lookupLabel l ((l', s) : rest)
     |  l == l'   = return s
     | otherwise  = lookupLabel l rest
 
-checkAgainst :: Term -> Type -> Check (Builder CP.Proc)
-checkAgainst te ty = do (ty', b) <- check te
+checkAgainst :: Term -> Type -> Check ()
+checkAgainst te ty = do ty' <- checker te
                         if ty == ty'
-                        then return (binder (V "z") b)
+                        then return ()
                         else fail ("Expected type " ++ show (pretty ty) ++ " but actual type is " ++ show (pretty ty'))
+
+-- checkAgainst :: Term -> Type -> Check (Builder CP.Proc)
+-- checkAgainst te ty = do (ty', b) <- check te
+--                         if ty == ty'
+--                         then return (binder (V "z") b)
+--                         else fail ("Expected type " ++ show (pretty ty) ++ " but actual type is " ++ show (pretty ty'))

@@ -208,10 +208,9 @@ xTerm (Fork x a m) =
                       (link x z))
 xTerm (Serve x a m) =
   do (t@(Lift OutTerm), m') <- provide x (Lift a) (xTerm m)
-     return (Lift (dual a),
-             \z -> nu x (xSession (dual a))
-                      (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y")))
-                      (link x z))
+     return (Lift (Service (dual a)),
+             \z -> replicate z x
+                      (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y"))))
 xTerm (Request m) =
   do (t@(Lift (Service ty)), m') <- xTerm m
      return (Lift ty,
