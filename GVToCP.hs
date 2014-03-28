@@ -44,7 +44,7 @@ extend = flip (:)
 
 find x env = fromJust (lookup x env)
 
--- TODO: fill in recursive/corecursive voodoo
+-- TODO: fill in letrec voodoo
 
 xTerm :: TypeEnv -> GV.Term -> (GV.Type, String -> Builder CP.Proc)
 xTerm env GV.Unit = (GV.UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
@@ -93,12 +93,13 @@ xTerm env (GV.Pair m n) =
     (mty, m') = xTerm env m
     (nty, n') = xTerm env n
 xTerm env (GV.Let (GV.BindName x) m n) =
-  let (t, m') = xTerm env m in
-  let (u, n') = xTerm (extend env (x, t)) n in
-  -- weakening for end?
-  if t == GV.Lift GV.InTerm && x `notElem` GV.fv n
-  then (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
-  else (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
+  let (t, m') = xTerm env m
+      (u, n') = xTerm (extend env (x, t)) n
+  in
+      -- weakening for end?
+      if t == GV.Lift GV.InTerm && x `notElem` GV.fv n
+      then (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
+      else (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
 xTerm env (GV.Let (GV.BindPair x y) m n) =
   let (mty@(GV.Tensor xty yty), m') = xTerm env m
       isWeakened z zty = if zty == GV.Lift GV.InTerm && z `notElem` GV.fv n then (z :) else id
@@ -108,7 +109,18 @@ xTerm env (GV.Let (GV.BindPair x y) m n) =
     (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
 xTerm env (GV.LetRec (x,b) f ps c m n) = undefined
 
-xTerm env (GV.Corec c ci ts m n) = undefined
+xTerm env (GV.Corec c ci ts m n) =
+  let (cty@(GV.Lift (GV.Nu x b))) = find c env
+      (mty@(GV.Lift GV.OutTerm), m') = xTerm (extend env (x, GV.Lift tsOut)) m
+      (nty@(GV.Lift GV.OutTerm), n') = xTerm (extend (extend env (ci, GV.Lift tsIn)) (c, GV.Lift (GV.instSession x tsOut b))) n
+      mterm = nu (V "z") CP.One (emptyOut (V "z")) (m' =<< reference (V "z"))
+      ciWeakened = tsIn == GV.InTerm || ci `notElem` GV.fv n
+      nterm | ciWeakened = nu (V "z") CP.One (emptyOut (V "z")) (emptyIn ci (n' =<< reference (V "z")))
+            | otherwise = nu (V "z") CP.One (emptyOut (V "z")) (n' =<< reference (V "z"))
+  in (GV.Lift GV.OutTerm,
+      \z -> emptyIn z (roll c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
+  where tsOut = foldr GV.Output GV.OutTerm ts
+        tsIn  = foldr GV.Input GV.InTerm ts
 
 xTerm env (GV.Send m n) =
   let (mty, m') = xTerm env m
