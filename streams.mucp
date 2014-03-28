@@ -10,13 +10,13 @@ check x<->y |- x:Source(1), y:Sink(1).
 -- off for the 1's.  The good news is that this reduces to the sensible thing.
 
 def Bottoms(y,x) =
-    roll x [w:1]
+    corec x [w:1]
       (y<->w,
        case x {end: w<->x;
                more: w().x[v].(v[].0 | x[].0) }).
 check Bottoms(y,x) |- y:bot, x:Source(1).
 
-def Ones(z,x) = unr x.x/more.x(v).z[w].(w<->v | unr x.x/end.x<->z).
+def Ones(z,x) = rec x.x/more.x(v).z[w].(w<->v | rec x.x/end.x<->z).
 check Ones(z,x) |- x:Sink(1), z:1*1.
 
 check new [x:Source(1)] (Bottoms(y,x) | Ones(z,x)) |- y:bot, z:1*1.
@@ -27,31 +27,31 @@ type Quest(A) = mu P.+{w: bot, c: P || P, d: A}.
 type Bang(A)  = nu P.&{w:1, c:P * P, d: A}.
 type Church = forall A. (Quest(A * ~A) || (~A || A)).
 
-def Zero(x) = x(A).x(s).x(z).unr s.s/w.s().z<->x.
+def Zero(x) = x(A).x(s).x(z).rec s.s/w.s().z<->x.
 check Zero(x) |- x:Church.
 
 def Ping(x,y,w) =
-    x[1].x[s].(roll s [v:~Quest(bot)]
+    x[1].x[s].(corec s [v:~Quest(bot)]
                  (v<->y,
-                  case s {w: unr v.v/w.v().s[].0;
-                          c: unr v.v/c.v(u).s[t].(t<->u | s<->v);
-                          d: unr v.v/d.s(t).t().s<->v}) |
+                  case s {w: rec v.v/w.v().s[].0;
+                          c: rec v.v/c.v(u).s[t].(t<->u | s<->v);
+                          d: rec v.v/d.s(t).t().s<->v}) |
                x[z].(z[].0 | x().w[].0)).
 
 -- Phil's encodings
 
-def One(x) = x(A).x(s).x(z).unr s.s/d.s[a].(a<->z | s<->x).
+def One(x) = x(A).x(s).x(z).rec s.s/d.s[a].(a<->z | s<->x).
 check One(x) |- x:Church.
 
 def Two(x) = x(A).x(s).x(z).
-             unr s.s/c.s(f).unr f.f/d.f[a].
-             (a<->z | unr s.s/d.s[a].(a<->f | s<->x)).
+             rec s.s/c.s(f).rec f.f/d.f[a].
+             (a<->z | rec s.s/d.s[a].(a<->f | s<->x)).
 check Two(x) |- x:Church.
 
 -- Rewrite Two to use One.
 
 def Two_(x) = x(A).x(s).x(z).
-              unr s.s/c.s(f).unr f.f/d.f[a].
+              rec s.s/c.s(f).rec f.f/d.f[a].
               (a<->z | new [y:Church] (One(y) | y[A].y[w].(w <-> s | y[v].(v<->f | y<->x)))).
 check Two_(x) |- x:Church.
 check new [x:Church] (Two_(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
@@ -59,7 +59,7 @@ check new [x:Church] (Two_(x) | Ping(x,y,w)) |- y:Quest(bot),w:1.
 -- Increment, based on above.
 
 def Inc(x,y) = y(A).y(s).y(z).
-               unr s.s/c.s(f).unr f.f/d.f[a].
+               rec s.s/c.s(f).rec f.f/d.f[a].
                (a<->z | x[A].x[w].(w<->s | x[v].(v<->f | y<->x))).
 check Inc(x,y) |- x:~Church,y:Church.
 
@@ -68,31 +68,31 @@ check Inc(x,y) |- x:~Church,y:Church.
 check new [y:Church] (new [x:Church] (One(x) | Inc(x,y)) |
                       Ping(y,a,b)) |- a:Quest(bot),b:1.
 
-def Zeroes(y) = roll y [z:1]
+def Zeroes(y) = corec y [z:1]
                   (z[].0,
                    z().case y {w: y[].0;
                                c: y[w].(w[].0|y[].0);
                                d: Zero(y)}).
 check Zeroes(y) |- y:Bang(Church).
 
-def LiftIncr(x,y) = roll y [z:Bang(Church)]
+def LiftIncr(x,y) = corec y [z:Bang(Church)]
                       (x<->z,
-                       case y {w:unr z.z/w.z<->y;
-                               c:unr z.z/c.z(w).y[v].(v<->w | y<->z);
-                               d:unr z.z/d.Inc(z,y)}).
+                       case y {w:rec z.z/w.z<->y;
+                               c:rec z.z/c.z(w).y[v].(v<->w | y<->z);
+                               d:rec z.z/d.Inc(z,y)}).
 check LiftIncr(x,y) |- x:Quest(~Church), y:Bang(Church).
 
-def Nats(x) = roll x [y:Bang(Church)]
+def Nats(x) = corec x [y:Bang(Church)]
                 (Zeroes(y),
-                 case x { end: unr y.y/w.y<->x;
-                          more: unr y.y/c.y(z).x[w].(unr z.z/d.z<->w | LiftIncr(y,x)) }).
+                 case x { end: rec y.y/w.y<->x;
+                          more: rec y.y/c.y(z).x[w].(rec z.z/d.z<->w | LiftIncr(y,x)) }).
 check Nats(x) |- x:Source(Church).
 
 new [x:Source(Church)]
   (Nats(x) |
-   unr x.x/more.x(y).
-   unr x.x/more.x(z).
-   unr a.a/c.a(b).unr a.a/c.a(c).
+   rec x.x/more.x(y).
+   rec x.x/more.x(z).
+   rec a.a/c.a(b).rec a.a/c.a(c).
    d[e].(e[f].(Ping(y,b,f) | Ping(z,c,e)) |
-         unr x.x/more.x(y).unr x.x/end.x().Ping(y,a,d)))
+         rec x.x/more.x(y).rec x.x/end.x().Ping(y,a,d)))
  |- a:Quest(bot),d:(1*1)*1.

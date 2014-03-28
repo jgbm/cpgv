@@ -5,21 +5,21 @@ check x<->w |- x:Quest(A), w:Bang(~A).
 
 type Church = forall A. (Quest(A * ~A) || (~A || A)).
 
-def Zero(x) = x(A).x(s).x(z).unr s.s/w.s().z<->x.
+def Zero(x) = x(A).x(s).x(z).rec s.s/w.s().z<->x.
 check Zero(x) |- x:Church.
 
-def One(x) = x(A).x(s).x(z).unr s.s/d.s[a].(a<->z | s<->x).
+def One(x) = x(A).x(s).x(z).rec s.s/d.s[a].(a<->z | s<->x).
 check One(x) |- x:Church.
 
-def Two(x) = x(A).x(s).x(z).unr s.s/c.s(f).unr f.f/d.f[a].(a<->z | unr s.s/d.s[b].(f<->b | s<->x)).
+def Two(x) = x(A).x(s).x(z).rec s.s/c.s(f).rec f.f/d.f[a].(a<->z | rec s.s/d.s[b].(f<->b | s<->x)).
 check Two(x) |- x:Church.
 
 def Ping(x,y,w) =
-    x[1].x[s].(roll s [v:~Quest(bot)]
+    x[1].x[s].(corec s [v:~Quest(bot)]
                  (v<->y,
-                  case s {w: unr v.v/w.v().s[].0;
-                          c: unr v.v/c.v(u).s[t].(t<->u | s<->v);
-                          d: unr v.v/d.s(t).t().s<->v}) |
+                  case s {w: rec v.v/w.v().s[].0;
+                          c: rec v.v/c.v(u).s[t].(t<->u | s<->v);
+                          d: rec v.v/d.s(t).t().s<->v}) |
                x[z].(z[].0 | x().w[].0)).
 
 check Ping(x,y,w) |- x:~Church,y:Quest(bot),w:1.

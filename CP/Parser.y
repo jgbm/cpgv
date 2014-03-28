@@ -33,8 +33,8 @@ import Data.Maybe (fromMaybe)
     '<->'     { LINK }
     'new'     { NEW }
     'case'    { CASE }
-    'roll'    { ROLL }
-    'unr'     { UNROLL }
+    'corec'   { ROLL }
+    'rec'     { UNROLL }
     '?'       { QUERY }
     '!'       { BANG }
 
@@ -157,8 +157,8 @@ Proc         :: { Proc }
              | LIdent '/' LIdent '.' Proc     { Select $1 $3 $5 }
              | 'case' LIdent '{' sep(pair(LIdent, snd(':', Proc)), ';') '}'
                                               { Case $2 $4 }
-             | 'unr' LIdent '.' Proc          { Unroll $2 $4 }
-             | 'roll' LIdent '[' LIdent ':' Prop ']' '(' Proc ',' Proc ')'
+             | 'rec' LIdent '.' Proc          { Unroll $2 $4 }
+             | 'corec' LIdent '[' LIdent ':' Prop ']' '(' Proc ',' Proc ')'
                                               { Roll $2 $4 $6 $9 $11 }
              | LIdent '[' Prop ']' '.' Proc   { SendProp $1 $3 $6 }
              | LIdent '(' UIdent ')' '.' Proc { ReceiveProp $1 $3 $6 }

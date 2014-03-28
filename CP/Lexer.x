@@ -33,8 +33,8 @@ $any    = [$upper $lower $digit _]
          "<->"        { lexeme LINK }
          "new"        { lexeme NEW }
          "case"       { lexeme CASE }
-         "roll"       { lexeme ROLL }
-         "unr"        { lexeme UNROLL }
+         "corec"      { lexeme ROLL }
+         "rec"        { lexeme UNROLL }
          "?"          { lexeme QUERY }
          "!"          { lexeme BANG }
 

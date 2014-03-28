@@ -65,8 +65,8 @@ instance Pretty Proc
           pretty (In x y p) = hang 2 (name x <> parens (name y) <> dot <//> pretty p)
           pretty (Select x l p) = hang 2 (name x <> slash <> text l <> dot <//> pretty p)
           pretty (Case x bs) = hang 2 (group ("case" <+> name x <$> braces (align (cat (punctuate (semi <> space ) [text l <> colon <+> pretty p | (l, p) <- bs])))))
-          pretty (Unroll x p) = hang 2 ("unr" <+> name x <> dot <//> pretty p)
-          pretty (Roll x y a p q) = hang 2 (group ("roll" <+> name x <+> brackets (name y <> colon <+> pretty a) <$>
+          pretty (Unroll x p) = hang 2 ("rec" <+> name x <> dot <//> pretty p)
+          pretty (Roll x y a p q) = hang 2 (group ("corec" <+> name x <+> brackets (name y <> colon <+> pretty a) <$>
                                                    parens (pretty p <> comma <$> pretty q)))
           pretty (Replicate x y p) = hang 2 ("!" <> name x <> parens (name y) <> dot <//> pretty p)
           pretty (Derelict x y p) = hang 2 ("?" <> name x <> brackets (name y) <> dot <//> pretty p)
