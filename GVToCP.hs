@@ -107,7 +107,9 @@ xTerm env (GV.Let (GV.BindPair x y) m n) =
   in
     (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
 xTerm env (GV.LetRec (x,b) f ps c m n) = undefined
+
 xTerm env (GV.Corec c ci ts m n) = undefined
+
 xTerm env (GV.Send m n) =
   let (mty, m') = xTerm env m
       (GV.Lift (GV.Output v w), n') = xTerm env n

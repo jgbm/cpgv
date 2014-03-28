@@ -200,14 +200,13 @@ checker te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (
                    _ -> fail ("    Attempted to pattern-match non-pair of type " ++ show (pretty mty))
           check' (LetRec (x,b) f ps c m n) =
               do q <- fresh "Q"
-                 ci <- fresh "ci"
                  mty <- provide f (foldr UnlFun (Lift (SVar q) `UnlFun` Lift OutTerm) ts) $
                              provide c (Lift (instSession x (SVar q) b)) $
                              foldr (\(x, t) m -> provide x t m) (checker m) ps
                  nty <- provide f (foldr UnlFun (Lift (Nu x b) `UnlFun` Lift OutTerm) ts) (checker n)
                  case mty of
                    Lift OutTerm -> return nty
-              where (vs, ts) = unzip ps
+              where (_, ts) = unzip ps
           check' (Corec c ci ts m n) =
               do cty <- consume c
                  case cty of
