@@ -69,7 +69,7 @@ xUnroll :: Term -> Trans (Type, String -> Builder CP.Proc)
 xUnroll (Var x) = do ty <- consume x
                      case ty of
                        Lift (Mu v s) -> return (Lift (instSession v (Mu v s) s), 
-                                                \z -> unroll x (link x z))
+                                                \z -> rec x (link x z))
                        _ -> return (ty, \z -> link x z)
 xUnroll m       = xTerm m
 
@@ -166,7 +166,7 @@ xTerm (Corec c ci ts m n) =
          nterm | ciWeakened = nu (V "z") CP.One (emptyOut (V "z")) (emptyIn ci (n' =<< reference (V "z")))
                | otherwise = nu (V "z") CP.One (emptyOut (V "z")) (n' =<< reference (V "z"))
      return (Lift OutTerm,
-             \z -> emptyIn z (roll c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
+             \z -> emptyIn z (corec c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
   where tsOut = foldr Output OutTerm ts
         tsIn  = foldr Input InTerm ts
 

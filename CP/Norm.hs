@@ -89,14 +89,14 @@ stepPrincipal (Fragment zs (SendTerm x m p)) (Fragment zs' (ReceiveTerm x' i q))
 stepPrincipal (Fragment zs (EmptyOut x)) (Fragment zs' (EmptyIn x' p))
     | x == x', Just One <- lookup x zs =
         fragment (filter ((x' /=) . fst) zs') p
-stepPrincipal (Fragment zs (Unroll x p)) (Fragment zs' (Roll x' y s q r))
+stepPrincipal (Fragment zs (Rec x p)) (Fragment zs' (CoRec x' y s q r))
     | x == x', Just (Mu t a) <- lookup x zs =
         let b = (t, a)
             bbar = dualOp b
             nu (t, a) = Nu t a
         in  do z <- fresh "z"
                r' <- replace x z r
-               recurse <- funct b x z (Roll z y s (Link x y) r')
+               recurse <- funct b x z (CoRec z y s (Link x y) r')
                p' <- replace x z p
                y' <- fresh y
                q' <- replace y y' q
@@ -227,14 +227,14 @@ commute fs f g = loop fs [] False
                                          Case x `fmap` sequence [do fs <- fragment zs p
                                                                     (l,) `fmap` commute (fs ++ rest ++ passed) f g
                                                                  | (l,p) <- bs]
-          loop' (Fragment zs (Unroll x p) : rest) passed _
+          loop' (Fragment zs (Rec x p) : rest) passed _
               | x `notElem` map fst zs = trace ("unr " ++ x) $
                                          do fs <- fragment zs p
-                                            Unroll x `fmap` loop (fs ++ rest) passed True
-          loop' (Fragment zs (Roll x y s p q) : rest) passed _
+                                            Rec x `fmap` loop (fs ++ rest) passed True
+          loop' (Fragment zs (CoRec x y s p q) : rest) passed _
               | x `notElem` map fst zs = trace ("roll " ++ x ++ " [" ++ y ++ ": " ++ show (pretty s)) $
                                          do fs <- fragment zs p
-                                            flip (Roll x y s) q `fmap` loop (fs ++ rest) passed True
+                                            flip (CoRec x y s) q `fmap` loop (fs ++ rest) passed True
           loop' (Fragment zs (Replicate x y p) : rest) passed _
               | x `notElem` map fst zs, and [all (isWhyNot . snd) zs' | Fragment zs' _ <- rest ++ passed] =
                   do fs <- fragment zs p
@@ -322,8 +322,8 @@ instProc i m (In x y p) = In x y (instProc i m p)
 instProc i m (Out x y p q) = Out x y (instProc i m p) (instProc i m q)
 instProc i m (Select x l p) = Select x l (instProc i m p)
 instProc i m (Case x bs) = Case x [(l, instProc i m p) | (l, p) <- bs]
-instProc i m (Unroll x p) = Unroll x (instProc i m p)
-instProc i m (Roll x y a p q) = Roll x y a (instProc i m p) (instProc i m q)
+instProc i m (Rec x p) = Rec x (instProc i m p)
+instProc i m (CoRec x y a p q) = CoRec x y a (instProc i m p) (instProc i m q)
 instProc i m (Replicate x y p) = Replicate x y (instProc i m p)
 instProc i m (Derelict x y p) = Derelict x y (instProc i m p)
 instProc i m (SendProp x a p) = SendProp x a (instProc i m p)

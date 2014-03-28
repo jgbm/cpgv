@@ -176,20 +176,20 @@ check p = check' p >> empty
               where checkBranch lts (l, p)
                         | Just a <- lookup l lts = provide x a (check' p)
                         | otherwise = fail ("Choice " ++ show (pretty (With lts)) ++ " does not contain label " ++ l)
-          check' (Unroll x p) =
-              addError (Unroll x p) $
+          check' (Rec x p) =
+              addError (Rec x p) $
               do c <- consume x
                  case c of
                    Mu v a -> provide x (inst v (Mu v a) a) (check' p)
-                   _      -> unexpectedType x c (Unroll x p)
-          check' (Roll x z a p q) =
-              addError (Roll x z a p q) $
+                   _      -> unexpectedType x c (Rec x p)
+          check' (CoRec x z a p q) =
+              addError (CoRec x z a p q) $
               do c <- consume x
                  case c of
                    Nu v b ->
                        do provide z a (check' p)
                           withOnly (const False) (provide z (dual a) (provide x (inst v a b) (check' q)))
-                   _ -> unexpectedType x c (Roll x z a p q)
+                   _ -> unexpectedType x c (CoRec x z a p q)
           check' (Replicate x y p) =
               addError (Replicate x y p) $
               do c <- consume x

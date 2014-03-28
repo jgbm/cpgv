@@ -131,8 +131,8 @@ data Proc = ProcVar String [Arg]
           | In String String Proc
           | Select String String Proc
           | Case String [(String, Proc)]
-          | Unroll String Proc
-          | Roll String String Prop Proc Proc
+          | Rec String Proc
+          | CoRec String String Prop Proc Proc
           | Replicate String String Proc
           | Derelict String String Proc
           | SendProp String Prop Proc
@@ -157,8 +157,8 @@ instance HasTyVars Proc
                     go (In z y p) = In z y (go p)
                     go (Select x l p) = Select x l (go p)
                     go (Case z bs) = Case z [(l,) (go p) | (l, p) <- bs]
-                    go (Unroll z p) = Unroll z (go p)
-                    go (Roll z w a p q) = Roll z w (inst x b a) (go p) (go q)
+                    go (Rec z p) = Rec z (go p)
+                    go (CoRec z w a p q) = CoRec z w (inst x b a) (go p) (go q)
                     go (Replicate z y p) = Replicate z y (go p)
                     go (Derelict z y p) = Derelict z y (go p)
                     go (SendProp z a p) = SendProp z (inst x b a) (go p)
@@ -233,8 +233,8 @@ fn (Out x y p q)       = x : filter (y /=) (fn p) ++ fn q
 fn (In x y p)          = x : filter (y /=) (fn p)
 fn (Select x l p)      = x : fn p
 fn (Case x bs)         = x : concatMap (fn . snd) bs
-fn (Unroll x p)        = x : fn p
-fn (Roll x y a p q)    = x : filter (y /=) (fn p ++ fn q)
+fn (Rec x p)           = x : fn p
+fn (CoRec x y a p q)   = x : filter (y /=) (fn p ++ fn q)
 fn (Replicate x y p)   = x : filter (y /=) (fn p)
 fn (Derelict x y p)    = x : filter (y /=) (fn p)
 fn (SendProp x a p)    = x : fn p
@@ -259,8 +259,8 @@ fln (Out x y p q)       = x : filter (y /=) (fln p) ++ fln q
 fln (In x y p)          = x : filter (y /=) (fln p)
 fln (Select x l p)      = x : fln p
 fln (Case x bs)         = x : concatMap (fln . snd) bs
-fln (Unroll x p)        = x : fn p
-fln (Roll x y a p q)    = x : filter (y /=) (fn p ++ fn q)
+fln (Rec x p)           = x : fn p
+fln (CoRec x y a p q)   = x : filter (y /=) (fn p ++ fn q)
 fln (Replicate x y p)   = x : filter (y /=) (fln p)
 fln (Derelict x y p)    = filter (y /=) (fln p)
 fln (SendProp x a p)    = x : fln p
@@ -305,14 +305,14 @@ replace x y = replace'
               | otherwise = liftM (In (var z) w) (replace' p)
           replace' (Select z l p) = liftM (Select (var z) l) (replace' p)
           replace' (Case z bs) = liftM (Case (var z)) (sequence [liftM (l,) (replace' p) | (l, p) <- bs])
-          replace' (Unroll z p) = liftM (Unroll (var z)) (replace' p)
-          replace' (Roll z w a p q)
+          replace' (Rec z p) = liftM (Rec (var z)) (replace' p)
+          replace' (CoRec z w a p q)
               | x == w || y == z =
                   do w' <- fresh w
                      p' <- replace w w' p
                      q' <- replace w w' q
-                     liftM2 (Roll (var z) w' a) (replace' p') (replace' q')
-              | otherwise = liftM2 (Roll (var z) w a) (replace' p) (replace' q)
+                     liftM2 (CoRec (var z) w' a) (replace' p') (replace' q')
+              | otherwise = liftM2 (CoRec (var z) w a) (replace' p) (replace' q)
           replace' (Replicate z w p)
               | x == w || y == w =
                   do w' <- fresh w
@@ -377,8 +377,8 @@ instance HasGVTranslation Proc
           hasGVTranslation (In _ _ p)          = hasGVTranslation p
           hasGVTranslation (Select _ _ p)      = hasGVTranslation p
           hasGVTranslation (Case _ bs)         = any (hasGVTranslation . snd) bs
-          hasGVTranslation Unroll{}            = False
-          hasGVTranslation Roll{}              = False
+          hasGVTranslation Rec{}               = False
+          hasGVTranslation CoRec{}             = False
           hasGVTranslation (Replicate _ _ p)   = hasGVTranslation p
           hasGVTranslation (Derelict _ _ p)    = hasGVTranslation p
           hasGVTranslation (SendProp _ a p)    = hasGVTranslation a || hasGVTranslation p
