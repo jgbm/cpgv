@@ -42,7 +42,9 @@ type TypeEnv = [(String, Type)]
 extend :: TypeEnv -> (String, Type) -> TypeEnv
 extend = flip (:)
 
-find x env = fromJust (lookup x env)
+find x env = case lookup x env of
+               Just s  -> s
+               Nothing -> error ("    Unable to find index " ++ x)
 
 newtype Trans t = T { runTrans :: (TypeEnv, Int) -> (t, Int) }
 instance Functor Trans
@@ -62,6 +64,14 @@ consume x = T (\(e, i) -> (find x e, i))
 
 fresh :: String -> Trans String
 fresh s = T (\(e, i) -> (s ++ '$' : show i, i+1))
+
+xUnroll :: Term -> Trans (Type, String -> Builder CP.Proc)
+xUnroll (Var x) = do ty <- consume x
+                     case ty of
+                       Lift (Mu v s) -> return (Lift (instSession v (Mu v s) s), 
+                                                \z -> unroll x (link x z))
+                       _ -> return (ty, \z -> link x z)
+xUnroll m       = xTerm m
 
 xTerm :: Term -> Trans (Type, String -> Builder CP.Proc)
 xTerm Unit = return (UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
@@ -108,12 +118,12 @@ xTerm (Pair m n) =
      return (Tensor mty nty, 
              \z -> out z (V "y") (m' =<< reference (V "y")) (n' z))
 xTerm (Let (BindName x) m n) =
-  do (t, m') <- xTerm m
-     (u, n') <- provide x t (xTerm n)
-     -- weakening for end?
+  do (t, m') <- xUnroll m
      if t == Lift InTerm && x `notElem` fv n
-     then return (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
-     else return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
+     then do (u, n') <- xTerm n
+             return (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
+     else do (u, n') <- provide x t (xTerm n) 
+             return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
 xTerm (Let (BindPair x y) m n) =
   do (mty@(Tensor xty yty), m') <- xTerm m
      let isWeakened z zty = if zty == Lift InTerm && z `notElem` fv n then (z :) else id
@@ -149,7 +159,7 @@ xTerm (LetRec (x,b) f ps c m n) =
   where (vs, ts) = unzip ps
 xTerm (Corec c ci ts m n) =
   do (cty@(Lift (Nu x b))) <- consume c
-     (mty@(Lift OutTerm), m') <- provide x (Lift tsOut) (xTerm m)
+     (mty@(Lift OutTerm), m') <- provide ci (Lift tsOut) (xTerm m)
      (nty@(Lift OutTerm), n') <- provide ci (Lift tsIn) (provide c (Lift (instSession x tsOut b)) (xTerm n))
      let mterm = nu (V "z") CP.One (emptyOut (V "z")) (m' =<< reference (V "z"))
          ciWeakened = tsIn == InTerm || ci `notElem` fv n
@@ -162,22 +172,22 @@ xTerm (Corec c ci ts m n) =
 
 xTerm (Send m n) =
   do (mty, m') <- xTerm m
-     (Lift (Output v w), n') <- xTerm n
+     (Lift (Output v w), n') <- xUnroll n
      return (Lift w,
              \z -> nu (V "x") (xType v `CP.Times` CP.dual (xSession w))
                       (out (V "x") (V "y") (m' =<< reference (V "y"))
                       (link (V "x") z)) (n' =<< reference (V "x")))
 xTerm (Receive m) =
-  do (Lift (Input v w), m') <- xTerm m
+  do (Lift (Input v w), m') <- xUnroll m
      return (v `Tensor` Lift w, m')
 xTerm (Select l m) =
-  do (mty@(Lift (Sum cs)), m') <- xTerm m
+  do (mty@(Lift (Sum cs)), m') <- xUnroll m
      return (Lift (find l cs),
              \z -> nu (V "x") (xType mty)
                       (m' =<< reference (V "x"))
                       (inj (V "x") l (link (V "x") z)))
 xTerm (Case m bs@(_:_)) =
-  do (mty@(Lift (Choice cs)), m') <- xTerm m 
+  do (mty@(Lift (Choice cs)), m') <- xUnroll m 
      (t:_, bs') <- unzip `fmap` sequence (map (xBranch cs) bs)
      return (t, 
              \z -> nu (V "x") (xType mty)
@@ -212,19 +222,19 @@ xTerm (Serve x a m) =
              \z -> replicate z x
                       (nu (V "y") CP.Bottom (m' =<< reference (V "y")) (emptyOut (V "y"))))
 xTerm (Request m) =
-  do (t@(Lift (Service ty)), m') <- xTerm m
+  do (t@(Lift (Service ty)), m') <- xUnroll m
      return (Lift ty,
              \z -> nu (V "x") (CP.OfCourse (xSession ty))
                       (m' =<< reference (V "x"))
                       (derelict (V "x") (V "y") (link (V "y") z)))
 xTerm (SendType s m) =
-  do (mty@(Lift (OutputType v s')), m') <- xTerm m
+  do (mty@(Lift (OutputType v s')), m') <- xUnroll m
      return (Lift (instSession v s s'),
              \z -> nu (V "x") (CP.dual (xType mty))
                       (sendType (V "x") (xSession s) (link (V "x") z))
                       (m' =<< reference (V "x")))
 xTerm (ReceiveType m) =
-  do (mty@(Lift (InputType v s')), m') <- xTerm m
+  do (mty@(Lift (InputType v s')), m') <- xUnroll m
      return (Lift s',
              \z -> nu (V "x") (CP.dual (xType mty))
                       (receiveType (V "x") v (link (V "x") z))
