@@ -1,10 +1,15 @@
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,infer,mathwidth,stmaryrd,xcolor}
+\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor}
+
+\usepackage{mathpartir}
+\mprset{sep=1em}
 
 \newcommand{\with}{\mathbin\binampersand}
 \newcommand{\parr}{\mathbin\bindnasrepma}
 \newcommand{\cpdual}[1]{#1^\perp}
+\newcommand{\cpbang}[1]{{! #1}}
+\newcommand{\cpquery}[1]{{? #1}}
 \newcommand{\gvdual}[1]{\overline{#1}}
 \newcommand{\gvout}[2]{{!#1.#2}}
 \newcommand{\gvin}[2]{{?#1.#2}}
@@ -12,11 +17,13 @@
 \newcommand{\uto}{\ensuremath{\rightarrow}}
 \newcommand{\outterm}{\mathrm{end}_!}
 \newcommand{\interm}{\mathrm{end}_?}
+\newcommand{\gvserver}[1]{\flat #1}
+\newcommand{\gvservice}[1]{\sharp #1}
 \newcommand{\trule}[1]{(\textit{#1})}
 \newcommand{\cptyp}[2]{#1 \vdash #2}
 \newcommand{\gvtyp}[3]{#1 \vdash #2 : #3}
 
-\newcommand{\expand}[3]{\mathbf{expand}^{#1}_{#2}(#3)}
+\newcommand{\expand}[3]{\mathbf{map}^{#1}_{#2}(#3)}
 
 \newcommand{\mkwd}[1]{\mathsf{#1}}
 \newcommand{\tkwd}[1]{\textsf{#1}}
@@ -35,17 +42,21 @@
 \newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
 \newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
 \newcommand{\gvletrec}[3]{\mkwd{let}\:\mkwd{rec}\:#1 = #2\:\mkwd{in}\:#3}
+\newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
+\newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
 
 \newcommand{\tocp}[1]{\llbracket #1 \rrbracket}
+\newcommand{\De}{\mathcal{D}}
 
 \newcommand{\mucp}{$\mu\mathrm{CP}$}
 \newcommand{\mugv}{$\mu\mathrm{GV}$}
 
-\newcommand{\isp}{\hspace{\infskip}}
+\newcommand{\isp}{\quad}
 
 \title{Recursive Sessions and Linear Logic}
-\author{ABCD People}
-\institute{ABCD Places}
+\author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
+\institute{University of Edinburgh \\
+           \email{Garrett.Morris@ed.ac.uk,\{slindley,wadler\}@inf.ed.ac.uk}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
 
@@ -59,7 +70,300 @@
 
 \section{Introduction}
 
-\section{\mucp{} Syntax}
+\section{\mugv{} Syntax}
+
+{\small
+\[\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+  \text{Types} & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
+  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \} \mid \outterm \mid \interm \\
+   & & \mid & X \mid \gvdual{X} \mid \mu G \mid \nu G \\
+   & G & ::= & X.S \\
+  \text{Terms} & M,N & ::= & x \mid \lambda x.N \mid M\,N \mid (M,N) \mid \gvlet{(x,y)}{M}{N} \\
+   & & \mid & \gvsend{M}{N} \mid \gvreceive{M} \mid \gvselect{l_i}{M} \mid \gvcase{M}{l_i : N_i} \\
+   & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
+\end{array}\]}
+
+\section{\mugv{} Typing}
+
+{\small
+Structural rules
+\begin{mathpar}
+\inferrule{ }{\gvtyp{x:T}{x}{T}}
+
+\inferrule{\gvtyp{\Phi}{M}{U} \\
+           un(T)}
+          {\gvtyp{\Phi,x:T}{M}{U}}
+
+\inferrule{\gvtyp{\Phi,x:T,x':T}{M}{U} \\
+           un(T)}
+          {\gvtyp{\Phi,x:T}{M[x/x']}{U}}
+\end{mathpar}
+Lambda rules
+\begin{mathpar}
+\inferrule{\gvtyp{\Phi,x:T}{M}{U}}
+          {\gvtyp{\Phi}{\lambda x.M}{T \lto U}}
+
+\inferrule{\gvtyp{\Phi}{M}{T \lto U} \\
+           \gvtyp{\Psi}{N}{T}}
+          {\gvtyp{\Phi,\Psi}{M\,N}{U}}
+
+\inferrule{\gvtyp{\Phi}{M}{T \lto U} \\
+           un(\Phi)}
+          {\gvtyp{\Phi}{M}{T \uto U}}
+
+\inferrule{\gvtyp{\Phi}{M}{T \uto U}}
+          {\gvtyp{\Phi}{M}{T \lto U}}
+
+\inferrule{\gvtyp{\Phi}{M}{T} \\
+           \gvtyp{\Psi}{N}{U}}
+          {\gvtyp{\Phi,\Psi}{(M,N)}{T \otimes U}}
+
+\inferrule{\gvtyp{\Phi}{M}{T \otimes U} \\
+           \gvtyp{\Psi,x:T,y:U}{N}{V}}
+          {\gvtyp{\Phi,\Psi}{\gvlet{(x,y)}{M}{N}}{V}}
+\end{mathpar}
+Session rules
+\begin{mathpar}
+\inferrule{\gvtyp{\Phi}{M}{S} \\
+           \gvtyp{\Psi}{N}{\gvdual{S}}}
+          {\gvtyp{\Phi,\Psi}{\gvlink{M}{N}}{\outterm}}
+
+\inferrule{\gvtyp{\Phi}{M}{T} \\
+           \gvtyp{\Psi}{N}{\gvout{T}{S}}}
+          {\gvtyp{\Phi,\Psi}{\gvsend{M}{N}}{S}}
+
+\inferrule{\gvtyp{\Phi}{M}{\gvin{T}{S}}}
+          {\gvtyp{\Phi}{\gvreceive{M}}{T \otimes S}}
+
+\inferrule{\gvtyp{\Phi,x:\gvdual{S}}{M}{\outterm}}
+          {\gvtyp{\Phi}{\gvfork{x}{M}}{ S}}
+
+\inferrule{\gvtyp{\Phi}{M}{\oplus \{ l_i:S_i \}}}
+          {\gvtyp{\Phi}{\gvselect{l_i}{M}}{S_i}}
+
+\inferrule{\gvtyp{\Phi}{M}{\with \{ l_i:S_i \}} \\
+           \gvtyp{\Psi,x:S_i}{N_i}{T}}
+          {\gvtyp{\Phi,\Psi}{\gvcase{M}{l_i\,x.N_i}}{T}}
+\end{mathpar}
+Replicated session rules
+\begin{mathpar}
+\inferrule{\gvtyp{\Phi,x:\gvdual{S}}{M}{\outterm} \\
+           un(\Phi)}
+          {\gvtyp{\Phi}{\gvserve{x}{M}}{\gvservice{S}}}
+
+\inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
+          {\gvtyp{\Phi}{\gvrequest{M}}{S}}
+\end{mathpar}
+Recursive session rules
+\begin{mathpar}
+\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
+          {\gvtyp{\Phi}{M}{\mu G}}
+
+\inferrule{\gvtyp{\Phi}{M}{\mu G}}
+          {\gvtyp{\Phi}{M}{G (\mu G)}}
+
+\inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}
+          {\gvtyp{\Phi}{M}{\nu G}}
+
+\inferrule{\gvtyp{\Phi}{M}{\nu G}}
+          {\gvtyp{\Phi}{M}{G(\nu G)}}
+
+\inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm} \\
+           \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
+\end{mathpar}}
+
+\section{\mugv{} Examples}
+
+\subsection{Multi-function calculator}
+
+\begin{verbatim}
+|- let rec f (accum:Int) c =
+               case c of {
+                 add c => let (x, c) = receive c in
+                          f (accum + x) c;
+                 mul c => let (x, c) = receive c in
+                          f (accum * x) c
+                 result c => let c = send accum c in
+                             f accum c;
+                 done c => c } in
+   let d = fork c => f 0 c in
+   let d = send 4 (select add d) in
+   let d = send 8 (select mul d) in
+   let (x, d) = receive (select result d) in
+   let d = select d done in
+   x : Int.
+\end{verbatim}
+
+\subsection{Bit Strings of DOOM!}
+
+\todo{Translate to \mugv{}. Note that validating the translation would require extending the GV
+  interpreter with Booleans, addition and multiplication.}
+
+Introducing some more syntactic sugar: the restriction of output to bound output is tedious in
+practice.  For example, to read a value from channel $m$, send it on $n$, and continue as process
+$P$ requires an unintuitive use of link: $m(x).n[x'].(\link{x}{x'} \mid P)$.  In this section, I'll
+write $x[y].P$ as syntactic sugar for $x[x'].(\link{x'}{y} \mid P)$.  I'll assume that we have a
+collection of mathematical operations on naturals built up, and apply similar syntactic sugar, so I
+can write $x[m + 1].P$, for instance, instead of $x[x'].(Inc_{m,x'} \mid P)$.
+
+We begin with the type of intermediate nodes in the chain.  Each supports three operations: one to
+compute the value of the string, one to increment the string, and one to dispose of the bit string:
+%
+{\small\[\begin{array}{l@{\hspace{1mm}}l}
+ NodeT = \nu X. \with \{ &\clabel{val}: \cpdual{Nat} \parr (Nat \otimes X), \\
+ & \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \\
+ & \clabel{halt}: 1 \}.
+\end{array}\]}
+
+\begin{verbatim}
+NodeT = nu X. &{ val: ?Nat.!Nat.X,
+                 inc: +{carry: X, done:X},
+                 halt: end!}
+\end{verbatim}
+
+The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
+cannot store a value so it must respond to increment requests with carry.
+%
+{\small\[\begin{array}{rcll}
+  Epsilon_x & = & \multicolumn{2}{l}{\mkwd{corec}\:x\langle y \rangle ( y[].0,} \\
+  & & \quad \mkwd{case}\:x\: \{ &\clabel{val}: x(n).x[n].\link{y}{x}; \\
+  & & &\clabel{inc}:\sel{x}{carry}.\link{y}{x}; \\
+  & & &\clabel{halt}: \link{y}{x} \}).
+\end{array}\]}
+
+\begin{verbatim}
+let rec Epsilon c =
+   case c of {
+     val c => let (n, c) = receive c in
+              let c = send n c in
+              Epsilon c;
+     inc c => let c = select carry c in
+              Epsilon c;
+     halt c => c }
+\end{verbatim}
+
+To give internal nodes in the string, we need some representation of the bit each stores.  Let's use
+Booleans!
+%
+{\small\begin{align*}
+Bool &= \oplus \{ \clabel{t}:1, \clabel{f}:1 \}. \\
+True_x &= \sel{x}{t}.x[].0. \\
+False_x &= \sel{x}{f}.x[].0.
+\end{align*}}
+%
+As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
+\\\todo{Add more syntactic sugar?  How about:
+{\small\begin{align*}
+  \mkwd{if}\:x\:\mkwd{then}\:M\:\mkwd{else}\:N &= \case{x}{\clabel{t}:x().M; \clabel{f}:x().N} \\
+  \mkwd{drop}\:x.M &= \mkwd{if}\:x\:\mkwd{then}\:M\:\mkwd{else}\:M
+\end{align*}}}
+
+We're now set to define internal nodes.  Again, the intuition is relatively simple.  In response to
+an increment request, the bit flips, passing on a carry option if needed.  In response to a value
+request, it adds its value to the value so far and passes the result down the string.  The syntax is
+complicated by several side concerns: in particular, since our Booleans are linear, we have to use
+the stored Boolean in all cases (even, like halt, when it is not strictly speaking needed).  Note
+that the coinvariant $x$ is of type $Bool \otimes NodeT$: it contains both the stored bit and the
+remainder of the string.
+%
+{\small\[\begin{array}{rcllll}
+  Node_{i,y,n} & = & \multicolumn{4}{l}{\mkwd{corec}\:n \langle x \rangle (x[j].(\link{j}{i} \mid \link{x}{y}),} \\
+  & & \quad x(b).\mkwd{case}\:n\: \{ &\multicolumn{3}{l}{\clabel{val}: \rec{x}.\sel{x}{val}.n(m).} \\
+  & & & \quad \mkwd{case}\:b\: \{ &\multicolumn{2}{l}{\clabel{t}: b().x[2m + 1].x(m).} \\
+  & & & & \multicolumn{2}{l}{\quad n[m].n[True].\link{x}{n};} \\
+  & & & & \multicolumn{2}{l}{\clabel{f}: b().x[2m].x(m).} \\
+  & & & & \multicolumn{2}{l}{\quad n[m].n[False].\link{x}{n} \};} \\
+  & & & \multicolumn{3}{l}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
+  & & & \quad \mkwd{case}\:x\:\{ &\multicolumn{2}{l}{\clabel{done}: \sel{n}{done}.n[b].\link{x}{n}} \\
+  & & & &\clabel{carry}: \mkwd{case}\:b\: \{ &\clabel{t}: b().\sel{n}{carry}.n[False].\link{x}{n} \\
+  & & & & &\clabel{f}: b().\sel{n}{done}.n[True].\link{x}{n} \} \}; \\
+  & & &\clabel{halt}: \\
+  & & &\quad \mkwd{case}\:b\:\{ &\multicolumn{2}{l}{\clabel{t}: b().\rec{x}.\sel{x}{halt}.x().n[].0;} \\
+  & & & &\multicolumn{2}{l}{\clabel{f}: b().\rec{x}.\sel{x}{halt}.x().n[].0 \} \})}.
+\end{array}\]}
+We have that
+{\small\[
+  \cptyp{Node_{i,y,n}}{i:\cpdual{Bool},y:\cpdual{NodeT},n:NodeT}
+\]}
+
+\begin{verbatim}
+let rec Node b d c =
+   case c of {
+     val c => let m = receive c in
+              let d = send (if b then 2*m + 1 else 2*m) (select val d) in
+              let (n, d) = receive d in
+              let c = send n c in
+              Node b d c;
+     inc c => case (select inc d) of {
+                done d => Node b d (select done c);
+                carry d => let c = if b then select carry c else select done c in
+                           Node (not b) d c };
+     halt c => let d = select halt d in c }
+\end{verbatim}
+
+Now, we define a top level interface to bit strings.  We support three operations: one to compute
+the value of the string, one to increment the string, and one to dispose of the string.
+%
+{\small\[
+ CounterT = \nu X. \with \{ \clabel{val}: Nat \otimes X, \clabel{inc}:X, \clabel{halt}:1 \}.
+\]}
+
+\begin{verbatim}
+CounterT = nu X. &{ val: !Nat.X, inc: X, halt: end! }
+\end{verbatim}
+
+The implementation of the top-level interface is less complex than that for the internal nodes; the
+only complication arises when an increment results in a carry, and so a new node needs to be added
+to the string.  The coinvariant $x$ stores the first internal node in the string, and is of type
+$NodeT$.
+%
+{\small\[\begin{array}{rclll}
+  Counter_z & = & \multicolumn{3}{l}{\mkwd{corec}\:z \langle x \rangle (Epsilon_x,} \\
+  & & \quad \mkwd{case}\:z\:\{ &\multicolumn{2}{l}{\clabel{val}: \rec{x}.\sel{x}{val}.x[Zero].x(n).z[n].\link{z}{x};} \\
+  & & &  \multicolumn{2}{l}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
+  & & & \quad \mkwd{case}\:x\:\{ &\clabel{carry}: \cut{n}{CImp}{\cut{i}{Bool}{True_i}{Node_{i,x,n}}}{\link{z}{n}}; \\
+  & & & &\clabel{done}: \link{z}{x} \} \\
+  & & &\multicolumn{2}{l}{\clabel{halt}:\rec{x}.\sel{x}{halt}.x().z[].0 \}).}
+\end{array}\]}
+
+\begin{verbatim}
+let rec CounterImpl d c =
+  case c of {
+    val c => let (n, d) = receive (send 0 (select val d)) in
+             CounterImpl d (send n c);
+    inc c => case (select inc d) of {
+               carry d => let e = fork e => Node True d e in
+                          CounterImpl e c
+               done d => CounterImpl d c };
+    halt c => let d = select halt d in c } in
+let Counter z = CounterImpl (fork c => Epsilon c) z
+\end{verbatim}
+
+Here's the example from the source file.  I don't think it's necessarily the best thing, so I can't
+be bothered to typeset it right now.
+\begin{verbatim}
+new [z:Counter]
+  (Counter(z) |
+   rec z.z[val].z(i).
+   rec z.z[inc].
+   rec z.z[val].z(j).
+   rec z.z[inc].rec z.z[inc].
+   rec z.z[val].z(k).
+   rec z.z[halt].z().a[i].a[j].a[k].a[].0)
+ |- a:int * (int * (int * 1)).
+\end{verbatim}
+
+\begin{verbatim}
+let d = fork c => Counter c in
+let (i, d) = select val d in
+let (j, d) = select val (select inc d) in
+let (k, d) = select val (select inc (select inc d)) in
+let d = select halt d in
+(i,j,k)
+\end{verbatim}
+
+\section{\mucp{} Syntax and Semantics}
 
 \todo{
 \begin{itemize}
@@ -77,74 +381,151 @@
 
 Types and terms:
 
-\[\small\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+{\small
+\[\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
    & & \mid & X \mid \cpdual{X} \mid \mu F \mid \nu F \\
    & F & ::= & X.A \\
   \text{Terms} & P,Q & ::= & \link{x}{y} \mid x(y).P \mid x[y].(P \mid Q) \mid x().P \mid x[].0 \\
    & & \mid & \sel{x}{inl}.P \mid \sel{x}{inr}.Q \mid \case{x}{P;Q} \mid \case{x}{} \\
    & & \mid & \cut{x}{A}{P}{Q} \mid \rec{x}.P \mid \corec{x}{y}{A}{P}{Q}
-\end{array}\]
+\end{array}\]}
 
 If $F = X.A$, define $F(B) = A[B/X]$.  Definition of duality is standard:
 
 {\small\begin{gather*}
 \begin{aligned}
-  \cpdual{(A \otimes B)} &= \cpdual{A} \parr \cpdual{B} & \cpdual{1} &= \bot & \cpdual{(A \oplus B)} &= \cpdual{A} \with \cpdual{B} & \cpdual{\top} &= 0 \\
-  \cpdual{(A \parr B)} &= \cpdual{A} \otimes \cpdual{B} & \cpdual{\bot} &= 1 & \cpdual{(A \with B)} &= \cpdual{A} \oplus \cpdual{B} & \cpdual{0} &= \top
+  \cpdual{(A \otimes B)} &= \cpdual{A} \parr \cpdual{B} & \cpdual{1} &= \bot &
+    \cpdual{(A \oplus B)} &= \cpdual{A} \with \cpdual{B} & \cpdual{\top} &= 0 \\
+  \cpdual{(A \parr B)} &= \cpdual{A} \otimes \cpdual{B} & \cpdual{\bot} &= 1 &
+    \cpdual{(A \with B)} &= \cpdual{A} \oplus \cpdual{B} & \cpdual{0} &= \top
 \end{aligned}\\
 \begin{aligned}
 \cpdual{F} &= X.\cpdual{(F(\cpdual{X}))} & \cpdual{(\nu F)} &= \mu \cpdual{F} & \cpdual{(\mu F)} &= \nu \cpdual{F}
 \end{aligned}
 \end{gather*}}
 
-\todo{Is it useful/interesting to show that $\cpdual{(F(A))} = \cpdual{F}(\cpdual{A})$?} \\
-
 \begin{lemma}
   $\cpdual{(F(A))} = \cpdual{F}(\cpdual{A})$.
 \end{lemma}
 
-\begin{proof}
-  Suppose that $F = X.B$; the proof is by induction on the structure of $B$. \qed
-\end{proof}
+\subsection{Axiom and Composition}
 
-The typing rules are mostly unchanged from previous presentations of CP:
+This seems like an odd section.
 
-{\small\begin{gather*}
-\infbox{\irule;{\cptyp{\link{x}{y}}{x:A,y:\cpdual{A}}}}
-\isp
-\infbox{\irule{\cptyp{P}{\Gamma,x:A}}
-              {\cptyp{Q}{x:\cpdual{A},\Delta}};
-              {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}}
-\isp
-\infbox{\irule;{\cptyp{x[].0}{x:1}}}
-\\
-\infbox{\irule{\cptyp{P}{y:A,\Gamma}}
-              {\cptyp{Q}{x:B,\Delta}};
-              {\cptyp{x[y].(P \mid Q)}{x:A \otimes B,\Gamma,\Delta}}}
-\isp
-\infbox{\irule{\cptyp{P}{y:A,x:B,\Gamma}};
-              {\cptyp{x(y).P}{x:A \parr B,\Gamma}}}
-\isp
-\infbox{\irule{\cptyp{P}{\Gamma}};
-              {\cptyp{x().P}{x:\bot,\Gamma}}}
-\\
-\infbox{\irule{\cptyp{P}{x:A,\Gamma}};
-              {\cptyp{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}}
-\isp
-\infbox{\irule{\cptyp{P}{x:A,\Gamma}}
-              {\cptyp{Q}{x:B,\Gamma}};
-              {\cptyp{\case{x}{P;Q}}{x:A \with B,\Gamma}}}
-\isp
-\infbox{\irule;{\cptyp{\case{x}{}}{x:\top,\Gamma}}}
-\\
-\infbox{\irule{\cptyp{P}{x:F(\mu F), \Gamma}};
-              {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}}
-\isp
-\infbox{\irule{\cptyp{P}{y:A,\Gamma}}
-              {\cptyp{Q}{y:\cpdual{A},x:F(A)}};
-              {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}}
-\end{gather*}}
+{\small\begin{mathpar}
+\inferrule{ }{\cptyp{\link{x}{y}}{x:A,y:\cpdual{A}}}
+
+\inferrule{\cptyp{P}{\Gamma,x:A} \\
+           \cptyp{Q}{x:\cpdual{A},\Delta}}
+          {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
+\end{mathpar}}
+
+However, it does serve as a place to introduce the equivalences, which I'd forgotten otherwise.
+
+{\small
+\begin{align*}
+  \cut{x}{A}{P}{\link{x}{y}} &\equiv P[y/x] \\
+  \cut{x}{A}{P}{Q} &\equiv \cut{x}{\cpdual{A}}{Q}{P} \\
+  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv \cut{y}{B}{Q}{\cut{x}{A}{P}{R}} &&\text{if $x \not\in fn(Q)$}
+\end{align*}}
+
+\subsection{Input and Output}
+
+Binary...
+
+{\small\begin{mathpar}
+\inferrule{\cptyp{P}{y:A,\Gamma} \\
+           \cptyp{Q}{x:B,\Delta}}
+          {\cptyp{x[y].(P \mid Q)}{x:A \otimes B,\Gamma,\Delta}}
+
+\inferrule{\cptyp{P}{y:A,x:B,\Gamma}}
+          {\cptyp{x(y).P}{x:A \parr B,\Gamma}}
+\end{mathpar}}
+
+{\small\begin{multline*}
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:A,\Gamma} \\
+      \cptyp{Q}{x:B,\Gamma'}}
+     {\cptyp{x[y].(P \mid Q)}{x: A \otimes B,\Gamma,\Gamma'}} \\
+   \inferrule*
+     {\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
+     {\cptyp{x(y).R}{x:\cpdual{A} \parr \cpdual{B},\Delta}}}
+  {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}{\Gamma,\Gamma',\Delta}}}
+\Longrightarrow \\
+\inferrule
+  {\cptyp{Q}{y:A,\Gamma} \\
+   \inferrule*
+     {\cptyp{P}{x:B,\Gamma'} \\
+      \cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
+     {{\cptyp{\cut{x}{B}{P}{R}}{y:\cpdual{A},\Gamma',\Delta}}}}
+  {\cptyp{\cut{y}{A}{Q}{\cut{x}{B}{P}{R}}}{\Gamma,\Gamma',\Delta}}
+\end{multline*}}
+
+And nullary...
+
+{\small\begin{mathpar}
+\inferrule{ }{\cptyp{x[].0}{x:1}}
+
+\inferrule{\cptyp{P}{\Gamma}}
+          {\cptyp{x().P}{x:\bot,\Gamma}}
+\end{mathpar}}
+
+{\small\[
+\inferrule
+  {\inferrule*
+     { }{\cptyp{x[].0}{x:1}} \\
+   \inferrule*
+     {\cptyp{P}{\Gamma}}
+     {\cptyp{x().P}{x:\bot,\Gamma}}}
+  {\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}}
+\Longrightarrow
+\cptyp{P}{\Gamma}
+\]}
+
+\subsection{Selection and Choice}
+
+{\small\begin{mathpar}
+\inferrule{\cptyp{P}{x:A,\Gamma}}
+          {\cptyp{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}
+
+\inferrule{\cptyp{P}{x:A,\Gamma} \\
+           \cptyp{Q}{x:B,\Gamma}}
+          {\cptyp{\case{x}{P;Q}}{x:A \with B,\Gamma}}
+
+\inferrule{ }{\cptyp{\case{x}{}}{x:\top,\Gamma}}
+\end{mathpar}}
+
+{\small\begin{multline*}
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{x:A,\Gamma}}
+     {\cptyp{\sel{x}{inl}.P}{x:A \oplus B, \Gamma}} \\
+   \inferrule*
+     {\cptyp{Q}{x:\cpdual{A},\Delta} \\
+      \cptyp{R}{x:\cpdual{B},\Delta}}
+     {\cptyp{\case{x}{Q;R}}{x:\cpdual{A} \with \cpdual{B},\Delta}}}
+  {\cptyp{\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}}{\Gamma,\Delta}}
+\Longrightarrow \\
+\inferrule
+  {\cptyp{P}{x:A,\Gamma} \\
+   \cptyp{Q}{x:\cpdual{A},\Delta}}
+  {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
+\end{multline*}}
+
+No term to prove 0, and so no cut reduction for $\top$.
+
+\subsection{Recursion and Corecursion}
+
+{\small\begin{mathpar}
+\inferrule{\cptyp{P}{x:F(\mu F), \Gamma}}
+          {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}
+
+\inferrule{\cptyp{P}{y:A,\Gamma} \\
+           \cptyp{Q}{y:\cpdual{A},x:F(A)}}
+          {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
+\end{mathpar}}
 
 \todo{Show that rules for introduction and elimination of $\mu$ and $\nu$ collapse?}
 
@@ -158,9 +539,86 @@ fibs = iter (0,1)
 \end{verbatim}
 In this case, the pair \texttt{(m,n)} is the coinvariant, and the \texttt{iter} function behaves
 like the step function (albeit with the recursion inlined).
-\\\todo{That example is miserable, and assumes familiarity with Haskell.}
+%
+\\\todo{That example is miserable, and assumes familiarity with Haskell.  In Glasgow, Phil wanted to
+  see the unfoldr equivalent, which is $$unfoldr (\lambda (m,n) \to Just(m, (n,m+n))) (0,1).$$}
 
-\section{Examples}
+Cut reduction for fixed points corresponds to one step of unrolling, and depends on a subsidiary
+function $\mathbf{map}$, defined below:
+
+\todo{\begin{itemize}
+  \item Can we fix inference lines extending to the edge of the page?
+  \item Requires more page width than we have.
+\end{itemize}
+We could fix both of these problems by not including the derivations...}
+
+\parbox{1.2\textwidth}
+{\small\begin{multline*}
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:B,\Gamma} \\
+      \cptyp{Q}{y:\cpdual{B},x:F(B)}}
+     {\cptyp{\corec{x}{y}{B}{P}{Q}}{x:\nu F,\Gamma}} \\
+   \inferrule*
+     {\cptyp{R}{x:\cpdual{F}(\mu (\cpdual{F})),\Delta}}
+     {\cptyp{\rec{x}.R}{x:\mu (\cpdual{F}),\Delta}}}
+  {\cptyp{\cut{x}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}}{\Gamma,\Delta}}
+\Longrightarrow \\
+\inferrule
+  {\cptyp{P}{y:B,\Gamma} \\
+   \inferrule*
+     {\cptyp{Q}{y:\cpdual{B},x:F(B)} \\
+      \inferrule*
+        {\cptyp{E}{x:\cpdual{F}(\cpdual{B}),z:F(\nu F)} \\
+         \cptyp{R[z/x]}{z:\cpdual{F}(\mu \cpdual{F}),\Delta}}
+        {\cptyp{\cut{z}{F(\nu F)}{E}{R[z/x]}}{x:\cpdual{F}(\cpdual{B}),\Delta}}}
+     {\cptyp{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}{y:\cpdual{B},\Delta}}}
+  {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
+\end{multline*}}
+
+where $E = \expand{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
+
+The cases of $\mathbf{map}$ for the positive combinators are as follow:
+{\small\begin{align*}
+  \expand{X.C}{x,w}{Q} &= \link{x}{w} \\
+  \expand{X.X}{x,w}{Q} &= Q \\
+  \expand{X.C_1 \otimes C_2}{x,w}{Q} &= w(z).x[y].(\expand{X.C_1}{y,z}{Q[y/x,z/w]} \mid \expand{X.C_2}{x,w}{Q}) \\
+  \expand{X.C_1 \oplus C_2}{x,w}{Q} &= \case{w}{\sel{x}{inl}.\expand{X.C_1}{x,w}{Q}; \sel{x}{inr}.\expand{X.C_2}{x,w}{Q}} \\
+  \expand{X.\mu F'}{x,w}{Q} &= \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\expand{X.F' (\mu F')}{y,w}{Q[y/x]}}
+\end{align*}}
+The remaining cases can be obtained by exchanging channels $x$ and $w$.
+
+
+\begin{lemma}
+  If $\cptyp{Q}{x:A,w:B}$ then \(\cptyp{\expand{F}{x,w}{Q}}{x:F(A), w:\cpdual{F}(B)}.\)
+\end{lemma}
+
+\subsection{Commuting Conversions}
+
+Commuting conversions are unsurprising:
+{\small\begin{align*}
+  \cut{x}{A}{z(y).P}{Q} &\Longrightarrow z(y).\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(\cut{x}{A}{P}{R} \mid Q) &&\text{if $x \not\in fn(Q)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(P \mid \cut{x}{A}{Q}{R}) &&\text{if $x \not\in fn(P)$} \\
+  \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
+  \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow \rec{z}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
+\end{align*}}
+
+\subsection{Cut Elimination}
+
+\begin{theorem}
+  If $\cptyp{P}{\Gamma}$ and $P \Longrightarrow Q$, then $\cptyp{Q}{\Gamma}.$
+\end{theorem}
+
+Define $\Longrightarrow^\star$ to be the reflexive, transitive closure of $\equiv\Longrightarrow\equiv$.
+
+\begin{theorem}
+  If $\cptyp{P}{\Gamma}$, then there is a $Q$ such that $P \Longrightarrow^\star Q$ and $Q$ is cut-free.
+\end{theorem}
+
+\section{\mucp{} Examples}
 
 We will use $n$-ary sums $\oplus\{\overline{l:A}\}$,$\with\{\overline{l:A}\}$ with correspondingly
 generalized \tkwd{case} and selection expressions.
@@ -302,339 +760,84 @@ $LiftZero$, and the \textrm{more} case relies on $LiftInc$:
 As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 \\\todo{Example of using streams?  They're not terribly surprising.}
 
-\subsection{Bit Strings of DOOM!}
-
-Introducing some more syntactic sugar: the restriction of output to bound output is tedious in
-practice.  For example, to read a value from channel $m$, send it on $n$, and continue as process
-$P$ requires an unintuitive use of link: $m(x).n[x'].(\link{x}{x'} \mid P)$.  In this section, I'll
-write $x[y].P$ as syntactic sugar for $x[x'].(\link{x'}{y} \mid P)$.  I'll assume that we have a
-collection of mathematical operations on naturals built up, and apply similar syntactic sugar, so I
-can write $x[m + 1].P$, for instance, instead of $x[x'].(Inc_{m,x'} \mid P)$.
-
-We begin with the type of intermediate nodes in the chain.  Each supports three operations: one to
-compute the value of the string, one to increment the string, and one to dispose of the bit string:
-%
-{\small\[\begin{array}{l@{\hspace{1mm}}l}
- NodeT = \nu X. \with \{ &\clabel{val}: \cpdual{Nat} \parr (Nat \otimes X), \\
- & \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \\
- & \clabel{halt}: 1 \}.
-\end{array}\]}
-
-The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
-cannot store a value so it must respond to increment requests with carry.
-%
-{\small\[\begin{array}{rcll}
-  Epsilon_x & = & \multicolumn{2}{l}{\mkwd{corec}\:x\langle y \rangle ( y[].0,} \\
-  & & \quad \mkwd{case}\:x\: \{ &\clabel{val}: x(n).x[n].\link{y}{x}; \\
-  & & &\clabel{inc}:\sel{x}{carry}.\link{y}{x}; \\
-  & & &\clabel{halt}: \link{y}{x} \}).
-\end{array}\]}
-
-To give internal nodes in the string, we need some representation of the bit each stores.  Let's use
-Booleans!
-%
-{\small\begin{align*}
-Bool &= \oplus \{ \clabel{t}:1, \clabel{f}:1 \}. \\
-True_x &= \sel{x}{t}.x[].0. \\
-False_x &= \sel{x}{f}.x[].0.
-\end{align*}}
-%
-As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
-\\\todo{Add more syntactic sugar?  How about:
-{\small\begin{align*}
-  \mkwd{if}\:x\:\mkwd{then}\:M\:\mkwd{else}\:N &= \case{x}{\clabel{t}:x().M; \clabel{f}:x().N} \\
-  \mkwd{drop}\:x.M &= \mkwd{if}\:x\:\mkwd{then}\:M\:\mkwd{else}\:M
-\end{align*}}}
-
-We're now set to define internal nodes.  Again, the intuition is relatively simple.  In response to
-an increment request, the bit flips, passing on a carry option if needed.  In response to a value
-request, it adds its value to the value so far and passes the result down the string.  The syntax is
-complicated by several side concerns: in particular, since our Booleans are linear, we have to use
-the stored Boolean in all cases (even, like halt, when it is not strictly speaking needed).  Note
-that the coinvariant $x$ is of type $Bool \otimes NodeT$: it contains both the stored bit and the
-remainder of the string.
-%
-{\small\[\begin{array}{rcllll}
-  Node_{i,y,n} & = & \multicolumn{4}{l}{\mkwd{corec}\:n \langle x \rangle (x[j].(\link{j}{i} \mid \link{x}{y}),} \\
-  & & \quad x(b).\mkwd{case}\:n\: \{ &\multicolumn{3}{l}{\clabel{val}: \rec{x}.\sel{x}{val}.n(m).} \\
-  & & & \quad \mkwd{case}\:b\: \{ &\multicolumn{2}{l}{\clabel{t}: b().x[2m + 1].x(m).} \\
-  & & & & \multicolumn{2}{l}{\quad n[m].n[True].\link{x}{n};} \\
-  & & & & \multicolumn{2}{l}{\clabel{f}: b().x[2m].x(m).} \\
-  & & & & \multicolumn{2}{l}{\quad n[m].n[False].\link{x}{n} \};} \\
-  & & & \multicolumn{3}{l}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
-  & & & \quad \mkwd{case}\:x\:\{ &\multicolumn{2}{l}{\clabel{done}: \sel{n}{done}.n[b].\link{x}{n}} \\
-  & & & &\clabel{carry}: \mkwd{case}\:b\: \{ &\clabel{t}: b().\sel{n}{carry}.n[False].\link{x}{n} \\
-  & & & & &\clabel{f}: b().\sel{n}{done}.n[True].\link{x}{n} \} \}; \\
-  & & &\clabel{halt}: \\
-  & & &\quad \mkwd{case}\:b\:\{ &\multicolumn{2}{l}{\clabel{t}: b().\rec{x}.\sel{x}{halt}.x().n[].0;} \\
-  & & & &\multicolumn{2}{l}{\clabel{f}: b().\rec{x}.\sel{x}{halt}.x().n[].0 \} \})}.
-\end{array}\]}
-We have that
-{\small\[
-  \cptyp{Node_{i,y,n}}{i:\cpdual{Bool},y:\cpdual{NodeT},n:NodeT}
-\]}
-
-Now, we define a top level interface to bit strings.  We support three operations: one to compute
-the value of the string, one to increment the string, and one to dispose of the string.
-%
-{\small\[
- CounterT = \nu X. \with \{ \clabel{val}: Nat \otimes X, \clabel{inc}:X, \clabel{halt}:1 \}.
-\]}
-
-
-The implementation of the top-level interface is less complex than that for the internal nodes; the
-only complication arises when an increment results in a carry, and so a new node needs to be added
-to the string.  The coinvariant $x$ stores the first internal node in the string, and is of type
-$NodeT$.
-%
-{\small\[\begin{array}{rclll}
-  Counter_z & = & \multicolumn{3}{l}{\mkwd{corec}\:z \langle x \rangle (Epsilon_x,} \\
-  & & \quad \mkwd{case}\:z\:\{ &\multicolumn{2}{l}{\clabel{val}: \rec{x}.\sel{x}{val}.x[Zero].x(n).z[n].\link{z}{x};} \\
-  & & &  \multicolumn{2}{l}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
-  & & & \quad \mkwd{case}\:x\:\{ &\clabel{carry}: \cut{n}{CImp}{\cut{i}{Bool}{True_i}{Node_{i,x,n}}}{\link{z}{n}}; \\
-  & & & &\clabel{done}: \link{z}{x} \} \\
-  & & &\multicolumn{2}{l}{\clabel{halt}:\rec{x}.\sel{x}{halt}.x().z[].0 \}).}
-\end{array}\]}
-
-Here's the example from the source file.  I don't think it's necessarily the best thing, so I can't
-be bothered to typeset it right now.
-\begin{verbatim}
-new [z:Counter]
-  (Counter(z) |
-   rec z.z[val].z(i).
-   rec z.z[inc].
-   rec z.z[val].z(j).
-   rec z.z[inc].rec z.z[inc].
-   rec z.z[val].z(k).
-   rec z.z[halt].z().a[i].a[j].a[k].a[].0)
- |- a:int * (int * (int * 1)).
-\end{verbatim}
-
-\section{\mucp{} Cut Reduction}
-
-Standard rules (identical to earlier presentations):
-{\small\begin{multline*}
-\infbox
-  {\iproof
-    {\iproof
-      {\assume{\cptyp{P}{y:A,\Gamma}}}
-      {\assume{\cptyp{Q}{x:B,\Gamma'}}};
-      {\cptyp{x[y].(P \mid Q)}{x: A \otimes B,\Gamma,\Gamma'}}}
-    {\iproof
-      {\assume{\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}};
-      {\cptyp{x(y).R}{x:\cpdual{A} \parr \cpdual{B},\Delta}}};
-    {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}}{\Gamma,\Gamma',\Delta}}}
-  \Longrightarrow \\
-\infbox
-  {\iproof
-    {\assume{\cptyp{Q}{y:A,\Gamma}}}
-    {\iproof
-      {\assume{\cptyp{P}{x:B,\Gamma'}}}
-      {\assume{\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}};
-      {\cptyp{\cut{x}{B}{P}{R}}{y:\cpdual{A},\Gamma',\Delta}}};
-    {\cptyp{\cut{y}{A}{Q}{\cut{x}{B}{P}{R}}}{\Gamma,\Gamma',\Delta}}}
-\end{multline*}}
-
-{\small\begin{multline*}
-\infbox
-  {\iproof
-    {\iproof
-      {\assume{\cptyp{P}{x:A,\Gamma}}};
-      {\cptyp{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}}
-    {\iproof
-      {\assume{\cptyp{Q}{x:\cpdual{A},\Delta}}}
-      {\assume{\cptyp{R}{x:\cpdual{B},\Delta}}};
-      {\cptyp{\case{x}{Q;R}}{x:\cpdual{A} \with \cpdual{B},\Delta}}};
-    {\cptyp{\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}}{\Gamma,\Delta}}} \Longrightarrow \\
-\infbox
-  {\iproof
-    {\assume{\cptyp{P}{x:A,\Gamma}}}
-    {\assume{\cptyp{Q}{x:\cpdual{A},\Delta}}};
-    {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}}
-\end{multline*}}
-
-{\small\[
-\infbox
-  {\iproof
-    {\iproof;{\cptyp{x[].0}{x:1}}}
-    {\iproof
-      {\assume{\cptyp{P}{\Gamma}}};
-      {\cptyp{x().P}{x:\bot,\Gamma}}};
-    {\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}}} \Longrightarrow
-\cptyp{P}{\Gamma}
-\]}
-
-Cut reduction for fixed points corresponds to one step of unrolling, and depends on a subsidiary
-function $\mathbf{expand}$, defined below:
-
-{\small\begin{multline*}
-\infbox
-  {\iproof
-    {\iproof
-      {\assume{\cptyp{P}{y:B,\Gamma}}}
-      {\assume{\cptyp{Q}{y:\cpdual{B},x:F(B)}}};
-      {\cptyp{\corec{x}{y}{B}{P}{Q}}{x:\nu F,\Gamma}}}
-    {\iproof
-      {\assume{\cptyp{R}{x:\cpdual{F}(\mu (\cpdual{F})),\Delta}}};
-      {\cptyp{\rec{x}.R}{x:\mu (\cpdual{F}),\Delta}}};
-    {\cptyp{\cut{x}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}}{\Gamma,\Delta}}} \Longrightarrow \\
-\infbox
-  {\iproof
-    {\assume{\cptyp{P}{y:B,\Gamma}}}
-    {\iproof
-      {\assume{\cptyp{Q}{y:\cpdual{B},x:F(B)}}}
-      {\iproof
-        {\assume{\cptyp{E}{x:\cpdual{F}(\cpdual{B}),z:F(\nu F)}}}
-        {\assume{\cptyp{R}{z:\cpdual{F}(\mu \cpdual{F}),\Delta}}};
-        {\cptyp{\cut{z}{F(\nu F)}{E}{R}}{x:\cpdual{F}(\cpdual{B}),\Delta}}};
-      {\cptyp{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R}}}{y:\cpdual{B},\Delta}}};
-    {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R}}}}{\Gamma,\Delta}}}
-\end{multline*}}
-
-where $E = \expand{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q}}$.
-
-The cases of $\mathbf{expand}$ for the positive combinators are as follow:
-{\small\begin{align*}
-  \expand{X.C}{x,w}{Q} &= \link{x}{w} \\
-  \expand{X.X}{x,w}{Q} &= Q \\
-  \expand{X.C_1 \otimes C_2}{x,w}{Q} &= w(z).x[y].(\expand{X.C_1}{y,z}{Q[y/x,z/w]} \mid \expand{X.C_2}{x,w}{Q}) \\
-  \expand{X.C_1 \oplus C_2}{x,w}{Q} &= \case{w}{\sel{x}{inl}.\expand{X.C_1}{x,w}{Q}; \sel{x}{inr}.\expand{X.C_2}{x,w}{Q}} \\
-  \expand{X.\mu F'}{x,w}{Q} &= \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\expand{X.F' (\mu F')}{y,w}{Q[y/x]}}
-\end{align*}}
-The remaining cases can be obtained by exchanging channels $x$ and $w$.
-
-
-\begin{lemma}
-  If $\cptyp{Q}{x:A,w:B}$ then \(\cptyp{\expand{F}{x,w}{Q}}{x:F(A), w:\cpdual{F}(B)}.\)
-\end{lemma}
-
-Commuting conversions are unsurprising:
-{\small\begin{align*}
-  \cut{x}{A}{z(y).P}{Q} &\Longrightarrow z(y).\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(\cut{x}{A}{P}{R} \mid Q) &&\text{if $x \not\in fn(Q)$} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(P \mid \cut{x}{A}{Q}{R}) &&\text{if $x \not\in fn(P)$} \\
-  \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
-  \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow \rec{z}.\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
-\end{align*}}
-
-\begin{theorem}
-  If $\cptyp{P}{\Gamma}$ and $P \Longrightarrow Q$, then $\cptyp{Q}{\Gamma}.$
-\end{theorem}
-
-Define $\Longrightarrow^\star$ to be the reflexive, transitive closure of $\Longrightarrow$.
-
-\begin{theorem}
-  If $\cptyp{P}{\Gamma}$, then there is a $Q$ such that $P \Longrightarrow Q$ and $Q$ is not a cut.
-\end{theorem}
-
-
-\section{\mugv{} Syntax}
-
-\[\small\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
-  \text{Types} & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
-  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \} \mid \outterm \mid \interm \\
-   & & \mid & X \mid \gvdual{X} \mid \mu G \mid \nu G \\
-   & G & ::= & X.S \\
-  \text{Terms} & M,N & ::= & x \mid \lambda x.N \mid M\,N \mid (M,N) \mid \gvlet{(x,y)}{M}{N} \\
-   & & \mid & \gvsend{M}{N} \mid \gvreceive{M} \mid \gvselect{l_i}{M} \mid \gvcase{M}{l_i : N_i} \\
-   & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
-\end{array}\]
-
-\section{\mugv{} Typing}
-
-{\small
-Structural rules
-\begin{gather*}
-\infbox{\irule;{\gvtyp{x:T}{x}{T}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{U}}
-              {un(T)};
-              {\gvtyp{\Phi,x:T}{M}{U}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi,x:T,x':T}{M}{U}}
-              {un(T)};
-              {\gvtyp{\Phi,x:T}{M[x/x'] }{ U}}}
-\end{gather*}
-Lambda rules
-\begin{gather*}
-\infbox{\irule{\gvtyp{\Phi,x:T}{M}{U}};
-              {\gvtyp{\Phi}{\lambda x.M}{T \lto U}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{T \lto U}}
-              {\gvtyp{\Psi}{N}{T}};
-              {\gvtyp{\Phi,\Psi}{M\,N}{U}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{T \lto U}}
-              {un(\Phi)};
-              {\gvtyp{\Phi}{M}{T \uto U}}}
-\\
-\infbox{\irule{\gvtyp{\Phi}{M}{T \uto U}};
-              {\gvtyp{\Phi}{M}{T \lto U}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{T}}
-              {\gvtyp{\Psi}{N}{U}};
-              {\gvtyp{\Phi,\Psi}{(M,N)}{T \otimes U}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{T \otimes U}}
-              {\gvtyp{\Psi,x:T,y:U}{N}{V}};
-              {\gvtyp{\Phi,\Psi}{\gvlet{(x,y)}{M}{N}}{V}}}
-\end{gather*}
-Session rules
-\begin{gather*}
-\infbox{\irule{\gvtyp{\Phi}{M}{S}}
-              {\gvtyp{\Psi}{N}{\gvdual{S}}};
-              {\gvtyp{\Phi,\Psi}{\gvlink{M}{N}}{ \outterm}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{T}}
-              {\gvtyp{\Psi}{N}{\gvout{T}{S}}};
-              {\gvtyp{\Phi,\Psi}{\gvsend{M}{N}}{S}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{\gvin{T}{S}}};
-              {\gvtyp{\Phi}{\gvreceive{M}}{T \otimes S}}}
-\\
-\infbox{\irule{\gvtyp{\Phi,x:\gvdual{S}}{M}{\outterm}};
-              {\gvtyp{\Phi}{\gvfork{x}{M}}{ S}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{\oplus \{ l_i:S_i \}}};
-              {\gvtyp{\Phi}{\gvselect{l_i}{M}}{S_i}}}
-\isp
-\infbox{\irule{\gvtyp{\Phi}{M}{\with \{ l_i:S_i \}}}
-              {\gvtyp{\Psi,x:S_i}{N_i}{T}};
-              {\gvtyp{\Phi,\Psi}{\gvcase{M}{l_i\,x.N_i}}{T}}}
-\\
-\infbox{\irule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm}}
-              {\gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}};
-              {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N} }{ U}}}
-\end{gather*}}
-
-\section{\mugv{} Examples}
-
-\subsection{Multi-function calculator}
-
-\begin{verbatim}
-|- let rec f (accum:Int) c =
-               case c of {
-                 add c => let (x, c) = receive c in
-                          f (accum + x) c;
-                 mul c => let (x, c) = receive c in
-                          f (accum * x) c
-                 result c => let c = send accum c in
-                             f accum c;
-                 done c => c } in
-   let d = fork c: nu X. &{add:?Int.X,sum:!Int.X,done:end!} => f 0 c in
-   let d = send 4 (select add d) in
-   let d = send 8 (select mul d) in
-   let (x, d) = receive (select result d) in
-   let d = select d done in
-   x : Int.
-\end{verbatim}
-
 \section{\mugv{} Translation}
 
+\todo{\begin{itemize}
+  \item Translating unlimited GV terms (at the moment, this is only unlimited lambdas) requires
+    exponentials, either directly or encoded, in CP.  Adding exponentials to CP requires a
+    significant expansion of the existing typing and cut reduction rules (not technically difficult,
+    but increasingly overwhelming the actual point of the paper).  Using coding would not require
+    extension of the CP rules, but differs from the existing GV $\to$ CP translations.
+  \item This translation doesn't take advantage of the previous GV $\to$ GV$\pi$ translation.  Doing
+    so would require a ``modified'' form of $\mkwd{let\:rec}$, analogous to the modified form of
+    $\mkwd{receive}$, which replaced the unlimited arrows with servers.
+\end{itemize}}
+
+{\small
+\[
+\left\llbracket
+\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}
+\right\rrbracket z =
+\cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}}
+\]
+
+\[
+\left\llbracket
+\inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}{\gvtyp{\Phi}{M}{\nu G}}
+\right\rrbracket z =
+\cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G(\nu G)}}y}{\rec{z}.\link{y}{z}}
+\]
+
+\[
+\left\llbracket
+\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}
+\right\rrbracket z =
+\cut{y}{\tocp{G}(\mu \tocp{G})}{P}
+       {\corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+              {\link{y}{x}}
+              {\expand{G}{x,z}{\rec{x}.\link{x}{z}}}}
+\]
+
+\[
+\left\llbracket
+\inferrule{\gvtyp{\Phi}{M}{\nu G}}{\gvtyp{\Phi}{M}{G (\nu G)}}
+\right\rrbracket z =
+\cut{y}{\mu \tocp{G}}{P}
+       {\corec{y}{x}{\cpdual{\tocp{G}}(\nu \cpdual{\tocp{G}})}
+              {\link{z}{x}}
+              {\expand{G}{x,y}{\rec{x}.\link{x}{y}}}}
+\]
+
+\newcommand{\replicate}[2]{{!#1(#2)}}
+
+\begin{multline*}
+\left\llbracket
+\inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm} \\
+           \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
+\right\rrbracket z = \\
+\replicate{f}{f_1}.f_1(x_1)\dots.\replicate{f_{n-1}}{f_n}.f_n(x_n).\corec{c}{ci}{}{\tocp{init_{ci}}^\star}{\tocp{M^\dagger_{ci}}^\star}
+\end{multline*}
+
+where
+
+\[
+  \tocp{M}^\star = \cut{z}{\bot}{\tocp{M}z}{z[].0}
+\]
+
+\[
+ init_{ci} = \gvsend{x_n}{(\dots(\gvsend{x_1}{ci}))}
+\]
+
+\[\begin{array}{rcl}
+M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{(\dots(\gvsend{x_1}{c})\dots)}}
+                {\\&&\gvlet{(x_1,ci)}{\gvreceive{ci}}
+                {\\&&\vdots\\&&\gvlet{(x_n,ci)}{\gvreceive{ci}}{M}}}
+\end{array}\]
+}
+
 \begin{theorem}
-  If $\gvtyp{\Psi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Psi},z:\cpdual{\tocp{T}}}$.
+  If $\gvtyp{\Phi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Phi},z:\cpdual{\tocp{T}}}$.
 \end{theorem}
 
 \section{Related Work}
