@@ -1,0 +1,143 @@
+%\documentclass{beamer}
+%
+\documentclass[serif]{beamer}
+
+\usepackage[T1]{fontenc}
+\usepackage{fourier}
+
+%\usepackage{beamerthemesplit}
+
+
+\setbeamersize{text margin left = 2em}
+
+\usepackage[all]{xy}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{stmaryrd}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage{hyperref}
+
+\usetheme{Frankfurt}
+
+% disable useless navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% disable the section information
+\setbeamertemplate{headline}{}
+
+% use triangles for bullets
+\setbeamertemplate{itemize items}[triangle]
+
+\title{Sessions as propositions}
+%\subtitle{}
+\author{Sam Lindley}
+%\email{Sam.Lindley@ed.ac.uk}
+\institute{Laboratory for Foundations of Computer Science \\
+           The University of Edinburgh \\[.2cm]
+           {\texttt\tiny Sam.Lindley@ed.ac.uk}}
+\date{12th April 2014}
+
+
+%% macros
+
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+
+\begin{center}
+(joint work with Garrett Morris)
+\end{center}
+
+
+\end{frame}
+
+
+%% \begin{frame}
+%% \frametitle{Background}
+
+
+%% \end{frame}
+
+\newcommand{\hgv}{HGV\xspace}
+\newcommand{\hgvpi}{HGV$\pi$\xspace}
+
+\begin{frame}[fragile]
+\frametitle{Propositions as sessions (intuitionistically)}
+
+Caires and Pfenning (2010): Curry-Howard correspondence between dual
+intuitionistic linear logic and session types
+\begin{center}
+\begin{tabular}{l@{\quad$\Longleftrightarrow$\quad}l}
+  propositions & session types \\
+  proofs & processes \\
+  cut elimination & communication \\
+\end{tabular}
+\end{center}
+
+\begin{description}
+\item[$\pi$DILL] a process calculus for dual intuitionistic linear
+  logic
+\end{description}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Propositions as sessions (classically)}
+Wadler (2012): Curry-Howard correspondence between session types and
+classical linear logic
+\begin{itemize}
+\item CP: a process calculus for classical linear logic
+\item GV: a functional programming language with session types (based
+  on Gay and Vasconcelos, 2010)
+\item Mapping from GV to CP
+\item {\color{red} {No translation from CP to GV}}
+\end{itemize}
+
+\begin{description}
+\item[CP] Caires and Pfenning / Classical Processes
+\item[GV] Gay and Vasconcelos / Good Variation
+\end{description}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{This work}
+
+\begin{description}
+\item[\hgv] Harmonious GV
+\end{description}
+
+\begin{itemize}
+\item \hgv = GV + missing features
+\item \hgvpi is the session-typed fragment of \hgv
+\item Translations
+\[
+\hspace{-2cm}
+\xymatrix{%
+  \mbox{\hgv}
+  \ar@<+.7ex>[d]
+\\
+\raisebox{0ex}[2ex]{\hgvpi}
+  \ar@<+.7ex>@{^{(}->}[u]
+  \ar@<+.7ex>[r]
+&
+  \mbox{CP}
+  \ar@<+.7ex>[l]
+}
+\]
+%% \begin{itemize}
+%% \item  \hgvpi $\hookrightarrow$ \hgv
+%% \item  \hgv $\longrightarrow$ \hgvpi
+%% \item  \hgvpi $\longrightarrow$ CP
+%% \item  CP $\longrightarrow$ \hgvpi
+%% \end{itemize}
+\item CP, \hgv, and \hgvpi are all equally expressive
+\end{itemize}
+
+%% We have prototype implementations of CP and \hgv + various
+%% extensions. Implementations use big-step semantics.
+\end{frame}
+
+\end{document}
