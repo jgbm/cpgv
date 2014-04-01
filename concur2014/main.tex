@@ -50,6 +50,7 @@
 
 \newcommand{\mucp}{$\mu\mathrm{CP}$}
 \newcommand{\mugv}{$\mu\mathrm{GV}$}
+\newcommand{\gvpi}{$\mathrm{GV}\pi$}
 
 \newcommand{\isp}{\quad}
 
@@ -218,8 +219,8 @@ compute the value of the string, one to increment the string, and one to dispose
 
 \begin{verbatim}
 NodeT = nu X. &{ val: ?Nat.!Nat.X,
-                 inc: +{carry: X, done:X},
-                 halt: end!}
+                 inc: +{ carry: X, done:X },
+                 halt: end! }
 \end{verbatim}
 
 The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
@@ -452,7 +453,7 @@ Binary...
    \inferrule*
      {\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
      {\cptyp{x(y).R}{x:\cpdual{A} \parr \cpdual{B},\Delta}}}
-  {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}{\Gamma,\Gamma',\Delta}}}
+  {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}}{\Gamma,\Gamma',\Delta}}
 \Longrightarrow \\
 \inferrule
   {\cptyp{Q}{y:A,\Gamma} \\
@@ -773,6 +774,51 @@ As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
     $\mkwd{receive}$, which replaced the unlimited arrows with servers.
 \end{itemize}}
 
+Translation of session types from \gvpi{} to \mucp{}.
+
+\begin{align*}
+\tocp{\gvout{T}{S}}        &= \cpdual{\tocp{T}} \otimes \tocp{S} \\
+\tocp{\gvin{T}{S}}         &= \tocp{T} \parr \tocp{S} \\
+\tocp{\outterm}            &= 1 \\
+\tocp{\oplus \{l_i:S_i \}} &= \oplus \{l_i:\tocp{S_i}\} \\
+\tocp{\with \{l_i:S_i \}}  &= \with \{l_i:\tocp{S_i}\} \\
+\tocp{\interm}             &= \bot \\
+\tocp{\gvserver{S}}        &= \cpbang{\tocp{S}} \\
+\tocp{\gvservice{S}}       &= \cpquery{\tocp{S}} \\
+\tocp{X}                   &= X \\
+\tocp{\gvdual{X}}          &= \cpdual{X}
+\end{align*}
+
+\newcommand{\replicate}[2]{{!#1(#2)}}
+\newcommand{\derelict}[2]{{?#1[#2]}}
+
+\begin{align*}
+\left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=
+  \inferrule
+    {\cptyp{\tocp{N}z}{\tocp{\Phi},z:\cpdual{\tocp{S}}}}
+    {\cptyp{x().\tocp{N}z}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
+\\[3ex]
+\left\llbracket \inferrule{\gvtyp{\Phi,x:\interm,x':\interm}{N}{S}}
+                          {\gvtyp{\Phi,x:\interm}{N[x/x']}{S}} \right\rrbracket \!\!z &=
+  \inferrule
+    {\cptyp{\tocp{N}z}{\tocp{\Phi},x:\bot,x':\bot,z:\cpdual{\tocp{S}}}}
+    {\cptyp{\cut{x'}{}{\tocp{N}z}{x'[].0}}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
+\\[3ex]
+\tocp{x}z &= \link{x}{z} \\
+\tocp{\gvsend{M}{N}}z &= \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
+\tocp{\gvlet{(x,y)}{\receive{M}}{M}}z &= \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
+\tocp{\gvselect{l}{M}}z &= \cut{x}{}{\tocp{M}x}{x[l].\link{x}{z}} \\
+\tocp{\gvcase{M}{l_n\,x.N_i}}z &=  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}} \\
+\tocp{\gvfork{x}{M}}z &= \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
+\tocp{\gvlink{M}{N}}z &= z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
+%\tocp{\gvSendType{S}{M}}z &=
+%  \cut{x}{\tocp{M}x}{\cpSendType{x}{\tocp{S}}{\cpLink{x}{z}}} \\
+%\tocp{\gvReceiveType{X}{M}}z &=
+%  \cut{x}{\tocp{M}x}{\cpReceiveType{x}{X}{\cpLink{x}{z}}} \\
+\tocp{\gvserve{y}{M}}z &= \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
+\tocp{\gvrequest{M}}z &= \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\
+\end{align*}
+
 {\small
 \[
 \left\llbracket
@@ -808,8 +854,6 @@ As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
               {\expand{G}{x,y}{\rec{x}.\link{x}{y}}}}
 \]
 
-\newcommand{\replicate}[2]{{!#1(#2)}}
-
 \begin{multline*}
 \left\llbracket
 \inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm} \\
@@ -843,5 +887,50 @@ M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{
 \section{Related Work}
 
 \section{Conclusion and Future Work}
+
+\appendix
+
+\section{\mucp{}}
+
+\begin{figure}
+{\small\begin{mathpar}
+\inferrule{ }{\cptyp{\link{x}{y}}{x:A,y:\cpdual{A}}}
+
+\inferrule{\cptyp{P}{\Gamma,x:A} \\
+           \cptyp{Q}{x:\cpdual{A},\Delta}}
+          {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
+
+\inferrule{\cptyp{P}{y:A,\Gamma} \\
+           \cptyp{Q}{x:B,\Delta}}
+          {\cptyp{x[y].(P \mid Q)}{x:A \otimes B,\Gamma,\Delta}}
+
+\inferrule{\cptyp{P}{y:A,x:B,\Gamma}}
+          {\cptyp{x(y).P}{x:A \parr B,\Gamma}}
+
+\inferrule{ }{\cptyp{x[].0}{x:1}}
+
+\inferrule{\cptyp{P}{\Gamma}}
+          {\cptyp{x().P}{x:\bot,\Gamma}}
+
+\inferrule{\cptyp{P}{x:A,\Gamma}}
+          {\cptyp{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}
+
+\inferrule{\cptyp{P}{x:A,\Gamma} \\
+           \cptyp{Q}{x:B,\Gamma}}
+          {\cptyp{\case{x}{P;Q}}{x:A \with B,\Gamma}}
+
+\inferrule{ }{\cptyp{\case{x}{}}{x:\top,\Gamma}}
+
+\inferrule{\cptyp{P}{x:F(\mu F), \Gamma}}
+          {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}
+
+\inferrule{\cptyp{P}{y:A,\Gamma} \\
+           \cptyp{Q}{y:\cpdual{A},x:F(A)}}
+          {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
+\end{mathpar}}
+
+\caption{Typing rules of \mucp{}}
+\end{figure}
+
 
 \end{document}
