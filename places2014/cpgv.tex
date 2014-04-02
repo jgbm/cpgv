@@ -500,7 +500,7 @@ the homomorphic extension of the following equations:
 \[
 \lampi{\gvLinFun{T}{U}} = \gvOutput{\lampi{T}}{\gvDual{\lampi{U}}} \qquad
 \lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\gvDual{\lampi{U}}})} \qquad
-\lampi{\gvTimes{T}{U}} = \gvInput{\lampi{T}}{\gvDual{\lampi{U}}}
+\lampi{\gvTimes{T}{U}} = \gvInput{\gvDual{\lampi{T}}}{\gvDual{\lampi{U}}}
 \]%
 Each target type is the \emph{interface} to the simulated source type. A linear function is
 simulated by input on a channel; its interface is output on the other end of the channel. An
@@ -515,7 +515,7 @@ The translation on terms is given by the homomorphic extension of the following 
 \begin{equations}
 \lampi{\gvLam{x}{M}} &=& \gvFork{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\lampi{M}}{z}}} \\
 \lampi{\gvApp{L}{M}} &=& \gvSend{\lampi{M}}{\lampi{L}} \\
-\lampi{\gvTimes{M}{N}} &=&
+\lampi{\gvPair{M}{N}} &=&
   \gvFork{z}
     {\gvLink{(\gvSend{\lampi{M}}{z})}{\lampi{N}}} \\
 \lampi{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
