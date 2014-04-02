@@ -130,12 +130,12 @@ channels:
   \gvdual{\interm} &= \outterm &
   \gvdual{\gvservice{S}} &= \gvserver{\gvdual{S}} \\
 \gvdual{\gvin{T}{S}} &= \gvout{T}{\gvdual{S}} &
-  \gvudal{\with \{ l_i: S_i \}} &= \oplus \{ l_i : \gvdual{S_i} \} &
+  \gvdual{\with \{ l_i: S_i \}} &= \oplus \{ l_i : \gvdual{S_i} \} &
   \gvdual{\outterm} &= \interm &
   \gvdual{\gvserver{S}} &= \gvservice{\gvdual{S}}
 \end{align*}}
 We introduce a notion of the dual of an operator: if $G = X.S$, then $\gvdual{G} =
-X.\gbdual{G(\gvdual{X})}$.  This allows us to give a natural defintion of duality for fixed points:
+X.\gvdual{G(\gvdual{X})}$.  This allows us to give a natural defintion of duality for fixed points:
 {\small\begin{align*}
 \gvdual{\mu G} &= \nu \gvdual{G} & \gvdual{\nu G} = \mu \gvdual{G}
 \end{align*}}
