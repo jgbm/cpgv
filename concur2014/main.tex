@@ -1,9 +1,14 @@
 \documentclass[orivec,envcountsame]{llncs}
 
 \usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
+\addtolength{\jot}{-3px}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
+
+\usepackage{float}
+\floatstyle{boxed}
+\restylefloat{figure}
 
 \newcommand{\with}{\mathbin\binampersand}
 \newcommand{\parr}{\mathbin\bindnasrepma}
@@ -52,9 +57,9 @@
 
 \newcommand{\topi}[1]{({#1})^\star}
 
-\newcommand{\mucp}{$\mu\mathrm{CP}$\xspace}
-\newcommand{\mugv}{$\mu\mathrm{GV}$\xspace}
-\newcommand{\gvpi}{$\mu\mathrm{GV}\pi$\xspace}
+\newcommand{\mucp}{$\mathrm{mooCP}$\xspace}
+\newcommand{\mugv}{$\mathrm{mooGV}$\xspace}
+\newcommand{\gvpi}{$\mathrm{mooGVpie}$\xspace}
 
 \newcommand{\ba}{\begin{array}}
 \newcommand{\ea}{\end{array}}
@@ -84,22 +89,77 @@
 
 \section{Introduction}
 
-\section{\mugv Syntax}
+\section{A Session-Typed Functional Language}
 
-{\small
-\[\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+\subsection{Types and Terms of \mugv}
+
+\begin{figure}\small
+\[\begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
   \text{Types} & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \} \mid \outterm \mid \interm \\
-   & & \mid & X \mid \gvdual{X} \mid \mu G \mid \nu G \\
-   & G & ::= & X.S \\
-  \text{Terms} & M,N & ::= & x \mid \lambda x.N \mid M\,N \mid (M,N) \mid \gvlet{(x,y)}{M}{N} \\
-   & & \mid & \gvsend{M}{N} \mid \gvreceive{M} \mid \gvselect{l_i}{M} \mid \gvcase{M}{l_i : N_i} \\
-   & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
-\end{array}\]}
+   & & \mid & X \mid \gvdual{X} \mid \mu G \mid \nu G \mid \gvservice{S} \mid \gvserver{S} \\
+  \text{Type operators} & G & ::= & X.S % \\
+%  \text{Terms} & M,N & ::= & x \mid \lambda x.N \mid M\,N \mid (M,N) \mid \gvlet{(x,y)}{M}{N} \\
+%   & & \mid & \gvsend{M}{N} \mid \gvreceive{M} \mid \gvselect{l_i}{M} \mid \gvcase{M}{l_i : N_i} \\
+%   & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
+\end{array}\]
+\caption{\mugv Types and Session Types}\label{fig:gv-syntax}
+\end{figure}
 
-\section{\mugv Typing}
+In this section, we present \mugv, a simple functional language with session types patterned on the
+language of Gay and Vasconcelos~\cite{} (which we term LAST) and Wadler's language GV.
+Figure~\ref{fig:gv-syntax} gives the syntax of \mugv terms and types.  Among the types, we include
+linear pairs ($T \otimes U$), and both linear ($T \lto U$) and unlimited ($T \uto U$) function
+spaces.  The session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection
+($\oplus\{ l_i:S_i \}$) and choice ($\with\{l_i:S_i\}$).  We include two variations on the closed
+channel ($\interm$ and $\outterm$); this is forced by our interpretation of session types in LL,
+where there is no self-dual proposition to implement closed channels.  $\gvservice{S}$ represents
+replication of a channel the behaves like $S$; a channel of type $\gvserver{S}$ is the corresponding
+provider of a replicated channel.  Finally, we include session variables and their duals
+($X,\gvdual{X}$), and two forms of recursive session types, corresponding to least ($\mu X.S$) and
+greatest ($\nu X.S$) fixed points.  If $G$ is an operator $X.S$, we write $G(S')$ for the
+substitution instance $S[S'/X]$.  All types are linear except for unlimited functions $T \uto U$,
+replicated channels $\gvservice{S}$, and closed channels $\interm$; we write $un(T)$ if $T$ is
+unlimited.
 
-{\small
+The notions of duality are standard for input, output, selection, choice, and closed and replicated
+channels:
+{\small\begin{align*}
+\gvdual{\gvout{T}{S}} &= \gvin{T}{\gvdual{S}} &
+  \gvdual{\oplus \{ l_i: S_i \}} &= \with \{ l_i : \gvdual{S_i} \} &
+  \gvdual{\interm} &= \outterm &
+  \gvdual{\gvservice{S}} &= \gvserver{\gvdual{S}} \\
+\gvdual{\gvin{T}{S}} &= \gvout{T}{\gvdual{S}} &
+  \gvudal{\with \{ l_i: S_i \}} &= \oplus \{ l_i : \gvdual{S_i} \} &
+  \gvdual{\outterm} &= \interm &
+  \gvdual{\gvserver{S}} &= \gvservice{\gvdual{S}}
+\end{align*}}
+We introduce a notion of the dual of an operator: if $G = X.S$, then $\gvdual{G} =
+X.\gbdual{G(\gvdual{X})}$.  This allows us to give a natural defintion of duality for fixed points:
+{\small\begin{align*}
+\gvdual{\mu G} &= \nu \gvdual{G} & \gvdual{\nu G} = \mu \gvdual{G}
+\end{align*}}
+Unlike many notions of duality for session types, our definition preserves duality when recursive
+session types are unfolded, even when the recursion occurs in messages.  For example, consider the
+operator $G = X.\gvin{X}{\interm}$, with its dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and
+the (dual) session types $\mu G$ and $\nu \gvdual{G}$.  Unfolding the first type gives $F(\mu F)$, or
+$\gvin{\mu F}{\interm}$.  Unfolding the second gives
+{\small\[
+\gvdual{G}(\nu \gvdual{G})
+  = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm}
+  = \gvout{\mu G}{\outterm},
+\]}
+which is the dual of $\gvin{\mu F}{\interm}$.  Finally, to assure that the fixed points exist, we
+require that all operators $X.S$ be monotonic, that is, that variables appear only as positive
+subformulae of $S$, and negated variables only as negative subformulae.  The definition of positive
+subformulae is slightly unusual: we have that the argument $T$ in $\gvout{T}{S}$ and the arguments
+$T$ and $U$ in $T \otimes U, T \lto U, T \uto U$ are negative, and all other subformulae are
+positive.  Thus, the operator $X.\gvout{X}{\outterm}$ is not monotonic, but the operators
+$X.\gvout{\gvdual{X}}{\outterm}$ and $X.\gvout{X \otimes X}{\outterm}$ are.
+
+\todo{The definition of monotonic is deranged.}
+
+\begin{figure}\small
 Structural rules
 \begin{mathpar}
 \inferrule{ }{\gvtyp{x:T}{x}{T}}
@@ -182,32 +242,82 @@ Recursive session rules
 \inferrule{\gvtyp{\Phi}{M}{\nu G}}
           {\gvtyp{\Phi}{M}{G(\nu G)}}
 
-\inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm} \\
+\inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto X \uto \outterm,c:G(X)}{M}{\outterm} \\
            \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
           {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
-\end{mathpar}}
+\end{mathpar}
+\caption{\mugv Terms and Typing Rules}\label{fig:gv-typing}
+\end{figure}
 
-\section{\mugv Examples}
+Figure~\ref{fig:gv-typing} gives the terms and typing rules of \mugv.  The structural rules account
+for variables, and for weakening and contraction on variables of unlimited type.  The rules for the
+functional terms are standard; note that, to account for linearity, the context is split in the
+rules for application and pair introduction and elimination, and is limited to unlimited types in
+the introduction of unlimited arrows.
+
+Among the session-typed terms, the rules for input, output, choice and selection are standard.  We
+provide a term $\gvlink{M}{N}$ to implement channel forwarding; while a version of \tkwd{link}
+exists for any session type $S$, it has no generic implementation in terms of other constructs of
+\mugv.  Finally, \tkwd{fork} provides session initiation; like Wadler's GV, but unlike LAST (and
+much other work on process calculi), our system is deterministic.
+
+Channels of type $\gvservice{S}$ offer arbitrarily many sessions of type $S$; correspondingly,
+channels of type $\gvserver{S}$ must consume arbitrarily many $S$ sessions. The rule for
+$\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines the server (which replicates $M$) and
+returns the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
+\gvservice{\gvdual{S}}$). As a consequence, there is no rule involving type $\gvserver{S}$.
+
+Finally, we provide recursive channels.  The first four typing rules allow recursive types to be
+used as their unfoldings, and vice versa.  Previous work has typically included an equivalence
+relation on types, taking unfolding into account, and presented type rules upto equivalence.  We
+present explicit rules to simplify the translation into \mucp, where these rules will correspond to
+particular terms implementing the equivalences.  The expression $\gvletrec{f\,\vec{x}\,c}{M}{N}$
+provides definition of recursive sessions.  The body $M$ provides one iteration of the recursion.
+Thus, it has access to the coinvariant $x_i$, a channel $G(X)$, and limited recursive use of $f$;
+the type variable $X$ ensures the use of recursive calls to $f$. Next, we will consider several
+examples of recursive sessions.
+
+\todo{Explanation of let rec that makes sense/explains anything.}
 
 \subsection{Multi-function calculator}
 
-\begin{verbatim}
-|- let rec f (accum:Int) c =
-               case c of {
-                 add c => let (x, c) = receive c in
-                          f (accum + x) c;
-                 mul c => let (x, c) = receive c in
-                          f (accum * x) c
-                 result c => let c = send accum c in
-                             f accum c;
-                 done c => c } in
-   let d = fork c => f 0 c in
-   let d = send 4 (select add d) in
-   let d = send 8 (select mul d) in
-   let (x, d) = receive (select result d) in
-   let d = select d done in
-   x : Int.
-\end{verbatim}
+Our first example is a simple multi-function calculator.  For the purposes of this example, we will
+assume that our term language has been extended by integer constants, along with addition ($+$) and
+multiplication ($\times$) operators.  Our goal is to provide a session that accepts an arbitrary
+stream of addition and multiplication requests, and can at any time provide the accumulated result.
+We can implement the provider of this session as follows:
+
+\[\begin{array}{llll}
+ \multicolumn{4}{l}{\mkwd{corec}\:calc\:accum\:c =} \\
+ \quad & \multicolumn{3}{l}{\mkwd{case}\:c\;\mkwd{of}\:\{} \\
+ & \quad & \clabel{add}\:c. &\mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in} \\
+ & & & f\:(accum + x)\:c; \\
+ & & \clabel{mul}\:c. &\mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in} \\
+ & & & f\:(accum \times x)\:c \\
+ & & \clabel{result}\:c. &\mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in} \\
+ & & & f\:accum\:c; \\
+ & & \clabel{done}\:c.& c \; \}
+\end{array}\]
+In this case, the type of the recursive channel is
+\[
+ \nu X. \with \{ \clabel{add}: \gvin{Int}{X}, \clabel{mul}: \gvin{Int}{X}, \clabel{result}: \gvout{Int}{X}, \clabel{done}: \outterm \}.
+\]
+We can implement a consumer of the service as follows:
+\[\begin{array}{l}
+  \gvlet{myCalc}{\gvfork{c}{calc\:0\:c}}{} \\
+  \gvlet{d}{\gvsend{6}{(\gvselect{\clabel{add}}{myCalc})}}{} \\
+  \gvlet{myCalc}{\gvsend{7}{(\gvselect{\clabel{mul}}{myCalc})}}{} \\
+  \gvlet{(x,d)}{\gvreceive{(\gvselect{\clabel{result}}{myCalc})}}{} \\
+  \gvlet{myCalc}{\gvselect{\clabel{done}}{myCalc}}{x}
+\end{array}\]
+We begin by constructing an instance of the calculator with the accumulator set to 0; in the body of
+\tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called $myCalc$), has
+type
+\[
+\mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{done}: \interm \}.
+\]
+We perform several calculuations, adding 6 to the accumulator and multiplying by 7.  Finally, we get
+the result and close the channel.
 
 \subsection{Bit Strings of DOOM!}
 
@@ -903,7 +1013,7 @@ P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
     but increasingly overwhelming the actual point of the paper).  Using coding would not require
     extension of the CP rules, but differs from the existing GV $\to$ CP translations.
   \item This translation doesn't take advantage of the previous GV $\to$ GV$\pi$ translation.  Doing
-    so would require a ``modified'' form of $\mkwd{let\:rec}$, analogous to the modified form of
+    so would require a ``modified'' form of $\mkwd{corec}$, analogous to the modified form of
     $\mkwd{receive}$, which replaced the unlimited arrows with servers.
 \end{itemize}}
 
@@ -1020,6 +1130,13 @@ M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{
 \section{Related Work}
 
 \section{Conclusion and Future Work}
+
+\begin{itemize}
+\item Translation of \mucp{} into \mugv{}?
+\item Direct (asynchronous) semantics of \mugv{}?
+\item Recursive types (instead of just recursive sessions)?
+\item $\mathrm{MIX}_0,\mathrm{MIX}_2$ and the treatment of closed channels.
+\end{itemize}
 
 \appendix
 
