@@ -107,7 +107,7 @@
 \end{figure}
 
 In this section, we present \mugv, a simple functional language with session types patterned on the
-language of Gay and Vasconcelos~\cite{} (which we term LAST) and Wadler's language GV.
+language of Gay and Vasconcelos~\cite{GayVasconcelos10} (which we term LAST) and Wadler's language GV.
 Figure~\ref{fig:gv-syntax} gives the syntax of \mugv terms and types.  Among the types, we include
 linear pairs ($T \otimes U$), and both linear ($T \lto U$) and unlimited ($T \uto U$) function
 spaces.  The session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection
@@ -886,6 +886,8 @@ As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 
 \section{Translation from \mugv to \gvpi}
 
+Following Lindley and Morris~\cite{LindleyM14} we 
+
 \[
 \ba{@{}rclcl@{}}
 \topi{T \lto U}    &=& \gvdual{\gvin{\gvdual{\topi{T}}}{\topi{U}}}
@@ -1184,5 +1186,9 @@ M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{
 \caption{Typing rules of \mucp}
 \end{figure}
 
+
+\label{sect:bib}
+\bibliographystyle{plain}
+\bibliography{main}
 
 \end{document}
