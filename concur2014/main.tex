@@ -242,9 +242,12 @@ Recursive session rules
 \inferrule{\gvtyp{\Phi}{M}{\nu G}}
           {\gvtyp{\Phi}{M}{G(\nu G)}}
 
-\inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto X \uto \outterm,c:G(X)}{M}{\outterm} \\
-           \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
-          {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
+\inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
+           \gvtyp{\Phi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
+%% \inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto X \uto \outterm,c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
 \end{mathpar}
 \caption{\mugv Terms and Typing Rules}\label{fig:gv-typing}
 \end{figure}
@@ -267,17 +270,31 @@ $\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines the server (which 
 returns the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
 \gvservice{\gvdual{S}}$). As a consequence, there is no rule involving type $\gvserver{S}$.
 
-Finally, we provide recursive channels.  The first four typing rules allow recursive types to be
-used as their unfoldings, and vice versa.  Previous work has typically included an equivalence
-relation on types, taking unfolding into account, and presented type rules upto equivalence.  We
+Finally, we provide recursive channels. The first four typing rules allow recursive types to be
+used as their unfoldings, and vice versa. Previous work has typically included an equivalence
+relation on types, taking unfolding into account, and presented type rules upto equivalence. We
 present explicit rules to simplify the translation into \mucp, where these rules will correspond to
-particular terms implementing the equivalences.  The expression $\gvletrec{f\,\vec{x}\,c}{M}{N}$
-provides definition of recursive sessions.  The body $M$ provides one iteration of the recursion.
-Thus, it has access to the coinvariant $x_i$, a channel $G(X)$, and limited recursive use of $f$;
+particular terms implementing the equivalences. The expression $\gvletrec{f\,\vec{x}\,c}{M}{N}$
+provides definition of (co)recursive sessions. The body $M$ provides one iteration of the recursion.
+Thus, it has access to the coinvariant $x_i$, a channel $G(X)$, and limited (co)recursive use of $f$;
 the type variable $X$ ensures the use of recursive calls to $f$. Next, we will consider several
 examples of recursive sessions.
 
 \todo{Explanation of let rec that makes sense/explains anything.}
+
+\todo{Slot this in somewhere appropriate}
+
+Syntactic sugar for multi argument functions
+\[
+\langle T_0, T_1, \dots, T_n \rangle \uto U
+\equiv
+T_0 \uto T_1 \lto \dots \lto T_n \lto U
+\]
+The right hand side is isomorphic to
+\[
+(T_0 \otimes \dots \otimes T_n) \uto U
+\]
+
 
 \subsection{Multi-function calculator}
 
@@ -886,8 +903,16 @@ As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 
 \section{Translation from \mugv to \gvpi}
 
-Following Lindley and Morris~\cite{LindleyM14} we 
-
+Following our previous work~\cite{LindleyM14} we factor the
+translation of \mugv into \mucp through an intermediate
+translation. The language \gvpi is the restriction of \mugv to session
+types, that is, \mugv without $\lto$, $\uto$, or $\otimes$. In order
+to avoid $\otimes$, we disallow plain $\gvreceive{M}$, but do permit
+it to be fused with a pair elimination $\gvlet{(x,
+  y)}{\gvreceive{M}}{N}$. We can simulate all non-session types as
+session types via a translation from \mugv to \gvpi.  The translation
+on types is exactly as in our previous work. It is given by the
+homomorphic extension of the following equations:
 \[
 \ba{@{}rclcl@{}}
 \topi{T \lto U}    &=& \gvdual{\gvin{\gvdual{\topi{T}}}{\topi{U}}}
@@ -898,11 +923,34 @@ Following Lindley and Morris~\cite{LindleyM14} we
                    &=& \gvin{\gvdual{\topi{T}}}{\gvdual{\topi{U}}} \\
 \ea
 \]
+Each target type is the interface to the simulated source type. A
+linear function is simulated by input on a channel; its interface is
+output on the other end of the channel. An unlimited function is
+simulated by a server; its interface is the service on the other end
+of that channel. A tensor is simulated by output on a channel; its
+interface is input on the other end of that channel. This duality
+between implementation and interface explains the flipping of types in
+Wadler’s original CPS translation from GV to CP.
 
+In order to translate away the arrows in the $\key{corec}$ rule, we
+adopt a simplified session-oriented variant of the $\key{corec}$ rule
+for \gvpi.
+%
+\begin{mathpar}
+\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})}, c:G(X)}{M}{\outterm} \\
+           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
+\end{mathpar}
+%
+This rule takes advantage of the fact that we can always translate
+away functions using the $\topi{-}$ translation, and we can simulate
+multiple arguments using a tensor.
+
+The full translation on terms is as follows.
 \begin{equations}
 \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
 \topi{L\,M} &=& \gvsend{\topi{M}}{\topi{L}} \\
-\topi{(M, N)} &=&
+\topi{M, N} &=&
   \gvfork{z}
     {\gvlink{(\gvsend{\topi{M}}{z})}{\topi{N}}} \\
 \topi{\gvlet{(x, y)}{M}{N}} &=&
@@ -913,77 +961,82 @@ Following Lindley and Morris~\cite{LindleyM14} we
 \topi{\gvreceive{M}} &=& \topi{M}
 \\[1ex]
 \topi{\gvletrec{f\,\vec{x}\,c}{M}{N}} &=&
-  \gvletrec{p\,z\,c}{\gvlet{\vec{x}}{z}{M[L/f]}}{N[L/f]} \\
-&& \text{where }L = \lambda \vec{x} c.\gvsend{c}{(\gvsend{\vec{x}}{p})} \\
+  \gvletrec{p\,z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}}{\topi{N[L/f]}} \\
+&& \text{where }L = \lambda \vec{x} c.\gvsend{c}{(\gvsend{\vec{x}}{(\gvrequest{p})})} \\
 \end{equations}%
+Formally, this is a translation on derivations. We write type
+annotations to indicate $\to$ introduction and elimination. For all
+other cases, it is unambiguous to give the translation on plain term
+syntax. Each introduction form translates to an interface
+$\gvfork{z}{M}$ of type $\gvdual{S}$, where $M : \outterm$ provides
+the implementation, with $z : S$ bound in $M$.
+%
+The only new case is that for $\key{corec}$. We package up all of the
+arguments into a tuple, and simulate the interface to the arrows using
+session operations in the obvious way dictated by the rest of the
+$\topi{-}$ translation.
 
-Syntactic sugar for multi argument functions
-\[
-\langle T_0, T_1, \dots, T_n \rangle \uto U
-\equiv
-T_0 \uto T_1 \lto \dots \lto T_n \lto U
-\]
-The right hand side is isomorphic to
-\[
-(T_0 \otimes \dots \otimes T_n) \uto U
-\]
-
-Syntactic sugar for output
-\[
-x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
-\]
+We can extend the translation on types to a translation on contexts:
+\begin{equations}
+\topi{x_1:T_1, \dots, x_n:T_n} &=& x_1:\topi{T_1}, \dots, x_n:\topi{T_n} \\
+\end{equations}%
+It is straightforward to verify that our translation preserves typing.
+\begin{theorem}
+If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
+\end{theorem}
 
 
-\begin{mathpar}
-%% \inferrule{un(\Psi) \\
-%%            \gvtyp{\Psi,\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
-%%            \gvtyp{\Phi,\Psi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
-%%           {\gvtyp{\Phi,\Psi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
 
-\inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
-           \gvtyp{\Phi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
-          {\gvtyp{\Phi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
-
+%% \begin{mathpar}
+%% %% \inferrule{un(\Psi) \\
+%% %%            \gvtyp{\Psi,\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
+%% %%            \gvtyp{\Phi,\Psi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
+%% %%           {\gvtyp{\Phi,\Psi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
 
 %% \inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
 %%            \gvtyp{\Phi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
 %%           {\gvtyp{\Phi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
 
-%% \inferrule{\gvtyp{\vec{x}:\vec{T},p:\gvout{\langle \vec{T}, X \rangle}{\outterm}, c:G(X)}{M}{\outterm} \\
-%%            \gvtyp{\Phi,p:\gvout{\langle \vec{T}, \nu G \rangle}{\outterm}}{N}{U}}
-%%           {\gvtyp{\Phi}{\gvletrec{p\,\vec{x}\,c}{M}{N}}{U}}
 
-%% \inferrule{\gvtyp{x:T, f:T \uto X \lto \outterm, c:G(X)}{M}{\outterm} \\
-%%            \gvtyp{\Phi, f:T \uto \nu G \lto \outterm}{N}{U}}
-%%           {\gvtyp{\Phi}{\gvletrec{f\,x\,c}{M}{N}}{U}}
+%% %% \inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
+%% %%            \gvtyp{\Phi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
+%% %%           {\gvtyp{\Phi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
 
-%% \inferrule{\gvtyp{x:T, f:(T \otimes X) \uto \outterm, c:G(X)}{M}{\outterm} \\
-%%            \gvtyp{\Phi, f:(T \otimes \nu G) \uto \outterm}{N}{U}}
-%%           {\gvtyp{\Phi}{\gvletrec{f\,x\,c}{M}{N}}{U}}
+%% %% \inferrule{\gvtyp{\vec{x}:\vec{T},p:\gvout{\langle \vec{T}, X \rangle}{\outterm}, c:G(X)}{M}{\outterm} \\
+%% %%            \gvtyp{\Phi,p:\gvout{\langle \vec{T}, \nu G \rangle}{\outterm}}{N}{U}}
+%% %%           {\gvtyp{\Phi}{\gvletrec{p\,\vec{x}\,c}{M}{N}}{U}}
+
+%% %% \inferrule{\gvtyp{x:T, f:T \uto X \lto \outterm, c:G(X)}{M}{\outterm} \\
+%% %%            \gvtyp{\Phi, f:T \uto \nu G \lto \outterm}{N}{U}}
+%% %%           {\gvtyp{\Phi}{\gvletrec{f\,x\,c}{M}{N}}{U}}
+
+%% %% \inferrule{\gvtyp{x:T, f:(T \otimes X) \uto \outterm, c:G(X)}{M}{\outterm} \\
+%% %%            \gvtyp{\Phi, f:(T \otimes \nu G) \uto \outterm}{N}{U}}
+%% %%           {\gvtyp{\Phi}{\gvletrec{f\,x\,c}{M}{N}}{U}}
 
 
-\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})}, c:G(X)}{M}{\outterm} \\
-           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
-          {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
-\end{mathpar}
+%% \inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})}, c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
+%% \end{mathpar}
 
 
-\newcommand{\replicate}[2]{{!#1(#2)}}
-\newcommand{\derelict}[2]{{?#1[#2]}}
+%% \newcommand{\replicate}[2]{{!#1(#2)}}
+%% \newcommand{\derelict}[2]{{?#1[#2]}}
 
-\[
-\bl
-\left\llbracket
-\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X)}{M}{\outterm} \\
-           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
-          {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
-\right\rrbracket z = \\
-\qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\tocp{N}z} \\
-%%\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{ci}{}{\tocp{init}^\star}{\tocp{M^\dagger}^\star}}{\tocp{N}z}
-\qquad \qquad \text{where }
-P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
-\el
-\]
+%% \[
+%% \bl
+%% \left\llbracket
+%% \inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
+%% \right\rrbracket z = \\
+%% \qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\tocp{N}z} \\
+%% %%\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{ci}{}{\tocp{init}^\star}{\tocp{M^\dagger}^\star}}{\tocp{N}z}
+%% \qquad \qquad \text{where }
+%% P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
+%% \el
+%% \]
 
 
 %% \[
@@ -1010,16 +1063,17 @@ P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
 
 \section{Translation from \gvpi to \mucp}
 
-\todo{\begin{itemize}
-  \item Translating unlimited GV terms (at the moment, this is only unlimited lambdas) requires
-    exponentials, either directly or encoded, in CP.  Adding exponentials to CP requires a
-    significant expansion of the existing typing and cut reduction rules (not technically difficult,
-    but increasingly overwhelming the actual point of the paper).  Using coding would not require
-    extension of the CP rules, but differs from the existing GV $\to$ CP translations.
-  \item This translation doesn't take advantage of the previous GV $\to$ GV$\pi$ translation.  Doing
-    so would require a ``modified'' form of $\mkwd{corec}$, analogous to the modified form of
-    $\mkwd{receive}$, which replaced the unlimited arrows with servers.
-\end{itemize}}
+%% SL: I think we've decided to embrace exponentials anyway
+%%
+%% \todo{\begin{itemize}
+%%   \item Translating unlimited GV terms (at the moment, this is only unlimited lambdas) requires
+%%     exponentials, either directly or encoded, in CP.  Adding exponentials to CP requires a
+%%     significant expansion of the existing typing and cut reduction rules (not technically difficult,
+%%     but increasingly overwhelming the actual point of the paper).  Using coding would not require
+%%     extension of the CP rules, but differs from the existing GV $\to$ CP translations.
+%% \end{itemize}}
+
+\todo{Fill in the text for this section}
 
 Translation of session types from \gvpi to \mucp.
 
@@ -1036,8 +1090,8 @@ Translation of session types from \gvpi to \mucp.
  \tocp{\gvdual{X}}          &= \cpdual{X}
 \end{align*}
 
-%% \newcommand{\replicate}[2]{{!#1(#2)}}
-%% \newcommand{\derelict}[2]{{?#1[#2]}}
+\newcommand{\replicate}[2]{{!#1(#2)}}
+\newcommand{\derelict}[2]{{?#1[#2]}}
 
 \begin{align*}
 \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=
@@ -1101,31 +1155,54 @@ Translation of session types from \gvpi to \mucp.
               {\expand{G}{x,y}{\rec{x}.\link{x}{y}}}}
 \]
 
-\begin{multline*}
+\[
+\bl
 \left\llbracket
-\inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm} \\
-           \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
-          {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
+\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X)}{M}{\outterm} \\
+           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
 \right\rrbracket z = \\
-\replicate{f}{f_1}.f_1(x_1)\dots.\replicate{f_{n-1}}{f_n}.f_n(x_n).\corec{c}{ci}{}{\tocp{init_{ci}}^\star}{\tocp{M^\dagger_{ci}}^\star}
-\end{multline*}
-
-where
-
+\qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\tocp{N}z} \\
+%%\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{ci}{}{\tocp{init}^\star}{\tocp{M^\dagger}^\star}}{\tocp{N}z}
+\qquad \qquad \text{where }
+P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
+\el
+\]
+%
+\todo{Maybe move the definition of the sugar elsewhere}
+%
+where we use the following syntactic sugar for output along a channel:
 \[
-  \tocp{M}^\star = \cut{z}{\bot}{\tocp{M}z}{z[].0}
+x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 \]
 
-\[
- init_{ci} = \gvsend{x_n}{(\dots(\gvsend{x_1}{ci}))}
-\]
 
-\[\begin{array}{rcl}
-M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{(\dots(\gvsend{x_1}{c})\dots)}}
-                {\\&&\gvlet{(x_1,ci)}{\gvreceive{ci}}
-                {\\&&\vdots\\&&\gvlet{(x_n,ci)}{\gvreceive{ci}}{M}}}
-\end{array}\]
-}
+
+%% \begin{multline*}
+%% \left\llbracket
+%% \inferrule{\gvtyp{x_i:T_i,f:\vec{T} \uto Q \uto \outterm,c:G(Q)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,f:\vec{T} \uto \nu G \uto \outterm}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
+%% \right\rrbracket z = \\
+%% \replicate{f}{f_1}.f_1(x_1)\dots.\replicate{f_{n-1}}{f_n}.f_n(x_n).\corec{c}{ci}{}{\tocp{init_{ci}}^\star}{\tocp{M^\dagger_{ci}}^\star}
+%% \end{multline*}
+
+%% where
+
+%% \[
+%%   \tocp{M}^\star = \cut{z}{\bot}{\tocp{M}z}{z[].0}
+%% \]
+
+%% \[
+%%  init_{ci} = \gvsend{x_n}{(\dots(\gvsend{x_1}{ci}))}
+%% \]
+
+%% \[\begin{array}{rcl}
+%% M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{(\dots(\gvsend{x_1}{c})\dots)}}
+%%                 {\\&&\gvlet{(x_1,ci)}{\gvreceive{ci}}
+%%                 {\\&&\vdots\\&&\gvlet{(x_n,ci)}{\gvreceive{ci}}{M}}}
+%% \end{array}\]
+%% }
 
 \begin{theorem}
   If $\gvtyp{\Phi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Phi},z:\cpdual{\tocp{T}}}$.
