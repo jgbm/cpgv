@@ -1,6 +1,6 @@
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor}
+\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
@@ -48,9 +48,9 @@
 \newcommand{\tocp}[1]{\llbracket #1 \rrbracket}
 \newcommand{\De}{\mathcal{D}}
 
-\newcommand{\mucp}{$\mu\mathrm{CP}$}
-\newcommand{\mugv}{$\mu\mathrm{GV}$}
-\newcommand{\gvpi}{$\mathrm{GV}\pi$}
+\newcommand{\mucp}{$\mu\mathrm{CP}$\xspace}
+\newcommand{\mugv}{$\mu\mathrm{GV}$\xspace}
+\newcommand{\gvpi}{$\mathrm{GV}\pi$\xspace}
 
 \newcommand{\isp}{\quad}
 
@@ -71,7 +71,7 @@
 
 \section{Introduction}
 
-\section{\mugv{} Syntax}
+\section{\mugv Syntax}
 
 {\small
 \[\begin{array}{l@{\hspace{7mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
@@ -84,7 +84,7 @@
    & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
 \end{array}\]}
 
-\section{\mugv{} Typing}
+\section{\mugv Typing}
 
 {\small
 Structural rules
@@ -174,7 +174,7 @@ Recursive session rules
           {\gvtyp{\Phi}{\gvletrec{f\,x_1 \dots x_n\,c}{M}{N}}{U}}
 \end{mathpar}}
 
-\section{\mugv{} Examples}
+\section{\mugv Examples}
 
 \subsection{Multi-function calculator}
 
@@ -198,7 +198,7 @@ Recursive session rules
 
 \subsection{Bit Strings of DOOM!}
 
-\todo{Translate to \mugv{}. Note that validating the translation would require extending the GV
+\todo{Translate to \mugv. Note that validating the translation would require extending the GV
   interpreter with Booleans, addition and multiplication.}
 
 Introducing some more syntactic sugar: the restriction of output to bound output is tedious in
@@ -364,7 +364,7 @@ let d = select halt d in
 (i,j,k)
 \end{verbatim}
 
-\section{\mucp{} Syntax and Semantics}
+\section{\mucp Syntax and Semantics}
 
 \todo{
 \begin{itemize}
@@ -619,7 +619,7 @@ Define $\Longrightarrow^\star$ to be the reflexive, transitive closure of $\equi
   If $\cptyp{P}{\Gamma}$, then there is a $Q$ such that $P \Longrightarrow^\star Q$ and $Q$ is cut-free.
 \end{theorem}
 
-\section{\mucp{} Examples}
+\section{\mucp Examples}
 
 We will use $n$-ary sums $\oplus\{\overline{l:A}\}$,$\with\{\overline{l:A}\}$ with correspondingly
 generalized \tkwd{case} and selection expressions.
@@ -761,7 +761,7 @@ $LiftZero$, and the \textrm{more} case relies on $LiftInc$:
 As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 \\\todo{Example of using streams?  They're not terribly surprising.}
 
-\section{\mugv{} Translation}
+\section{\mugv Translation}
 
 \todo{\begin{itemize}
   \item Translating unlimited GV terms (at the moment, this is only unlimited lambdas) requires
@@ -774,7 +774,7 @@ As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
     $\mkwd{receive}$, which replaced the unlimited arrows with servers.
 \end{itemize}}
 
-Translation of session types from \gvpi{} to \mucp{}.
+Translation of session types from \gvpi to \mucp.
 
 \begin{align*}
 \tocp{\gvout{T}{S}}        &= \cpdual{\tocp{T}} \otimes \tocp{S} \\
@@ -806,7 +806,7 @@ Translation of session types from \gvpi{} to \mucp{}.
 \\[3ex]
 \tocp{x}z &= \link{x}{z} \\
 \tocp{\gvsend{M}{N}}z &= \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
-\tocp{\gvlet{(x,y)}{\receive{M}}{M}}z &= \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
+\tocp{\gvlet{(x,y)}{\gvreceive{M}}{M}}z &= \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
 \tocp{\gvselect{l}{M}}z &= \cut{x}{}{\tocp{M}x}{x[l].\link{x}{z}} \\
 \tocp{\gvcase{M}{l_n\,x.N_i}}z &=  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}} \\
 \tocp{\gvfork{x}{M}}z &= \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
@@ -890,7 +890,7 @@ M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{
 
 \appendix
 
-\section{\mucp{}}
+\section{\mucp}
 
 \begin{figure}
 {\small\begin{mathpar}
@@ -929,7 +929,7 @@ M^\dagger_{ci} &=& \gvlet{f}{\lambda x_1\dots\lambda x_n.\lambda c.\gvsend{x_n}{
           {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
 \end{mathpar}}
 
-\caption{Typing rules of \mucp{}}
+\caption{Typing rules of \mucp}
 \end{figure}
 
 
