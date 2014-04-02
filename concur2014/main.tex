@@ -886,14 +886,16 @@ As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 
 \section{Translation from \mugv to \gvpi}
 
-\begin{equations}
+\[
+\ba{@{}rclcl@{}}
 \topi{T \lto U}    &=& \gvdual{\gvin{\gvdual{\topi{T}}}{\topi{U}}}
-                    =  \gvout{\topi{T}}{\gvdual{\topi{U}}} \\
-\topi{T \uto U}    &=& \gvdual{\gvserver{(\gvin{\topi{T}}{\topi{U}})}}
-                    =  \gvservice{(\gvout{\topi{T}}{\gvdual{\topi{U}}})} \\
+                   &=& \gvout{\topi{T}}{\gvdual{\topi{U}}} \\
+\topi{T \uto U}    &=& \gvdual{\gvserver{(\gvin{\topi{\gvdual{T}}}{\topi{U}})}}
+                   &=& \gvservice{(\gvout{\topi{T}}{\gvdual{\topi{U}}})} \\
 \topi{T \otimes U} &=& \gvdual{\gvout{\gvdual{T}}{\topi{U}}}
-                    =  \gvin{\gvdual{\topi{T}}}{\gvdual{\topi{U}}} \\
-\end{equations}%
+                   &=& \gvin{\gvdual{\topi{T}}}{\gvdual{\topi{U}}} \\
+\ea
+\]
 
 \begin{equations}
 \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
