@@ -41,16 +41,29 @@
 \newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
 \newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
-\newcommand{\gvletrec}[3]{\mkwd{let}\:\mkwd{rec}\:#1 = #2\:\mkwd{in}\:#3}
+\newcommand{\gvletrec}[3]{\mkwd{corec}\:#1 = #2\:\mkwd{in}\:#3}
 \newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
 \newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
+
+\newcommand{\key}{\mkwd}
 
 \newcommand{\tocp}[1]{\llbracket #1 \rrbracket}
 \newcommand{\De}{\mathcal{D}}
 
+\newcommand{\topi}[1]{({#1})^\star}
+
 \newcommand{\mucp}{$\mu\mathrm{CP}$\xspace}
 \newcommand{\mugv}{$\mu\mathrm{GV}$\xspace}
-\newcommand{\gvpi}{$\mathrm{GV}\pi$\xspace}
+\newcommand{\gvpi}{$\mu\mathrm{GV}\pi$\xspace}
+
+\newcommand{\ba}{\begin{array}}
+\newcommand{\ea}{\end{array}}
+
+\newcommand{\bl}{\ba[t]{@{}l@{}}}
+\newcommand{\el}{\ea}
+
+\newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
+\newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
 
 \newcommand{\isp}{\quad}
 
@@ -761,7 +774,127 @@ $LiftZero$, and the \textrm{more} case relies on $LiftInc$:
 As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 \\\todo{Example of using streams?  They're not terribly surprising.}
 
-\section{\mugv Translation}
+\section{Translation from \mugv to \gvpi}
+
+\begin{equations}
+\topi{T \lto U}    &=& \gvdual{\gvin{\gvdual{\topi{T}}}{\topi{U}}}
+                    =  \gvout{\topi{T}}{\gvdual{\topi{U}}} \\
+\topi{T \uto U}    &=& \gvdual{\gvserver{(\gvin{\topi{T}}{\topi{U}})}}
+                    =  \gvservice{(\gvout{\topi{T}}{\gvdual{\topi{U}}})} \\
+\topi{T \otimes U} &=& \gvdual{\gvout{\gvdual{T}}{\topi{U}}}
+                    =  \gvin{\gvdual{\topi{T}}}{\gvdual{\topi{U}}} \\
+\end{equations}%
+
+\begin{equations}
+\topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
+\topi{L\,M} &=& \gvsend{\topi{M}}{\topi{L}} \\
+\topi{(M, N)} &=&
+  \gvfork{z}
+    {\gvlink{(\gvsend{\topi{M}}{z})}{\topi{N}}} \\
+\topi{\gvlet{(x, y)}{M}{N}} &=&
+    \gvlet{(x, y)}{\gvreceive{\topi{M}}}{\topi{N}} \\
+\topi{L : T \uto U} &=&
+  \gvfork{z}{\gvlink{z}{(\gvserve{y}{\gvlink{\topi{L}}{y}})}} \\
+\topi{L : T \lto U} &=& \gvrequest{\topi{L}} \\
+\topi{\gvreceive{M}} &=& \topi{M}
+\\[1ex]
+\topi{\gvletrec{f\,\vec{x}\,c}{M}{N}} &=&
+  \gvletrec{p\,z\,c}{\gvlet{\vec{x}}{z}{M[L/f]}}{N[L/f]} \\
+&& \text{where }L = \lambda \vec{x} c.\gvsend{c}{(\gvsend{\vec{x}}{p})} \\
+\end{equations}%
+
+Syntactic sugar for multi argument functions
+\[
+\langle T_0, T_1, \dots, T_n \rangle \uto U
+\equiv
+T_0 \uto T_1 \lto \dots \lto T_n \lto U
+\]
+The right hand side is isomorphic to
+\[
+(T_0 \otimes \dots \otimes T_n) \uto U
+\]
+
+Syntactic sugar for output
+\[
+x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
+\]
+
+
+\begin{mathpar}
+%% \inferrule{un(\Psi) \\
+%%            \gvtyp{\Psi,\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,\Psi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
+%%           {\gvtyp{\Phi,\Psi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
+
+\inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
+           \gvtyp{\Phi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
+
+
+%% \inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,f:\langle \vec{T}, \nu G \rangle \uto \outterm}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{f\,\vec{x}\,c}{M}{N}}{U}}
+
+%% \inferrule{\gvtyp{\vec{x}:\vec{T},p:\gvout{\langle \vec{T}, X \rangle}{\outterm}, c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi,p:\gvout{\langle \vec{T}, \nu G \rangle}{\outterm}}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{p\,\vec{x}\,c}{M}{N}}{U}}
+
+%% \inferrule{\gvtyp{x:T, f:T \uto X \lto \outterm, c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi, f:T \uto \nu G \lto \outterm}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{f\,x\,c}{M}{N}}{U}}
+
+%% \inferrule{\gvtyp{x:T, f:(T \otimes X) \uto \outterm, c:G(X)}{M}{\outterm} \\
+%%            \gvtyp{\Phi, f:(T \otimes \nu G) \uto \outterm}{N}{U}}
+%%           {\gvtyp{\Phi}{\gvletrec{f\,x\,c}{M}{N}}{U}}
+
+
+\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})}, c:G(X)}{M}{\outterm} \\
+           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
+\end{mathpar}
+
+
+\newcommand{\replicate}[2]{{!#1(#2)}}
+\newcommand{\derelict}[2]{{?#1[#2]}}
+
+\[
+\bl
+\left\llbracket
+\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X)}{M}{\outterm} \\
+           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
+          {\gvtyp{\Phi}{\gvletrec{p\,x\,c}{M}{N}}{U}}
+\right\rrbracket z = \\
+\qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\tocp{N}z} \\
+%%\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{ci}{}{\tocp{init}^\star}{\tocp{M^\dagger}^\star}}{\tocp{N}z}
+\qquad \qquad \text{where }
+P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
+\el
+\]
+
+
+%% \[
+%%   \tocp{M}^\star = \cut{z}{\bot}{\tocp{M}z}{z[].0}
+%% \]
+
+%% \[
+%%  init = \gvsend{x}{ci}
+%% \]
+
+%% \[
+%% M^\dagger =
+%%   \bl
+%%   \key{let}\,p=\,\gvfork{p}
+%%                    {\bl
+%%                     \key{let}\,(x,y) = \gvreceive{(\gvrequest{p})}\,\key{in} \\
+%%                     \key{let}\,(c,y) = \gvreceive{y}\,\key{in} \\
+%%                     \quad \gvsend{x}{c}\,\key{in}
+%%                     \el} \\
+%%   \gvlet{(x,ci)}{\gvreceive{ci}}{M} \\
+%%   \el
+%% \]
+
+
+\section{Translation from \gvpi to \mucp}
 
 \todo{\begin{itemize}
   \item Translating unlimited GV terms (at the moment, this is only unlimited lambdas) requires
@@ -786,11 +919,11 @@ Translation of session types from \gvpi to \mucp.
 \tocp{\gvserver{S}}        &= \cpbang{\tocp{S}} \\
 \tocp{\gvservice{S}}       &= \cpquery{\tocp{S}} \\
 \tocp{X}                   &= X \\
-\tocp{\gvdual{X}}          &= \cpdual{X}
+ \tocp{\gvdual{X}}          &= \cpdual{X}
 \end{align*}
 
-\newcommand{\replicate}[2]{{!#1(#2)}}
-\newcommand{\derelict}[2]{{?#1[#2]}}
+%% \newcommand{\replicate}[2]{{!#1(#2)}}
+%% \newcommand{\derelict}[2]{{?#1[#2]}}
 
 \begin{align*}
 \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=
