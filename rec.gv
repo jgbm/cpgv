@@ -21,3 +21,14 @@ c: nu X.&{done:end!,more:!end?.X} |-
    let (z, d) = receive d in
    select done d
  : end?.
+
+
+--|- let rec [X.X] f (x : Int) c = f x c in
+--   let c = fork x:nu X.X => f 42 x in
+--   c : mu X.X.
+
+
+|- let rec [X.?end?.X] f (x : Int) c =
+     let (z, c) = receive c in f x c in
+   let c = fork x:nu X.?end?.X => f 42 x in
+   c : mu X.!end?.X.
