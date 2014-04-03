@@ -46,7 +46,8 @@
 \newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
 \newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
-\newcommand{\gvletrec}[3]{\mkwd{corec}\:#1 = #2\:\mkwd{in}\:#3}
+\newcommand{\lrkwd}{\mkwd{def}}
+\newcommand{\gvletrec}[3]{\lrkwd\: #1 = #2\:\mkwd{in}\:#3}
 \newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
 \newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
 
@@ -135,7 +136,9 @@ channels:
   \gvdual{\gvserver{S}} &= \gvservice{\gvdual{S}}
 \end{align*}}
 We introduce a notion of the dual of an operator: if $G = X.S$, then $\gvdual{G} =
-X.\gvdual{G(\gvdual{X})}$.  This allows us to give a natural defintion of duality for fixed points:
+X.\gvdual{G(\gvdual{X})}$.  Note that $\gvdual{G}(\gvdual{S}) = \gvdual{G(S)}$. This allows us to
+give a natural defintion of duality for fixed points:
+%
 {\small\begin{align*}
 \gvdual{\mu G} &= \nu \gvdual{G} & \gvdual{\nu G} = \mu \gvdual{G}
 \end{align*}}
@@ -149,7 +152,7 @@ $\gvin{\mu F}{\interm}$.  Unfolding the second gives
   = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm}
   = \gvout{\mu G}{\outterm},
 \]}
-which is the dual of $\gvin{\mu F}{\interm}$.  Finally, to assure that the fixed points exist, we
+which is the dual of $\gvin{\mu G}{\interm}$.  Finally, to assure that the fixed points exist, we
 require that all operators $X.S$ be monotonic, that is, that variables appear only as positive
 subformulae of $S$, and negated variables only as negative subformulae.  The definition of positive
 subformulae is slightly unusual: we have that the argument $T$ in $\gvout{T}{S}$ and the arguments
@@ -270,17 +273,38 @@ $\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines the server (which 
 returns the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
 \gvservice{\gvdual{S}}$). As a consequence, there is no rule involving type $\gvserver{S}$.
 
-Finally, we provide recursive channels. The first four typing rules allow recursive types to be
-used as their unfoldings, and vice versa. Previous work has typically included an equivalence
-relation on types, taking unfolding into account, and presented type rules upto equivalence. We
-present explicit rules to simplify the translation into \mucp, where these rules will correspond to
-particular terms implementing the equivalences. The expression $\gvletrec{f\,\vec{x}\,c}{M}{N}$
-provides definition of (co)recursive sessions. The body $M$ provides one iteration of the recursion.
-Thus, it has access to the coinvariant $x_i$, a channel $G(X)$, and limited (co)recursive use of $f$;
-the type variable $X$ ensures the use of recursive calls to $f$. Next, we will consider several
-examples of recursive sessions.
+Finally, we provide recursive channels. The first four typing rules allow recursive types to be used
+as their unfoldings, and vice versa. Previous work has typically included an equivalence relation on
+types, taking unfolding into account, and presented type rules up to equivalence. We present
+explicit rules to simplify the translation into \mucp, where these rules will correspond to terms
+implementing the equivalences. The expression $\gvletrec{f\,\vec{x}\,c}{M}{N}$ is used to define
+corecursive sessions.  We will give several simple examples to motivate its behavior; the remainder
+of the section will provide more in depth examples.
 
-\todo{Explanation of let rec that makes sense/explains anything.}
+Consider a stream of zeros.  (We assume integer constants and addition for these examples.)
+The type of such a stream is $\nu X. !Int.X$.  We would expect the definition of such a stream to
+provide one number before recursing; in \mugv, we could begin implementing this by
+\[ \lrkwd \: f\:c = \gvlet{c}{\gvsend{0}{c}}{\dots}\]
+If $c$ started with type $\nu X.\gvout{Int}{X} = \gvout{Int}{(\nu X.\gvout{Int}{X})}$, then after
+the send we expect it to be back to the type $\nu X.\gvout{Int}{X}$.  This is thus the natural place
+to make a recursive call; our definition then becomes:
+\[ \lrkwd \: f\:c = \gvlet{c}{\gvsend{0}{c}}{f\,c}.\]
+Unfortunately, if we give $c$ the type $\nu X.\gvout{Int}{X}$ and $f$ the type $\nu X.\gvout{Int}{X}
+\uto \outterm$ in $M$, we cannot be sure that the defined session will be productive.  For example,
+an equally valid definition under those typing assumptions would be
+\[ \lrkwd \: f\:c = f\:c.\]
+To ensure productivity, the typing rule is restricted.  We use a (fresh) type variable $X$ to
+abstract over the recursive behavior; the channel $c$ then has type $G(X)$ instead of $G(\nu G)$,
+and $f$ has type $X \uto \outterm$ instead of $\nu G \uto \outterm$.  $M$ is thus required to
+provide precisely one iteration of the recursive behavior.
+
+We also allow recursive sessions to maintain internal state (or maintain a coinvariant); this is
+captured by the additional arguments $\vec{x}$ to $f$.  We will demonstrate several uses of
+coinvariants in the remainder of the section.
+
+\todo{Explanation of $\lrkwd$ that makes sense/explains anything. Note parallel: $$\mkwd{send}:T \to
+  \gvout{T}{S} \to S$$ \textit{consumes} a $\gvout{T}{S}$, and the $f$ defined by $\lrkwd$
+  \textit{consumes} a channel $\nu G$.}
 
 \todo{Slot this in somewhere appropriate}
 
@@ -304,22 +328,25 @@ multiplication ($\times$) operators.  Our goal is to provide a session that acce
 stream of addition and multiplication requests, and can at any time provide the accumulated result.
 We can implement the provider of this session as follows:
 
+\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
+
 \[\begin{array}{llll}
- \multicolumn{4}{l}{\mkwd{corec}\:calc\:accum\:c =} \\
- \quad & \multicolumn{3}{l}{\mkwd{case}\:c\;\mkwd{of}\:\{} \\
+ \mcl{4}{\lrkwd\:calc\:accum\:c =} \\
+ \quad & \mcl{3}{\mkwd{case}\:c\;\mkwd{of}\:\{} \\
  & \quad & \clabel{add}\:c. &\mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in} \\
- & & & f\:(accum + x)\:c; \\
+ & & & calc\:(accum + x)\:c; \\
  & & \clabel{mul}\:c. &\mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in} \\
- & & & f\:(accum \times x)\:c \\
+ & & & calc\:(accum \times x)\:c \\
  & & \clabel{result}\:c. &\mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in} \\
- & & & f\:accum\:c; \\
+ & & & calc\:accum\:c; \\
  & & \clabel{done}\:c.& c \; \}
 \end{array}\]
 In this case, the type of the recursive channel is
 \[
- \nu X. \with \{ \clabel{add}: \gvin{Int}{X}, \clabel{mul}: \gvin{Int}{X}, \clabel{result}: \gvout{Int}{X}, \clabel{done}: \outterm \}.
+ Calc = \nu X. \with \{ \clabel{add}: \gvin{Int}{X}, \clabel{mul}: \gvin{Int}{X}, \clabel{result}: \gvout{Int}{X}, \clabel{done}: \outterm \}.
 \]
-We can implement a consumer of the service as follows:
+and we have that $\gvtyp{}{calc}{Int \uto Calc \lto \outterm}.$  We can implement a consumer of the service as
+follows:
 \[\begin{array}{l}
   \gvlet{myCalc}{\gvfork{c}{calc\:0\:c}}{} \\
   \gvlet{d}{\gvsend{6}{(\gvselect{\clabel{add}}{myCalc})}}{} \\
@@ -327,182 +354,166 @@ We can implement a consumer of the service as follows:
   \gvlet{(x,d)}{\gvreceive{(\gvselect{\clabel{result}}{myCalc})}}{} \\
   \gvlet{myCalc}{\gvselect{\clabel{done}}{myCalc}}{x}
 \end{array}\]
-We begin by constructing an instance of the calculator with the accumulator set to 0; in the body of
-\tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called $myCalc$), has
-type
+We begin by constructing an instance of the calculator with the accumulator starting at 0; in the
+body of \tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called
+$myCalc$), has type
 \[
 \mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{done}: \interm \}.
 \]
 We perform several calculuations, adding 6 to the accumulator and multiplying by 7.  Finally, we get
 the result and close the channel.
 
-\subsection{Bit Strings of DOOM!}
-
-\todo{Translate to \mugv. Note that validating the translation would require extending the GV
-  interpreter with Booleans, addition and multiplication.}
-
-Introducing some more syntactic sugar: the restriction of output to bound output is tedious in
-practice.  For example, to read a value from channel $m$, send it on $n$, and continue as process
-$P$ requires an unintuitive use of link: $m(x).n[x'].(\link{x}{x'} \mid P)$.  In this section, I'll
-write $x[y].P$ as syntactic sugar for $x[x'].(\link{x'}{y} \mid P)$.  I'll assume that we have a
-collection of mathematical operations on naturals built up, and apply similar syntactic sugar, so I
-can write $x[m + 1].P$, for instance, instead of $x[x'].(Inc_{m,x'} \mid P)$.
-
-We begin with the type of intermediate nodes in the chain.  Each supports three operations: one to
-compute the value of the string, one to increment the string, and one to dispose of the bit string:
+\subsection{Bit Strings}
 %
-{\small\[\begin{array}{l@{\hspace{1mm}}l}
- NodeT = \nu X. \with \{ &\clabel{val}: \cpdual{Nat} \parr (Nat \otimes X), \\
- & \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \\
- & \clabel{halt}: 1 \}.
-\end{array}\]}
+%\todo{Validating the translation requires extending the GV interpreter with Booleans, addition and
+%  multiplication.}
 
-\begin{verbatim}
-NodeT = nu X. &{ val: ?Nat.!Nat.X,
-                 inc: +{ carry: X, done:X },
-                 halt: end! }
-\end{verbatim}
+In this section, we will adapt the bit string example previous explored by Toninho et
+al.~\cite{Toninho13} to our setting.  This example represents a string of bits (0 or 1) by a chain
+of processes, each storing one bit.  The chain supports operations to increment and retreive the
+stored value; in turn, each link in the chain functions as a one-bit adder.
+
+As in the previous section, we will assume constants for integers, along with addition and
+multiplication operators.  We will also assume Boolean constants and an if-then-else expression.
+
+We begin with the type $Link$ of the links in the chain.  Each is a recursive process supporting three
+operations: one used to compute the value of the chain, one used to increment the chain, and one
+used to dispose of the chain.
+%
+%{\small\[\begin{array}{l@{\hspace{1mm}}l}
+% NodeT = \nu X. \with \{ &\clabel{val}: \cpdual{Nat} \parr (Nat \otimes X), \\
+% & \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \\
+% & \clabel{halt}: 1 \}.
+%\end{array}\]}
+\[
+ Link = \nu X. \with \{ \clabel{val}: \gvin{Int}{\gvout{Int}{X}}, \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \clabel{halt}: \outterm \}
+\]
+The val operation cascades down the chain (from most- to least-significant bit), returning the
+computed value.  The increment operator cascades similarly, but returns the carry bit.
 
 The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
 cannot store a value so it must respond to increment requests with carry.
 %
-{\small\[\begin{array}{rcll}
-  Epsilon_x & = & \multicolumn{2}{l}{\mkwd{corec}\:x\langle y \rangle ( y[].0,} \\
-  & & \quad \mkwd{case}\:x\: \{ &\clabel{val}: x(n).x[n].\link{y}{x}; \\
-  & & &\clabel{inc}:\sel{x}{carry}.\link{y}{x}; \\
-  & & &\clabel{halt}: \link{y}{x} \}).
-\end{array}\]}
-
-\begin{verbatim}
-let rec Epsilon c =
-   case c of {
-     val c => let (n, c) = receive c in
-              let c = send n c in
-              Epsilon c;
-     inc c => let c = select carry c in
-              Epsilon c;
-     halt c => c }
-\end{verbatim}
-
-To give internal nodes in the string, we need some representation of the bit each stores.  Let's use
-Booleans!
+%{\small\[\begin{array}{rcll}
+%  Epsilon_x & = & \mcl{2}{\lrkwd\:x\langle y \rangle ( y[].0,} \\
+%  & & \quad \mkwd{case}\:x\: \{ &\clabel{val}: x(n).x[n].\link{y}{x}; \\
+%  & & &\clabel{inc}:\sel{x}{carry}.\link{y}{x}; \\
+%  & & &\clabel{halt}: \link{y}{x} \}).
+%\end{array}\]}
 %
-{\small\begin{align*}
-Bool &= \oplus \{ \clabel{t}:1, \clabel{f}:1 \}. \\
-True_x &= \sel{x}{t}.x[].0. \\
-False_x &= \sel{x}{f}.x[].0.
-\end{align*}}
+\[\begin{array}{lll}
+\mcl{3}{\lrkwd\:Epsilon\:c =} \\
+\mcl{3}{\quad \mkwd{case}\:c\:\mkwd{of}\:\{} \\
+\quad \quad & \clabel{val}\:c. &\gvlet{(n,c)}{\gvreceive{c}}{} \\
+& & \gvlet{c}{\gvsend{n}{c}}{} \\
+& & Epsilon\:c \\
+& \clabel{inc}\:c. & \gvlet{c}{\gvselect{\clabel{carry}}{c}}{} \\
+& & Epsilon\:c \\
+& \clabel{halt}\:c. & c \: \}
+\end{array}\]
+It is straightforward to see that $\gvtyp{}{Epsilon}{Link \to \outterm}$.
+
+%To give internal nodes in the string, we need some representation of the bit each stores.  Let's use
+%Booleans!
 %
-As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
-\\\todo{Add more syntactic sugar?  How about:
-{\small\begin{align*}
-  \mkwd{if}\:x\:\mkwd{then}\:M\:\mkwd{else}\:N &= \case{x}{\clabel{t}:x().M; \clabel{f}:x().N} \\
-  \mkwd{drop}\:x.M &= \mkwd{if}\:x\:\mkwd{then}\:M\:\mkwd{else}\:M
-\end{align*}}}
-
-We're now set to define internal nodes.  Again, the intuition is relatively simple.  In response to
-an increment request, the bit flips, passing on a carry option if needed.  In response to a value
-request, it adds its value to the value so far and passes the result down the string.  The syntax is
-complicated by several side concerns: in particular, since our Booleans are linear, we have to use
-the stored Boolean in all cases (even, like halt, when it is not strictly speaking needed).  Note
-that the coinvariant $x$ is of type $Bool \otimes NodeT$: it contains both the stored bit and the
-remainder of the string.
+%{\small\begin{align*}
+%Bool &= \oplus \{ \clabel{t}:1, \clabel{f}:1 \}. \\
+%True_x &= \sel{x}{t}.x[].0. \\
+%False_x &= \sel{x}{f}.x[].0.
+%\end{align*}}
 %
-{\small\[\begin{array}{rcllll}
-  Node_{i,y,n} & = & \multicolumn{4}{l}{\mkwd{corec}\:n \langle x \rangle (x[j].(\link{j}{i} \mid \link{x}{y}),} \\
-  & & \quad x(b).\mkwd{case}\:n\: \{ &\multicolumn{3}{l}{\clabel{val}: \rec{x}.\sel{x}{val}.n(m).} \\
-  & & & \quad \mkwd{case}\:b\: \{ &\multicolumn{2}{l}{\clabel{t}: b().x[2m + 1].x(m).} \\
-  & & & & \multicolumn{2}{l}{\quad n[m].n[True].\link{x}{n};} \\
-  & & & & \multicolumn{2}{l}{\clabel{f}: b().x[2m].x(m).} \\
-  & & & & \multicolumn{2}{l}{\quad n[m].n[False].\link{x}{n} \};} \\
-  & & & \multicolumn{3}{l}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
-  & & & \quad \mkwd{case}\:x\:\{ &\multicolumn{2}{l}{\clabel{done}: \sel{n}{done}.n[b].\link{x}{n}} \\
-  & & & &\clabel{carry}: \mkwd{case}\:b\: \{ &\clabel{t}: b().\sel{n}{carry}.n[False].\link{x}{n} \\
-  & & & & &\clabel{f}: b().\sel{n}{done}.n[True].\link{x}{n} \} \}; \\
-  & & &\clabel{halt}: \\
-  & & &\quad \mkwd{case}\:b\:\{ &\multicolumn{2}{l}{\clabel{t}: b().\rec{x}.\sel{x}{halt}.x().n[].0;} \\
-  & & & &\multicolumn{2}{l}{\clabel{f}: b().\rec{x}.\sel{x}{halt}.x().n[].0 \} \})}.
-\end{array}\]}
-We have that
-{\small\[
-  \cptyp{Node_{i,y,n}}{i:\cpdual{Bool},y:\cpdual{NodeT},n:NodeT}
-\]}
-
-\begin{verbatim}
-let rec Node b d c =
-   case c of {
-     val c => let m = receive c in
-              let d = send (if b then 2*m + 1 else 2*m) (select val d) in
-              let (n, d) = receive d in
-              let c = send n c in
-              Node b d c;
-     inc c => case (select inc d) of {
-                done d => Node b d (select done c);
-                carry d => let c = if b then select carry c else select done c in
-                           Node (not b) d c };
-     halt c => let d = select halt d in c }
-\end{verbatim}
-
-Now, we define a top level interface to bit strings.  We support three operations: one to compute
-the value of the string, one to increment the string, and one to dispose of the string.
+%As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
+We can now define internal nodes.  Again, the intuition is relatively simple.  In response to an
+increment request, the bit flips, passing on a carry option if needed.  In response to a value
+request, it adds its value to the value so far and passes the result down the string; the response
+is passed up the chain unchanged.  Internal nodes require two state components: the bit they
+represent (here called $b$) and the remainder of the chain (here called $d$).
 %
-{\small\[
- CounterT = \nu X. \with \{ \clabel{val}: Nat \otimes X, \clabel{inc}:X, \clabel{halt}:1 \}.
-\]}
-
-\begin{verbatim}
-CounterT = nu X. &{ val: !Nat.X, inc: X, halt: end! }
-\end{verbatim}
-
-The implementation of the top-level interface is less complex than that for the internal nodes; the
-only complication arises when an increment results in a carry, and so a new node needs to be added
-to the string.  The coinvariant $x$ stores the first internal node in the string, and is of type
-$NodeT$.
+%{\small\[\begin{array}{rcllll}
+%  Node_{i,y,n} & = & \mcl{4}{\lrkwd\:n \langle x \rangle (x[j].(\link{j}{i} \mid \link{x}{y}),} \\
+%  & & \quad x(b).\mkwd{case}\:n\: \{ &\mcl{3}{\clabel{val}: \rec{x}.\sel{x}{val}.n(m).} \\
+%  & & & \quad \mkwd{case}\:b\: \{ &\mcl{2}{\clabel{t}: b().x[2m + 1].x(m).} \\
+%  & & & & \mcl{2}{\quad n[m].n[True].\link{x}{n};} \\
+%  & & & & \mcl{2}{\clabel{f}: b().x[2m].x(m).} \\
+%  & & & & \mcl{2}{\quad n[m].n[False].\link{x}{n} \};} \\
+%  & & & \mcl{3}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
+%  & & & \quad \mkwd{case}\:x\:\{ &\mcl{2}{\clabel{done}: \sel{n}{done}.n[b].\link{x}{n}} \\
+%  & & & &\clabel{carry}: \mkwd{case}\:b\: \{ &\clabel{t}: b().\sel{n}{carry}.n[False].\link{x}{n} \\
+%  & & & & &\clabel{f}: b().\sel{n}{done}.n[True].\link{x}{n} \} \}; \\
+%  & & &\clabel{halt}: \\
+%  & & &\quad \mkwd{case}\:b\:\{ &\mcl{2}{\clabel{t}: b().\rec{x}.\sel{x}{halt}.x().n[].0;} \\
+%  & & & &\mcl{2}{\clabel{f}: b().\rec{x}.\sel{x}{halt}.x().n[].0 \} \})}.
+%\end{array}\]}
 %
-{\small\[\begin{array}{rclll}
-  Counter_z & = & \multicolumn{3}{l}{\mkwd{corec}\:z \langle x \rangle (Epsilon_x,} \\
-  & & \quad \mkwd{case}\:z\:\{ &\multicolumn{2}{l}{\clabel{val}: \rec{x}.\sel{x}{val}.x[Zero].x(n).z[n].\link{z}{x};} \\
-  & & &  \multicolumn{2}{l}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
-  & & & \quad \mkwd{case}\:x\:\{ &\clabel{carry}: \cut{n}{CImp}{\cut{i}{Bool}{True_i}{Node_{i,x,n}}}{\link{z}{n}}; \\
-  & & & &\clabel{done}: \link{z}{x} \} \\
-  & & &\multicolumn{2}{l}{\clabel{halt}:\rec{x}.\sel{x}{halt}.x().z[].0 \}).}
-\end{array}\]}
+\newcommand{\gvifthen}[3]{\mkwd{if}\:#1\:\mkwd{then}\:#2\:\mkwd{else}\:#3}
+%
+\[\begin{array}{lllll}
+\mcl{5}{\lrkwd\:Node\:b\:d\:c =} \\
+\mcl{5}{\quad \mkwd{case}\:c\:\mkwd{of}\:\{} \\
+\quad \quad & \clabel{val}\:c. & \mcl{3}{\gvlet{m}{\gvreceive{c}}{}} \\
+& & \mcl{3}{\gvlet{d}{\gvsend{(\gvifthen{b}{2 \times m + 1}{2 \times m})}{(\gvselect{\clabel{val}}{d})}}{}} \\
+& & \mcl{3}{\gvlet{(n,d)}{\gvreceive{d}}{}} \\
+& & \mcl{3}{\gvlet{c}{\gvsend{n}{c}}{}} \\
+& & \mcl{3}{Node\:b\:d\:c;} \\
+& \clabel{inc}\:c. & \mcl{3}{\mkwd{case}\:(\gvselect{\clabel{inc}}{d})\:\mkwd{of}\:\{} \\
+& & \quad & \clabel{done}\:d. & Node\:b\:d\:(\gvselect{\clabel{done}}{c}) \\
+& & & \clabel{carry}\:d. & \gvlet{c}{\gvifthen{b}{\gvselect{\clabel{carry}}{c}}{\gvselect{\clabel{done}}{c}}}{} \\
+& & & & Node\:(not\:b)\:d\:c \}; \\
+& \clabel{halt}\:c. & \mcl{3}{\gvlet{d}{\gvselect{\clabel{halt}}{d}}{c} \}}
+\end{array}\]
+We have that $\gvtyp{}{Node}{Bool \uto \gvdual{Link} \lto Link \lto \outterm}.$ (The arrows are linear as
+$Node$ values are linear, and so closures that capture them must be as well.)
 
-\begin{verbatim}
-let rec CounterImpl d c =
-  case c of {
-    val c => let (n, d) = receive (send 0 (select val d)) in
-             CounterImpl d (send n c);
-    inc c => case (select inc d) of {
-               carry d => let e = fork e => Node True d e in
-                          CounterImpl e c
-               done d => CounterImpl d c };
-    halt c => let d = select halt d in c } in
-let Counter z = CounterImpl (fork c => Epsilon c) z
-\end{verbatim}
+Finally, we can define the top level interface to a bit string.  The interface supports the same
+three operations as the links---increment, retrieve value, and disposal---but with simpler behavior:
+\[
+  Count = \nu X. \with \{ \clabel{val}: \gvout{Int}{X}, \clabel{inc}: X, \clabel{halt}: \outterm \}
+\]
+Value retrieval produces the value of the string, increment gives a new string, and halt gives a
+closed channel.  The implementation requires one state component, the first link of the chain
+(called $d$).
+\[\begin{array}{llll}
+\mcl{4}{\lrkwd\:CounterImpl\:d\:c =} \\
+\mcl{4}{\quad \mkwd{case}\:c\:\mkwd{of}\:\{} \\
+\quad \quad & \clabel{val}\:c. & \mcl{2}{\gvlet{(n,d)}{\gvreceive{(\gvsend{0}{(\gvselect{\clabel{val}}{d})})}}} \\
+& & \mcl{2}{CounterImpl\:d\:(\gvsend{n}{c})} \\
+& \clabel{inc}\:c. & \mcl{2}{\mkwd{case}\:\gvselect{\clabel{inc}}{d}\:\mkwd{of}\:\{} \\
+& & \quad \clabel{carry}\:d. & \gvlet{e}{\gvfork{e}{Node\:True\:d\:e}}{} \\
+& & & CounterImpl\:e\:c; \\
+& & \quad \clabel{done}\:e. & CounterImpl\:d\:c\:\}; \\
+& \clabel{halt}\:c. & \mcl{2}{\gvlet{d}{\gvselect{\clabel{halt}}{d}}{c}\:\}}
+\end{array}\]
+The value case uses the value behavior of the links, providing the initial value 0.  The increment
+option adds a new link to the chain if incrementing the existing chain requires carrying.  We have
+that $\gvtyp{}{CounterImpl}{\gvdual{Link} \uto Count \lto \outterm},$ taking an initial chain as an argument.
+Since we expect that the initial string will usually be empty, we can define
+\[
+  \mkwd{let}\:Counter = \lambda c.CounterImpl\:(\gvfork{x}{Epsilon\:x})\:c.
+\]
+%
+%{\small\[
+% CounterT = \nu X. \with \{ \clabel{val}: Nat \otimes X, \clabel{inc}:X, \clabel{halt}:1 \}.
+%\]}
+%
+%{\small\[\begin{array}{rclll}
+%  Counter_z & = & \mcl{3}{\lrkwd\:z \langle x \rangle (Epsilon_x,} \\
+%  & & \quad \mkwd{case}\:z\:\{ &\mcl{2}{\clabel{val}: \rec{x}.\sel{x}{val}.x[Zero].x(n).z[n].\link{z}{x};} \\
+%  & & &  \mcl{2}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
+%  & & & \quad \mkwd{case}\:x\:\{ &\clabel{carry}: \cut{n}{CImp}{\cut{i}{Bool}{True_i}{Node_{i,x,n}}}{\link{z}{n}}; \\
+%  & & & &\clabel{done}: \link{z}{x} \} \\
+%  & & &\mcl{2}{\clabel{halt}:\rec{x}.\sel{x}{halt}.x().z[].0 \}).}
+%\end{array}\]}
+Finally, we give a simple example of using the counter:
+\[\begin{array}{l}
+\gvlet{ctr}{\gvfork{c}{Counter\:c}}{} \\
+\gvlet{(i,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{ctr})}}{} \\
+\gvlet{(j,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{ctr})})}}{} \\
+\gvlet{(k,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{(\gvselect{\clabel{inc}}{ctr})})})}}{} \\
+\gvlet{ctr}{\gvselect{\clabel{halt}}{ctr}}{(i,j,k)}
+\end{array}\]
+We begin by creating a new counter on channel $ctr$; we then perform a mixture of increment and
+value operations before closing the $ctr$ channel.  The whole expression evaluates to $(0,1,3)$.
 
-Here's the example from the source file.  I don't think it's necessarily the best thing, so I can't
-be bothered to typeset it right now.
-\begin{verbatim}
-new [z:Counter]
-  (Counter(z) |
-   rec z.z[val].z(i).
-   rec z.z[inc].
-   rec z.z[val].z(j).
-   rec z.z[inc].rec z.z[inc].
-   rec z.z[val].z(k).
-   rec z.z[halt].z().a[i].a[j].a[k].a[].0)
- |- a:int * (int * (int * 1)).
-\end{verbatim}
-
-\begin{verbatim}
-let d = fork c => Counter c in
-let (i, d) = select val d in
-let (j, d) = select val (select inc d) in
-let (k, d) = select val (select inc (select inc d)) in
-let d = select halt d in
-(i,j,k)
-\end{verbatim}
 
 \section{\mucp Syntax and Semantics}
 
@@ -828,8 +839,8 @@ Again, we can show that increment behaves as we expect; for example, we have tha
 \]}
 
 {\small\[\begin{array}{rcl@{\hspace{0mm}}ll}
-  Add_{x,y,z} & = & \multicolumn{3}{l}{\mkwd{corec}\:x\langle a \rangle} \\
-  & & \quad (&\multicolumn{2}{l}{a[y].\link{a}{z},} \\
+  Add_{x,y,z} & = & \mcl{3}{\lrkwd\:x\langle a \rangle} \\
+  & & \quad (&\mcl{2}{a[y].\link{a}{z},} \\
   & & & a(b).\mkwd{case}\:x\:\{&\clabel{zero}: x().\link{a}{b}; \\
   & & & & \clabel{succ}: x[b'].(Inc_{b,b'} \mid  \link{a}{x}) \}).
 \end{array}\]}
@@ -865,7 +876,7 @@ generate the remainder of the stream.  Therefore, we'll use a $Bang(Nat)$ as our
 begin by lifting $Zero$ to type $Bang(Nat)$:
 %
 {\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  LiftZero_z & = & \multicolumn{3}{l}{\mkwd{corec} \: z \langle a \rangle (a[].0,} \\
+  LiftZero_z & = & \mcl{3}{\lrkwd \: z \langle a \rangle (a[].0,} \\
   & & \quad & a().\mkwd{case}\: z \: \{ &\clabel{w}: z[].0; \\
   & & & & \clabel{d}: Zero_z; \\
   & & & & \clabel{c}: z[w].(w[].0 \mid z[].0) \}).
@@ -876,7 +887,7 @@ dereliction, in which we rely (again) on our existing definition of $Zero$.  Nex
 $Inc$ definition above to operate on $Bang(Nat)$ processes:
 %
 {\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  LiftInc_{x,y} & = & \multicolumn{3}{l}{\mkwd{corec} \: y \langle z \rangle (\link{x}{z},} \\
+  LiftInc_{x,y} & = & \mcl{3}{\lrkwd \: y \langle z \rangle (\link{x}{z},} \\
   & & \quad & \mkwd{case} \: y \: \{ & \clabel{w}: \rec{z}.\sel{z}{w}.y[].0; \\
   & & & & \clabel{d}: \rec{z}.\sel{z}{d}.Inc_{z,y}; \\
   & & & & \clabel{c}: \rec{z}.\sel{z}{c}.z(w).y[x].(\link{x}{w} \mid \link{y}{z}) \}).
@@ -892,7 +903,7 @@ Finally, we can define a stream of naturals: the invariant is of type $Bang(Chur
 $LiftZero$, and the \textrm{more} case relies on $LiftInc$:
 %
 {\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  CNats_y & = & \multicolumn{3}{l}{\mkwd{corec} \: y \langle z \rangle (Zero_z,} \\
+  CNats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
   & & \quad & \mkwd{case}\:y \{ & \clabel{end}: \rec{z}.\sel{z}{w}.z().y[].0; \\
   & & & & \clabel{more}: \rec{z}.\sel{z}{c}.z(w).y[x].\\
   & & & & \quad (\rec{w}.\sel{w}{d}.\link{x}{w} \mid LiftInc_{z,y}) \}).
@@ -1219,6 +1230,11 @@ x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 \item $\mathrm{MIX}_0,\mathrm{MIX}_2$ and the treatment of closed channels.
 \end{itemize}
 
+\label{sect:bib}
+\bibliographystyle{plain}
+\bibliography{main}
+
+\clearpage
 \appendix
 
 \section{\mucp}
@@ -1264,8 +1280,5 @@ x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 \end{figure}
 
 
-\label{sect:bib}
-\bibliographystyle{plain}
-\bibliography{main}
 
 \end{document}
