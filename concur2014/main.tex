@@ -1230,10 +1230,8 @@ Translation of session types from \gvpi to \mucp.
 \inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},x:T,c:G(X)}{M}{\outterm}}
           {\gvtyp{}{\gvfix{p}{x\,c}{M}}{\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}}
 \right\rrbracket z = \\
-\qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\link{p}{z}} \\
-%%\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{ci}{}{\tocp{init}^\star}{\tocp{M^\dagger}^\star}}{\tocp{N}z}
-\qquad \qquad \text{where }
-P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
+\replicate{z}{y}.y(x).y(c).y(). \\
+\quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
 \el
 \]
 %
