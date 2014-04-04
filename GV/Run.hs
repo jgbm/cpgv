@@ -116,9 +116,10 @@ runPure env e = runPure' env e where
   runPure' env (Let (BindPair x1 x2) e e') =
     do (VPair v1 v2) <- rp e
        runPure (extend (extend env (x1, v1)) (x2, v2)) e'
-  runPure' env (LetRec _ f ps c m n) = runPure env' n
+  runPure' env (LetRec (b,s) f ps c m n) = runPure env' n
     where (v:vs) = map fst ps ++ [c]
-          lamExp = foldr (\v m -> UnlLam v undefined m) m vs
+          ts     = tail (map snd ps) ++ [Lift (Nu b s)]
+          lamExp = foldr (\(v,t) m -> UnlLam v t m) m (zip vs ts)
           fun = VClosure v lamExp env'
           env' = extend env (f, fun)
   runPure' env (Corec{}) = -- TODO: not sure how to execute Corec yet.

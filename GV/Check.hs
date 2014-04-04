@@ -129,8 +129,8 @@ check te = addErrorContext ("Checking \n" ++ unlines (map ("    " ++) (lines (sh
                        | duals s s' -> return (Lift OutTerm)
                        | otherwise -> fail ("    Sessions in link are not dual: " ++ show (pretty s) ++ " and " ++ show (pretty s'))
                    _ -> fail ("    Non-session arguments to link: " ++ show (pretty t) ++ " and " ++ show (pretty t'))
-              where duals (Mu x s) (Nu y s') = duals s (instSession y (SVar x) s')
-                    duals (Nu y s) (Mu x s') = duals s (instSession y (SVar x) s')
+              where duals (Mu x s) (Nu y s') = duals s (instSession y (Neg x) s')
+                    duals (Nu y s) (Mu x s') = duals s (instSession y (Neg x) s')
                     duals (Mu x s) s'        = duals (instSession x (Mu x s) s) s'
                     duals s (Mu x s')        = duals s (instSession x (Mu x s') s')
                     duals s s'               = s == dual s'
