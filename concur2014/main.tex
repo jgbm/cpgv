@@ -113,8 +113,8 @@ recursive session types, while preserving the significant results of the existin
   infinite streams~\secref{mucp-examples}.
 \item Finally, we show that programs in \mugv correspond to proofs in \mucp, in two stages.  First,
   we show a translation of the functional features of \mugv into its process oriented
-  features~\secref{gvtogvpi}; we call the resulting restricted language \mugvpi.  Second, we show
-  that programs in \mugvpi can be translated to terms of \mucp~\secref{gvpitocp}.
+  features~\secref{gvtogvpi}; we call the resulting restricted language \gvpi.  Second, we show
+  that programs in \gvpi can be translated to terms of \mucp~\secref{gvpitocp}.
 \end{itemize}
 We conclude with a survey of related~\secref{related} and future~\secref{future} work.
 
@@ -1227,11 +1227,10 @@ Translation of session types from \gvpi to \mucp.
 \[
 \bl
 \left\llbracket
-\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X)}{M}{\outterm} \\
-           \gvtyp{\Phi,p:\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}{N}{U}}
-          {\gvtyp{\Phi}{\gvletrec{p}{x\,c}{M}{N}}{U}}
+\inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},x:T,c:G(X)}{M}{\outterm}}
+          {\gvtyp{}{\gvfix{p}{x\,c}{M}}{\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}}
 \right\rrbracket z = \\
-\qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\tocp{N}z} \\
+\qquad \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{w}{}{w[x].w[].0}{P}}{\link{p}{z}} \\
 %%\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().\corec{c}{ci}{}{\tocp{init}^\star}{\tocp{M^\dagger}^\star}}{\tocp{N}z}
 \qquad \qquad \text{where }
 P = \cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w} \\
