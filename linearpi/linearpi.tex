@@ -1,0 +1,4871 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% TODO:
+
+% Change example of par to a separate section on Mix rule.
+% Put this section before exponentials.
+% Begin: "We now divert from consideration of the connectives of
+% linear logic, to introduce an optional construct of general
+% interest, that will prove useful for an example in the next section."
+% Include rules for reduction inside Mix, to justify reductions in example.
+% Augment theorems to that they also apply in presence of Mix.
+
+% Perhaps also explain:
+% Linear logic leads to a highly 'sequential' concurrent language without Mix.
+% C & P's alternative to Mix is quite surprising.  (Odd unit rules.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{jfp1}
+\usepackage[round]{natbib}
+\usepackage{stmaryrd}
+\usepackage{proof}
+%\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+%\usepackage{mathpartir}
+%\usepackage{prooftree}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% IMPORTANT!
+
+% To typeset this paper for color, use the first definition below.
+% To typeset this paper for black and white, use the second definition.
+
+\newcommand{\incolor}[1]{#1}    % Use to typeset in color
+%\newcommand{\incolor}[1]{}     % Use to typeset in black and white
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% color framework
+
+\newcommand{\judgecolor}{}
+\newcommand{\typecolor}{}
+\newcommand{\termcolor}{}
+\newcommand{\Typecolor}{}
+\newcommand{\Termcolor}{}
+
+\newcommand{\uncolored}{
+  \incolor{
+    \renewcommand{\judgecolor}{}
+    \renewcommand{\typecolor}{}
+    \renewcommand{\termcolor}{}
+    \renewcommand{\Typecolor}{}
+    \renewcommand{\Termcolor}{}
+  }
+}
+
+\newcommand{\colored}{
+  \incolor{
+    \renewcommand{\judgecolor}{\color{black}}
+    \renewcommand{\typecolor}{\color{blue}}
+    \renewcommand{\termcolor}{\color{red}}
+    \renewcommand{\Typecolor}{\color{cyan}}
+    \renewcommand{\Termcolor}{\color{magenta}}
+  }
+}
+
+\newcommand{\jd}[1]{{\judgecolor #1}}
+\newcommand{\tp}[1]{{\typecolor #1}}
+\newcommand{\tm}[1]{{\termcolor #1}}
+\newcommand{\Tp}[1]{{\Typecolor #1}}
+\newcommand{\Tm}[1]{{\Termcolor #1}}
+
+\newcommand{\tmof}[1]{\tm{#1:{}}}
+\newcommand{\Tmof}[1]{\Tm{#1:{}}}
+\newcommand{\tmsem}[1]{\tm{\sem{\Tm{#1}}}}
+\newcommand{\tpsem}[1]{\tp{\sem{\Tp{#1}}}}
+\newcommand{\tmSem}[1]{{\termcolor \left\llbracket
+                        \judgecolor #1
+                        \termcolor \right\rrbracket}}
+
+\newcommand{\bvdash}{\tp{{} \vdash {}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newenvironment{note}{\begin{trivlist} \item \textbf{Note. }}{\end{trivlist}}
+
+\newcommand{\todo}[1]{\textbf{#1}}
+\newcommand{\etal}{\emph{et~al.}}
+
+\newcommand{\dual}[1]{#1^\bot}
+\newcommand{\of}[1]{\,{:}\,{#1}}
+% \newcommand{\Of}[1]{\of{#1}}
+\newcommand{\Of}[1]{}
+% \newcommand{\OF}[1]{\of{#1}}
+\newcommand{\OF}[1]{}
+\newcommand{\all}[1]{\forall #1.}
+\newcommand{\any}[1]{\exists #1.}
+\newcommand{\with}{\mathbin{\binampersand}}
+\newcommand{\parr}{\mathbin{\bindnasrepma}}
+\newcommand{\lolli}{\multimap}
+\newcommand{\link}{{\leftrightarrow}}
+\newcommand{\semi}{;\;}
+\newcommand{\comma}{,\,}
+\newcommand{\inl}{\key{inl}}
+\newcommand{\inr}{\key{inr}}
+\newcommand{\case}{\key{case}}
+\newcommand{\Ax}{\key{Ax}}
+\newcommand{\Cut}{\key{Cut}}
+\newcommand{\Weaken}{\key{Weaken}}
+\newcommand{\Contract}{\key{Contract}}
+\newcommand{\Swap}{\key{Swap}}
+\newcommand{\Assoc}{\key{Assoc}}
+\newcommand{\End}{\key{end}}
+\newcommand{\defeq}{\stackrel{\mathrm{def}}{=}}
+\newcommand{\app}{\:}
+\newcommand{\lam}[1]{\lambda #1.\,}
+\newcommand{\Lam}[1]{\Lambda #1.\,}
+\newcommand{\lin}{\key{lin}}
+\newcommand{\un}{\key{un}}
+\newcommand{\fn}{\key{fn}}
+\newcommand{\fv}{\key{fv}}
+\newcommand{\key}{\textsf}
+%\newcommand{\key}{\textrm}
+\newcommand{\becomes}{\Longrightarrow}
+\newcommand{\sem}[1]{\llbracket #1 \rrbracket}
+\newcommand{\Sem}[1]{\left\llbracket #1 \right\rrbracket}
+% \newcommand{\sem}[1]{{#1^\dagger}}
+% \newcommand{\Sem}[1]{{\left(#1\right)^\dagger}}
+% \newcommand{\sem}[1]{[\![#1]\!]}
+% \newcommand{\Sem}[1]{\left[\!\!\left[#1\right]\!\!\right]}
+\newcommand{\ang}[1]{\langle #1 \rangle}
+\newcommand{\set}[1]{\{ #1 \}}
+\newcommand{\sub}{\set}
+\newcommand{\intro}{\textsf{-I}}
+\newcommand{\elim}{\textsf{-E}}
+\newcommand{\outp}[1]{{!#1}.}
+\newcommand{\inp}[1]{{?#1}.}
+\newcommand{\outend}{\key{end}_{!}}
+\newcommand{\inend}{\key{end}_{?}}
+\newcommand{\inference}[3]{\infer[\mathsf{#2}]{#3}{#1}}
+\newcommand{\Inference}[3]{\infer=[\mathsf{#2}]{#3}{#1}}
+\newcommand{\spacer}{\quad\quad\quad\quad}
+\newcommand{\filler}{\hspace{0.9\textwidth}}
+\newcommand{\tighten}{\vspace{-1ex}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+
+%\newcommand{\infer}[2]{\prooftree #1 \justifies #2 \endprooftree}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\figcll}{
+
+\begin{figure*}
+\[\colored
+\begin{array}{c}
+
+\inference{
+}{Ax}{
+  \tm{w \link x} \bvdash \tp{\tmof{w} \dual{A} \comma \tmof{x} A}
+}
+
+\quad\quad
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+  &
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}\dual{A}}
+}{Cut}{
+  \tm{\nu x \of{A}.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta}
+}
+
+\\~\\
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{y}A}  &
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}B}
+}{\otimes}{
+  \tm{x[y].(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta \comma \tmof{x}A \otimes B}
+}
+
+\quad\quad
+
+\inference{
+  \tm{R} \bvdash \tp{\Theta \comma \tmof{y}A \comma \tmof{x}B}
+}{\parr}{
+  \tm{x(y).R} \bvdash \tp{\Theta \comma \tmof{x}A \parr B}
+}
+
+\\~\\
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+}{\oplus_1}{
+  \tm{x[\inl].P} \bvdash \tp{\Gamma \comma \tmof{x}A \oplus B}
+}
+
+\quad\quad
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}B}
+}{\oplus_2}{
+  \tm{x[\inr].P} \bvdash \tp{\Gamma \comma \tmof{x}A \oplus B}
+}
+
+\quad\quad
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}A}  &
+  \tm{R} \bvdash \tp{\Delta \comma \tmof{x}B}
+}{\with}{
+  \tm{x.\case(Q,R)} \bvdash \tp{\Delta \comma \tmof{x}A \with B}
+}
+
+\\~\\
+
+\inference{
+  \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+}{!}{
+  \tm{!x(y).P} \bvdash \tp{{?\Gamma} \comma \tmof{x}{!A}}
+}
+
+\quad\quad
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{y}A}
+}{?}{
+  \tm{?x[y].Q} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+
+\\~\\
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta}
+}{Weaken}{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+
+\quad\quad
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?A} \comma \tmof{x'}{?A}}
+}{Contract}{
+  \tm{Q\sub{x/x'}} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+
+\\~\\
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}B\sub{A/X}}
+}{\exists}{
+  \tm{x[A].P} \bvdash \tp{\Gamma \comma \tmof{x}\any{X}B}
+}
+
+\quad\quad
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}B}
+}{\forall~~\textrm{($X \not\in \fv(\Delta)$)}}{
+  \tm{x(X).Q} \bvdash \tp{\Delta \comma \tmof{x}\all{X}B}
+}
+
+\\~\\
+
+\inference{}{1}{
+  \tm{x[\,].0} \bvdash \tp{\tmof{x}1}
+}
+
+\quad\quad
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma}
+}{\bot}{
+  \tm{x().P} \bvdash \tp{\Gamma \comma \tmof{x}\bot}
+}
+
+\quad\quad
+
+\textrm{(no rule for $0$)}
+
+\quad\quad
+
+\inference{}{\top}{
+  \tm{x.\case()} \bvdash \tp{\Gamma \comma \tmof{x}\top}
+}
+
+\end{array}
+\]
+\caption{CP, classical linear logic as a session-typed process calculus}
+\label{fig:cll}
+\end{figure*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figstructural}{
+
+\begin{figure*}
+\[\colored
+\begin{array}{c}
+\multicolumn{1}{l}{(\Swap)}\filler \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+    &
+    \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}\dual{A}}
+  }{Cut}{
+    \tm{\nu x \of{A}.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta}
+  }
+}
+\quad \equiv \quad
+\vcenter{
+  \inference{
+    \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}\dual{A}}
+    &
+    \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+  }{Cut}{
+    \tm{\nu x \of{A^\bot}.(Q \mid P)} \bvdash \tp{\Gamma \comma \Delta}
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\Assoc)} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+      &
+      \tm{Q} \bvdash \Delta \comma \tp{\tmof{x}A^\bot \comma \tmof{y}B}
+    }{Cut}{
+      \tm{\nu x \Of{A}.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta \comma \tmof{y}B}
+    }
+    &
+    \tm{R} \bvdash \tp{\Theta \comma \tmof{y}B^\bot}
+  }{Cut}{
+    \tm{\nu y \Of{B}.(\nu x \Of{A}.(P \mid Q) \mid R)} \bvdash 
+      \tp{\Gamma \comma \Delta \comma \Theta}
+  }
+}
+\quad \equiv \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+    &
+    \inference{
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}A^\bot \comma \tmof{y}B}
+      &
+      \tm{R} \bvdash \tp{\Theta \comma \tmof{y}B^\bot}
+    }{Cut}{
+      \tm{\nu y \Of{B}.(Q \mid R)} \bvdash \tp{\Delta \comma \Theta \comma \tmof{x}A^\bot}
+    }
+  }{Cut}{
+    \tm{\nu x \Of{A}.(P \mid \nu y \Of{B}.(Q \mid R))} \bvdash
+      \tp{\Gamma \comma \Delta \comma \Theta}
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\Ax\Cut)} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+    }{Ax}{
+      \tm{w \link x} \bvdash \tp{\tmof{w}A^\bot \comma \tmof{x}A}
+    }
+    &
+    \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A^\bot}
+  }{Cut}{
+   \tm{\nu x \Of{A}.(w \link x \mid P)} \bvdash \tp{\Gamma \comma \tmof{w}A^\bot}
+ }
+}
+\quad \becomes \quad
+\tm{P\sub{w/x}} \bvdash  \tp{\Gamma \comma \tmof{w}A^\bot}
+
+\end{array}
+\]
+\caption{Structural cut equivalences and reduction for CP}
+\label{fig:structural}
+\end{figure*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figprincipal}{
+
+\begin{figure*}
+\[\colored
+\begin{array}{c}
+\multicolumn{1}{l}{(\beta_{\otimes\parr})}\filler \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{\Gamma \comma \tmof{y}A}
+      &
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}B}
+    }{\otimes}{
+      \tm{x[y].(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta \comma \tmof{x}A \otimes B}
+    } 
+    &
+    \inference{
+      \tm{R} \bvdash \tp{\Theta \comma \tmof{y}\dual{A} \comma \tmof{x}\dual{B}}
+    }{\parr}{
+      \tm{x(y).R} \bvdash \tp{\Theta \comma \tmof{x}\dual{A} \parr \dual{B}}
+    } 
+  }{Cut}{
+    \tm{\nu x\Of{A \otimes B}.(x[y].(P \mid Q) \mid x(y).R)} \bvdash
+       \tp{\Gamma \comma \Delta \comma \Theta}
+  }
+}  \quad \becomes \hfill
+\\
+\hfill
+\vcenter{
+  \inference{
+      \tm{P} \bvdash \tp{\Gamma \comma \tmof{y}A}
+      &
+      \inference{
+        \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}B}
+        &
+        \tm{R} \bvdash \tp{\Theta \comma \tmof{y}\dual{A} \comma \tmof{x}\dual{B}}
+      }{Cut}{
+        \tm{\nu x \Of{B}.(Q \mid R)} \bvdash
+          \tp{\Delta \comma \Theta \comma \tmof{y}\dual{A}}
+      }
+    }{Cut}{
+      \tm{\nu y \Of{A}.(P \mid \nu x.(Q \mid R))} \bvdash
+         \tp{\Gamma \comma \Delta \comma \Theta}
+    }
+  }
+\\
+\multicolumn{1}{l}{(\beta_{\oplus\with})} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+    }{\oplus_1}{
+      \tm{x[\inl].P} \bvdash \tp{\Gamma \comma \tmof{x}A \oplus B}
+    } 
+    &
+    \inference{
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}\dual{A}}
+      &
+      \tm{R} \bvdash \tp{\Delta \comma \tmof{x}\dual{B}}
+    }{\with}{
+      \tm{x.\case(Q,R)} \bvdash \tp{\Delta \comma \tmof{x}\dual{A} \with \dual{B}}
+    } 
+  }{Cut}{
+    \tm{\nu x \Of{A \oplus B}.(x[\inl].P \mid x.\case(Q,R))}
+      \bvdash \tp{\Gamma \comma \Delta}
+  }
+}
+\quad \becomes \hfill
+\\
+\hfill
+\vcenter{
+  \inference{
+    \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+    &
+    \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}\dual{A}}
+  }{Cut}{
+    \tm{\nu x \Of{A}.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta}
+  }
+}
+\\
+\multicolumn{1}{l}{(\beta_{!?})} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+    }{!}{
+      \tm{!x(y).P} \bvdash \tp{{?\Gamma} \comma \tmof{x}{!A}}
+    }
+    &
+    \inference{
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{y}\dual{A}}
+    }{?}{
+      \tm{?x[y].Q} \bvdash \tp{\Delta \comma \tmof{x}{?\dual{A}}}
+    }
+  }{Cut}{
+    \tm{\nu x \Of{!A}.(!x(y).P \mid {?x[y].Q})} \bvdash \tp{{?\Gamma} \comma \Delta}
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{
+    \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+    &
+    \tm{Q} \bvdash \tp{\Delta \comma \tmof{y}\dual{A}}
+  }{Cut}{
+    \tm{\nu y\Of{A}.(P \mid Q)} \bvdash \tp{{?\Gamma} \comma \Delta}
+  }
+}
+\\~\\
+\multicolumn{1}{l}{(\beta_{!W})} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+    }{!}{
+      \tm{!x(y).P} \bvdash \tp{{?\Gamma} \comma \tmof{x}{!A}}
+    }
+    &
+    \inference{
+      \tm{Q} \bvdash \tp{\Delta}
+    }{Weaken}{
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?\dual{A}}}
+    }
+  }{Cut}{
+    \tm{\nu x\Of{!A}.(!x(y).P \mid Q)} \bvdash \tp{{?\Gamma} \comma \Delta}
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \Inference{
+    \tm{Q} \bvdash \tp{\Delta}
+  }{Weaken}{
+    \tm{Q} \bvdash \tp{{?\Gamma} \comma \Delta}
+  }
+}
+\\~\\
+\multicolumn{1}{l}{(\beta_{!C})} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+    }{!}{
+      \tm{!x(y).P} \bvdash \tp{{?\Gamma} \comma \tmof{x}{!A}}
+    }
+    &
+    \inference{
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?A} \comma \tmof{x'}{?A}}
+    }{Contract}{
+      \tm{Q\sub{x/x'}} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+    }
+  }{Cut}{
+    \tm{\nu x\Of{!A}.(!x(y).P \mid Q\sub{x/x'})} \bvdash
+      \tp{{?\Gamma} \comma \Delta}
+  }
+} \quad \becomes \hfill
+\\
+\hfill
+\vcenter{
+  \Inference{
+    \inference{
+      \inference{
+        \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+      }{!}{
+        \tm{!x(y).P} \bvdash \tp{{?\Gamma} \comma \tmof{x}{!A}}
+      }
+      &
+      \inference{
+        \inference{
+          \tm{P'} \bvdash \tp{{?\Gamma'} \comma \tmof{y'}A}
+        }{!}{
+          \tm{!x'(y').P'} \bvdash \tp{{?\Gamma'} \comma \tmof{x'}{!A}}
+        }
+        &
+        \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?\dual{A}}
+                                  \comma \tmof{x'}{?\dual{A}}}
+      }{Cut}{
+        \tm{\nu x'\Of{!A}.(!x'(y').P' \mid Q)}
+          \bvdash \tp{{?\Gamma'} \comma \Delta \comma \tmof{x}{?\dual{A}}}
+      }
+    }{Cut}{
+      \tm{\nu x\Of{!A}.(!x(y).P \mid \nu x'\Of{!A}.(!x'(y').P' \mid Q))}
+        \bvdash \tp{{?\Gamma} \comma {?\Gamma'} \comma \Delta}
+    }
+  }{Contract}{
+    \tm{\nu x\Of{!A}.(!x(y).P \mid \nu x'\Of{!A}.(!x'(y).P \mid Q))}
+      \bvdash \tp{{?\Gamma} \comma \Delta}
+  }
+}
+\\
+\multicolumn{1}{l}{(\beta_{\exists\forall})} \\ % [-3ex]
+% \spacer
+\vcenter{
+  \inference{
+    \inference{
+      \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}B\sub{A/X}}
+    }{\exists}{
+      \tm{x[A].P} \bvdash \tp{\Gamma \comma \tmof{x}\any{X}B}
+    } 
+    &
+    \inference{
+      \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}\dual{B}}
+    }{\forall}{
+      \tm{x(X).Q} \bvdash \tp{\Delta \comma \tmof{x}\all{X}\dual{B}}
+    } 
+  }{Cut}{
+   \tm{\nu x \Of{\any{X}B}.(x[A].P \mid x(X).Q)} \bvdash \tp{\Gamma \comma \Delta}
+  }
+} \quad \becomes \hfill
+\\
+\hfill
+\vcenter{
+  \inference{
+    \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}B\sub{A/X}}
+    &
+    \tm{Q\sub{A/X}} \bvdash \tp{\Delta \comma \tmof{x}\dual{B}\sub{A/X}}
+  }{Cut}{
+   \tm{\nu x \Of{B\sub{A/X}}.(P \mid Q\sub{A/X})} \bvdash \tp{\Gamma \comma \Delta}
+  }
+}
+\\
+\multicolumn{1}{l}{(\beta_{1\bot})} \\ % [-3ex]
+% \spacer
+\vcenter{\inference{
+  \inference{}{1}{
+    \tm{x[\,].0} \bvdash \tp{\tmof{x}1}
+  }
+  &
+  \inference{
+    \tm{P} \bvdash \tp{\Gamma}
+  }{\bot}{
+    \tm{x().P} \bvdash \tp{\Gamma \comma \tmof{x}\bot}
+  } 
+}{Cut}{
+  \tm{\nu x\Of{1}.(x[\,].0 \mid x().P)} \bvdash \tp{\Gamma}
+}}
+\quad \becomes \quad
+\tm{P} \bvdash \tp{\Gamma}
+\\~\\
+\multicolumn{1}{l}{(\beta_{0\top})} \\% [-3ex]
+% \spacer
+\textrm{(no rule for $0$ with $\top$)}
+\end{array}\]
+\caption{Principal cut reductions for CP}
+\label{fig:principal}
+\end{figure*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figcommute}{
+
+\begin{figure*}
+\[\colored
+\begin{array}{l@{\quad\quad}rcl@{\quad}r}
+(\kappa_{\otimes1}) &
+  \tm{\nu z\Of{C}.(x[y].(P \mid Q) \mid R)} &
+  \becomes &
+  \tm{x[y].(\nu z\Of{C}.(P \mid R) \mid Q)}, &
+  \textrm{if $z \in \fn(P)$}
+\\[1ex]
+(\kappa_{\otimes2}) &
+  \tm{\nu z\Of{C}.(x[y].(P \mid Q) \mid R)} &
+  \becomes &
+  \tm{x[y].(P \mid \nu z\Of{C}.(Q \mid R))}, &
+  \textrm{if $z \in \fn(Q)$}
+\\[1ex]
+(\kappa_{\parr}) &
+  \tm{\nu z\Of{C}.(x(y).P \mid Q)} &
+  \becomes &
+  \tm{x(y).\nu z\Of{C}.(P \mid Q)}
+\\[1ex]
+(\kappa_{\oplus}) &
+  \tm{\nu z\Of{C}.(x[\inl].P \mid Q)} &
+  \becomes &
+  \tm{x[\inl].\nu z\Of{C}.(P \mid Q)}  
+\\[1ex]
+(\kappa_{\with}) &
+  \tm{\nu z\Of{C}.(x.\case(P,Q) \mid R)} &
+  \becomes &
+  \tm{x.\case(\nu z\Of{C}.(P \mid R),\nu z\Of{C}.(Q \mid R))}
+\\[1ex]
+(\kappa_{!}) &
+  \tm{\nu z \Of{?C}.(!x(y).P \mid Q)} &
+  \becomes &
+  \tm{!x(y).\nu z \Of{?C}. (P \mid Q)}
+\\[1ex]
+(\kappa_{?}) &
+  \tm{\nu z \Of{C}.(?x[y].P \mid Q)} &
+  \becomes &
+  \tm{?x[y].\nu z \Of{C}. (P \mid Q)}
+\\[1ex]
+(\kappa_{\exists}) &
+  \tm{\nu z \Of{C}.(x[A].P \mid Q)} &
+  \becomes &
+  \tm{x[A].\nu z \Of{C}.(P \mid Q)}
+\\[1ex]
+(\kappa_{\forall}) &
+  \tm{\nu z \Of{C}.(x(X).P \mid Q)} &
+  \becomes &
+  \tm{x(X).\nu z \Of{C}.(P \mid Q)}
+\\[1ex]
+(\kappa_{\bot}) &
+  \tm{\nu z \Of{C}.(x().P \mid Q)} &
+  \becomes &
+  \tm{x().\nu z \Of{C}.(P \mid Q)}
+\\[1ex]
+(\kappa_0) &
+  & \makebox[0pt][c]{\textrm{(no rule for $0$)}} &
+\\[1ex]
+(\kappa_{\top}) &
+  \tm{\nu z \Of{C}.(x.\case() \mid Q)} &
+  \becomes &
+  \tm{x.\case()}
+\end{array}
+\]
+
+\caption{Commuting conversions for CP}
+\label{fig:commute}
+\end{figure*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figcommutetyped}{
+
+\begin{figure*}
+\[\begin{array}{c}
+\multicolumn{1}{l}{(\kappa_{\otimes1})}\filler \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma y:A \comma z:C
+      &
+      Q \bvdash \Delta \comma x:B
+    }{\otimes}{
+      x[y].(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:A \otimes B \comma z:C
+    }
+    &
+    R \bvdash \Theta \comma z:C^\bot
+  }{Cut}{
+    \nu z\Of{C}.(x[y].(P \mid Q) \mid R) \bvdash
+      \Gamma \comma \Delta \comma \Theta \comma x:A \otimes B
+  }
+}
+\quad \becomes \hfill \\
+\hfill
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma y:A \comma z:C
+      &
+      R \bvdash \Theta \comma z:C^\bot
+    }{Cut}{
+      \nu z\Of{C}.(P \mid R) \bvdash \Gamma \comma \Theta \comma y:A
+    }
+    &
+    Q \bvdash \Delta \comma x:B
+  }{\otimes}{
+    x[y].(\nu z\Of{C}.(P \mid R) \mid Q) \bvdash
+      \Gamma \comma \Delta \comma \Theta \comma x:A \otimes B
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{\otimes2})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma y:A
+      &
+      Q \bvdash \Delta \comma x:B \comma z:C
+    }{\otimes}{
+      x[y].(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:A \otimes B \comma z:C
+    }
+    &
+    R \bvdash \Theta \comma z:C^\bot
+  }{Cut}{
+    \nu z\Of{C}.(x[y].(P \mid Q) \mid R) \bvdash
+      \Gamma \comma \Delta \comma \Theta \comma x:A \otimes B
+  }
+}
+\quad \becomes \hfill \\
+\hfill
+\vcenter{
+  \inference{
+    P \bvdash \Gamma \comma y:A
+    &
+    \inference{
+      Q \bvdash \Delta \comma x:B \comma z:C
+      &
+      R \bvdash \Theta \comma z:C^\bot
+    }{Cut}{
+      \nu z\Of{C}.(Q \mid R) \bvdash \Delta \comma \Theta \comma x:B
+    }
+  }{\otimes}{
+    x[y].(P \mid \nu z\Of{C}.(Q \mid R)) \bvdash
+      \Gamma \comma \Delta \comma \Theta \comma x:A \otimes B
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{\parr})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma y:A \comma x:B \comma z:C
+    }{\parr}{
+      x(y).P \bvdash \Gamma \comma x:A \parr B \comma z:C
+    }
+    &
+    Q \bvdash \Delta \comma z:C^\bot
+  }{Cut}{
+    \nu z\Of{C}.(x(y).P \mid Q) \bvdash \Gamma \comma \Delta \comma x:A \parr B
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma y:A \comma x:B \comma z:C
+      &
+      Q \bvdash \Delta \comma z:C^\bot
+    }{Cut}{
+      \nu z\Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma y:A \comma x:B
+    }
+  }{\parr}{
+    x(y).\nu z\Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma x : A \parr B
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{\with})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma x:A \comma z:C
+      &
+      Q \bvdash \Gamma \comma x:B \comma z:C
+    }{\with}{
+      x.\case(P,Q) \bvdash \Gamma \comma x:A \with B \comma z:C
+    }
+    &
+    R \bvdash \Delta \comma z:C^\bot
+  }{Cut}{
+    \nu z\Of{C}.(x.\case(P,Q) \mid R) \bvdash \Gamma \comma \Delta \comma x:A \with B
+  }
+}
+\quad \becomes \hfill \\
+\hfill
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma x:A \comma z:C
+      &
+      R \bvdash \Delta \comma z:C^\bot
+    }{Cut}{
+      \nu z\Of{C}.(P \mid R) \bvdash \Gamma \comma \Delta \comma x:A
+    }
+    &
+    \inference{ 
+      Q \bvdash \Gamma \comma x:B \comma z:C
+      &
+      R \bvdash \Delta \comma z:C^\bot
+    }{Cut}{
+      \nu z\Of{C}.(Q \mid R) \bvdash \Gamma \comma \Delta \comma x:B
+    }
+  }{\with}{
+    x.\case(\nu z\Of{C}.(P \mid R),\nu z\Of{C}.(Q \mid R)) \bvdash
+      \Gamma \comma \Delta \comma x:A \with B
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{!})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash {?\Gamma} \comma y:A \comma z:{?C}
+    }{!}{
+      !x(y).P \bvdash {?\Gamma} \comma x:{!A} \comma z:{?C}
+    }
+    &
+    Q \bvdash {?\Delta} \comma z:{!C^\bot}
+  }{Cut}{
+   \nu z \Of{?C}.(!x(y).P \mid Q) \bvdash {?\Gamma} \comma {?\Delta} \comma x:{!A}
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash {?\Gamma} \comma y:A \comma z:{?C}
+      &
+      Q \bvdash {?\Delta} \comma z:{!C^\bot}
+    }{Cut}{
+     \nu z \Of{?C}. (P \mid Q) \bvdash {?\Gamma} \comma {?\Delta} \comma y:A
+    }
+  }{!}{
+   !x(y).\nu z \Of{?C}. (P \mid Q) \bvdash {?\Gamma} \comma {?\Delta} \comma x:{!A}
+  }
+}
+
+% \multicolumn{1}{l}{(\kappa_{!})} \\
+% \spacer
+% \vcenter{
+%   \inference{
+%     \inference{
+%       P \bvdash {?\Gamma} \comma x:A
+%     }{!}{
+%       !z(x).P \bvdash {?\Gamma} \comma z:{!A}
+%     }
+%     &
+%     \inference{
+%       Q \bvdash {?\Delta} \comma z:{?A^\bot} \comma y:B
+%     }{!}{
+%       !u(y).Q \bvdash {?\Delta} \comma z:{?A^\bot} \comma u:{!B}
+%     }
+%   }{Cut}{
+%    \nu z.(!z(x).P \mid !u(y).Q) \bvdash {?\Gamma} \comma {?\Delta} \comma u:{!B}
+%   }
+% }
+% \quad \becomes \hfill \\
+% \hfill
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \inference{
+%         P \bvdash {?\Gamma} \comma x:A
+%       }{!}{
+%         !z(x).P \bvdash {?\Gamma} \comma z:{!A}
+%       }
+%       &
+%       Q \bvdash {?\Delta} \comma z:{?A^\bot} \comma y:B      
+%     }{Cut}{
+%      \nu z.(!z(x).P \mid Q) \bvdash {?\Gamma} \comma {?\Delta} \comma y:B
+%     }
+%   }{!}{
+%    !u(y).\nu z.(!z(x).P \mid Q) \bvdash {?\Gamma} \comma {?\Delta} \comma u:{!B}
+%   }
+% }
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{\exists})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma x:B\sub{A/X} \comma z:C
+    }{\exists}{
+      x[A].P \bvdash \Gamma \comma x:\any{X}B \comma z:C
+    }
+    &
+    Q \bvdash \Delta \comma z:C^\bot
+  }{Cut}{
+    \nu z \Of{C}.(x[A].P \mid Q) \bvdash \Gamma \comma \Delta \comma x:\any{X}B
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma x:B\sub{A/X} \comma z:C
+      &
+      Q \bvdash \Delta \comma z:C^\bot
+    }{Cut}{
+      \nu z \Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:B\sub{A/X}
+    }
+  }{\exists}{
+    x[A].\nu z \Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:\any{X}B
+  }
+}
+
+\\~\\
+\multicolumn{1}{l}{(\kappa_{\forall})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma x:B \comma z:C
+    }{\forall}{
+      x(X).P \bvdash \Gamma \comma x:\all{X}B \comma z:C
+    }
+    &
+    Q \bvdash \Delta \comma z:C^\bot
+  }{Cut}{
+    \nu z \Of{C}.(x(X).P \mid Q) \bvdash \Gamma \comma \Delta \comma x:\all{X}B
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma x:B \comma z:C
+      &
+      Q \bvdash \Delta \comma z:C^\bot
+    }{Cut}{
+      \nu z \Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:B
+    }
+  }{\forall}{
+    x(X).\nu z \Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:\all{X}B
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{\bot})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma z:C
+    }{\bot}{
+      x().P \bvdash \Gamma \comma x:\bot \comma z:C
+    }
+    &
+    Q \bvdash \Delta \comma z:C^\bot
+  }{Cut}{
+    \nu z \Of{C}.(x().P \mid Q) \bvdash \Gamma \comma \Delta \comma x:\bot
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{
+    \inference{
+      P \bvdash \Gamma \comma z:C
+      &
+      Q \bvdash \Delta \comma z:C^\bot
+    }{Cut}{
+      \nu z \Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta      
+    }
+  }{\bot}{
+      x().\nu z \Of{C}.(P \mid Q) \bvdash \Gamma \comma \Delta \comma x:\bot
+  }
+}
+
+\\~\\
+
+\multicolumn{1}{l}{(\kappa_{\top})} \\
+\spacer
+\vcenter{
+  \inference{
+    \inference{}{\top}{
+      x.\case() \bvdash \Gamma \comma x:\top \comma z:C
+    }
+    &
+    Q \bvdash \Delta \comma z:C^\bot
+  }{Cut}{
+    \nu z \Of{C}.(x.\case() \mid Q) \bvdash \Gamma \comma \Delta \comma x:\bot
+  }
+}
+\quad \becomes \quad
+\vcenter{
+  \inference{}{\top}{
+    x.\case() \bvdash \Gamma \comma \Delta \comma x:\top
+  }
+}
+
+\end{array}
+\]
+\caption{Commutative conversions}
+\label{fig:cut-commutative}
+\end{figure*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \newcommand{\figexpansions}{
+
+% \begin{figure*}
+% \[\begin{array}{c}
+% \multicolumn{1}{l}{(\eta_{\parr\otimes})}\filler \\
+% \spacer
+% \vcenter{
+%   \inference{}{Ax}{
+%     w \link x \bvdash w : A^\bot \parr B^\bot \comma x : A \otimes B
+%   }
+% } \quad \becomes \quad
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \inference{}{Ax}{
+%          y \link z \bvdash y : A^\bot \comma z : A
+%       } &
+%       \inference{}{Ax}{
+%          w \link x \bvdash w : B^\bot \comma x : B
+%       }
+%     }{\otimes}{
+%      x[z].(y \link z \mid w \link x) \bvdash
+%        y : A^\bot \comma w : B^\bot \comma x : A \otimes B
+%     }
+%   }{\parr}{
+%     w(y).x[z].(y \link z \mid w \link x) \bvdash   
+%        w : A^\bot \parr B^\bot \comma x : A \otimes B
+%   }
+% }
+% \\~\\
+% \multicolumn{1}{l}{(\eta_{\with\oplus})} \\
+% \spacer
+% \vcenter{
+%   \inference{}{Ax}{
+%     w \link x \bvdash w : A^\bot \with B^\bot \comma x : A \oplus B
+%   }
+% } \quad \becomes \hfill
+% \\ \hfill
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \inference{}{Ax}{
+%         w \link x \bvdash w : A^\bot \comma x : A
+%       }
+%     }{\oplus_1}{
+%      x[\inl].w \link x \bvdash w : A^\bot \comma x : A \oplus B
+%     } &
+%     \inference{
+%       \inference{}{Ax}{
+%         w \link x \bvdash w : B^\bot \comma x : B
+%       }
+%     }{\oplus_2}{
+%      x[\inr].w \link x \bvdash w : B^\bot \comma x : A \oplus B
+%     }
+%   }{\with}{
+%     w.\case(x[\inl].w \link x \comma x[\inr].w \link x) \bvdash
+%       w : A^\bot \with B^\bot \comma x : A \oplus B
+%   }
+% }
+% \\~\\
+% \multicolumn{1}{l}{(\eta_{?!})} \\
+% \spacer
+% \vcenter{
+%   \inference{}{Ax}{
+%     w \link x \bvdash w : {?A^\bot} \comma x : {!A}
+%   }
+% } \quad \becomes \quad
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \inference{}{Ax}{
+%         y \link z \bvdash y : A^\bot \comma z : A
+%       }
+%     }{?}{
+%        ?w[y].y \link z \bvdash w : {?A^\bot} \comma z : A
+%     }
+%   }{!}{
+%      !x(z).?w[y].y \link z \bvdash w : {?A^\bot} \comma x : {!A}
+%   }
+% }
+% \\~\\
+% \multicolumn{1}{l}{(\eta_{\forall\exists})} \\
+% \spacer
+% \vcenter{
+%   \inference{}{Ax}{
+%     w \link x \bvdash w : {\all{X}B^\bot} \comma x : {\any{X}B}
+%   }
+% } \quad \becomes \quad
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \inference{}{Ax}{
+%         w \link x \bvdash w : B^\bot \comma x : B
+%       }
+%     }{\exists}{
+%        w[X].w \link x \bvdash w : B^\bot \comma x : \any{X}B
+%     }
+%   }{\forall}{
+%     x(X).w[X].w \link x \bvdash w : \all{X}B^\bot \comma x : \any{X}B
+%   }
+% }
+% \\~\\
+% \multicolumn{1}{l}{(\eta_{\bot1})} \\
+% \spacer
+% \vcenter{
+%   \inference{}{Ax}{
+%     w \link x \bvdash w : \bot \comma x : 1
+%   }
+% } \quad \becomes \quad
+% \vcenter{
+%   \inference{
+%     \inference{}{1}{
+%        x[\,].0 \bvdash x : 1
+%     }
+%   }{\bot}{
+%     w().x[\,].0 \bvdash w : \bot \comma x : 1
+%   }
+% }
+% \\~\\
+% \multicolumn{1}{l}{(\eta_{\top0})} \\
+% \spacer
+% \vcenter{
+%   \inference{}{Ax}{
+%     w \link x \bvdash w : \top \comma x : 0
+%   }
+% } \quad \becomes \quad
+% \vcenter{
+%   \inference{}{\top}{
+%     w.\case() \bvdash w : \top \comma x : 0
+%   }
+% }
+
+% \end{array}\]
+
+% \caption{Expansions}
+% \label{fig:expansions}
+% \end{figure*}
+
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figgv}{
+
+\begin{figure*}
+% \noindent \textbf{Session Types}
+% \[\begin{array}{lcl}
+% S &::=&
+%   \outp{T}S \mid \inp{T}S \mid
+%   \oplus \set{l_i:S_i}_{i \in I} \mid
+%   \with \set{l_i:S_i}_{i \in I} \mid
+%   \outend \mid \inend
+% \end{array}\]
+
+% \textbf{Types}
+% \[\begin{array}{lcl}
+% T,U,V &::=&
+%   S \mid 
+%   T \otimes U \mid
+%   T \lolli U \mid
+%   T \to U \mid
+%   \key{Unit}
+% \end{array}\]
+
+% \textbf{Type classification}
+% \[\begin{array}{c}
+% \lin(S) \quad\quad \lin(T \otimes U) \quad\quad \lin(T \lolli U) \\
+% \un(T \to U) \quad\quad \un(\key{Unit})
+% \end{array}\]
+
+% \textbf{Duals}
+% \[\begin{array}{rcl@{\quad\quad}rcl}
+% \overline{\outp{T}S}
+%   &=&  \inp{T}\overline{S}  &
+% \overline{\inp{T.S}}
+%   &=&  \outp{T}\overline{S}    \\
+% \overline{\oplus (l_i : S_i)_{i \in I}}
+%   &=&  \with (l_i : \overline{S}_i)_{i \in I}  &
+% \overline{\with (l_i : S_i)_{i \in I}}
+%   &=&  \oplus (l_i : \overline{S}_i)_{i \in I}  \\
+% \overline{\outend}
+%   &=&  \inend  &
+% \overline{\inend}
+%   &=&  \outend
+% \end{array}\]
+
+% \textbf{Terms}
+% \[\begin{array}{lcl}
+% L,M,N &::=&
+%   x \mid \key{unit} \mid
+%   \lam{x}N \mid L \app M \mid
+%   (M,N) \mid \key{let}~(x,y) = M~\key{in}~N \mid
+%   \key{send}~M~N \mid \key{receive}~M \mid
+% \\ &&
+%   \key{select}~l~M \mid \key{case}~M~\key{of}~\set{l_i : x.N_i}_{i \in I} \mid
+%   \key{with}~ x ~\key{connect}~M~\key{to}~N \mid
+%   \key{terminate}~M \mid
+
+% \end{array}\]
+
+% \textbf{Type rules} ($\Phi \bvdash M : T$)
+\[\colored
+\begin{array}{c}
+
+\inference{}{Id}{
+  \Tp{\Tmof{x}T} \bvdash \Tmof{x}\Tp{T}
+}
+
+\quad\quad
+
+\inference{}{Unit}{
+  \bvdash \Tmof{\key{unit}}\Tp{\key{Unit}}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{N}\Tp{U}  &  \un(T)
+}{Weaken}{
+  \Tp{\Phi \comma \Tmof{x}T} \bvdash \Tmof{N}\Tp{U}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi \comma \Tmof{x}T \comma \Tmof{x'}T} \bvdash \Tmof{N}\Tp{U}  &  \un(T)
+}{Contract}{
+  \Tp{\Phi \comma \Tmof{x}T} \bvdash \Tmof{N\sub{x/x'}}\Tp{U}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi \comma \Tmof{x}T} \bvdash \Tmof{N}\Tp{U}
+}{{\lolli}\intro}{
+  \Tp{\Phi} \bvdash \Tmof{\lam{x}N}\Tp{T \lolli U}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \lolli U} &
+  \Tp{\Psi} \bvdash \Tmof{M} \Tp{T}
+}{{\lolli}\elim}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{L \app M} \Tp{U}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \lolli U} & \un(\Phi)
+}{{\to}\intro}{
+  \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \to U}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \to U}
+}{{\to}\elim}{
+  \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \lolli U}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{T} &
+  \Tp{\Psi} \bvdash \Tmof{N} \Tp{U}
+}{\otimes\intro}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{(M,N)} \Tp{T \otimes U}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{T \otimes U} &
+  \Tp{\Psi \comma \Tmof{x}T \comma \Tmof{y}U} \bvdash \Tmof{N} \Tp{V}
+}{\otimes\elim}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{let}~(x,y) = M~\key{in}~N} \Tp{V}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{T} &
+  \Tp{\Psi} \bvdash \Tmof{N} \Tp{\outp{T}S}
+}{Send}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{send}~M~N} \Tp{S}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{\inp{T}S}
+}{Receive}{
+  \Tp{\Phi} \bvdash \Tmof{\key{receive}~M} \Tp{T \otimes S}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{\oplus \set{l_i : S_i}_{i \in I}}
+}{Select}{
+  \Tp{\Phi} \bvdash \Tmof{\key{select}~l_j~M} \Tp{S_j}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{\with \set{l_i : S_i}_{i \in I}}  &
+  (\Tp{\Psi \comma \Tmof{x}S_i} \bvdash \Tmof{N_i} \Tp{T})_{\Tp{i \in I}}
+}{Case}{
+  \Tp{\Phi \comma \Psi} \bvdash
+    \Tmof{\key{case}~M~\key{of}~\set{ l_i : x . N_i }_{i \in I}} \Tp{T}
+}
+
+\\~\\
+
+\inference{
+  \Tp{\Phi \comma \Tmof{x}S} \bvdash \Tmof{M} \Tp{\key{end}_!} &
+  \Tp{\Psi \comma \Tmof{x}\overline{S}} \bvdash \Tmof{N} \Tp{T}
+}{Connect}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{with}~x~\key{connect}~M~\key{to}~N} \Tp{T}
+}
+
+\quad\quad
+
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{T \otimes \key{end}_?}
+}{Terminate}{
+  \Tp{\Phi} \bvdash \Tmof{\key{terminate}~M} \Tp{T}
+}
+
+\end{array}
+\]
+
+\caption{GV, a session-typed functional language}
+\label{fig:gv}
+
+\end{figure*}
+
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\figtranone}{
+
+\begin{figure*}
+% \noindent \textbf{Translation of session types and types}
+% \[
+% \begin{array}{lcl@{\quad}l}
+% \Sem{\outp{T}S}
+%   &=&  \sem{T}^\bot \parr \sem{S} \\
+% \Sem{\inp{T}S}
+%   &=&  \sem{T} \otimes \sem{S} \\
+% \Sem{\oplus \set{ l_i : S_i }_{i \in I}}
+%   &=&  \sem{S_1} \with \cdots \with \sem{S_n},
+%   &    I = \set{1,\ldots,n}  \\
+% \Sem{\with \set{ l_i : S_i }_{i \in I}}
+%   &=&  \sem{S_1} \oplus \cdots \oplus \sem{S_n},
+%   &    I = \set{1,\ldots,n}  \\
+% \Sem{\outend}
+%   &=&  \bot  \\
+% \Sem{\inend}
+%   &=&  1
+% \end{array}
+% \quad\quad\quad\quad
+% \begin{array}{lcl}
+% \Sem{T \lolli U}
+%   &=&  \sem{T}^\bot \parr \sem{U}  \\
+% \Sem{T \to U}
+%   &=&  !(\sem{T}^\bot \parr \sem{U})  \\
+% \Sem{T \otimes U}
+%   &=&  \sem{T} \otimes \sem{U}  \\
+% \Sem{\key{Unit}}
+%   &=&  !\top
+% \end{array}
+% \]
+
+% \textbf{Translation of terms}
+
+\[\colored
+\begin{array}{c}
+
+\tmSem{
+  \vcenter{
+    \inference{}{Id}{
+      \Tp{\Tmof{x}T} \bvdash \Tmof{x}\Tp{T}
+    }  
+  }
+}\tm{z}
+\quad = \quad 
+\vcenter{
+  \inference{}{Ax}{
+    \tm{x \link z} \bvdash \tp{\tmof{x}\tpsem{T}^\bot \comma \tmof{z}\tpsem{T}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{}{Unit}{
+      \bvdash \Tmof{\key{unit}} \Tp{\key{Unit}}
+    }
+  }
+}\tm{z}
+\quad = \quad
+\vcenter{
+  \inference{
+    \inference{}{\top}{
+      \tm{y.\case()} \bvdash \tp{\tmof{y}\top}
+    }
+  }{!}{
+    \tm{!z(y).y.\case()} \bvdash \tp{\tmof{z}{!\top}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{N}\Tp{U}  &  \un(T)
+    }{Weaken}{
+      \Tp{\Phi \comma \Tmof{x}T} \bvdash \Tmof{N}\Tp{U}
+    }
+  }
+}\tm{z}
+\quad = \quad
+\vcenter{
+  \inference{
+     \tm{\tmsem{N}z} \bvdash \tp{\tpsem{\Phi}^\bot \comma \tmof{z}\tpsem{U}}
+  }{Weaken}{
+     \tm{\tmsem{N}z} \bvdash
+       \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{T}^\bot \comma \tmof{z}\tpsem{U}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi \comma \Tmof{x}T \comma \Tmof{x'}T} \bvdash \Tmof{N}\Tp{U}  &  \un(T)
+    }{Contract}{
+      \Tp{\Phi \comma \Tmof{x}T} \bvdash \Tmof{N\sub{x/x'}}\Tp{U}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{N}z} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{T}^\bot \comma
+                                   \tmof{x'}\tpsem{T}^\bot \comma \tmof{z}\tpsem{U}}
+  }{Contract}{
+    \tm{\tmsem{N\sub{x/x'}}z} \bvdash
+     \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{T}^\bot \comma \tmof{z}\tpsem{U}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi \comma \Tmof{x}T} \bvdash \Tmof{N}\Tp{U}
+    }{{\lolli}\intro}{
+      \Tp{\Phi} \bvdash \Tmof{\lam{x}N} \Tp{T \lolli U}
+    }  
+  }
+}\tm{z}
+\quad = \quad
+\vcenter{
+  \inference{
+    \tm{\tmsem{N}z} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{T}^\bot \comma \tmof{z}\tpsem{U}}
+  }{\parr}{
+    \tm{z(x).\tmsem{N}z} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{z}\tpsem{T}^\bot \parr \tpsem{U}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \lolli U} &
+      \Tp{\Psi} \bvdash \Tmof{M} \Tp{T}
+    }{{\lolli}\elim}{
+      \Tp{\Phi \comma \Psi} \bvdash \Tmof{L \app M} \Tp{U}
+    } 
+  }
+}\tm{z}
+\quad = \hfill \\
+\hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{L}y} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{y} \tpsem{T}^\bot \parr \tpsem{U}}
+    &
+    \inference{
+      \tm{\tmsem{M}x} \bvdash
+        \tp{\tpsem{\Psi}^\bot \comma \tmof{x} \tpsem{T}}
+      &
+      \inference{}{Ax}{
+        \tm{y \link z} \bvdash
+          \tp{\tmof{y} \tpsem{U}^\bot \comma \tmof{z} \tpsem{U}}
+      }
+    }{\otimes}{
+      \tm{y[x].(\tmsem{M}x \mid y \link z)} \bvdash
+        \tp{\tpsem{\Psi}^\bot \comma
+             \tmof{y} \tpsem{T} \otimes \tpsem{U}^\bot \comma \tmof{z} \tpsem{U}}
+    }
+  }{Cut}{
+    \tm{\nu y.(\tmsem{L}y \mid y[x].(\tmsem{M}x \mid y \link z))} \bvdash
+        \tp{\tpsem{\Phi}^\bot \comma \tpsem{\Psi}^\bot \comma \tmof{z} \tpsem{U}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \lolli U} & \un(\Phi)
+    }{{\to}\intro}{
+      \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \to U}
+    }
+  }
+}\tm{z}
+\quad = \quad
+\vcenter{
+  \inference{
+    \tm{\tmsem{L}y} \bvdash \tp{\tpsem{\Phi}^\bot \comma \tmof{y}\tpsem{T \lolli U}}
+  }{!}{
+    \tm{!z(y).\tmsem{L}y} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{z}{!\tpsem{T \lolli U}}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \to U}
+    }{{\to}\elim}{
+      \Tp{\Phi} \bvdash \Tmof{L} \Tp{T \lolli U}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{L}y} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{y}{!\tpsem{T \lolli U}}}
+    &
+    \inference{
+      \inference{}{Ax}{
+        \tm{x \link z} \bvdash
+          \tp{\Tmof{x}\tpsem{T \lolli U}^\bot \comma \tmof{z}\tpsem{T \lolli U}}
+      }
+    }{?}{
+     \tm{?y[x].x \link z} \bvdash
+       \tp{\tmof{y}{?\tpsem{T \lolli U}^\bot} \comma \tmof{z}\tpsem{T \lolli U}}
+    }
+  }{Cut}{
+    \tm{\nu y.(\tmsem{L}y \mid {?y[x].x \link z})} \bvdash
+       \tp{\tpsem{\Phi}^\bot \comma \tmof{z}\tpsem{T \lolli U}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{T} &
+      \Tp{\Psi} \bvdash \Tmof{N} \Tp{U}
+    }{\otimes\intro}{
+      \Tp{\Phi \comma \Psi} \bvdash \Tmof{(M,N)} \Tp{T \otimes U}
+    }
+  }
+}\tm{z}
+\quad = \quad
+\vcenter{
+  \inference{
+      \tm{\tmsem{M}y} \bvdash \tp{\tpsem{\Phi}^\bot \comma \tmof{y}\tpsem{T}} &
+      \tm{\tmsem{N}z} \bvdash \tp{\tpsem{\Psi}^\bot \comma \tmof{z}\tpsem{U}}
+  }{\otimes}{
+    \tm{z[y].(\tmsem{M}y \mid \tmsem{N}z)} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tpsem{\Psi}^\bot \comma
+           \tmof{z} \tpsem{T} \otimes \tpsem{U}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{T \otimes U} &
+      \Tp{\Psi \comma \Tmof{x}T \comma \Tmof{y}U} \bvdash \Tmof{N} \Tp{V}
+    }{\otimes\elim}{
+      \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{let}~(x,y) = M~\key{in}~N} \Tp{V}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{M}y} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{y} \tpsem{T} \otimes \tpsem{U}}
+    &
+    \inference{
+      \tm{\tmsem{N}z} \bvdash
+        \tp{\tpsem{\Psi}^\bot \comma \tmof{x}\tpsem{T}^\bot
+                               \comma \tmof{y}\tpsem{U}^\bot
+                                \comma \tmof{z}\tpsem{V}}
+    }{\parr}{
+      \tm{y(x).\tmsem{N}z} \bvdash
+        \tp{\tpsem{\Psi}^\bot \comma \tmof{y}\tpsem{T}^\bot \parr \tpsem{U}^\bot
+                               \comma \tmof{z}\tpsem{V}}
+    }
+  }{Cut}{
+    \tm{\nu y.(\tmsem{M}y \mid y(x).\tmsem{N}z)} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tpsem{\Psi}^\bot \comma \tmof{z}\tpsem{V}}
+  }
+}
+
+% \\~\\
+
+% \Sem{
+%   \vcenter{
+%     \inference{
+%       \Phi \bvdash N : U & X \not\in \fv(\Phi)
+%     }{\forall\intro}{
+%       \Phi \bvdash \Lam{X}N : \all{X}U
+%     }
+%   }
+% }z
+% \quad = \quad
+% \vcenter{
+%   \inference{
+%     \sem{N}z \bvdash \sem{\Phi}^\bot \comma z:\sem{U}
+%   }{\forall}{
+%     z(X).\sem{N}z \bvdash \sem{\Phi}^\bot \comma z:\all{X}\sem{U}
+%   }
+% }
+
+% \\~\\
+
+% \Sem{
+%   \vcenter{
+%     \inference{
+%       \Phi \bvdash L : \all{X}U
+%     }{\forall\elim}{
+%       \Phi \bvdash L \app T : U\sub{T/x}
+%     }
+%   }
+% }z
+% \quad = \quad
+% \vcenter{
+%   \inference{
+%     \sem{L}y \bvdash \sem{\Phi}^\bot \comma y:\all{X}\sem{U}
+%     &
+%     \inference{
+%       \inference{}{Ax}{
+%         y \link z \bvdash y:\sem{U}^\bot\sub{\sem{T}/X} \comma
+%                          z:\sem{U}\sub{\sem{T}/X}
+%       }
+%     }{\exists}{
+%       y[\sem{T}].y \link z \bvdash
+%         y:\any{X}{\sem{U}}^\bot \comma z:\sem{U}\sub{\sem{T}/X}
+%     }
+%   }{Cut}{
+%     \nu y\OF{\all{X}\sem{U}}.(\sem{L}y \mid y[\sem{T}].y \link z) \bvdash
+%       \sem{\Phi}^\bot \comma z:\sem{U}\sub{\sem{T}/X}
+%   }
+% }
+
+\end{array}
+\]
+\caption{Translation from GV into CP, Part I}
+\label{fig:tran1}
+\end{figure*}
+
+}
+
+\newcommand{\figtrantwo}{
+
+\begin{figure*}
+% \noindent \textbf{Translation of terms, continued}
+\[\colored
+\begin{array}{c}
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{T} &
+      \Tp{\Psi} \bvdash \Tmof{N} \Tp{\outp{T}S}
+    }{Send}{
+      \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{send}~M~N} \Tp{S}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\
+\hfill
+\vcenter{
+  \inference{
+    \inference{
+      \tm{\tmsem{M}y} \bvdash \tp{\tpsem{\Phi}^\bot \comma \tmof{y}\sem{T}} &
+      \inference{}{Ax}{
+        \tm{x \link z} \bvdash \tp{\tmof{x}\tpsem{S}^\bot \comma \tmof{z}\tpsem{S}}
+      }
+    }{\otimes}{
+      \tm{x[y].(\tmsem{M}y \mid x \link z)} \bvdash
+        \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{T} \otimes \tpsem{S}^\bot
+          \comma \tmof{z}\tpsem{S}}
+    }
+    &
+    \tm{\tmsem{N}x} \bvdash
+      \tp{\tpsem{\Psi}^\bot \comma \tmof{x}\tpsem{T}^\bot \parr \tpsem{S}}
+  }{Cut}{
+   \tm{\nu x.(x[y].(\tmsem{M}y \mid x \link z) \mid \tmsem{N}x)} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tpsem{\Psi}^\bot \comma \tmof{z}\tpsem{S}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{\inp{T}S}
+    }{Receive}{
+      \Tp{\Phi} \bvdash \Tmof{\key{receive}~M} \Tp{T \otimes S}
+    }
+  }
+}\tm{z}
+\quad = \quad
+\tm{\tmsem{M}z} \bvdash \tp{\tpsem{\Phi} \comma \tmof{z} \tpsem{T} \otimes \tpsem{S}}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{\oplus \set{l_i : S_i}_{i \in I}}
+    }{Select}{
+      \Tp{\Phi} \bvdash \Tmof{\key{select}~l_j~M} \Tp{S_j}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{M}x} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{S_1}\with\cdots\with\tpsem{S_n}}
+    &
+    \inference{
+      \inference{}{Ax}{
+        \tm{x \link z} \bvdash \tp{\tmof{x}\tpsem{S_j}^\bot \comma \tmof{z}\tpsem{S_j}}
+      }
+    }{\oplus_i}{
+     \tm{x[\mathrm{in}_j].x \link z} \bvdash
+       \tp{\tmof{x}\tpsem{S_1}^\bot\oplus\cdots\oplus\tpsem{S_n}^\bot \comma
+            \tmof{z}\tpsem{S_j}}
+    }
+  }{Cut}{
+    \tm{\nu x.(\tmsem{M}x \mid x[\mathrm{in}_j].x \link z)} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{z}\tpsem{S_j}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{\with \set{l_i : S_i}_{i \in I}}  &
+      (\Tp{\Psi \comma \Tmof{x}S_i} \bvdash \Tmof{N_i} \Tp{T})_{\Tp{i \in I}}
+    }{Case}{
+      \Tp{\Phi \comma \Psi} \bvdash
+        \Tmof{\key{case}~M~\key{of}~\set{ l_i : x . N_i }_{i \in I}} \Tp{T}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{M}x} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tmsem{S_1}\oplus\cdots\oplus\tmsem{S_n}}
+    &
+    \inference{
+      (\tm{\tmsem{N_i}z} \bvdash
+        \tp{\tpsem{\Psi}^\bot \comma \tmof{x}\tpsem{S_i}^\bot
+                               \comma \tmof{z}\tpsem{T}})_{i \in I}
+    }{\with}{
+      \tm{x.\case(\tmsem{N_1},\ldots,\tmsem{N_n})} \bvdash
+        \tp{\tmof{x}\tpsem{S_1}\with\cdots\with\tpsem{S_n} \comma \tmof{z}\tpsem{T}}
+    }
+  }{Cut}{
+   \tm{\nu x.(\tmsem{M}x \mid x.\case(\tmsem{N_1},\ldots,\tmsem{N_n}))} \bvdash
+     \tp{\tpsem{\Phi}^\bot \comma \tpsem{\Psi}^\bot \comma \tmof{z}\tpsem{T}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi \comma \Tmof{x}S} \bvdash \Tmof{M} \Tp{\key{end}_!} &
+      \Tp{\Psi \comma \Tmof{x}\overline{S}} \bvdash \Tmof{N} \Tp{T}
+    }{Connect}{
+      \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{with}~x~\key{connect}~M~\key{to}~N} \Tp{T}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \inference{
+      \tm{\tmsem{M}y} \bvdash
+        \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{S}^\bot \comma \tmof{y}\bot}
+      &
+      \inference{}{1}{
+        \tm{y[].0} \bvdash \tp{\tmof{y}1}
+      }
+    }{Cut}{
+      \tm{\nu y.(\tmsem{M}y \mid y[].0)} \bvdash
+        \tp{\tpsem{\Phi}^\bot \comma \tmof{x}\tpsem{S}^\bot}
+    }
+    &
+    \tm{\tmsem{N}z} \bvdash
+      \tp{\tpsem{\Psi}^\bot \comma \tmof{x}\tpsem{S} \comma \tmof{z}\tpsem{T}}
+  }{Cut}{
+    \tm{\nu x.(\nu y.(\tmsem{M}y \mid y[].0) \mid \tmsem{N}z)} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tpsem{\Psi}^\bot \comma \tmof{z}\tpsem{T}}
+  }
+}
+
+\\~\\
+
+\tmSem{
+  \vcenter{
+    \inference{
+      \Tp{\Phi} \bvdash \Tmof{M} \Tp{T \otimes \key{end}_?}
+    }{Terminate}{
+      \Tp{\Phi} \bvdash \Tmof{\key{terminate}~M} \Tp{T}
+    }
+  }
+}\tm{z}
+\quad = \hfill \\ \hfill
+\vcenter{
+  \inference{
+    \tm{\tmsem{M}y} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{y} \tpsem{T} \otimes 1}
+    &
+    \inference{
+      \inference{
+        \inference{}{Ax}{
+          \tm{z \link y} \bvdash
+            \tp{\tmof{z}\tpsem{T} \comma \tmof{y}\tpsem{T}^\bot}
+        }
+      }{\bot}{
+        \tm{x().z \link y} \bvdash
+          \tp{\tmof{z}\tpsem{T} \comma \tmof{y}\tpsem{T}^\bot \comma \tmof{x}\bot}
+      }
+    }{\parr}{
+      \tm{y(x).x().z \link y} \bvdash
+        \tp{\tmof{z}\tpsem{T} \comma \tmof{y}\tpsem{T}^\bot \parr \bot}
+    }
+  }{Cut}{
+    \tm{\nu y.(\tmsem{M}y \mid y(x).x().z \link y)} \bvdash
+      \tp{\tpsem{\Phi}^\bot \comma \tmof{z}\tpsem{T}}
+  }
+}
+
+\end{array}
+\]
+
+\caption{Translation from GV into CP, Part II}
+\label{fig:tran2}
+\end{figure*}
+
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \newcommand{\figcompare}{
+
+% \begin{figure*}
+% \textbf{Bellin and Scott type rules:}
+% \[
+% \begin{array}{c}
+
+% \inference{}{Ax}{
+%   x(z).y\ang{z}.0 \bvdash x:X \comma y:X^\bot
+% }
+
+% \quad\quad
+
+% \inference{
+%   P \bvdash \Gamma \comma x:A &
+%   Q \bvdash \Delta \comma x:A^\bot  
+% }{Cut}{
+%   \nu x.(P \mid Q) \bvdash \Gamma \comma \Delta
+% }
+
+% \\~\\
+
+% \inference{
+%   P \bvdash \Gamma \comma x:A &
+%   Q \bvdash \Delta \comma y:B
+% }{\otimes}{
+%   \nu xy.z\ang{x,y}.(P \mid Q)
+%     \bvdash \Gamma \comma \Delta \comma z : A \otimes B
+% }
+
+% \quad\quad
+
+% \inference{
+%   R \bvdash \Theta \comma x:A \comma y:B
+% }{\parr}{
+%   z(x,y).R \bvdash \Theta \comma z: A \parr B
+% }
+
+% \end{array}
+% \]
+
+% \textbf{Bellin and Scott, reductions.}
+% \[
+% \begin{array}{c}
+% \filler \\[-3ex]
+% \vcenter{
+%   \inference{
+%     \inference{
+%       P \bvdash \Gamma \comma x:A &
+%       Q \bvdash \Delta \comma y:B
+%     }{\otimes}{
+%       \nu xy.z\ang{x,y}.(P \mid Q)
+%         \bvdash \Gamma \comma \Delta \comma z : A \otimes B
+%     }
+%     &
+%     \inference{
+%       R \bvdash \Theta \comma x:A^\bot \comma y:B^\bot
+%     }{\parr}{
+%       z(x,y).R \bvdash \Theta \comma z: A^\bot \parr B^\bot
+%     }
+%   }{Cut}{
+%     \nu z.(\nu xy.z\ang{x,y}.(P \mid Q) \mid z(x,y).R)
+%       \bvdash \Gamma \comma \Delta \comma \Theta
+%   }
+% }
+% \quad \becomes \hfill \\
+% \hfill
+% \vcenter{
+%   \inference{
+%     P \bvdash \Gamma \comma x:A
+%     &
+%     \inference{
+%       Q \bvdash \Delta \comma y:B
+%       &
+%       R \bvdash \Theta \comma x:A^\bot \comma y:B^\bot
+%     }{Cut}{
+%       \nu y.(Q \mid R) \bvdash \Delta \comma \Theta
+%     }
+%   }{Cut}{
+%     \nu x.(P \mid \nu y.(Q \mid R))
+%       \bvdash \Gamma \comma \Delta \comma \Theta
+%   }
+% }
+% \end{array}
+% \]
+
+% \textbf{Caires, Pfenning, and Toninho, type rules.}
+% \[
+% \begin{array}{c}
+
+% \inference{
+%   \Gamma \semi \Delta \bvdash P :: x:A &
+%   \Gamma \semi \Delta' \comma x:A \bvdash Q :: z:C
+% }{Cut}{
+%   \Gamma \semi \Delta \comma \Delta' \bvdash (\nu x)(P \mid Q) :: z:C
+% }
+
+% \\~\\
+
+% \inference{
+%   \Gamma \semi \Delta \bvdash P :: y:A &
+%   \Gamma \semi \Delta' \bvdash Q :: x:B
+% }{\textrm{$\otimes$-R}}{
+%   \Gamma \semi \Delta \comma \Delta' \bvdash (\nu y)x\ang{y}.(P \mid Q) :: x : A \otimes B
+% }
+
+% \quad\quad
+
+% \inference{
+%   \Gamma \semi \Delta \comma y:A \comma x:B \bvdash R :: z:C
+% }{\textrm{$\otimes$-L}}{
+%   \Gamma \semi \Delta \comma x:A \otimes B \bvdash x(y).R :: z:C
+% }
+
+% \\~\\
+
+% \inference{
+%   \Gamma \semi \Delta \comma y:A \bvdash R :: x:B
+% }{\textrm{$\lolli$-R}}{
+%   \Gamma \semi \Delta \bvdash x(y).R :: x : A \lolli B
+% }
+
+% \quad\quad
+
+% \inference{
+%   \Gamma \semi \Delta \bvdash P :: y : A &
+%   \Gamma \semi \Delta' \comma x : B \bvdash Q :: z : C
+% }{\textrm{$\lolli$-L}}{
+%   \Gamma \semi \Delta \comma \Delta' \comma x:A \lolli B \bvdash
+%     (\nu y)x\ang{y}.(P \mid Q) :: z:C
+% }
+
+% \\~\\
+
+% \inference{
+%   \Gamma \semi \cdot \bvdash P :: y:A &
+%   \Gamma \comma u:A \semi \Delta \comma x:A \bvdash Q :: z:C
+% }{Cut!}{
+%   \Gamma \semi \Delta \bvdash (\nu u)(!u(y).P \mid Q) :: z:C
+% }
+
+% \quad\quad
+
+% \inference{
+%   \Gamma \comma u:A \semi \Delta \comma y:A \bvdash P :: z:C
+% }{Copy}{
+%   \Gamma \comma u:A \semi \Delta \bvdash (\nu y)u\ang{y}.P :: z:C
+% }
+
+% \\~\\
+
+% \inference{
+%   \Gamma \comma \cdot \bvdash Q :: y:A
+% }{\textrm{$!$-R}}{
+%   \Gamma \comma \cdot \bvdash {!x(y)}.Q :: x : {!A}
+% }
+
+% \quad\quad
+
+% \inference{
+%   \Gamma \comma u:A \semi \Delta \bvdash P :: z:C
+% }{\textrm{$!$-L}}{
+%   \Gamma \semi \Delta \comma x:{!A} \bvdash P :: z:C
+% }
+
+% \end{array}
+% \]
+
+% \textbf{Caires, Pfenning, and Toninho, reductions.}
+% \[
+% \begin{array}{c}
+% \filler \\[-3ex]
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \Gamma \semi \Delta \bvdash P :: y:A &
+%       \Gamma \semi \Delta' \bvdash Q :: x:B
+%     }{\textrm{$\otimes$-R}}{
+%       \Gamma \semi \Delta \comma \Delta' \bvdash
+%         (\nu y)x\ang{y}.(P \mid Q) :: x : A \otimes B
+%     }
+%     &
+%     \inference{
+%       \Gamma \semi \Delta'' \comma x:A \comma y:B \bvdash R :: z:C
+%     }{\textrm{$\otimes$-L}}{
+%       \Gamma \semi \Delta'' \comma x:A \otimes B \bvdash x(y).R :: z:C
+%     }
+%   }{Cut}{
+%     \Gamma \semi \Delta \comma \Delta' \comma \Delta'' \bvdash
+%       (\nu x)((\nu y)x\ang{y}.(P \mid Q) \mid x(y).R) :: z : C
+%   }
+% }
+% \quad \becomes \hfill \\~\\[-1.5ex]
+% \hfill
+% \vcenter{
+%   \inference{
+%     \Gamma \semi \Delta \bvdash P :: y:A
+%     &  
+%     \inference{
+%       \Gamma \semi \Delta' \bvdash Q :: x:B   
+%       &
+%       \Gamma \semi \Delta'' \comma x:A \comma y:B \bvdash R :: z:C
+%     }{Cut}{
+%       \Gamma \semi \Delta' \comma \Delta'' \comma y:B \bvdash (\nu y)(Q \mid R) :: z:C
+%     }
+%   }{Cut}{
+%     \Gamma \semi \Delta \comma \Delta' \comma \Delta'' \bvdash
+%        (\nu y)(P \mid (\nu x)(Q \mid R)) :: z:C
+%   }
+% }
+
+% \\~\\
+
+% \vcenter{
+%   \inference{
+%     \inference{
+%       \Gamma \semi \Delta'' \comma y:A \bvdash R :: x:B
+%     }{\textrm{$\lolli$-R}}{
+%       \Gamma \semi \Delta'' \bvdash x(y).R :: x : A \lolli B
+%     }
+%     &
+%     \inference{
+%       \Gamma \semi \Delta \bvdash P :: y:A &
+%       \Gamma \semi \Delta' \comma x : B \bvdash Q :: z:C
+%     }{\textrm{$\lolli$-L}}{
+%       \Gamma \semi \Delta \comma \Delta' \comma x:A \lolli B \bvdash
+%         (\nu y)x\ang{y}.(P \mid Q) :: z:C
+%     }
+%   }{Cut}{
+%     \Gamma \semi \Delta \comma \Delta' \comma \Delta'' \bvdash
+%        (\nu x)(x(y).R \mid (\nu y)x\ang{y}.(P \mid Q)) :: z:C
+%   }
+% }
+% \quad \becomes \hfill \\~\\[-1.5ex]
+% \hfill
+% \vcenter{
+%   \inference{
+%     \Gamma \semi \Delta \bvdash P :: y:A &
+%     &  
+%     \inference{
+%       \Gamma \semi \Delta'' \comma y:A \bvdash R :: x:B
+%       &
+%       \Gamma \semi \Delta' \comma x:B \bvdash Q :: z:C
+%     }{Cut}{
+%       \Gamma \semi \Delta' \comma \Delta'' \comma y:B \bvdash (\nu x)(R \mid Q) :: z:C
+%     }
+%   }{Cut}{
+%     \Gamma \semi \Delta \comma \Delta' \comma \Delta'' \bvdash
+%        (\nu y)(P \mid (\nu x)(R \mid Q)) :: z:C
+%   }
+% }
+
+% \end{array}
+% \]
+% \caption{Comparison with \citet{BellinScott94}
+%          and with \citet{CairesEtAl12}}
+% \label{fig:compare}
+
+% \end{figure*}
+
+% }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+% \conferenceinfo{ICFP'12,} {September 9--15, 2012, Copenhagen, Denmark.}
+% \CopyrightYear{2012}
+% \copyrightdata{978-1-4503-1054-3/12/09}
+
+\title[Propositions as Sessions]
+  {Propositions as Sessions}
+\author[Philip Wadler]
+  {PHILIP WADLER\\
+   University of Edinburgh\\
+   \email{wadler@inf.ed.ac.uk}}
+
+\maketitle
+
+
+\begin{abstract}
+
+  Continuing a line of work by Abramsky (1994), by Bellin and Scott
+  (1994), and by Caires and Pfenning (2010), among others, this paper
+  presents CP, a calculus in which propositions of classical linear
+  logic correspond to session types.  Continuing a line of work by
+  Honda (1993), by Honda, Kubo, and Vasconcelos (1998), and by Gay and
+  Vasconcelos (2010), among others, this paper presents GV, a linear
+  functional language with session types, and presents a translation
+  from GV into CP.  The translation formalises for the first time a
+  connection between a standard presentation of session types and
+  linear logic, and shows how a modification to the standard
+  presentation yield a language free from races and deadlock,
+  where race and deadlock freedom follows from the correspondence
+  to linear logic.
+
+  \begin{note}
+    This paper uses colour to highlight the relation of types to terms
+    and source to target.  If you see no colour on this page, please
+    download a colour version from the JFP website.
+  \end{note}
+\end{abstract}
+
+% \category{CR-number}{subcategory}{third-level}[fourth-level]
+% \terms  General-Terms % optional
+% \keywords Keywords
+% http://www.acm.org/about/class/ccs98-html
+
+% \category{F.4.1}{Mathematical Logic}{Lambda calculus and related systems}
+% \category{F.4.1}{Mathematical Logic}{Proof theory}
+% \category{D.3.3}{Language Constructs and Features}{Concurrent programming structures}
+% \keywords
+% linear logic, lambda calculus, pi calculus
+
+
+\begin{quote}
+  ``The new connectives of linear logic have obvious meanings in terms
+  of parallel computation \ldots.
+
+  ``Linear logic is the first attempt to
+  solve the problem of parallelism \emph{at the logical level}, i.e., by
+  making the success of the communication process only dependent of
+  the fact that the programs can be viewed as \emph{proofs} of
+  something, and are therefore sound.''
+
+  ---\citet{Girard87}, emphasis as in the original
+\end{quote}
+
+\section{Introduction}
+
+Functional programmers know where they stand: upon the foundation of
+$\lambda$-calculus.  Its canonicality is confirmed by its double discovery,
+once as natural deduction by Gentzen and
+once as $\lambda$-calculus by Church.
+These two formulations are related by the Curry-Howard correspondence,
+which takes
+\tighten
+\begin{center}\colored
+\tp{propositions} \emph{as} \tp{types}, \\
+\tp{proofs} \emph{as} \tp{programs}, and \\
+\tp{normalisation of proofs} \emph{as} \tp{evaluation of programs}.
+\end{center}
+\tighten
+The correspondence arises repeatedly:
+% Hindley's algorithm corresponds to Milner's ML-style polymorphism;
+Girard's System~F corresponds to Reynold's polymorphic $\lambda$-calculus;
+Peirce's law in classical logic corresponds to Felleisen's call-cc.
+
+% The correspondence inspires proof tools ranging from
+% Automath to Coq to Agda,
+% and inspires language features ranging from
+% polymorphism to type classes to continuations.
+
+Today, mobile phones, server farms, and many-core processors make us
+concurrent programmers.  Where lies a foundation for concurrency as
+firm as that of $\lambda$-calculus?  Many process calculi have
+emerged---ranging from CSP to CCS to $\pi$-calculus to join calculus
+to mobile ambients to bigraphs---but none is as canonical as
+$\lambda$-calculus, and none has the distinction of arising from
+Curry-Howard.
+
+Since its inception by \citet{Girard87}, linear logic has held the promise
+of a foundation for concurrency rooted in Curry-Howard.  In an early step,
+\citet{Abramsky94} and \citet{BellinScott94} devised a
+translation from linear logic into $\pi$-calculus.
+Along another line,
+\citet{Honda93} introduced session types,
+further developed by \citet{HondaEtAl98} and others,
+which take inspiration from linear logic, but do not enjoy
+a relationship as tight as Curry-Howard. 
+
+Recently, \citet{CairesPfenning10} found a twist on
+Abramsky's translation that yields an interpretation
+strongly reminiscent of session types, and a variant of
+Curry-Howard with
+% Recently, \citet{CairesPfenning10} discovered a twist on
+% Abramsky's translation that yields an interpretation strongly
+% reminiscent of session types.  Their approach yields a variant of
+% the Curry-Howard correspondence with
+\tighten
+\begin{center}\colored
+\tp{propositions} \emph{as} \tp{session types}, \\
+\tp{proofs} \emph{as} \tp{processes}, and \\
+\tp{cut elimination} \emph{as} \tp{communication}.
+\end{center}
+\tighten
+The correspondence is developed in a series of papers
+by Caires, Pfenning, Toninho, and P\'erez.
+This paper extends these lines of work with three contributions.
+
+First, inspired by the calculus $\pi$DILL of \cite{CairesPfenning10},
+this paper presents the calculus CP.  Based on dual intuitionistic linear
+logic, $\pi$DILL uses two-sided sequents, with two constructs
+corresponding to output ($\otimes$ on the right of a sequent and
+$\lolli$ on the left), and two constructs corresponding to input
+($\lolli$ on the right of a sequent and $\otimes$ on the left).  Based
+on classical linear logic, CP uses one-sided sequents, offering
+greater simplicity and symmetry, with a single construct for output
+($\otimes$) and a single construct for input ($\parr$), each dual to
+the other.  \citet{CairesEtAl12} compares $\pi$DILL with $\pi$CLL,
+which like CP is based on classical linear logic; we discuss this
+comparison in Section~\ref{sec:related}.
+(If you like, CP stands for Classical Processes.)
+
+Second, though $\pi$DILL is clearly reminiscent of the body of work on
+session types, no one has previously published a formal connection.
+Inspired by the linear functional language with session types of
+\cite{GayVasconcelos10}, this paper presents the calculus GV, and
+presents a translation from GV into CP, for the first time formalising
+a tight connection between a standard presentation of session types
+and a standard presentation of linear logic.
+In order to facilitate the translation, GV differs
+from the language of \cite{GayVasconcelos10} in some particulars.
+These differences suffice to make GV, unlike the original, free from
+races and deadlock.  (If you like, GV stands for Good Variation.)
+
+Curry-Howard relates proof normalisation to computation.  Logicians
+devised proof normalisation to show consistency of logic, and for this
+purpose it is essential that proof normalisation terminates.  Hence,
+a consequence of Curry-Howard is that it identifies a fragment of
+$\lambda$-calculus for which the Halting Problem is solved.
+Well-typed programs terminate unless they explicitly resort to
+non-logical features such as general recursion.  Similarly, a
+consequence of Curry-Howard for concurrency is that it identifies a
+fragment of a process calculus which is free of deadlock.  In
+particular, $\pi$DILL and CP are both such fragments, and the proof
+that GV is deadlock-free follows immediately from its translation
+to CP.  We return to the question of what non-logical features might
+restore races and deadlock in the conclusion.
+
+Third, this paper presents a calculus with a stronger connection to
+linear logic, at the cost of a weaker connection to traditional
+process calculi.  \citet{BellinScott94} and \citet{CairesPfenning10}
+each present a translation from linear logic into $\pi$-calculus such
+that cut elimination converts one proof to another if and only if the
+translation of the one reduces to the translation of the other; but to
+achieve this tight connection several adjustments are necessary.
+
+\citet{BellinScott94} restrict the axiom to atomic type, and
+\citet{CairesPfenning10} omit the axiom entirely.  In terms of a
+practical programming language, such restrictions are excessive.  The
+former permits type variables, but instantiating a type variable to a
+type requires restructuring the program (as opposed to simple
+substitution); the latter outlaws type variables altogether.  In
+consequence, neither system lends itself to parametric polymorphism.
+
+Further, \citet{BellinScott94} only obtain a tight correspondence
+between cut elimination and $\pi$-calculus for the multiplicative
+connectives, and they require a variant of
+$\pi$-calculus with surprising structural equivalences such as
+$x(y).x(z).P \equiv x(z).x(y).P$---permuting two reads
+on the same channel!  \citet{CairesPfenning10} only obtain a tight
+correspondence between cut elimination and $\pi$-calculus by
+ignoring commuting conversions; this is hard to
+justify logically, because commuting conversions play an essential
+role in cut elimination.  \citet{PerezEtAl12} show commuting
+conversions correspond to contextual equivalences, but fail to capture
+the directionality of the commuting conversions.
+
+% Further still, in order to obtain a good correspondence with the usual
+% rule for replicated input in $\pi$-calculus, \citet{CairesPfenning10}
+% replace the traditional Contraction rule with a Copy rule.  Though
+% every proof written with Contraction can be rewritten with Copy, the
+% rewriting required may be substantial.  In linear logic, formula $!A$ stands
+% for arbitrarily many uses of formula $A$.  Contraction lets one reuse
+% a proof of formula $!A$ in two independent subproofs, while Copy
+% requires one to decide in advance how many copies of $A$ are required:
+% $!A$ may be used in one subproof but only $A,\ldots,A$ in the other
+% ($n$ uses of formula $A$ requiring $n$ uses of Copy).  From a
+% software engineering perspective, Contraction supports vital
+% program structures that Copy cannot.
+% % Since we regard proofs as programs, from a software engineering view
+% % we would say Contraction offers substantially better support for
+% % structuring than does Copy.
+
+% I DELETED THE ABOVE BECAUSE I NO LONGER BELIEVE IT IS A FAIR CRITICISM.
+% $\pi$DILL SUPPORTS CONTRACTION DIRECTLY ON INTUITIONISTIC ASSUMPTIONS.
+
+Thus, while the connection established in previous work between cut
+elimination in linear logic and reduction in $\pi$-calculus is
+encouraging, it comes at a cost.  Accordingly, this paper
+cuts the Gordian knot: it takes the traditional rules of cut
+elimination as specifying the reduction rules for its process
+calculus.  Pro: we let logic guide the design of the `right'
+process calculus.  Con: we forego the assurance that comes
+from double discoveries of the same system, as with
+Gentzen and Church, Girard and Reynolds, and Pierce and Felleisen.
+Mitigating the con are the results cited above that
+show a connection between Girard's linear logic and Milner's
+$\pi$-calculus, albeit not as tight as the other connections
+just mentioned.
+
+In return for loosening its connection to $\pi$-calculus, the design
+of CP avoids the problems described above.  The axiom is interpreted
+at all types, using a construct suggested by \citet{CairesEtAl12},
+and consequently it is easy to extend the system to support
+polymorphism, using a construct suggested by \citet{Turner95}.
+All commuting conversions of cut elimination are satisfied.
+% Contraction
+% is supported directly, avoiding the structuring problems
+% attached to Copy.
+
+This paper is the journal version of \citet{Wadler12}.
+It is organised as follows.
+Section~\ref{sec:twist} sketches the path from 
+Abramsky, Bellin, Scott, Caires, and Pfenning to here.
+Section~\ref{sec:cll} presents CP.
+Section~\ref{sec:gv} presents GV and its translation to CP.
+Section~\ref{sec:related} discusses related work.
+Section~\ref{sec:conclusion} concludes.
+
+% Since its inception, linear logic has promised insights into
+% concurrency, as indicated when \citet{Girard87} chose the name `par'
+% for the dual of the tensor product.  \citet{Abramsky94} suggested an
+% interpretation of proofs in linear logic as processes of
+% $\pi$-calculus, which was further elaborated by \citet{BellinScott94}.
+% \citet{CairesPfenning10} suggest a slight variation of Abramsky's
+% encoding, which reveals a close connection to session types, as
+% introduced by \citet{Honda93}.  Session types have been further
+% developed by many others, including \citet{HondaEtAl98},
+% \citet{YoshidaVasconcelos07}, and \citet{GayVasconcelos10}, and the
+% relation between linear logic and session types has been further
+% explored in \citet{PfenningEtAl11}, \citet{ToninhoEtAl11}, and
+% \citet{CairesEtAl12}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% The paper presents two formulations of a process calculus with session
+% types, Curry-style and Church-style.  In a Curry-style formulation,
+% semantics precedes types: we define processes independently of types,
+% then specify how to assign types to processes; typing is implicit.  In
+% a Church-style formulation, types precede semantics: we define
+% processes intertwined with types, and each process has a unique type;
+% typing is explicit.  We first present the Curry-style formulation, and
+% then the Church-style.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% I believe a significant improvement to their solution is possible.
+% Their solution is based on DILL, and the result is needless
+% duplication.  Their intuitive explanation of $A \otimes B$ is that it
+% means `output $A$ and then behave as $B$', and their intuitive
+% explanation of $A \lolli B$ is that it means `input $A$ and then
+% behave as $B$'.  All well and good, except that they do not match
+% output with input under this intuition!  Instead, under their system a
+% programmer must choose whether to define a protocol with $A \otimes B$
+% or $A \lolli B$.  If the former, one must use $A \otimes B$ with a right
+% rule for output and with a left rule for input.  If the latter, one must
+% use $A \lolli B$ with a right rule for input and with a left rule for
+% output.  This duplication adds complexity and confusion.  Worse, it
+% impedes usability, since if one user defines an output protocol with
+% $A \otimes B$, and a second user defines an input protocol with $A
+% \lolli B$, then these cannot be connected directly with a cut, but
+% require some form of mediating code.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Twist}
+\label{sec:twist}
+This section explains how a small but crucial twist relates the work
+of Abramsky, Bellin, and Scott to the work of Caires and Pfenning, and
+to what is presented here.
+
+The key difference is in the interpretation of the linear connectives
+$\otimes$ and $\parr$.  In contrast, all of these works agree in their
+interpretation of $\oplus$ and $\with$ as making a selection and
+offering a choice, and indeed \citet{Honda93} already uses $\oplus$
+and $\with$ in that way.  But input and output in Honda's work appear
+to have no connection with the connectives of linear logic.  (It is an
+unfortunate historical accident that $!$ and $?$ denote output and
+input in many process calculi, including those of \citet{Honda93} and
+\citet{GayVasconcelos10}, while $!$ and $?$ denote exponentials in
+linear logic; the two uses are distinct and should not be confused.)
+
+In \citet{Abramsky94} and \citet{BellinScott94}, the following two rules
+interpret the linear connectives $\otimes$ and $\parr$.
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma, \tmof{y} A}
+  \quad & \quad
+  \tm{Q} \bvdash \tp{\Delta, \tmof{z} B}
+}{\otimes}{
+  \tm{\nu y,z.\,x\ang{y,z}.(P \mid Q)} \bvdash
+    \tp{\Gamma \comma \Delta \comma \tmof{x} A \otimes B}
+}
+
+\quad\quad
+
+\inference{
+  \tm{R} \bvdash \tp{\Theta \comma \tmof{y}A \comma \tmof{z}B}
+}{\parr}{
+  \tm{x(y,z).R} \bvdash \tp{\Theta \comma \tmof{x}A \parr B}
+}
+
+\end{array}
+\]
+Under their interpretation, $A \otimes B$ is the type of a channel
+which outputs a pair of an $A$ and a $B$, while $A \parr B$ is the
+type of a channel which inputs a pair of an $A$ and a $B$.  In the
+rule for $\otimes$, process $\nu y,z.x\ang{y,z}.(P \mid Q)$ allocates
+fresh channels $y$ and $z$, transmits the pair of channels $y$ and $z$
+along $x$, and then concurrently executes $P$ and $Q$.  In the rule
+for $\parr$, process $x(y,z).R$ communicates along channel $x$ obeying
+protocol $A \parr B$; it receives from $x$ the pair of names $y$ and
+$z$, and then executes $R$.
+
+This work puts a twist on the above interpretation. 
+Here we use the following two rules
+interpret the linear connectives $\otimes$ and $\parr$.
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{y} A}
+  \quad & \quad
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x} B}
+}{\otimes}{
+  \tm{\nu y.\,x\ang{y}.(P \mid Q)} \bvdash
+    \tp{\Gamma \comma \Delta \comma \tmof{x} A \otimes B}
+}
+
+\quad\quad
+
+\inference{
+  \tm{R} \bvdash \tp{\Theta \comma \tmof{y}A \comma \tmof{x}B}
+}{\parr}{
+  \tm{x(y).R} \bvdash \tp{\Theta \comma \tmof{x}A \parr B}
+}
+
+\end{array}
+\]
+Under the new interpretation, $A \otimes B$ is the type of a channel
+which outputs an $A$ and then behaves as $B$, while $A \parr B$ is the
+type of a channel which inputs a $A$ and then behaves as $B$.  In the
+rule for $\otimes$, process $\nu y.x\ang{y}.(P \mid Q)$ transmits $y$
+along $x$, and then concurrently executes $P$ and $Q$.  In the rule
+for $\parr$, process $x(y).R$ receives name $y$ along $x$, and then
+executes $R$.
+
+The difference is that in the rules used by Abramsky, Bellin, and
+Scott the hypotheses refer to channels $y$ and $z$ and the conclusion
+to channel $x$, while in the rules used here the hypotheses refer to
+channels $y$ and $x$, and the conclusion reuses the channel $x$.  One
+may regard the type of the channel evolving as communication proceeds,
+corresponding to the notion of session type.
+
+While it is natural to interpret $A \otimes B$ and $A \parr B$ as
+transmitting and accepting a pair, it may initially seem unnatural to
+interpret $A \otimes B$ and $A \parr B$ asymmetrically, as first
+transmitting or accepting a channel obeying protocol $A$ and then
+obeying protocol $B$.  The unnaturality of the interpretation may
+explain why it took sixteen years between when \citet{Abramsky94} and
+\citet{BellinScott94} published their interpretation of the linear
+connectives as pairing, and \citet{CairesPfenning10} published their
+interpretation of the linear connectives as session types.  In fact,
+we will see that there is an isomorphism between $A \otimes B$ and $B
+\otimes A$, and similarly for $A \parr B$ and $B \parr A$, which
+provides the necessary symmetry.
+
+The insight behind this twist is clearly due to Caires and Pfenning,
+although the relationship to the earlier work is not presented in
+their paper along the lines described.  Indeed, the relation to the
+work of Abramsky, Bellin, and Scott is further obscured because Caires
+and Pfenning use intuitionistic linear logic rather than classical
+logic.
+
+In \citet{CairesPfenning10}, the following four rules interpret the
+linear connectives $\otimes$ and $\lolli$.
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tp{\Gamma \semi \Delta} \bvdash \tmof{P :: y} \tp{A}
+  \quad & \quad
+  \tp{\Gamma \semi \Delta'} \bvdash \tmof{Q :: x} \tp{B}
+}{\textrm{$\otimes$-R}}{
+  \tp{\Gamma \semi \Delta \comma \Delta'} \bvdash
+    \tmof{\nu y.\,x\ang{y}.(P \mid Q) :: x} \tp{A \otimes B}
+}
+
+\quad\quad
+
+\inference{
+  \tp{\Gamma \semi \Delta \comma \tmof{y}A \comma \tmof{x}B} \bvdash 
+    \tmof{R :: z} \tp{C}
+}{\textrm{$\otimes$-L}}{
+  \tp{\Gamma \semi \Delta \comma \tmof{x}A \otimes B} \bvdash 
+    \tmof{x(y).R :: z} \tp{C}
+}
+
+\\~\\
+
+\inference{
+  \tp{\Gamma \semi \Delta \comma y:A} \bvdash \tmof{R :: x} \tp{B}
+}{\textrm{$\lolli$-R}}{
+  \tp{\Gamma \semi \Delta} \bvdash \tmof{x(y).R :: x} \tp{A \lolli B}
+}
+
+\quad\quad
+
+\inference{
+  \tp{\Gamma \semi \Delta} \bvdash \tmof{P :: y} \tp{A} &
+  \tp{\Gamma \semi \Delta' \comma \tmof{x} B} \bvdash \tmof{Q :: z} \tp{C}
+}{\textrm{$\lolli$-L}}{
+  \tp{\Gamma \semi \Delta \comma \Delta' \comma \tmof{x}A \lolli B} \bvdash
+    \tmof{\nu y.x\ang{y}.(P \mid Q) :: z} \tp{C}
+}
+
+\end{array}
+\]
+To print these rules requires more than twice as much ink as to print
+the comparable rules used here!  Part of the difference is due to
+different forms of bookkeeping, which is mostly incidental and won't
+be detailed here.  Another difference is that the above rules use
+$\lolli$ instead of $\parr$, but since $A \lolli B$ and $A^\bot \parr
+B$ are equivalent that is not so significant.  The difference we will
+focus on here is that the use of an intuitionistic logic forces Caires
+and Pfenning to represent output by two rules, $\otimes$-R and
+$\lolli$-L, and input by two rules, $\lolli$-R and $\otimes$-L.  This
+duplication adds complexity and confusion.  Worse, it impedes
+usability, since if one user defines an output protocol with $A
+\otimes B$, and a second user defines an input protocol with $A \lolli
+B$, then these cannot be connected directly with a cut, but require
+some form of mediating code.  Avoiding mismatch requires some
+convention---for instance, a server might always use R rules and a
+client always use L rules.  The classical approach is simpler easier
+to use in practice, since no convention for servers and clients is
+required.  Caires and Pfenning do give some reasons to prefer the
+intuitionistic approach to the classical one, and these are described
+in Section~\ref{sec:related}.
+
+While Girard associated linear logic with concurrency from the
+beginning, many readers of the original paper (including the current
+author) had some difficulty giving an intuitive reading to the
+classical connective $\parr$.  One advantage of the work presented
+here is that it may finally offer an intuitive reading of this
+fundamental connective.
+
+
+\section{Classical linear logic as a process calculus}
+\label{sec:cll}
+
+\figcll
+
+This section presents CP, a session-typed process calculus.  CP is
+based on classical linear logic with one-sided sequents, the system
+treated in the first paper on linear logic by \citet{Girard87}.
+
+\paragraph*{Types}
+Propositions, which may be interpreted as session types,
+are defined by the following grammar:
+\[\colored
+\begin{array}{ll}
+\tp{A,B,C} \; \mathbin{::=} \\
+\quad \tp{X}			& \textrm{propositional variable} \\
+\quad \tp{X^\bot}		& \textrm{dual of propositional variable} \\
+\quad \tp{A \otimes B}		& \textrm{`times', output $A$ then behave as $B$} \\
+\quad \tp{A \parr B}		& \textrm{`par', input $A$ then behave as $B$} \\
+\quad \tp{A \oplus B}		& \textrm{`plus', select from $A$ or $B$} \\
+\quad \tp{A \with B}		& \textrm{`with', offer choice of $A$ or $B$} \\
+\quad \tp{!A}			& \textrm{`of course!', server accept} \\
+\quad \tp{?A}			& \textrm{`why not?', client request} \\
+\quad \tp{\any{X}B}		& \textrm{existential, output a type} \\
+\quad \tp{\all{X}B}		& \textrm{universal, input a type} \\
+\quad \tp{1}			& \textrm{unit for $\otimes$} \\
+\quad \tp{\bot}			& \textrm{unit for $\parr$} \\
+\quad \tp{0}			& \textrm{unit for $\oplus$} \\
+\quad \tp{\top}			& \textrm{unit for $\with$}
+\end{array}
+\]
+Let $A,B,C$ range over propositions,
+and $X,Y,Z$ range over propositional variables.
+Every propositional variable $X$ has a dual written $X^\bot$.
+Propositions are composed from multiplicatives ($\otimes,\parr$),
+additives ($\oplus$,$\with$), exponentials ($!,?$),
+second-order quantifiers ($\exists,\forall$), and
+units ($1,\bot,0,\top$).
+In $\any{X}B$ and $\all{X}B$, propositional variable $X$
+is bound in $B$.  Write $\fv(A)$ for the free
+variables in proposition $A$.
+Our notation is identical to that of \citet{Girard87},
+save we write quantifiers as $\exists,\forall$
+where he writes $\vee,\wedge$.
+
+
+\paragraph*{Duals} 
+Duals play a key role, ensuring that a request for input at one end of
+a channel matches an offer of a corresponding output at the other, and
+that a request to make a selection at one end matches an offer of a
+corresponding choice at the other.
+
+Each proposition $A$ has a dual $A^\bot$, defined as follows:
+\[\colored
+\begin{array}{r@{\;}c@{\;}l@{\quad\quad}r@{\;}c@{\;}l}
+\tp{(X)^\bot}            &=&  \tp{X^\bot}  &
+\tp{(X^\bot)^\bot}        &=&  \tp{X}  \\
+\tp{(A \otimes B)^\bot}  &=&  \tp{A^\bot \parr   B^\bot}  &
+\tp{(A \parr   B)^\bot}  &=&  \tp{A^\bot \otimes B^\bot}  \\
+\tp{(A \oplus  B)^\bot}  &=&  \tp{A^\bot \with   B^\bot}  &
+\tp{(A \with   B)^\bot}  &=&  \tp{A^\bot \oplus  B^\bot}  \\
+\tp{(!A)^\bot}           &=&  \tp{?A^\bot}  &
+\tp{(?A)^\bot}           &=&  \tp{!A^\bot}  \\
+\tp{(\any{X}B)^\bot}     &=&  \tp{\all{X}B^\bot} &
+\tp{(\all{X}B)^\bot}     &=&  \tp{\any{X}B^\bot} \\
+\tp{1^\bot}              &=&  \tp{\bot}  &
+\tp{\bot^\bot}           &=&  \tp{1}     \\
+\tp{0^\bot}              &=&  \tp{\top}  &
+\tp{\top^\bot}           &=&  \tp{0}
+\end{array}
+\]
+The dual of a propositional variable, $X^\bot$,
+is part of the syntax.
+Multiplicatives are dual to each other,
+as are additives, exponentials, and quantifiers.
+
+Duality is an involution, $(A^\bot)^\bot = A$.
+
+\paragraph{Substitution}
+% To deal with instantiation of propositional variables, we
+Write $B\sub{A/X}$ to denote substitution of $A$ for $X$ in $B$.
+Substitution of a proposition for a dual propositional variable
+results in the dual of the proposition.  Assuming $X \neq Y$, define
+\[\colored
+\begin{array}{r@{\;}c@{\;}l@{\quad\quad}r@{\;}c@{\;}l}
+\tp{X\sub{A/X}} &=& \tp{A}	& \tp{X^\bot\sub{A/X}} &=& \tp{A^\bot} \\
+\tp{Y\sub{A/X}} &=& \tp{Y}     	& \tp{Y^\bot\sub{A/X}} &=& \tp{Y^\bot}
+\end{array}
+\]
+The remaining clauses are standard, for instance
+$(A \otimes B)\sub{C/X} = A\sub{C/X} \otimes B\sub{C/X}$.
+
+Duality preserves substitution,
+$B\sub{A/X}^\bot = B^\bot\sub{A/X}$.
+
+\paragraph*{Environments}
+Let $\Gamma$, $\Delta$, $\Theta$ range over environments
+associating names to propositions, where each name is distinct.
+Assuming $\Gamma = x_1 : A_1 \comma \ldots \comma x_n : A_n$,
+with $x_i \neq x_j$ whenever $i \neq j$,
+we write $\fn(\Gamma) = \set{x_1, \ldots, x_n}$ for the names in $\Gamma$,
+and $\fv(\Gamma) = \fv(A_1) \cup \cdots \cup \fv(A_n)$ for the
+free propositional variables in $\Gamma$.
+Order in environments is ignored.  
+Environments use linear maintenance,
+so two environments may be combined only if they contain distinct names:
+writing $\Gamma \comma \Delta$ implies $\fn(\Gamma) \cap \fn(\Delta) = \emptyset$.
+
+
+\paragraph*{Processes}
+Our process calculus is a variant on the $\pi$-calculus
+\citep{MilnerEtAl92}.
+Processes are defined by the following grammar:
+\[\colored
+\begin{array}{ll}
+\tm{P,Q,R} \; \mathbin{::=} \\
+\quad \tm{x \link y}         		& \textrm{link} \\
+\quad \tm{\nu x\of{A}.(P \mid Q)}	& \textrm{parallel composition} \\
+\quad \tm{x[y].(P \mid Q)}		& \textrm{output} \\
+\quad \tm{x(y).P}		        & \textrm{input} \\
+\quad \tm{x[\inl].P}		        & \textrm{left selection} \\
+\quad \tm{x[\inr].P}		        & \textrm{right selection} \\
+\quad \tm{x.\case(P,Q)}	        	& \textrm{choice} \\
+\quad \tm{!x(y).P}		        & \textrm{server accept} \\
+\quad \tm{?x[y].P}                   	& \textrm{client request} \\
+\quad \tm{x[A].P}                    	& \textrm{output a type} \\
+\quad \tm{x(X).P}                    	& \textrm{input a type} \\
+\quad \tm{x[\,].0}		        & \textrm{empty output} \\
+\quad \tm{x().P}		        & \textrm{empty input} \\
+\quad \tm{x.\case()}		        & \textrm{empty choice}
+\end{array}
+\]
+In $\nu x \of{A}.(P \mid Q)$, name $x$ is bound in $P$ and $Q$,
+in $x[y].(P \mid Q)$, name $y$ is bound in $P$ (but not in $Q$),
+and in $x(y).P$, $?x[y].P$, and $!x(y).P$, name $y$ is bound in $P$.
+We write $\fn(P)$ for the free names in process $P$.
+In $x(X).P$, propositional variable $X$ is bound in $P$.
+
+The form $x \link y$ denotes forwarding, where every message received
+on $x$ is retransmitted on $y$, and every message received on $y$ is
+retransmitted on $x$.  Square brackets indicate output and round
+brackets indicate input; unlike $\pi$-calculus, both output
+and input names are bound.  The forms $x(y).P$ and $!x(y).P$ in our
+calculus behave like the same forms in $\pi$-calculus, while the forms
+$x[y].P$ and $?x[y].P$ in our calculus both behave like the form $\nu
+y.x\ang{y}.P$ in $\pi$-calculus.
+
+
+\paragraph*{Alternative notion}
+A referee suggested, in line with one tradition for $\pi$-calculus,
+choosing the notation $\overline{x}(y).P$ in place of $x[y].P$.
+We avoid this alternative because overlines can be hard to spot,
+while the distinction between round and square brackets is clear.
+
+
+\paragraph*{Judgments}
+The rules for assigning session types to processes are shown
+in Figure~\ref{fig:cll}.  
+Judgments take the form
+\[\colored
+\tm{P} \bvdash \tp{\tmof{x_1} A_1 \comma \ldots \comma \tmof{x_n} A_n}
+\]
+indicating that process $P$
+communicates along each channel named $x_i$ obeying the protocol specified by $A_i$.
+Erasing the process and the channel names from the above yields
+\[\colored
+\bvdash \tp{A_1 \comma \ldots \comma A_n}
+\]
+and applying this erasure to the rules in Figure~\ref{fig:cll}
+yields the rules of classical linear logic, as given by \citet{Girard87}.
+
+\subsection{Structural rules}
+
+\figstructural
+
+The calculus has two structural rules, Axiom and Cut.  We do not
+list Exchange explicitly, since order in environments is ignored.
+
+The axiom is:
+\[\colored
+\inference{}{Ax}{
+  \tm{w \link x} \bvdash \tp{\tmof{w} A^\bot \comma \tmof{x} A}
+}
+\]
+We interpret the axiom as forwarding.  A name input along
+$w$ is forwarded as output along $x$, and vice versa,
+so types of the two channels must be dual.
+\citet{BellinScott94} restrict the axiom to propositional
+variables, replacing $A$ by $X$ and replacing
+$w \link x$ by the $\pi$-calculus term $w(y).x\ang{y}.0$.
+Whereas we forward any number of times and in either direction,
+they forward only once and from $X$ to $X^\bot$.
+
+% \citet{BellinScott94} use the following variant of the identity rule:
+% \[
+% \inference{}{\mathrm{Ax}}{
+%   x(y).w\ang{y}.0 \bvdash w : X^\bot \comma x : X
+% }
+% \]
+% Unlike our $w \link x$, which forwards in either direction,
+% they always input along the channel of type $X$ and output
+% along the channel of type $X^\bot$.
+
+The cut rule is:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+  &
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}A^\bot}
+}{Cut}{
+  \tm{\nu x \of{A}.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta}
+}
+\]
+Following \citet{Abramsky94} and \citet{BellinScott94}, we interpret
+Cut as a symmetric operation combining parallel composition with name
+restriction.  Process $P$ communicates along channel $x$ obeying
+protocol $A$, while process $Q$ communicates along the same channel $x$ obeying
+the dual protocol $A^\bot$.  
+Duality guarantees that sends and selections
+in $P$ match with receives and choices in $Q$, and vice versa.
+Communications along $\Gamma$ and $\Delta$ are disjoint, 
+so $P$ and $Q$ are restricted to communicate with each other only along $x$.
+If communication could occur along two channels rather than one
+this could lead to races or deadlock.
+(When we discuss exponentials, we will see that $\Gamma$ and $\Delta$
+may share channels of type $?B$, for some $B$.  Such channels are used only to
+communicate with replicable servers, so it remains the case that the only
+communication between $P$ and $Q$ is along $x$.)
+
+Observe that, despite writing $\nu x:A$ in the syntax, the type of $x$
+differs in $P$ and $Q$---it is $A$ in the former but $A^\bot$ in the latter.
+Including the type $A$ in the syntax
+for Cut guarantees that given the type of each free name in the
+term, each term has a unique type derivation.
+To save ink and eyestrain, the type is omitted when it
+is clear from the context.
+
+% The Curry-Howard correspondence between logic and computation has
+% three components: propositions as types, proofs as programs, and
+% normalisation of proofs as evaluation of programs.  In our case the
+% correspondence becomes: propositions as sessions, proofs as processes,
+% and cut elimination as process reduction.  Cut elimination is
+% specified as a series of equivalences and reductions on derivation
+% trees.  
+
+Cut elimination corresponds to process reduction.
+Figure~\ref{fig:structural} shows two equivalences
+on cuts, and one reduction that simplifies a cut against an axiom,
+each specified in terms of derivation trees; from which we read
+off directly the corresponding equivalence or reduction on processes.
+We write $\equiv$ for equivalences and $\becomes$ for reductions;
+both relations are reflexive and transitive.
+Equivalence $(\Swap)$ states that a cut is symmetric:
+\[\colored
+\tm{\nu x \of{A}.(P \mid Q)} \equiv \tm{\nu x \of{A^\bot}.(Q \mid P)}
+\]
+It serves the same role as the $\pi$-calculus structural
+equivalence for symmetry, $P \mid Q \equiv Q \mid P$.
+Equivalence $(\Assoc)$ permits reordering cuts:
+\[\colored
+\begin{array}{c}
+\tm{\nu y \Of{B}.(\nu x \Of{A}.(P \mid Q) \mid R)} \equiv
+\tm{\nu x \Of{A}.(P \mid \nu y \Of{B}.(Q \mid R))}
+\end{array}
+\]
+It serves the same role as the $\pi$-calculus structural equivalences
+for associativity, $P \mid (Q \mid R) \equiv (P \mid Q) \mid R$,
+and scope extrusion, $(\nu x.P) \mid Q \equiv \nu x.(P \mid Q)$ when $x \notin P$.
+
+Reduction $(\Ax\Cut)$ simplifies a cut against an axiom.
+\[\colored
+\tm{\nu x \Of{A}.(w \link x \mid P)} \becomes \tm{P\sub{w/x}}
+\]
+We write $P\sub{w/x}$ to denote substitution of $w$ for $x$ in $P$.
+
+\paragraph*{Alternative notation}
+The confusion of giving different types to
+$x$ in $P$ and $Q$ might be avoided by picking a different syntax
+$\nu x \link y.(P \mid Q)$, with the typing rule
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+  &
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{y}A^\bot}
+}{Cut}{
+  \tm{\nu x \link y.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta}
+}
+\]
+Here instead of using $x$ as the distinguished free name of
+type $A$ in $P$ and type $A^\bot$ in $Q$,
+we retain $x$ as the distinguished free name of type $A$ in $P$
+but use $y$ as the distinguished free name of type $A^\bot$ in $Q$.
+Thus $\nu x \link y.(P \mid Q)$ in the alternative notation corresponds
+to $\nu x.(P \mid (Q\sub{x/y}))$ in our notation.
+We avoid this alternative so as not to proliferate names.
+
+  
+\subsection{Output and input}
+\label{sec:output}
+
+The multiplicative connectives $\otimes$ and $\parr$ are dual.
+We interpret $A \otimes B$ as the session type of a channel which outputs an $A$
+and then behaves as a $B$, and $A \parr B$ as the session type of
+a channel which inputs an $A$ and then behaves as a $B$.
+
+The rule for output is:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{y}A}  &
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}B}
+}{\otimes}{
+  \tm{x[y].(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta \comma \tmof{x}A \otimes B}
+}
+\]
+Processes $P$ and $Q$ act on disjoint sets of channels.
+Process $P$ communicates along channel $y$ obeying protocol $A$,
+while process $Q$ communicates along channel $x$ obeying protocol $B$.
+The composite process $x[y].(P \mid Q)$ communicates along channel
+$x$ obeying protocol $A \otimes B$; it allocates a fresh channel $y$,
+transmits $y$ along $x$, and then concurrently executes $P$ and $Q$.
+Disjointness of $P$ and $Q$ ensures there is
+no further entangling between $x$ and $y$, which
+guarantees freedom from races and deadlock. 
+
+The rule for input is:
+\[\colored
+\inference{
+  \tm{R} \bvdash \tp{\Theta \comma \tmof{y}A \comma \tmof{x}B}
+}{\parr}{
+  \tm{x(y).R} \bvdash \tp{\Theta \comma \tmof{x}A \parr B}
+}
+\]
+Process $R$ communicates along channel $y$ obeying protocol $A$
+and along channel $x$ obeying protocol $B$.  The composite process
+$x(y).R$ communicates along channel $x$ obeying protocol $A \parr B$;
+it receives name $y$ along $x$, and then executes $R$.
+Unlike with output, the single process $R$ that communicates with both $x$
+and $y$.  It is safe to permit the same process to communicate with $x$
+and $y$ on the input side, because there is no further entangling
+of $x$ with $y$ on the output side, explaining the claim that
+disentangling $x$ from $y$ on output guarantees freedom from races and deadlock.
+
+\figprincipal
+
+For output, channel $x$ has type $B$ in the component process $Q$
+but type $A \otimes B$ in the composite process $x[y].(P \mid Q)$.
+For input, channel $x$ has type $B$ in the component process $R$
+but type $A \parr B$ in the composite process $x(y).R$.
+One may regard the type of the channel evolving as communication
+proceeds, corresponding to the notion of session type.
+Assigning the same channel name different types in the 
+hypothesis and conclusion of a rule is the telling twist
+added by \citet{CairesPfenning10},
+in contrast to the use of
+different variables in the hypothesis and conclusion
+followed by \citet{Abramsky94} and \citet{BellinScott94}.
+
+The computational content of the logic is most clearly revealed
+in the principal cuts of each connective against its dual.
+Principal cut reductions are shown in Figure~\ref{fig:principal}.
+
+Cut of output $\otimes$ against input $\parr$ corresponds to communication,
+as shown in rule~$(\beta_{\otimes\parr})$:
+\[\colored
+\tm{\nu x\Of{A \otimes B}.(x[y].(P \mid Q) \mid x(y).R)} \becomes
+\tm{\nu y\Of{A}.(P \mid \nu x\Of{B}.(Q \mid R))}
+\]
+In stating this rule, we take advantage of the
+fact that $y$ is bound in both $x[y].P$ and $x(y).Q$ to assume
+the same bound name $y$ has been chosen in each; \citet{Pitts11} refers to
+this as the `anti-Barendregt' convention.
+
+Recall that $x[y].P$ in our notation corresponds to
+$\nu y.x\ang{y}.P$ in $\pi$-calculus.
+Thus, the rule above corresponds to the $\pi$-calculus reduction:
+\[\colored
+\tm{\nu x.(\nu y.x\ang{y}.(P \mid Q) \mid x(z).R)} \becomes
+\tm{\nu y.P \mid \nu x.(Q \mid R\sub{z/y})}
+\]
+This follows from
+from $x\ang{y}.P \mid x(z).R \becomes P \mid R\sub{z/y}$,
+and the structural equivalences for scope extrusion,
+since $x \notin \fn(P)$.
+
+One might wonder why the right-hand side of the above reduction 
+is $\nu x.(P \mid \nu y.(Q \mid R))$ rather than
+$\nu y.(Q \mid \nu x.(P \mid R))$?
+The two are in fact equivalent by the use of the structural rules:
+\[\colored
+\begin{array}{cl@{\quad\quad}l}
+       & \tm{\nu x\of{A}.(P \mid \nu y\of{B}.(Q \mid R))}     \\
+\equiv & \tm{\nu x\of{A}.(P \mid \nu y\of{B^\bot}.(R \mid Q))} & (\Swap) \\
+\equiv & \tm{\nu y\of{B^\bot}.(\nu x\of{A}.(P \mid R) \mid Q)} & (\Assoc) \\
+\equiv & \tm{\nu y\of{B}.(Q \mid \nu x\of{A}.(P \mid R))}     & (\Swap)
+\end{array}
+\]
+Hence either term serves equally well as the right-hand side.
+
+The apparent lack of symmetry between $A \otimes B$ and $B \otimes A$
+may appear unsettling: the first means output $A$ and then behave as $B$, the
+second means output $B$ and then behave as $A$.  The situation is similar
+to Cartesian product, where $B \times A$ and $A \times B$ differ but
+satisfy an isomorphism.  Similarly, $A \otimes B$ and $B \otimes A$
+are interconvertible.
+\[\colored
+  \inference{
+    \inference{
+      \inference{}{Ax}{
+         \tm{w \link z} \bvdash \tp{\tmof{w} B^\bot \comma \tmof{z} B}
+      }
+      &
+      \inference{}{Ax}{
+         \tm{y \link x}  \bvdash \tp{\tmof{y} A^\bot \comma \tmof{x} A}
+      }
+    }{\otimes}{
+     \tm{x[z].(w \link z \mid y \link x)} \bvdash
+       \tp{\tmof{w} B^\bot \comma \tmof{y} A^\bot \comma \tmof{x} B \otimes A}
+    }
+  }{\parr}{
+   \tm{w(y).x[z].(w \link z \mid y \link x)} \bvdash
+     \tp{\tmof{w} A^\bot \parr B^\bot \comma \tmof{x} B \otimes A}
+  }
+\]
+Let $Q$ be the term in the conclusion of the above derivation.
+Given an arbitrary derivation ending in
+$P \bvdash \Gamma \comma w : A \otimes B$,
+one may replace $A \otimes B$ with $B \otimes A$ as follows:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{w} A \otimes B}
+  &
+  \tm{Q} \bvdash \tp{\tmof{w} A^\bot \parr B^\bot \comma \tmof{x} B \otimes A}
+}{Cut}{
+  \tm{\nu w.(P \mid Q)} \bvdash \tp{\Gamma \comma \tmof{x} B \otimes A}
+}
+\]
+Here process $P$ communicates along $w$ obeying the protocol $A \otimes B$,
+outputting $A$ and then behaving as $B$.
+Composing $P$ with $Q$ yields the process that
+communicates along $x$ obeying the protocol $B \otimes A$,
+outputting $B$ and then behaving as $A$.
+
+The multiplicative units are $1$ for $\otimes$ and $\bot$ for $\parr$.
+We interpret $1$ as the session type of a channel that transmits an empty ouput,
+and $\bot$ as the session type of a channel that accepts an empty input.
+These are related by duality: $1^\bot = \bot$.
+Their rules are shown in Figure~\ref{fig:cll}.
+Cut of empty output $1$ against empty input $\bot$
+corresponds to an empty communication, as shown in
+rule~$(\beta_{1\bot})$:
+\[\colored
+\tm{\nu x\Of{1}.(x[\,].0 \mid x().P)}  \becomes  \tm{P}
+\]
+This rule resembles reduction of a nilary communication 
+in the polyadic $\pi$-calculus.
+
+
+\paragraph*{Example}
+We give a series of examples inspired by internet commerce,
+based on similar examples in \citet{CairesPfenning10}.
+Our first example is that of a sale, where
+the client sends a product name and credit card number
+to a server, which returns a receipt.  Define:
+\[\colored
+\begin{array}{lcl}
+\tp{\key{Buy}} &\defeq&
+   \tp{\key{Name} \otimes (\key{Credit} \otimes (\key{Receipt}^\bot \parr \bot))} \\
+\tp{\key{Sell}} &\defeq&
+  \tp{\key{Name}^\bot \parr (\key{Credit}^\bot \parr (\key{Receipt} \otimes 1))} \\
+\tm{\key{buy}_x} &\defeq&
+  \tm{x[u].(\key{put-name}_u \mid x[v].(\key{put-credit}_v \mid x(w).x(\,).
+    \key{get-receipt}_w))} \\
+\tm{\key{sell}_x} &\defeq&
+  \tm{x(u).x(v).x[w].(\key{compute}_{u,v,w} \mid x[\,].0)}
+\end{array}
+\]
+Here $\key{Name}$ is the type of product names;
+$\key{Credit}$ is the type of credit card numbers;
+$\key{Receipt}$ is the type of receipts;
+$\key{put-name}_u$ transmits on $u$ the name of a product, say ``tea'';
+$\key{put-credit}_v$ transmits on $v$ a credit card number;
+$\key{compute}_{u,v,w}$ accepts name $u$ and credit card $v$, and computes
+a receipt, which it transmits on $w$;
+$\key{get-receipt}_w$ accepts receipt $w$, and continues with the buyer's business;
+$\Gamma$ specifies other channels used by the client; and
+$\Theta$ specifies other channels used by the server.
+
+Observe that $\key{Buy} = \key{Sell}^\bot$ and
+\[\colored
+\inference{
+  \tm{\key{buy}_x} \bvdash \tp{\Gamma \comma \tmof{x} \key{Buy}} &
+  \tm{\key{sell}_x} \bvdash \tp{\Theta \comma \tmof{x} \key{Sell}}
+}{Cut}{
+  \tm{\nu x.(\key{buy}_x \mid \key{sell}_x)} \bvdash \tp{\Gamma \comma \Theta}
+}
+\]
+By three applications of $(\beta_{\otimes\parr})$ and one of $(\beta_{1\bot})$, we have
+\[\colored
+\begin{array}{l}
+\tm{\nu x.(\key{buy}_x \mid \key{sell}_x)} \becomes \\
+\quad\quad\quad \tm{\nu u.(\key{put-name}_u \mid \nu v.(\key{put-credit}_v \mid
+  \nu w.(\key{compute}_{u,v,w} \mid \key{get-receipt}_w)))}
+\end{array}
+\]
+illustrating the interaction of output and input.
+
+% Detailed derivation of $\key{buyer}_x$.
+% \[\colored
+%   \makebox[0em]{
+%     \inference{
+%       \tm{\key{name}_u} \bvdash \tp{\Gamma_1 \comma \tmof{u} \key{Name}}
+%       &
+%       \inference{
+%         \tm{\key{card}_v} \bvdash \tp{\Gamma_2 \comma \tmof{v} \key{Card}}
+%         &
+%         \inference{
+%           \inference{
+%             \tm{\key{receive}_w} \bvdash \tp{\Gamma_3 \comma \tmof{w}\key{Receipt}^\bot}
+%           }{\bot}{
+%             \tm{x(\,).\key{receive}_w}
+%               \bvdash \tp{\Gamma_3 \comma
+%                 \tmof{w}\key{Receipt}^\bot \comma \tmof{x} \bot}
+%           }
+%         }{\parr}{
+%           \tm{x(w).x(\,).\key{receive}_w}
+%             \bvdash \tp{\Gamma_3 \comma \tmof{x} 
+%               \key{Receipt}^\bot \parr \bot}
+%         }    
+%       }{\otimes}{
+%         \tm{x[v].(\key{card}_v \mid x(w).x(\,).\key{receive}_w)}
+%           \bvdash \tp{\Gamma_2 \comma \Gamma_3 \comma \tmof{x} 
+%             \key{Credit} \otimes (\key{Receipt}^\bot \parr \bot)}
+%       }
+%     }{\otimes}{
+%       \tm{x[u].(\key{name}_u \mid x[v].(\key{card}_v \mid x(w).x(\,).\key{receive}_w))}
+%         \bvdash \tp{\Gamma_1 \comma \Gamma_2 \comma \Gamma_3, \tmof{x} 
+%           \key{Name} \otimes (\key{Credit} \otimes (\key{Receipt}^\bot \parr \bot))}
+%     }
+%   } 
+% \]
+
+% Alternative derivation of $\key{buyer}_x$.
+% \[\colored
+%   \makebox[0em]{
+%     \inference{
+%       \tm{\key{name}_u} \bvdash \tp{\Gamma_1 \comma \tmof{u} \key{Name}}
+%       &
+%       \inference{
+%         \tm{\key{card}_v} \bvdash \tp{\Gamma_2 \comma \tmof{v} \key{Card}}
+%         &
+%         \inference{
+%           \inference{
+%             \tm{\key{receive}_{w,y}} \bvdash \tp{\Gamma_3 \comma
+%               \tmof{w}\key{Receipt}^\bot \comma \tmof{y}1}
+%           }{\bot}{
+%             \tm{x(\,).\key{receive}_{w,y}}
+%               \bvdash \tp{\Gamma_3 \comma
+%                 \tmof{w}\key{Receipt}^\bot \comma \tmof{x} \bot \comma \tmof{y}1}
+%           }
+%         }{\parr}{
+%           \tm{x(w).x(\,).\key{receive}_{w,y}}
+%             \bvdash \tp{\Gamma_3 \comma \tmof{x} 
+%               \key{Receipt}^\bot \parr \bot \comma \tmof{y}1}
+%         }    
+%       }{\otimes}{
+%         \tm{x[v].(\key{card}_v \mid x(w).x(\,).\key{receive}_{w,y})}
+%           \bvdash \tp{\Gamma_2 \comma \Gamma_3 \comma \tmof{x} 
+%             \key{Credit} \otimes (\key{Receipt}^\bot \parr \bot) \comma \tmof{y}1}
+%       }
+%     }{\otimes}{
+%       \tm{x[u].(\key{name}_u \mid x[v].(\key{card}_v \mid x(w).x(\,).\key{receive}_{w,y}))}
+%         \bvdash \tp{\Gamma_1 \comma \Gamma_2 \comma \Gamma_3, \tmof{x} 
+%           \key{Name} \otimes (\key{Credit} \otimes (\key{Receipt}^\bot \parr \bot))
+%             \comma \tmof{y}1}
+%     }
+%   } 
+% \]
+
+% Detailed derivation of $\key{seller}_x$.
+% \[\colored
+%   \makebox[0em]{
+%     \inference{
+%       \inference{
+%         \inference{
+%           \tm{\key{compute}_{u,v,w}}
+%             \bvdash \tp{\Delta \comma \tmof{u} \key{Name}^\bot \comma
+%               \tmof{v} \key{Credit}^\bot \comma \tmof{w} \key{Receipt}}
+%           &
+%           \tm{x[\,].0} \bvdash \tp{\tmof{x}1}
+%         }{\otimes}{
+%           \tm{x[w].(\key{compute}_{u,v,w} \mid x[\,].0)}
+%             \bvdash \tp{\Delta \comma \tmof{u} \key{Name}^\bot \comma
+%               \tmof{v} \key{Credit}^\bot \comma \tmof{x} \key{Receipt} \otimes 1}
+%         }
+%       }{\parr}{
+%         \tm{x(v).x[w].(\key{compute}_{u,v,w} \mid x[\,].0)}
+%           \bvdash \tp{\Delta \comma \tmof{u} \key{Name}^\bot \comma
+%             \tmof{x} \key{Credit}^\bot \parr (\key{Receipt} \otimes 1)}
+%       }
+%     }{\parr}{
+%       \tm{x(u).x(v).x[w].(\key{compute}_{u,v,w} \mid x[\,].0)}
+%         \bvdash \tp{\Delta \comma \tmof{x}
+%           \key{Name}^\bot \parr (\key{Credit}^\bot \parr (\key{Receipt} \otimes 1))}
+%     }
+%   } 
+% \]
+
+
+\paragraph{Example}
+As a further example, illustrating use of the units
+$1$ and $\bot$, we consider a way to express two parallel computations.
+We introduce a primitive computation 
+\[\colored
+\tm{\key{par}_{y,z}} \bvdash \tp{\tmof{y}1 \comma \tmof{z}1}
+\]
+that sends a signal along both $y$ and $z$ in parallel.
+Then we can derive a term that executes two processes $P \bvdash \Gamma$
+and $Q \bvdash \Delta$ in parallel, as follows:
+\[\colored
+\inference{
+  \inference{
+    \tm{\key{par}_{y,z}} \bvdash \tp{\tmof{y}1 \comma \tmof{z}1}
+    &
+    \inference{
+      \tm{P} \bvdash \tp{\Gamma}
+    }{\bot}{
+      \tm{y().P} \bvdash \tp{\tmof{y}\bot \comma \Gamma}
+    }
+  }{Cut}{
+    \tm{\nu y.(\key{par}_{y,z} \mid y().P)} \bvdash \tp{\tmof{z}1 \comma \Gamma}
+  } 
+  &
+  \inference{
+    \tm{Q} \bvdash \tp{\Delta}
+  }{\bot}{
+    \tm{z().Q} \bvdash \tp{\tmof{z}\bot \comma \Delta}
+  }
+}{Cut}{
+  \tm{\nu z.(\nu y.(\key{par}_{y,z} \mid y().P) \mid z().Q)}
+    \bvdash \tp{\Gamma \comma \Delta}
+}
+\]
+In what follows, we abbreviate the above derivation as
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma}
+  &
+  \tm{Q} \bvdash \tp{\Delta}
+}{Mix}{
+  \tm{P \mid Q} \bvdash \tp{\Gamma \comma \Delta}
+}
+\]
+We will see that Mix has a logical interpretation in Section~\ref{sec:conclusion}.
+
+% Assuming 
+% \[\colored
+% \tm{P} \bvdash \tp{\Gamma}
+% \quad\quad \textrm{and} \quad\quad
+% \tm{Q} \bvdash \tp{\Delta}.
+% \]
+% Then
+% \[\colored
+% \tm{\nu{z}(\nu{y}(\key{par}_{y,z} \mid (y().P) \mid (z().Q)} \bvdash \tp{\Gamma \comma \Delta}
+% \]
+% executes processes $P$ and $Q$ in parallel.
+
+\subsection{Selection and choice}
+
+\figcommute
+
+The additive connectives $\oplus$ and $\with$ are dual.
+We interpret $A \oplus B$ as the session type of a channel
+which selects from either an $A$ or a $B$,
+and $A \with B$ as the session type of a channel
+which offers a choice of either an $A$ or a $B$.
+
+The rule for left selection is:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A}
+}{\oplus_1}{
+  \tm{x[\inl].P} \bvdash \tp{\Gamma \comma \tmof{x}A \oplus B}
+}
+\]
+Process $P$ communicates along channel $x$ obeying protocol $A$.  The
+composite process $x[\inl].P$ communicates along channel $x$
+obeying protocol ${A \oplus B}$; it transmits along $x$ a request
+to select the left option from a choice, and then
+executes process $P$.  The rule for right selection is symmetric.
+
+The rule for choice is:
+\[\colored
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}A}  &
+  \tm{R} \bvdash \tp{\Delta \comma \tmof{x}B}
+}{\with}{
+  \tm{x.\case(Q,R)} \bvdash \tp{\Delta \comma \tmof{x}A \with B}
+}
+\]
+% Process $Q$ communicates along channel $x$ obeying protocol $A$
+% and process $R$ communicates along channel $y$ obeying protocol $B$.
+% Apart from channel $x$, processes $Q$ and $R$ communicate on the
+% same channels obeying the same protocols.
+The composite process
+$x.\case(Q,R)$ communicates along channel $x$ obeying
+protocol ${A \with B}$; it receives a selection along channel $x$ and
+executes either process $Q$ or $R$ accordingly.
+
+For selection, channel $x$ has type $A$ in the component process $P$
+and type $A \oplus B$ in the composite process $x[\inl].P$.
+For choice, channel $x$ has type $A$ in the component process $Q$,
+type $B$ in the component process $R$, and type $A \with B$ in the
+composite process $x.\case(Q,R)$.  Again, one may regard the
+type of the channel evolving as communication proceeds,
+corresponding to the notion of session type.
+
+Cut of selection $\oplus$ against choice $\with$ corresponds
+to picking an alternative, as shown in rule~$(\beta_{\oplus\with})$:
+\[\colored
+\tm{x[\inl].P \mid x.\case(Q,R)} \becomes \tm{\nu x.(P \mid Q)}
+\]
+The rule to select the right option is symmetric.
+
+The additive units are $0$ for $\oplus$ and $\top$ for $\with$.
+We interpret $0$ as the session type of a channel that
+selects from among no alternatives,
+and $\bot$ as the session type of a channel that
+offers a choice among no alternatives.
+These are related by duality: $0^\bot = \top$.
+Their rules are shown in Figure~\ref{fig:cll}.
+There is no rule for $0$, because it is impossible to
+select from no alternatives.  Hence, there is also no reduction
+for a cut of an empty selection against an empty choice,
+as shown in Figure~\ref{fig:principal}.
+
+
+\paragraph*{Example}
+We extend our previous example to offer a choice of two operations,
+selling an item or quoting a price.  To start, we specify a second
+form of internet commerce, quoting a price, where the client
+sends a product name to the server, which returns its price.
+Define:
+\[\colored
+\begin{array}{lcl}
+\tp{\key{Shop}}    &\defeq& \tp{(\key{Name} \otimes (\key{Price}^\bot \parr \bot))} \\
+\tp{\key{Quote}}   &\defeq& \tp{(\key{Name}^\bot \parr (\key{Price} \otimes 1))} \\
+\tm{\key{shop}_x}  &\defeq& \tm{x[u].(\key{put-name}_u \mid x(v).\key{get-price}_v))} \\
+\tm{\key{quote}_x} &\defeq& \tm{x(u).x[v].(\key{lookup}_{u,v} \mid x[\,].0)}
+\end{array}
+\]
+Here $\key{Name}$ is the type of product names;
+$\key{Price}$ is the type of prices;
+$\key{put-name}_u$ transmits on $u$ the name of a product, say ``tea'';
+$\key{lookup}_{u,v}$ accepts name $u$ and looks up the price, which it transmits along $v$;
+$\key{get-price}$ accepts price $v$, and continues with the requester's business;
+$\Delta$ specifies other channels used by the client; and
+$\Theta$ specifies other channels used by the server.
+Apart from the distinguished channel $x$,
+$\key{sell}_X$ and $\key{quote}_X$ use the \emph{same} other channels,
+while $\key{buy}_X$ and $\key{shop}_x$ may use
+\emph{different} other channels.
+
+Observe that $\key{Shop} = (\key{Quote})^\bot$ and
+\[\colored
+\inference{
+  \tm{\key{shop}_x} \bvdash \tp{\Delta \comma \tmof{x} \key{Shop}} &
+  \tm{\key{quote}_x} \bvdash \tp{\Theta \comma \tmof{x} \key{Quote}}
+}{Cut}{
+  \tm{\nu x.(\key{shop}_x \mid \key{quote}_x)} \bvdash \tp{\Delta \comma \Theta}
+}
+\]
+By two applications of $(\beta_{\otimes\parr})$ and one of $(\beta_{1\bot})$,
+we have
+\[\colored
+\tm{\nu x.(\key{shop}_x \mid \key{quote}_x)}
+\becomes
+\tm{\nu u.(\key{put-name}_u \mid \nu v.(\key{lookup}_{u,v} \mid \key{get-price}_w)))}
+\]
+further illustrating the interaction of output and input.
+
+We now combine the two servers into one that offers a choice of
+either service, and promote each of the
+previous clients into one that first selects the appropriate service
+and then behaves as before.  Define:
+\[\colored
+\begin{array}{lcl}
+\tp{\key{Select}}        &\defeq& \tp{\key{Buy} \oplus \key{Shop}} \\
+\tp{\key{Choice}}        &\defeq& \tp{\key{Sell} \with \key{Quote}} \\
+\tm{\key{select-buy}_x}  &\defeq& \tm{x[\inl].\key{buy}_x} \\
+\tm{\key{select-shop}_x} &\defeq& \tm{x[\inr].\key{shop}_x} \\
+\tm{\key{choice}_x}      &\defeq& \tm{x.\case(\key{sell}_x,\key{quote}_x)}
+\end{array}
+\]
+Observe that $\key{Select} = (\key{Choice})^\bot$ and
+\[\colored
+\inference{
+  \tm{\key{select-buy}_x} \bvdash \tp{\Gamma \comma \tmof{x} \key{Choose}} &
+  \tm{\key{choice}_x} \bvdash \tp{\Theta \comma \tmof{x} \key{Offer}} &
+}{Cut}{
+  \tm{\nu x.(\key{select-buy}_x \mid \key{choice}_x)} \bvdash \tp{\Gamma \comma \Theta}
+}
+\]
+By one application of $(\beta_{\oplus\with})$ we have
+\[\colored
+\tm{\nu x.(\key{select-buy}_x \mid \key{choice}_x)}
+\becomes
+\tm{\nu x.(\key{buy}_x \mid \key{sell}_x)}
+\]
+illustrating the interaction of selection and choice.
+Similarly, the above judgment also holds if we replace
+$\key{select-buy}_x$ with $\key{select-shop}_x$ and $\Gamma$ with
+$\Delta$, and we have
+\[\colored
+\tm{\nu x.(\key{select-shop}_x \mid \key{choice}_x)} \becomes
+\tm{\nu x.(\key{shop}_x \mid \key{quote}_x)}
+\]
+illustrating the other selection.
+
+\subsection{Servers and clients}
+
+The exponential connectives $!$ and $?$ are dual.  We interpret $!A$
+as the session type of a server that will repeatedly accept an $A$,
+and interpret $?A$ as the session type of a collection of clients that
+may each request an $A$.  A server must be impartial, providing the
+same service to each client, whereas clients may pass different 
+requests to the same server.  Hence, $!A$ offers uniform
+behaviour, while $?A$ accumulates diverse behviours.
+
+% Servers and clients are asymmetric: a server must be impartial,
+% providing the same service to each client; whereas different clients
+% may accumulate requests to pass to the same server.
+
+% We interpret $!A$ as a session which will repeatedly accept an $A$,
+% and interpret $?A$ as a session which may repeatedly request an $A$.
+% One may think of $!A$ as the type of a server 
+% and $?A$ as the type of a client.
+% Servers are required to be impartial, in that the same service
+% is provided to every client; there may be any number of clients
+% for the same service.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% CONTINUE FROM HERE %%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The rule for servers is:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{{?\Gamma} \comma \tmof{y}A}
+}{!}{
+  \tm{!x(y).P} \bvdash \tp{{?\Gamma} \comma \tmof{x}{!A}}
+}
+\]
+Process $P$ communicates along channel $y$ obeying protocol $A$.  The
+composite process $!x(y).P$ communicates along channel $x$ obeying the
+protocol $!A$; it receives $y$ along $x$, and then spawns a fresh copy
+of $P$ to execute.  All channels used by $P$ other than $y$ must obey
+a protocol of the form $?B$, for some $B$, to ensure that replicating
+$P$ respects the type discipline.  Intuitively, a process may only
+provide a replicable service if it is implemented by communicating
+only with other processes that provide replicable services.
+
+There are three rules for clients, corresponding to the fact that a
+server may have one, none, or many clients.  The three rules
+correspond to the rules of classical linear logic for
+dereliction, weakening, and contraction.
+
+The first rule is for a single client.
+\[\colored
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{y}A}
+}{?}{
+  \tm{?x[y].Q} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+\]
+Process $Q$ communicates along channel $y$ obeying protocol $A$.
+The composite process $?x[y].Q$ communicates along channel $x$
+obeying protocol $?A$; it allocates a fresh channel $y$,
+transmits $y$ along $x$, and then executes process $Q$.
+Cut of rule $!$ against rule $?$ corresponds to spawning
+a single copy of a server to communicate with a client,
+as shown in rule~$(\beta_{!?})$:
+\[\colored
+\tm{\nu x.(!x(y).P \mid {?x}[y].Q)} \becomes \tm{\nu y.(P \mid Q)}
+\]
+
+The second rule is for no clients.
+\[\colored
+\inference{
+  \tm{Q} \bvdash \tp{\Delta}
+}{Weaken}{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+\]
+A process $Q$ that does not communicate along any
+channel obeying protocol $A$ may be regarded
+as communicating along a channel obeying protocol $?A$.
+Cut of rule $!$ against Weaken corresponds to
+garbage collection, deallocating a server that has no clients,
+as shown in rule~$(\beta_{!W})$:
+\[\colored
+\tm{\nu x.(!x(y).P \mid Q)} \becomes \tm{Q}, \quad\textrm{if $x \not\in \fn(Q)$}
+\]
+
+The third rule aggregates multiple clients.
+\[\colored
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}{?A} \comma \tmof{x'}{?A}}
+}{Contract}{
+  \tm{Q\sub{x/x'}} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+\]
+Process $Q$ communicates along two channels
+$x$ and $x'$ both obeying protocol $?A$.
+Process $Q\sub{x/x'}$ is identical to $Q$
+save all occurrences of $x'$ have been renamed to $x$;
+it communicates along a single channel $x$ obeying protocol $?A$.
+Cut of rule $!$ against Contract corresponds to
+replicating a server, as shown in rule~$(\beta_{!C})$:
+\[\colored
+\begin{array}{l}
+\tm{\nu x.(!x(y).P \mid Q\sub{x/x'})} \becomes
+  \tm{\nu x.(!x(y).P \mid \nu x'.(!x'(y).P \mid Q))}
+\end{array}
+\]
+The type derivation on the right-hand side of rule~$(\beta_{!C})$
+applies Contract once for each free name in $\Gamma$.
+The derivation is written using the following priming convention:
+we assume that to each name $z_i$ there is associated another name $z_i'$,
+and we write $P'$ for the process identical to $P$ save that
+each free name $z_i$ in $P$ has been replaced by $z_i'$;
+that is, if $\fn(P) = \set{z_1,\ldots,z_n}$
+then $P' = P\sub{z_1'/z_1,\ldots,z_n'/z_n}$.
+
+\paragraph*{Example}
+We further extend our example, so that the server offers
+a replicated service to multiple clients.
+Presume that in the preceding examples the channels $\Theta$
+used by $\key{sell}_x$, $\key{quote}_x$,
+and $\key{choice}_x$ is in fact of the form $?\Theta$,
+so that each process is implemented by communicating
+only with other processes that provide replicable services.
+Define:
+\[\colored
+\begin{array}{lcl}
+\tp{\key{Client}}   &\defeq&  \tp{?\key{Select}} \\
+\tp{\key{Server}}   &\defeq&  \tp{!\key{Choice}} \\
+\tm{\key{client}_x} &\defeq&  \tm{{?x(y).\key{select-buy}_y} \mid
+                                  {?x(y).\key{select-shop}_y}} \\
+\tm{\key{server}_x} &\defeq&  \tm{!x(y).\key{choice}_y}
+\end{array}
+\]
+Here the combination of the two processes
+% $?x(y).\key{select-buy}_y$ and $?x(y).\key{select-shop}_y$
+in $\key{client}_x$ is formed using the Mix rule, as
+discussed in the second example of Section~\ref{sec:output}.
+
+Observe that $\key{Client} = \key{Server}^\bot$ and
+\[\colored
+\inference{
+  \tm{\key{client}_x} \bvdash \tp{\Gamma \comma \Delta \comma \tmof{x} \key{Client}} &
+  \tm{\key{server}_x} \bvdash \tp{?\Theta \comma \tmof{x} \key{Server}}
+}{Cut}{
+  \tm{\nu x.(\key{client}_x \mid \key{server}_x)}
+    \bvdash \tp{\Gamma \comma \Delta \comma {?\Theta}}
+}
+\]
+By one application of $(\beta_{!C})$ and two of $(\beta_{!?})$ we have
+\[\colored
+\tm{\nu x.(\key{client}_y \mid \key{server}_y)}
+\becomes
+\tm{(\nu y.\key{select-buy}_y \mid \key{choice}_y) \mid
+    (\nu y'.\key{select-shop}_{y'} \mid \key{choice}_{y'})}
+\]
+illustrating the interaction of a replicable server with multiple clients.
+
+
+\paragraph*{Alternative notation}
+A referee notes weakening and contraction
+could be given explicit notation rather than implicit,
+for instance using $?x[\,].Q$ to denote weakening and
+and $?x[x',x''].Q$ to denote contraction, yielding type rules
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta}
+}{Weaken}{
+  \tm{?x[\,].Q} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+
+\end{array}
+\]
+and
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x'}{?A} \comma \tmof{x''}{?A}}
+}{Contract}{
+  \tm{?x[x',x''].Q} \bvdash \tp{\Delta \comma \tmof{x}{?A}}
+}
+
+\end{array}
+\]
+while reduction rules $(\beta_{!W})$ and $(\beta_{!C})$ become
+\[\colored
+\tm{\nu x.(!x(y).P \mid {?x}[\,].Q)} \becomes
+  ?z_1[\,].\cdots.?z_n[\,].\tm{Q}
+\]
+and
+\[\colored
+\begin{array}{l}
+\tm{\nu x.(!x(y).P \mid {?x}[x',x''].Q)} \becomes {} \\ 
+  \quad\quad\quad
+  \tm{?z_1[z_1',z_1''].\cdots.?z_n[z_n',z_n''].}
+  \tm{\nu x'.(!x'(y').P' \mid \nu x''.(!x''(y'').P'' \mid Q))}
+\end{array}
+\]
+where $\fn(P) = \set{y,z_1,\ldots,z_n}$.  
+We avoid this alternative because the implicit
+notation is more convenient. 
+
+
+\subsection{Polymorphism}
+
+The quantifiers $\exists$ and $\forall$ are dual.
+We interpret $\any{X}B$ as the session type of a channel that instantiates
+propositional variable $X$ to a given proposition, and interpret
+$\all{X}B$ as the session type of a process that generalises over $X$.
+These correspond to type application
+and type abstraction in polymorphic $\lambda$-calculus,
+or to sending and receiving types in the polymorphic
+$\pi$-calculus of \citet{Turner95}.
+
+The rule for instantiation is:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}B\sub{A/X}}
+}{\exists}{
+  \tm{x[A].P} \bvdash \tp{\Gamma \comma \tmof{x}\any{X}B}
+}
+\]
+Process $P$ communicates along channel $x$ obeying
+protocol $B\sub{A/X}$.
+The composite process $x[A].P$ communicates along
+channel $x$ obeying protocol $\any{X}B$;
+it transmits a representation of $A$ along $x$,
+and then executes $P$.
+
+The rule for generalisation is:
+\[\colored
+\inference{
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}B}
+}{\forall~~\textrm{($X \not\in \fv(\Delta)$)}}{
+  \tm{x(X).Q} \bvdash \tp{\Delta \comma \tmof{x}\all{X}B}
+}
+\]
+Process $Q$ communicates along channel $x$
+obeying protocol $B$.
+The composite process $x(X).Q$ communicates
+along channel $x$ obeying protocol $\all{X}B$;
+it receives a description of a proposition along channel $x$,
+binds the proposition to the propositional variable $X$,
+and then executes $Q$.
+
+Cut of instantiation $\exists$ against generalisation $\forall$
+corresponds to transmitting a representation of a proposition,
+as shown in rule~($\beta_{\exists\forall})$:
+\[\colored
+\tm{\nu x \Of{\any{X}B}.(x[A].P \mid x(X).Q)} \becomes
+\tm{\nu x \Of{B\sub{A/X}}.(P \mid Q\sub{A/X})}
+\]
+This rule behaves similarly to beta reduction of
+a type abstraction against a type application in
+polymorphic $\lambda$-calculus, or communication of
+a type in the polymorphic $\pi$-calculus.
+
+\paragraph*{Example} 
+Quantification supports a definition of the Church numerals in our system.
+Define
+\[\colored
+\begin{array}{lcl}
+\tp{\key{Church}}   &\defeq&  \tp{\all{X}.?(X \otimes X^\bot) \parr (X^\bot \parr X)} \\
+\tm{\key{zero}_x}   &\defeq&  \tm{x(X).x(s).x(z).z \link x} \\
+\tm{\key{one}_x}    &\defeq&  \tm{x(X).x(s).x(z).?s[f].f[a].(a \link z \mid f \link x)} \\
+\tm{\key{two}_x}    &\defeq&  \tm{x(X).x(s).x(z).?s[f].f[a].(a \link z \mid 
+				   ?s[g].g[b].(f \link b \mid g \link x))}
+\end{array}
+\]
+Observe that if we define $A \lolli B = A^\bot \parr B$ then the type of Church
+numerals may be rewritten as $\all{X} !(X \lolli X) \lolli (X \lolli X)$, which may
+appear more familiar.  The terms $\key{zero}_x$, $\key{one}_x$, and $\key{two}_x$
+accept a type variable $X$, a process $s : ?(X \otimes X^\bot)$ and a value $z : X^\bot$,
+and invoke $s$ zero, one, or two times on $z$ to return a value of type $X$.
+We may invoke the Church numerals by instantiating $X$, $s$, and $z$ appropriately.
+
+Define process
+\[\colored
+\tm{\key{count}_{x,y}} \bvdash \tp{\tmof{x}\key{Church}^\bot \comma \tmof{y}\key{Nat}}
+\]
+that accepts a Church numeral on $x$ and transmits the corresponding natural on $y$
+as follows:
+\[\colored
+\begin{array}{lcl}
+\tm{\key{count}_{x,y}} &\defeq& \tm{x[\key{Nat}].x[s].(!s(f).f(a).\key{incr}_{a,f} \mid
+                                                   x[z].(\key{nought}_z \mid x \link y))}
+\end{array}
+\]
+Here $\key{Nat}$ is the type of natural numbers;
+process $\key{incr}_{a,b} \bvdash a:\key{Nat}^\bot \comma b:\key{Nat}$
+accepts a natural along $a$ and transmits a value one greater along $b$; and
+process $\key{nought}_a \bvdash a:\key{Nat}$ transmits the value zero along $a$.
+Then
+\[\colored
+\begin{array}{lcl}
+\tm{\nu x.(\key{zero}_x \mid \key{count}_{x,y})} &\becomes&
+  \tm{\key{nought}_y} \\
+\tm{\nu x.(\key{one}_x \mid \key{count}_{x,y})} &\becomes&
+  \tm{\nu z.(\key{nought}_z \mid \key{incr}_{z,y})} \\
+\tm{\nu x.(\key{two}_x \mid \key{count}_{x,y})} &\becomes&
+  \tm{\nu a.(\nu z.(\key{nought}_z \mid \key{incr}_{z,a}) \mid \key{incr}_{a,y})}
+\end{array}
+\]
+These three processes transmit 0, 1, or 2, respectively, along $y$.
+  
+Similarly, define process
+\[\colored
+\tm{\key{ping}_{x,y,w}} \bvdash
+  \tp{\tmof{x}\key{Church}^\bot \comma \tmof{y}{?\bot} \comma \tmof{w}1}
+\]
+that accepts a Church numeral on $x$ and transmits a corresponding number of signals along $y$
+and when done transmits a signal along $w$, as follows:
+\[\colored
+\begin{array}{lcl}
+\tm{\key{ping}_{x,y,w}} &\defeq& \tm{x[1].x[s].(!s[f].f(a).a().{?y[u]}.u().f[\,].0 \mid
+                                            x[z].(z[\,].0 \mid x().w[\,].0))}
+\end{array}
+\]
+Then
+\[\colored
+\begin{array}{lcl}
+\tm{\nu x.(\key{zero}_x \mid \key{ping}_{x,y,w})} &\becomes&
+  \tm{w[\,].0} \\
+\tm{\nu x.(\key{one}_x \mid \key{ping}_{x,y,w})} &\becomes&
+  \tm{?y[u].u().w[\,].0} \\
+\tm{\nu x.(\key{two}_x \mid \key{ping}_{x,y,w})} &\becomes&
+  \tm{?y[u].u().?y[v].v().w[\,].0}
+\end{array}
+\]
+These three processes transmit 0, 1, or 2 signals, respectively, along $y$,
+and then a signal along $w$.
+
+% Type derivation of $\key{one}_x$:
+% \[\colored
+% \inference{
+%   \inference{
+%     \inference{
+%       \inference{
+%         \inference{
+%           \inference{
+%           }{Ax}{
+%             \tm{a \link z} \bvdash \tp{\tmof{a}X \comma \tmof{z}X^\bot}
+%           }
+%           &
+%           \inference{
+%           }{Ax}{
+%             \tm{f \link x} \bvdash 
+%               \tp{\tmof{f}X^\bot \comma \tmof{x}X}
+%           }          
+%         }{\otimes}{
+%           \tm{f[a].(a \link z \mid f \link x)} \bvdash 
+%             \tp{\tmof{f}{X \otimes X^\bot} \comma \tmof{z}X^\bot \comma \tmof{x}X}
+%         }
+%       }{?}{
+%         \tm{?s[f].f[a].(a \link z \mid f \link x)} \bvdash 
+%           \tp{\tmof{s}{?(X \otimes X^\bot)} \comma \tmof{z}X^\bot \comma \tmof{x}X}
+%       }
+%     }{\parr}{
+%       \tm{x(z).?s[f].f[a].(a \link z \mid f \link x)} \bvdash 
+%         \tp{\tmof{s}{?(X \otimes X^\bot)} \comma \tmof{x}X^\bot \parr X}
+%     }
+%   }{\parr}{
+%     \tm{x(s).x(z).?s[f].f[a].(a \link z \mid f \link x)} \bvdash 
+%       \tp{\tmof{x}{?(X \otimes X^\bot)} \parr (X^\bot \parr X)}
+%   }
+% }{\forall}{
+%   \tm{x(X).x(s).x(z).?s[f].f[a].(a \link z \mid f \link x)} \bvdash 
+%     \tp{\tmof{x} \all{X}{?(X \otimes X^\bot)} \parr (X^\bot \parr X)}
+% }
+% \]
+% 
+% Type derivation of $\key{two}_x$:
+% \[\colored
+% \inference{
+%   \inference{
+%     \inference{
+%       \inference{
+%         \inference{
+%           \inference{
+%             \inference{
+%             }{Ax}{
+%               \tm{a \link z} \bvdash \tp{\tmof{a}X \comma \tmof{z}X^\bot}
+%             }
+%             &
+%             \inference{
+%               \inference{
+%                 \inference{
+%                 }{Ax}{
+%                   \tm{f \link b} \bvdash \tp{\tmof{f}X^\bot \comma \tmof{b}X}
+%                 }
+%                 &
+%                 \inference{
+%                 }{Ax}{
+%                   \tm{g \link x} \bvdash \tp{\tmof{g}X^\bot \comma \tmof{x}X}
+%                 }
+%               }{\otimes}{
+%                 \tm{g[b].(f \link b \mid g \link x))} \bvdash
+%                   \tp{\tmof{f}X^\bot \comma \tmof{g}{X \otimes X^\bot} \comma \tmof{x}X}
+%               }
+%             }{?}{
+%               \tm{?s'[g].g[b].(f \link b \mid g \link x))} \bvdash
+%                 \tp{\tmof{f}X^\bot \comma \tmof{s'}{?(X \otimes X^\bot)} \comma \tmof{x}X}
+%             }
+%           }{\otimes}{
+%             \tm{f[a].(a \link z \mid ?s'[g].g[b].(f \link b \mid g \link x))} \bvdash
+%               \tp{\tmof{f}X \otimes X^\bot \comma
+%                     \tmof{s'}{?(X \otimes X^\bot)} \comma \tmof{z}X^\bot \comma \tmof{x}X}
+%           }
+%         }{?}{
+%           \tm{?s[f].f[a].(a \link z \mid ?s'[g].g[b].(f \link b \mid g \link x))} \bvdash
+%             \tp{\tmof{s}{?(X \otimes X^\bot)} \comma
+%                   \tmof{s'}{?(X \otimes X^\bot)} \comma \tmof{z}X^\bot \comma \tmof{x}X}
+%         }
+%       }{Contract}{
+%         \tm{?s[f].f[a].(a \link z \mid ?s[g].g[b].(f \link b \mid g \link x))} \bvdash
+%           \tp{\tmof{s}{?(X \otimes X^\bot)} \comma \tmof{z}X^\bot \comma \tmof{x}X}
+%       }
+%     }{\parr}{
+%       \tm{x(z).?s[f].f[a].(a \link z \mid ?s[g].g[b].(f \link b \mid g \link x))} \bvdash
+%         \tp{\tmof{s}{?(X \otimes X^\bot)} \comma \tmof{x}X^\bot \parr X}
+%     }
+%   }{\parr}{
+%     \tm{x(s).x(z).?s[f].f[a].(a \link z \mid ?s[g].g[b].(f \link b \mid g \link x))} \bvdash
+%       \tp{\tmof{x}{?(X \otimes X^\bot)} \parr (X^\bot \parr X)}
+%   }
+% }{\forall}{
+%   \tm{x(X).x(s).x(z).?s[f].f[a].(a \link z \mid ?s[g].g[b].(f \link b \mid g \link x))} \bvdash
+%     \tp{\tmof{x} \all{X}{?(X \otimes X^\bot)} \parr (X^\bot \parr X)}
+% }
+% \]
+% 
+% Type derivation of $\key{count}_{x,y}$:
+% \[\colored
+% \inference{
+%   \cdots
+% }{}{
+%   \tm{x[\key{Nat}].x[s].(!s(f).f(a).\key{incr}_{a,f} \mid x[z].(\key{nought}_z \mid x \link y))}
+%     \bvdash \tp{\tmof{x} \any{X}{!(X^\bot \parr X)} \otimes (X \otimes X^\bot)}
+% }
+% \]
+  
+\subsection{Commuting conversions}
+
+Commuting conversions are shown in Figure~\ref{fig:commute}.
+To save space, these are shown as reductions on terms, without
+the accompanying derivation trees.
+
+Each commuting conversion pushes a cut inside a communication
+operation.  There are two conversions for $\otimes$, depending upon
+whether the cut pushes into the left or right branch.  Each of the
+remaining logical operators has one conversion, with the exception 
+of $\oplus$, which has two (only the left rule is shown, the right rule is
+symmetric); and of $0$, which has none.
+
+An important aspect of CP is revealed by considering
+rule $(\kappa_{\parr})$, which pushes cut inside input:
+\[\colored
+\tm{\nu z\Of{C}.(x(y).P \mid Q)}
+\becomes 
+\tm{x(y).\nu z\Of{C}.(P \mid Q)}
+\]
+On the left-hand side process $Q$ may interact with the
+environment, while on the right-hand side $Q$ is guarded by the input
+and cannot interact with the environment.  In our setting, this is
+not problematic.  If $x$ is bound by an outer cut, then the guarding
+input is guaranteed to match a corresponding output at some point.
+If $x$ is not bound by an outer cut, then we consider the process
+halted while it awaits external communication along $x$; compare this
+with the use of labeled transitions in Lemma~5.7 of \citet{CairesPfenning10}.
+
+% The commuting conversions highlight a difference between
+% CP and $\pi$-calculus.  Consider rule $(\kappa_{\parr})$,
+% which pushes cut inside input:
+% \[\colored
+% \tm{\nu z\Of{C}.(x(y).P \mid Q)}
+% \becomes 
+% \tm{x(y).\nu z\Of{C}.(P \mid Q)}
+% \]
+% In $\pi$-calculus, on the left-hand side process $Q$ may interact with the
+% environment, while on the right-hand side $Q$ is guarded by the input
+% and cannot interact with the environment.  In CP, pushing the
+% input operation to the outside does not restrict the interactions
+% available to $Q$, because any interaction is mediated by a cut, and
+% another commuting conversion can again push such cuts inside the input.
+% Similarly for the other commuting conversions.
+
+\subsection{Cut elimination}
+
+In addition to the rules of Figures~\ref{fig:structural},
+\ref{fig:principal}, and~\ref{fig:commute}, we add
+a rule relating reductions to structural equivalences:
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{P} \equiv \tm{Q} & \tm{Q} \becomes \tm{R} & \tm{R} \equiv \tm{S}
+}{}{
+  \tm{P} \becomes \tm{S}
+}
+
+\end{array}
+\]
+And we add rules that permit reduction under cut:
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{P_1} \becomes \tm{P_2}
+}{}{
+  \tm{\nu x.(P_1 \mid Q)} \becomes \tm{\nu x.(P_2 \mid Q)}
+}
+
+\quad\quad
+
+\inference{
+  \tm{Q_1} \becomes \tm{Q_2}
+}{}{
+  \tm{\nu x.(P \mid Q_1) \becomes \nu x.(P \mid Q_2)}
+}
+
+\end{array}
+\]
+We do not add reduction under other operators; see below.
+
+CP satisfies subject reduction:
+well-typed processes reduce to well-typed processes.
+\begin{theorem}
+\label{thm:subject-reduction}
+If $P \bvdash \Gamma$ and $P \becomes Q$ then $Q \bvdash \Gamma$.
+\end{theorem}
+Proof sketch:
+Figures~\ref{fig:structural} and \ref{fig:principal}
+contain the relevant proofs for their rules, the proofs for
+Figure~\ref{fig:commute} are similar. $\Box$
+
+Say process $P$ is a \emph{cut} if it has the form
+$\nu x.(Q \mid R)$ for some $x$, $Q$, and $R$.
+CP satisfies top-level cut elimination:
+every process reduces to a process that is not a cut.
+\begin{theorem}
+\label{thm:cut-elim}
+If $P \bvdash \Gamma$ then there exists a $Q$ such that
+$P \becomes Q$ and $Q$ is not a cut.
+\end{theorem}
+Proof sketch:
+If $P$ is a cut, there are three possibilities.  If one side of the
+cut uses the axiom, apply \Ax\Cut.  If one side of the cut is itself a
+cut, recursively eliminate the cut.  In the remaining cases, either
+both sides are logical rules that act on the cut variable, in which
+case a principal reduction of Figure~\ref{fig:principal} applies, or
+at least one side is a logical rule acting on a variable other than
+the cut variable, in which case a commuting reduction of
+Figure~\ref{fig:commute} applies.
+Since we support impredicative polymorphism, where a polymorphic type
+may be instantiated by a polymorphic type, some care is required in
+formulating the induction to ensure termination, but this is
+standard \citep{Gallier90}.  $\Box$
+
+% With regard to the two equivalences, observe that
+% Swap may be required to apply a principal or commuting reduction,
+% while Assoc is unneeded for this proof; it's role is to show the
+% two possible choices of right-hand side for $(\beta_{\otimes\parr})$
+% are equivalent.
+
+This result resembles the Principal Lemma of Cut Elimination
+\citep[Section~13.2]{glt89}, which eliminates a final cut rule,
+possibly replacing it with (smaller) cuts further up the proof tree.
+Top-level cut elimination corresponds to lack of deadlock;
+it ensures that any process can reduce until it needs to perform
+an external communication.
+
+If our goal was to eliminate all cuts, we would need to introduce
+congruence rules, such as
+\[\colored
+\begin{array}{c}
+
+\inference{
+  \tm{P} \becomes \tm{Q}
+}{}{
+  \tm{x(y).P} \becomes \tm{x(y).Q}
+}
+
+\end{array}
+\]
+and similarly for each operator.  Such rules do not correspond well
+to our notion of computation on processes, so we omit them;
+this is analogous to the usual practice of not permitting
+reduction under lambda.
+
+
+\section{A session-typed functional language}
+\label{sec:gv}
+
+\figgv
+
+This section presents GV, a session-typed functional language based
+on one devised by \citet{GayVasconcelos10}, and presents its
+translation into CP.
+
+Our presentation of GV differs in some particulars from that
+of \citet{GayVasconcelos10}.  Most notably, our system is guaranteed
+free from deadlock whereas theirs is not.  Achieving this property
+requires some modifications to their system.  We split their
+session type `$\key{end}$' into two dual types `$\key{end}_!$'
+and `$\key{end}_?$', and we replace their constructs
+`$\key{accept}$', `$\key{request}$', and `$\key{fork}$',
+by two new constructs `$\key{with-connect-to}$' and `$\key{terminate}$'.
+
+% There are three contributions in this section: (1) it presents a
+% session-typed language that is free from deadlock, where the proof of
+% deadlock-freedom follows directly from the proof of cut-elimination
+% for classical linear logic; (2) it makes explicit the connection
+% between CP and previous work on session types; and (3) it
+% answers the question of how one might devise a practical language that
+% supports abstractions for both functions and sessions.
+
+A number of features of \citet{GayVasconcelos10}
+are not echoed here.  Their system is based on asynchronous buffered
+communication, they show that the size required of asynchronous
+buffers can be bounded by analysing session types, and they support
+recursive functions, recursive session types, and subtyping.  We omit
+these contributions for simplicity, but see no immediate difficulty in
+extending our results to include them.  Of course, adding recursive
+terms or recursive session types may remove the property that all
+programs terminate.
+
+For simplicity, we also omit a number of other possible
+features.  We do not consider base types, which are straightforward.
+We also do not consider how to add replicated servers with
+multiple clients, along the lines suggested by $!$ and $?$ in
+CP, or how to add polymorphism, along the
+lines suggested by $\exists$ and $\forall$ in CP, but both
+extensions appear straightforward.
+
+% The type rules of GV are summarised in Figure~\ref{fig:gv}.
+
+\paragraph*{Session types}
+Session types are defined by the following grammar:
+\[\colored
+\begin{array}{ll}
+\Tp{S} ::= \\
+\quad \Tp{\outp{T}S}	& \textrm{output value of type $T$ then behave as $S$} \\
+\quad \Tp{\inp{T}S}	& \textrm{input value of type $T$ then behave as $S$} \\
+\quad \Tp{\oplus \set{l_i:S_i}_{i \in I}}
+			& \textrm{select from behaviours $S_i$ with label $l_i$} \\
+\quad \Tp{\with \set{l_i:S_i}_{i \in I}}
+			& \textrm{offer choice of behaviours $S_i$ with label $l_i$} \\
+\quad \Tp{\outend}	& \textrm{terminator, convenient for use with output} \\
+\quad \Tp{\inend}	& \textrm{terminator, convenient for use with input}
+\end{array}
+\]
+Let $S$ range over session types, and let $T,U,V$ range over types.
+Session type $\outp{T}S$ describes a channel along which a value
+of type $T$ may be sent and which subsequently behaves as $S$.
+Dually, $\inp{T}S$ describes a channel along which a value
+of type $T$ may be received and which subsequently behaves as $S$.
+Session type $\oplus \set{l_i:S_i}_{1 \in I}$ describes a
+channel along which one of the distinct labels $l_i$ may be sent
+and which subsequently behaves as $S_i$.
+Dually, $\with \set{l_i:S_i}_{1 \in I}$ describes a channel
+along which one of the labels $l_i$ may be received,
+and which subsequently behaves as $S_i$.
+Finally, $\key{end}_!$ and $\key{end}_?$ describe channels
+that cannot be used for further communication.  As we will
+see, it is convenient to use one if the last action on
+the channel is a send, and the other if the last action
+on the channel is a receive.
+
+\paragraph*{Types}
+Types are defined by the following grammar:
+\[\colored
+\begin{array}{ll}
+\Tp{T,U,V} ::=  \\
+% \quad X               & \textrm{variable (linear)} \\
+\quad \Tp{S}		& \textrm{session type (linear)} \\
+\quad \Tp{T \otimes U}	& \textrm{tensor product (linear)} \\
+\quad \Tp{T \lolli U}	& \textrm{function (linear)} \\
+\quad \Tp{T \to U}	& \textrm{function (unlimited)} \\
+\quad \Tp{\key{Unit}}	& \textrm{unit (unlimited)}
+\end{array}
+\]
+Every session type is also a type, but not conversely.
+Types are formed from session types, tensor product,
+two forms of function space, and a unit for tensor product.
+
+Each type is classified as linear or unlimited:
+\[
+\begin{array}{c}
+% \lin(X) \quad\quad \lin(\all{X}U) \\
+\lin(S) \quad \lin(T \otimes U) \quad \lin(T \lolli U) \quad
+\un(T \to U) \quad \un(\key{Unit})
+\end{array}
+\]
+Here $\lin(T)$ denotes a type that is linear, and $\un(T)$ a type that
+is unlimited.  Session types, tensor, and one type of function are limited;
+the other type of function and unit are unlimited.
+Unlimited types support weakening and contraction,
+while linear types do not.  Unlimited types 
+correspond to those written with $!$ in CP.
+
+\paragraph*{Duals}
+Each session type $S$ has a dual $\overline{S}$, defined as follows:
+\[\colored
+\begin{array}{r@{\;}c@{\;}l}
+\Tp{\overline{\outp{T}S}}
+  &=&  \Tp{\inp{T}\overline{S}}  \\
+\Tp{\overline{\inp{T.S}}}
+  &=&  \Tp{\outp{T}\overline{S}}    \\
+\Tp{\overline{\oplus (l_i : S_i)_{i \in I}}}
+  &=&  \Tp{\with (l_i : \overline{S}_i)_{i \in I}}  \\
+\Tp{\overline{\with (l_i : S_i)_{i \in I}}}
+  &=&  \Tp{\oplus (l_i : \overline{S}_i)_{i \in I}}  \\
+\Tp{\overline{\outend}}
+  &=&  \Tp{\inend}  \\
+\Tp{\overline{\inend}}
+  &=&  \Tp{\outend}
+\end{array}
+\]
+Input is dual to output, selection is dual to choice,
+and the two terminators are dual.  Duality
+between input and output does not take the dual of the type.
+
+Duality is an involution, $\overline{\overline{S}} = S$.
+
+\paragraph*{Environments}
+We let $\Phi$, $\Psi$ range over environments associating variables to
+types.  Write $\un(\Phi)$ to indicate that each type in $\Phi$ is
+unlimited.  As in Section~\ref{sec:cll}, order in
+environments is ignored and we use linear maintenance.
+
+\paragraph*{Terms}
+Terms are defined by the following grammar:
+\[\colored
+\begin{array}{ll}
+\Tm{L,M,N} ::= \\
+\quad \Tm{x}			& \textrm{identifier} \\
+\quad \Tm{\key{unit}}	        & \textrm{unit constant} \\
+\quad \Tm{\lam{x}N}		& \textrm{function abstraction} \\
+\quad \Tm{L \app M}		& \textrm{function application} \\
+\quad \Tm{(M,N)}		& \textrm{pair construction} \\
+\quad \Tm{\key{let}~(x,y) = M~\key{in}~N}
+				& \textrm{pair deconstruction} \\
+% \quad \Tm{\Lam{X}N}           & \textrm{type abstraction} \\
+% \quad \Tm{L \app T}           & \textrm{type application} \\
+\quad \Tm{\key{send}~M~N}	& \textrm{send value $M$ on channel $N$} \\
+\quad \Tm{\key{receive}~M}	& \textrm{receive from channel $M$} \\
+\quad \Tm{\key{select}~l~M}	& \textrm{select label $l$ on channel $M$} \\
+\quad \Tm{\key{case}~M~\key{of}~\set{l_i : x.N_i}_{i \in I}}
+				& \textrm{offer choice on channel $M$} \\
+\quad \Tm{\key{with}~ x ~\key{connect}~M~\key{to}~N}
+				& \textrm{connect $M$ to $N$ by channel $x$} \\
+\quad \Tm{\key{terminate}~M}	& \textrm{terminate input}
+\end{array}
+\]
+The first six operations specify a linear $\lambda$-calculus,
+and the remaining six specify communication along a channel.
+
+The terms are best understood in conjunction with their type rules,
+shown in Figure~\ref{fig:gv}.  The rules for variables, unit,
+weakening, contraction, function abstraction and application,
+and pair construction and deconstruction are standard.
+Functions are either limited or unlimited.  As usual, function
+abstraction may produce an unlimited function only if all of
+its free variables are of unlimited type.  Following
+\citet{GayVasconcelos10} we do not give a separate rule
+for application of an unlimited function, but instead give a
+rule permitting an unlimited function to be treated as a linear
+function, which may then be applied using the rule for linear
+function application.
+
+For simplicity, we do not require that each term have a unique type.
+In particular, a $\lambda$-expression where all free variables have
+unlimited type may be given either linear or unlimited function type.
+In a practical system, one might introduce subtyping and arrange
+that each term have a unique smallest type.
+
+The rule for output is
+\[\colored
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{T} &
+  \Tp{\Psi} \bvdash \Tmof{N} \Tp{\outp{T}S}
+}{Send}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{send}~M~N} \Tp{S}
+}
+\]
+Channels are managed linearly, so each operation on channels
+takes the channel before the operation as an argument, and
+returns the channel after the operation as the result.
+Executing `$\key{send}~M~N$' outputs the value $M$ of
+type $T$ along channel $N$ of session type $\outp{T}S$,
+and returns the updated channel,
+which after the output has session type $S$.
+
+The rule for input is
+\[\colored
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{\inp{T}S}
+}{Receive}{
+  \Tp{\Phi} \bvdash \Tmof{\key{receive}~M} \Tp{T \otimes S}
+}
+\]
+Executing `\key{receive}~M' inputs a value from channel $M$ of session
+type $\inp{T}S$, and returns a pair consisting of the input value of
+type $T$, and the updated channel, which after the input has session
+type $S$.  The returned pair must be linear because it contains a session
+type, which is linear.
+
+\citet{GayVasconcelos10} treat `$\key{send}$' and `$\key{receive}$'
+as function constants, and require two versions of `$\key{send}$'
+to cope with complications arising from currying.
+We treat `$\key{send}$' and `$\key{receive}$' as language constructs,
+which avoids the need for two versions of `$\key{send}$'.
+Thanks to the rules for limited and unlimited function abstraction,
+$\lam{x}\lam{y}\key{send}~x~y$ has type $T \lolli \outp{T}S \lolli S$
+and also type $T \to \outp{T}S \lolli S$ when $\un(T)$.
+
+% (\citet{GayVasconcelos10} treat `$\key{send}$' and `$\key{receive}$'
+% as function constants, and require two versions of `$\key{send}$'
+% to cope with complications arising from currying.
+% We treat `$\key{send}$' and `$\key{receive}$' as language constructs,
+% which avoids the need for two versions of `$\key{send}$'.  One can
+% convert these to functions using ordinary function abstraction, which
+% will generate two versions of curried `$\key{send}$' thanks to the
+% rules for limited and unlimited function abstraction.)
+
+Select and Case are similar to Send and Receive, and standard.
+
+The rule to create new channels is:
+\[\colored
+\inference{
+  \Tp{\Phi \comma \Tmof{x}S} \bvdash \Tmof{M} \Tp{\key{end}_!} &
+  \Tp{\Psi \comma \Tmof{x}\overline{S}} \bvdash \Tmof{N} \Tp{T}
+}{Connect}{
+  \Tp{\Phi \comma \Psi} \bvdash \Tmof{\key{with}~x~\key{connect}~M~\key{to}~N} \Tp{T}
+}
+\]
+Executing `\key{with}~x~\key{connect}~M~\key{to}~N'
+creates a new channel $x$ with session type $S$,
+where $x$ is used at type $S$ within term $M$
+and at the dual type $\overline{S}$ within term $N$.
+The two terms $M$ and $N$ are evaluated concurrently.
+As is usual when forking off a value, only one of the
+two subterms returns a value that is passed to
+the rest of the program.  The left subterm returns
+the exhausted channel, which has type $\key{end}_!$.
+The right subterm returns a value of type $T$ that
+is passed on to the rest of the program.
+
+Finally, we require a rule to terminate the other channel:
+%Finally, we have a rule to terminate the other end of the channel:
+\[\colored
+\inference{
+  \Tp{\Phi} \bvdash \Tmof{M} \Tp{T \otimes \key{end}_?}
+}{Terminate}{
+  \Tp{\Phi} \bvdash \Tmof{\key{terminate}~M} \Tp{T}
+}
+\]
+Executing `\key{terminate}~M' evaluates term $M$, which returns a pair
+consisting of an exhausted channel of type $\key{end}_?$ and a value of
+type $T$, then deallocates the channel and returns the value.
+
+The constructs for Connect and Terminate between them deallocate
+two ends of a channel.  The system is designed so it is convenient
+to use $\key{end}_!$ on a channel whose last operation is Send or Select,
+and $\key{end}_?$ on a channel whose last operation is Receive or Case.
+
+% Looking at the type rules for Send and
+% Receive, we see that it will be convenient to arrange for a channel
+% that ends with a send to have session type $\key{end}_!$ and for
+% a channel that ends with a receive to have session type $\key{end}_?$.
+% The right subterm in Connect may either Terminate
+% its channel before returning, or the right subterm may
+% return its channel and Terminate it later.
+
+\figtranone
+\figtrantwo
+
+Usually, session typed systems make $\key{end}$
+an unlimited type that is self-dual, but the formulation here fits
+better with CLL.  A variation where $\key{end}$ is a linear type requiring
+explicit deallocation is considered by \citet{Vasconcelos11}.
+
+One might consider alternative designs, say to replace
+Connect by an operation that creates a channel and returns
+both ends of it in a pair of type $S \otimes \overline{S}$, or
+to replace Terminate by an operation that takes a pair
+of type $\key{end}_! \otimes \key{end}_?$ and returns unit.
+However, both of these designs are difficult to translate into
+CP, which suggests they may suffer from deadlock.
+
+% Our session calculus does not include a separate fork construct.
+% Forking is implicit in the with-connect-to construct.
+% Adding a separate fork construct should be possible if the
+% underlying process calculus is extended to support forking,
+% which requires extending the calculus with an equivalent of the
+% Mix rule, as discussed in Section~\ref{sec:mix}.
+
+% Gay and Vasconcelos take fork as a constant with type $T \to \key{Unit}$,
+% where $\un(T)$, which seems to make it impossible to fork a process that
+% depends on a linear variable, such as a session.  However, because $\key{Unit}$
+% has an of-course type, not requiring $\un(T)$ in their system would lead
+% to unsoundness.  It should be sound to permit fork of type $T \to 1$,
+% for any $T$, where $1$ is the linear equivalent of $\key{Unit}$.
+
+\subsection{Translation}
+
+% We now consider the translation of GV into CP, which
+% is given in Figures~\ref{fig:tran1} and~\ref{fig:tran2}.
+The translation of GV into CP is given in Figures~\ref{fig:tran1} and~\ref{fig:tran2}.
+
+\paragraph*{Session types}
+The translation of session types is as follows:
+\[\colored
+\begin{array}{r@{\;}c@{\;}l@{\quad}l}
+\tp{\tpsem{\outp{T}S}}
+  &=&  \tp{\tpsem{T}^\bot \parr \tpsem{S}} \\
+\tp{\tpsem{\inp{T}S}}
+  &=&  \tp{\tpsem{T} \otimes \tpsem{S}} \\
+\tp{\tpsem{\oplus \set{ l_i : S_i }_{i \in I}}}
+  &=&  \tp{\tpsem{S_1} \with \cdots \with \tpsem{S_n}},
+  &    I = \set{1,\ldots,n}  \\
+\tp{\tpsem{\with \set{ l_i : S_i }_{i \in I}}}
+  &=&  \tp{\tpsem{S_1} \oplus \cdots \oplus \tpsem{S_n}},
+  &    I = \set{1,\ldots,n}  \\
+\tp{\tpsem{\outend}}
+  &=&  \tp{\bot}  \\
+\tp{\tpsem{\inend}}
+  &=&  \tp{1}
+\end{array}
+\]
+This translation is surprising, in that each operator
+translates to the dual of what one might expect!
+The session type for output in GV, $\outp{T}S$
+is translated into $\parr$, the connective that is
+interpreted as input in CP, and the
+session type for input in GV, $\inp{T}S$
+is translated into $\otimes$, the connective that is
+interpreted as output in CP.
+Similarly $\oplus$ and $\with$ in GV
+translate, respectively, to $\with$ and $\oplus$ in CP.
+Finally, $\key{end}_!$ and $\key{end}_?$ in GV
+translate, respectively, to $\bot$ and $1$ in CP,
+the units for $\parr$ and $\otimes$.
+
+The intuitive explanation of this duality is that
+Send and Receive in GV take channels as \emph{arguments},
+whereas the interpretation of the connectives in CP is
+for channels as \emph{results}.  Indeed, the send operation
+takes a value and a channel, and sends the value to that
+channel---in other words, the channel must \emph{input} the value.
+Dually, the receive operation takes a channel and returns
+a value---in other words, the channel must \emph{output} the value.
+A similar inversion occurs with respect to Select and Case.
+
+Recall that duality on session types in GV leaves the
+types of sent and received values unchanged:
+\[\colored
+\begin{array}{r@{\;}c@{\;}l@{\quad\quad}r@{\;}c@{\;}l}
+\Tp{\overline{\outp{T}S}}
+  &=&  \Tp{\inp{T}\overline{S}} &
+\Tp{\overline{\inp{T.S}}}
+  &=&  \Tp{\outp{T}\overline{S}}
+\end{array}
+\]
+Conversely, the translation of these operations takes
+the dual of the sent value, but not the received value:
+\[\colored
+\begin{array}{r@{\;}c@{\;}l@{\quad\quad}r@{\;}c@{\;}l}
+\tp{\tpsem{\outp{T}S}}
+  &=&  \tp{\tpsem{T}^\bot \parr \tpsem{S}} &
+\tp{\tpsem{\inp{T}S}}
+  &=&  \tp{\tpsem{T} \otimes \tpsem{S}}
+\end{array}
+\]
+In classical linear logic, $A \lolli B = A^\bot \parr B$,
+so the right-hand side of the first line could alternatively
+be written $\sem{T} \lolli \sem{S}$.
+Accordingly, and as one would hope, the translation
+preserves duality: $\sem{\overline{S}} = \sem{S}^\bot$.
+
+\paragraph*{Types}
+The translation of types is as follows:
+\[\colored
+\begin{array}{r@{\;}c@{\;}l}
+\tp{\tpsem{T \lolli U}}
+  &=&  \tp{\tpsem{T}^\bot \parr \tpsem{U}}  \\
+\tp{\tpsem{T \to U}}
+  &=&  \tp{!(\tpsem{T}^\bot \parr \tpsem{U})}  \\
+\tp{\tpsem{T \otimes U}}
+  &=&  \tp{\tpsem{T} \otimes \tpsem{U}}  \\
+\tp{\tpsem{\key{Unit}}}
+  &=&  \tp{!\top}
+\end{array}
+\]
+Session types are also types, they are translated as above.
+
+The right-hand side of the first
+equation could alternatively be written
+$\sem{T} \lolli \sem{U}$, showing that
+linear functions translate as standard.
+
+The right-hand side of the second
+equation could alternatively be written
+$!(\sem{T} \lolli \sem{U})$.
+There are two standard translations of intuitionistic
+logic into classical linear logic or, equivalently,
+of $\lambda$-calculus into linear $\lambda$-calculus.
+Girard's original takes $(A \to B)^\circ = {!A^\circ \lolli B^\circ}$,
+and corresponds to call-by-name,
+while a lesser known alternative takes $(A \to B)^* = {!(A^* \lolli B^*)}$,
+and correspond to call-by-value
+(see \citet{BentonWadler96} and \citet{ToninhoEtAl12}).
+The second is used here.
+
+In classical linear logic, there is a bi-implication between $1$ and
+$!\top$ (in many models, this bi-implication is an isomorphism), so
+the right-hand side of the last equation could alternatively be
+written $1$, the unit for $\otimes$.
+
+An unlimited type in GV translates to a type
+constructed with $!$ in CP:
+If $\un(T)$ then $\sem{T} = {!A}$, for some $A$.
+
+\paragraph*{Terms}
+Translation of terms is written in a continuation-passing style
+standard for translations of $\lambda$-calculi into process calculi.  The
+translation of term $M$ of type $T$ is written $\sem{M}z$ where $z$ is
+a channel of type $\sem{T}$; the process that translates $M$ transmits
+the answer it computes along $z$.  More precisely, if $\Phi \bvdash
+M:T$ then $\sem{M}z \bvdash \sem{\Phi}^\bot \comma z : \sem{T}$, where
+the $\Phi$ to the left of the turnstile in GV translates, as one might
+expect, to the dual $\sem{\Phi}^\bot$ on the right of the turn-style in
+CP.
+
+The translation of terms is shown in Figures~\ref{fig:tran1}
+and~\ref{fig:tran2}.  Rather than simply giving a translation from
+terms of GV to terms of CP, we show the translation as taking
+type derivation trees to type derivation trees.  Giving the
+translation on type derivation trees rather than terms has two
+advantages.  First, it eliminates any ambiguity arising from the fact,
+noted previously, that terms in GV do not have unique types.  Second,
+it makes it easy to validate that the translation preserves types.
+
+Figure~\ref{fig:tran1} shows the translations for operations of a
+linear $\lambda$-calculus.  A variable translates to an axiom,
+weakening and contraction translate to weakening and contraction.
+Function abstraction and product deconstruction both translate to input,
+and function application and product construction both translate to output.
+The translation of each elimination rule
+($\lolli$-E, $\to$-E, and $\otimes$-E) also requires a use of Cut.
+
+Figure~\ref{fig:tran2} shows
+the translation for operations for communication.
+For purposes of the translation, it is convenient to work
+with $n$-fold analogues of $\oplus$ and $\with$,
+writing $\in_i$ for selection and $\case(P_1,\cdots,P_n)$ for choice.
+
+Despite the inversion noted earlier in the translation of session
+types, the translation of Send involves an output operation of the
+form $x[y].(P \mid Q)$, the translation of Select involves an select
+operation of the form $x[\mathrm{in}_j].P$, the translation of Case involves a
+choice operation of the form $\case(Q_1,\ldots,Q_n)$, the translation
+of $\key{end}_!$ in Connect involves an empty output of the form
+$y[\,].0$, and the translation of Terminate involves an empty input of
+the form $x().P$.  Each of these translations also introduces a Cut,
+corresponding to communication with supplied channel.  The translation
+of Receive is entirely trivial, but the corresponding input operation
+of the form $x(y).R$ appears in the translation of $\otimes$-E, which
+deconstructs the returned pair.  Finally, the translation of Connect
+involves a Cut, which corresponds to introducing a channel for
+communication between the two subterms.
+
+The translation preserves types.
+\begin{theorem}
+If $\Phi \bvdash M : T$ then $\sem{M}x \bvdash \sem{\Phi}^\bot \comma x : \sem{T}$.
+\end{theorem}
+Proof sketch.  See Figures~\ref{fig:tran1} and~\ref{fig:tran2}. $\Box$
+
+% Because the figures give the translation from type derivation trees
+% to type derivation trees, it is easy by examining the figures to
+% confirm that the translation preserves types.
+
+% \begin{theorem}
+% If $\Phi \bvdash M : T$ then $\sem{M}x \bvdash \sem{\Phi}^\bot \comma x : \sem{T}$.
+% \end{theorem}
+
+We also claim that the translation preserves the intended semantics.
+The formal semantics of \citet{GayVasconcelos10} is based on
+asynchronous buffered communication, which adds additional
+complications, so we leave a formal proof of
+correspondence between the two for future work.
+
+
+\section{Related work}
+\label{sec:related}
+
+\paragraph*{Session types}
+Session types were introduced by \citet{Honda93},
+and further extended by
+\citet{TakeuchiEtAl94},
+\citet{HondaEtAl98},
+and
+\citet{YoshidaVasconcelos07}.
+Subtyping for session types is considered by
+\citet{GayHole05}, and the linear functional language
+for session types considered in this paper was
+introduced by
+\citet{GayVasconcelos10}.
+Session types have been applied to describe
+operating system services by \citet{FahndrichEtAl06}.
+
+\paragraph*{Deadlock freedom}
+Variations on session types that guarantees deadlock
+freedom are presented in \citet{SumiiKobayashi98}
+and \citet{CarboneDebois10}.  Unlike CP, where
+freedom from deadlock follows from the relation to
+cut elimination, in the first it is ensured by
+introducing a separate partial order on time tags,
+and in the second by introducing a constraint on
+underlying dependency graphs.
+
+\paragraph*{Linear types for process calculus}
+A variety of linear types systems for process calculus
+are surveyed by \citet{Kobayashi02}.  Most of these
+systems look rather different than session types, but
+\citet{KobayashiPierceTurner96} presents an embedding
+of session types into a variant of $\pi$-calculus with
+linear types for channels.
+
+\paragraph*{Linear proof search}
+Functional programming can be taken as arising from the
+Curry-Howard correspondence, by associating program
+evaluation with proof normalisation.  Analogously,
+logic programming can be taken as arising by
+associating program evaluation with proof search.
+Logic programming approaches based on linear logic
+give rise to systems with some similarities to CP,
+see \citet{Miller92} and
+\citet{KobayashiYonezawa93,KobayashiYonezawa94,KobayashiYonezawa95}.
+
+\paragraph*{Polymorphism}
+CP's support of polymorphism is based on the polymorphic
+$\pi$-calculus introduced by \citet{Turner95} and further discussed by
+\citet{PierceTurner00} and \citet{PierceSangiorgi00}.  More recently,
+\citet{CairesEtAl13} extend session types to polymorphism and
+establish logical relations for parametricity.  All of the above
+use explict polymorphism (Church-style).  In contrast,
+\citet{BergerHondaYoshida05} introduce a polymorphically typed session
+calculus that uses implicit polymorphism (Curry-style).
+
+\paragraph*{Linear logic as a process calculus}
+Various interpretations of linear logic as a process calculus
+are proposed by \citet{Abramsky93}, \citet{Abramsky94}, and
+\citet{AbramskyEtAl96}, the second of these being elaborated
+in detail by \citet{BellinScott94}.
+
+This paper is inspired by a series of papers by Caires, Pfenning,
+Toninho, and P\'erez.  \citet{CairesPfenning10} first observed the
+correspondence relating formulas of linear logic to session types; its
+journal version is \citet{CairesEtAl12b}.  \citet{PfenningEtAl11}
+extends the correspondence to dependent types in a stratified system,
+with concurrent communication at the outer level and a
+dependently-typed functional language at the inner level.
+\citet{PfenningEtAl11} extends that system to support proof-carrying
+code and proof irrelevance.  \citet{ToninhoEtAl12} explores encodings
+of $\lambda$-calculus into $\pi$DILL.  \citet{PerezEtAl12} introduces
+logical relations on linear-typed processes to prove termination and
+contextual equivalences.  \citet{CairesEtAl12} is the
+text of an invited talk at TLDI, summarising much of the above.
+
+Two additional papers have appeared since the ICFP version of this
+paper.  \citet{CairesEtAl13} add polymorphism and parametricity.
+\citet{ToninhoEtAl13} exploits monads to integrate a functional
+language with a session-typed process calculus.
+
+\citet{MazurakZdancewic10} present Lolliproc, which also offers
+a Curry-Howard interpretation of session types by relating
+the call/cc control operators to communication
+using a double-negation operator on types.
+
+% A Curry-Howard interpretation of session types is also offered by
+% Lolliproc \citep{MazurakZdancewic10}, which relates
+% control operators (such as call/cc) to communication, using
+% a double-negation operator on types.
+
+
+\paragraph*{DILL vs. CLL}
+\citet{CairesEtAl12b} consider a variant of $\pi$DILL based on
+one-sided sequents of classical linear logic, which they call
+$\pi$CLL.  Their $\pi$CLL is similar to CP, but differs in important
+particulars: its bookkeeping is more elaborate, using two zones, one
+linear and one intuitionitic; it has no axiom, so cannot easily
+support polymorphism; and it does not support reductions corresponding to
+the commuting conversions.
+% and it uses Copy instead of Contraction, so
+% it suffers from the structural issues mentioned in the introduction.
+
+\citet{CairesEtAl12b} state they prefer a formulation based on DILL to
+one based on CLL, because DILL satisfies a locality property for
+replicated input while CLL does not.  Locality requires that names
+received along a channel may be used to send output but not to receive
+input, and is useful both from an implementation point of view and
+because a process calculus so restricted satisfies additional
+observational equivalences, as shown by \citet{MerroSangiorgi04}.
+\citet{CairesEtAl12b} only restrict \emph{replicated} input, because
+restricting \emph{all} input is too severe for a session-typed calculus.
+However, the good properties of locality have been studied only in the
+case where \emph{all} input is prohibited on received names.  It
+remains to be seen to what extent the fact that DILL imposes locality
+for replicated names is significant.
+
+Additionally, in a private communication, Pfenning relayed that he
+believes DILL may be amenable to extension to dependent types, while
+he suspects CLL is not because strong sums become degenerate in some
+classical settings, as shown by \citet{Herbelin05}.  However,
+linear logic is more amenable to constructive treatment than
+traditional classical logic, as argued by \citet{Girard91},
+so it remains unclear to what extent CP, or $\pi$CLL, may
+support dependent types.
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+One reason $\lambda$-calculus provides such a successful foundation for
+functional programming is that it includes both fragments that
+guarantee termination (typed $\lambda$-calculi) and fragments
+that can model any recursive function (untyped $\lambda$-calculus, or
+typed $\lambda$-calculi augmented with a general fixpoint operator).
+Indeed, the former can be seen as giving rise to the latter, by
+considering recursive types with recursion in negative positions;
+untyped $\lambda$-calculus can be modelled by a solution to the
+recursive type equation $X \simeq X \to X$.
+Similarly, a foundation for concurrency based on linear logic will be of
+limited value if it only models race-free and deadlock-free processes.  Are there
+extensions that support more general forms of concurrency?
+
+\citet{Girard87} proposes one such extension, the Mix rule.
+In our notation, this is written:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma} &
+  \tm{Q} \bvdash \tp{\Delta}
+}{Mix}{
+  \tm{P \mid Q} \bvdash \tp{\Gamma \comma \Delta}
+}
+\]
+Mix differs from Cut in that there are \emph{no} channels in common
+between $P$ and $Q$, rather than one.  Mix is equivalent to
+provability of the proposition $A \otimes B \lolli A \parr B$ for any $A$ and $B$.
+Systems with Mix still do not deadlock, but support concurrent
+structures that cannot arise under CLL, namely, systems with two
+components that are independent.
+An example in Section~\ref{sec:output} introduced a primitive computation
+\[\colored
+\tm{\key{par}_{y,z}} \bvdash \tp{\tmof{y}1 \comma \tmof{z}1}
+\]
+that is equivalent to the Mix rule.  Mix is defined in terms of the
+primitive by setting
+\[\colored
+\begin{array}{rcl}
+\tm{P \mid Q} &\defeq& \nu z.(\nu y.(\key{par}_{y,z} \mid y().P) \mid z().Q)
+\end{array}
+\]
+Equivalently, the primitive can be defined in terms of Mix by setting
+\[\colored
+\begin{array}{rcl}
+\tm{\key{par}_{y,z}} \defeq \tm{y[].0 \mid z[].0}
+\end{array}
+\]
+\citet{CairesEtAl12} consider two variations of the rules
+for $1$ and $\bot$, the second of which is less restrictive
+and, surprisingly, derives a rule similar to Mix.
+
+\citet{AbramskyEtAl96} proposes another extension, the
+Binary Cut rule (a special case of Multicut).
+In our notation, this is written:
+\[\colored
+\inference{
+  \tm{P} \bvdash \tp{\Gamma \comma \tmof{x}A \comma \tmof{y}B} &
+  \tm{Q} \bvdash \tp{\Delta \comma \tmof{x}A^\bot \comma \tmof{y}B^\bot}
+}{BiCut}{
+  \tm{\nu x \of{A}, y \of{B}.(P \mid Q)} \bvdash \tp{\Gamma \comma \Delta}
+}
+\]
+Binary Cut differs from Cut in that there are \emph{two} channels in common
+between $P$ and $Q$, rather than one.  Binary Cut is equivalent to
+provability of the proposition $A \parr B \lolli A \otimes B$ for any $A$ and $B$.
+Binary Cut allows one to express systems where communications form a loop
+and may race or deadlock.
+
+Systems with both Mix and Binary Cut are compact, in that from either
+of $A \otimes B$ and $A \parr B$ one may derive the other.
+\citet{AbramskyEtAl96} provides a translation of full $\pi$-calculus
+into a compact linear system, roughly analogous to the embedding of
+untyped $\lambda$-calculus into typed $\lambda$-calculus based on the
+isomorphism $X \simeq X \to X$.  Searching for principled extensions
+of CP that support the unfettered power of the full $\pi$-calculus is
+a topic for future work.
+
+As $\lambda$-calculus provided foundations for functional
+programming in the last century, may we hope for this emerging
+calculus to provide foundations for concurrent programming in the
+coming century?
+
+
+\paragraph*{Acknowledgements}
+For comments and discussions, my thanks to
+Samson Abramsky,
+Luis Caires,
+Marco Gaboardi,
+Simon Gay,
+Andy Gordon,
+Marc Hamann,
+Jiansen He,
+Kohei Honda,
+Luke Ong,
+Frank Pfenning,
+Colin Stirling,
+Michael Stone,
+Vasco Vasconcelos,
+Hongseok Yang,
+Nobuko Yoshida,
+Stephan Zdancewic,
+and the anonymous referees.
+
+This paper is dedicated to the memory of Kohei Honda, 1959--2012.
+
+\paragraph{}
+
+\bibliographystyle{plainnat}
+\bibliography{linearpi}
+
+\end{document}
