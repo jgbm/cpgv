@@ -827,7 +827,7 @@ are expanded to \hgvpi as follows:
 \cptogv{\cpServe{s}{x}{P}} &=&
   \gvLink{s}{(\gvServe{x}{\cptogv{P}})} \\
 \cptogv{\cpRequest{s}{x}{P}} &=&
-  \gvLet{x}{\gvFork{x}{\gvLink{(\gvRequest{s})}{x}}}{\cptogv{P}} \\
+  \gvLet{x}{\gvRequest{s}}{\cptogv{P}} \\
 \end{eqs}
 %\ea
 \]
