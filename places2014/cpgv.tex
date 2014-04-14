@@ -440,7 +440,7 @@ Session rules
 
 \infr[Serve]
 {\gvj{\Phi,x : S}{M}{\gvEndOutput} \\ \un{\Phi}}
-{\gvj{\Phi}{\gvServe{x}{M}}{\gvService{\gvDual{S}}}}
+{\gvj{\Phi}{\gvServe{x}{M}}{\gvDual{\gvServer{S}}}}
 
 \infr[Request]
 {\gvj{\Phi}{M}{\gvService{S}}}
@@ -498,9 +498,9 @@ it to be fused with a pair elimination $\gvReceiveK{x}{y}{M}{N}$. We can simulat
 types as session types via a translation from \hgv to \hgvpi. The translation on types is given by
 the homomorphic extension of the following equations:
 \[
-\lampi{\gvLinFun{T}{U}} = \gvOutput{\lampi{T}}{\gvDual{\lampi{U}}} \qquad
-\lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\gvDual{\lampi{U}}})} \qquad
-\lampi{\gvTimes{T}{U}} = \gvInput{\gvDual{\lampi{T}}}{\gvDual{\lampi{U}}}
+\lampi{\gvLinFun{T}{U}} = \gvOutput{\lampi{T}}{\lampi{U}} \qquad
+\lampi{\gvUnFun{T}{U}} = \gvService{(\gvOutput{\lampi{T}}{\lampi{U}})} \qquad
+\lampi{\gvTimes{T}{U}} = \gvInput{\lampi{T}}{\lampi{U}}
 \]%
 Each target type is the \emph{interface} to the simulated source type. A linear function is
 simulated by input on a channel; its interface is output on the other end of the channel. An
@@ -515,13 +515,13 @@ The translation on terms is given by the homomorphic extension of the following 
 \begin{equations}
 \lampi{\gvLam{x}{M}} &=& \gvFork{z}{\gvLet{\gvPair{x}{z}}{\gvReceive{z}}{\gvLink{\lampi{M}}{z}}} \\
 \lampi{\gvApp{L}{M}} &=& \gvSend{\lampi{M}}{\lampi{L}} \\
-\lampi{\gvPair{M}{N}} &=&
+\lampi{M,N} &=&
   \gvFork{z}
     {\gvLink{(\gvSend{\lampi{M}}{z})}{\lampi{N}}} \\
 \lampi{\gvLet{\gvPair{x}{y}}{M}{N}} &=&
     \gvLet{\gvPair{x}{y}}{\gvReceive{\lampi{M}}}{\lampi{N}} \\
 \lampi{L : \gvUnFun{T}{U}} &=&
-  \gvFork{z}{\gvLink{z}{(\gvServe{y}{\gvLink{\lampi{L}}{y}})}} \\
+  \gvServe{z}{\gvLink{\lampi{L}}{z}} \\
 \lampi{L : \gvLinFun{T}{U}} &=& \gvRequest{\lampi{L}} \\
 \lampi{\gvReceive{M}} &=& \lampi{M} \\
 \end{equations}%
@@ -885,16 +885,26 @@ is more expressive, in the Felleisen sense, than CP.
 %% \hgvcp{\gvj{\Phi}{M}{T}} &=& \cpj{\hgvcp{M}z}{\hgvcp{\Phi}, z:\cpDual{\hgvcp{T}}}
 %% \end{equations}
 
+\newcommand{\flip}[1]{\llceil{#1}\rrceil}
 
 \begin{figure}
 \[
 \ba{@{}cc@{}}
 \begin{eqs}
 \multicolumn{3}{@{}l@{}}{\textbf{Types}} \\
-\hgvcp{\gvLinFun{T}{U}} &=& \cpDual{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})} \\[2ex]
-\hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\[2ex]
-\hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\[2ex]
+\multicolumn{3}{@{}l@{}}{\hgvcp{T} = \cpDual{\flip{T}}, T \text{ not a session type}} \\
+\multicolumn{3}{@{}l@{}}{\text{where}} \\
+\quad\flip{\gvLinFun{T}{U}} &=& \cpPar{\cpDual{\flip{T}}}{\flip{U}} \\
+\quad\flip{\gvUnFun{T}{U}} &=& \cpOfCourse{(\cpPar{\cpDual{\flip{T}}}{\flip{U}})} \\
+\quad\flip{\gvTimes{T}{U}} &=& \cpTimes{\flip{T}}{\flip{U}} \\
+\quad\flip{S} &=& \hgvcp{S} \\
 \end{eqs}%
+%% \begin{eqs}
+%% \multicolumn{3}{@{}l@{}}{\textbf{Types}} \\
+%% \hgvcp{\gvLinFun{T}{U}} &=& \cpDual{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})} \\[2ex]
+%% \hgvcp{\gvUnFun{T}{U}} &=& \cpDual{(\cpOfCourse{(\cpPar{\cpDual{\hgvcp{T}}}{\hgvcp{U}})})} \\[2ex]
+%% \hgvcp{\gvTimes{T}{U}} &=& \cpDual{(\cpTimes{\hgvcp{T}}{\hgvcp{U}})} \\[2ex]
+%% \end{eqs}%
 &
 \begin{eqs}
 \multicolumn{3}{@{}l@{}}{\textbf{Terms}} \\
@@ -908,7 +918,7 @@ is more expressive, in the Felleisen sense, than CP.
 \end{eqs}%
 \ea
 \]
-\footnotesize {The outer duals appear in the type translation because, as in
+\footnotesize {The outer dual appears in the type translation because, as in
   Section~\ref{sect:hgv-to-hgvpi}, we must expose \emph{interfaces} rather than implementations of
   simulated types. As in the definition of $\lampi{-}$ in Section~\ref{sect:hgv-to-hgvpi}, we write
   type annotations to indicate $\to$ introduction and elimination.}
