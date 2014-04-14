@@ -92,7 +92,20 @@
 \maketitle
 
 \begin{abstract}
-  Pants! (This is a test. This is only a test.)
+  A Curry-Howard correspondence between session types and linear logic was first demonstarted by
+  Caires and Pfenning for intuitionistic linear logic, and later adapted to the classical setting by
+  Wadler.  These correspondences give both a logical interpretation of session types and computation
+  interpretation of linear logic proofs, and can be used to establish properties such as
+  deadlock-freedom and termination of well-typed processes.  However, neither system accomodates
+  recursive sessions, as might be used to represent stateful servers or inductive data types.
+
+  We extend Wadler's correspondence to include recursive processes and sessions.  We present a
+  system with equirecursive session types and a (limited) form of recursive definition, and show the
+  resulting types and processes are in correspondence with the propositions and proofs of Baelde's
+  extension of linear logic with greatest and least fixed points.  Unlike existing approaches to
+  recursive processes, our system introduces both recursive and corecursive processes, and exploits
+  their duality to maintain termination and deadlock freedom even in the presence of unbounded
+  processes.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -138,7 +151,7 @@ We conclude with a survey of related~\secref{related} and future~\secref{future}
 
 \section{A Session-Typed Functional Language}\label{sec:mugv}
 
-\subsection{Types and Terms of \mugv}
+\subsection{Types and Terms of \mugv}\label{sec:mugv-syntax}
 
 \begin{figure}\small
 \[\begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
@@ -941,74 +954,44 @@ that
 
 \subsection{Streams}
 
-Another obvious thing to do with a recursion is streams.  The types are again quite intuitive:
-{\small\begin{align*}
+As in our discussion of the $\lrkwd$ form in \mugv~\secref{mugv-syntax}, we can use \mucp fixed
+points to encode streams.  The encoding of the stream type is quite intuitive:
+\begin{align*}
   Sink(A) &= \mu X. \oplus \{ \clabel{end}: \bot, \clabel{more}: A \parr X \}, \\
   Source(A) &= \nu X. \with \{ \clabel{end}: 1, \clabel{more}: A \otimes X \}.
-\end{align*}}
+\end{align*}
+Note that, following the typical treatment of duality in linear logic, we have that
+$\cpdual{(Source(A))} = Sink(\cpdual{A})$.
 
-Now, let's define some streams of naturals!  Let $Nat$ stand in for either of the encodings of
-naturals.  We'll start with a stream of zeros.  Our form for defining greatest fixed points, called
-\tkwd{corec}, allows an arbitrary coinvariant; in this case, we don't need one, so we'll just use 1:
-%
-{\small\begin{align*}
-  Zeros_y =\ &\corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
-\end{align*}}
-%
-In the \textrm{more} case, we rely on our earlier definition of $Zero$.  Building the stream of
-naturals $0,1,2,\dots$ is more involved, but little more complicated. Note that we will need two
-copies of each number in the stream: the one that appears in the stream itself, and the one used to
-generate the remainder of the stream.  Therefore, we'll use a $Bang(Nat)$ as our coinvariant.  We
-begin by lifting $Zero$ to type $Bang(Nat)$:
-%
-{\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  LiftZero_z & = & \mcl{3}{\lrkwd \: z \langle a \rangle (a[].0,} \\
-  & & \quad & a().\mkwd{case}\: z \: \{ &\clabel{w}: z[].0; \\
-  & & & & \clabel{d}: Zero_z; \\
-  & & & & \clabel{c}: z[w].(w[].0 \mid z[].0) \}).
-\end{array}\]}
-%
-Again, we don't need a coinvariant, so we use 1.  The only interesting behavior is in the case of
-dereliction, in which we rely (again) on our existing definition of $Zero$.  Next, we can lift the
-$Inc$ definition above to operate on $Bang(Nat)$ processes:
-%
-{\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  LiftInc_{x,y} & = & \mcl{3}{\lrkwd \: y \langle z \rangle (\link{x}{z},} \\
-  & & \quad & \mkwd{case} \: y \: \{ & \clabel{w}: \rec{z}.\sel{z}{w}.y[].0; \\
-  & & & & \clabel{d}: \rec{z}.\sel{z}{d}.Inc_{z,y}; \\
-  & & & & \clabel{c}: \rec{z}.\sel{z}{c}.z(w).y[x].(\link{x}{w} \mid \link{y}{z}) \}).
-\end{array}\]}
-%
-The invariant $z$ is of type $Bang(Nat)$.  In the case of dereliction, $LiftInc$ behaves as
-$Inc$; the other cases are implemented in terms of the corresponding cases of the coinvariant.
-Thus, we have that
+We can define several streams, building on our previous encoding of Peano numerals in \mucp.  we
+begin with a stream of zeros:
 \[
-  \cptyp{LiftInc_{x,y}}{x:Query(\cpdual{Nat}),y:Bang(Nat)}.
+  Zeros_y =\ &\corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
 \]
-Finally, we can define a stream of naturals: the invariant is of type $Bang(Church)$, initialized by
-$LiftZero$, and the \textrm{more} case relies on $LiftInc$:
-%
-{\small\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  CNats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
-  & & \quad & \mkwd{case}\:y \{ & \clabel{end}: \rec{z}.\sel{z}{w}.z().y[].0; \\
-  & & & & \clabel{more}: \rec{z}.\sel{z}{c}.z(w).y[x].\\
-  & & & & \quad (\rec{w}.\sel{w}{d}.\link{x}{w} \mid LiftInc_{z,y}) \}).
-\end{array}\]}
-%
-As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
-\\\todo{Example of using streams?  They're not terribly surprising.}
-
+We have no need for the coinvariant in this definition, so we use the trivial coinvariant 1.  Next,
+we describe the stream of naturals $0,1,2,\dots$.  As in \mugv, we will rely on the coinvariant to
+track the next number to send to the channel.  However, unlike in \mugv, $Peano$ is a linear
+proposition.  To account for this, we begin by demonstrating that we can duplicate and discard
+proofs of $Peano$:
 \[\begin{array}{lll}
   \multicolumn{3}{l}{Copy_{x,z} = \lrkwd\:x\langle y \rangle ( \link{y}{z},} \\
   \quad \quad & \mkwd{case}\:x\:\{\:&\clabel{zero}: x().y[y'].(Zero_{y'} \mid Zero_{y}) \\
-  & & \clabel{succ}: x(x').y[y'].(Inc_{x',y'} \mid Inc_{x,y}) \})
-\end{array}\]
-
-\[\begin{array}{lll}
-  \multicolumn{3}{l}{Drop_{x}.M = \mkwd{new}\:z\:(z().M \mid \lrkwd\:x \langle y \rangle (\link{y}{z},} \\
+  & & \clabel{succ}: x(x').y[y'].(Inc_{x',y'} \mid Inc_{x,y}) \}) \\
+  \multicolumn{3}{l}{Drop_{x,z} = \lrkwd\:x \langle y \rangle (\link{y}{z},} \\
   \quad \quad & \mkwd{case}\:x\:\{\:&\clabel{zero}: \link{x}{y} \\
   & & \clabel{succ}: \link{x}{y} \})
 \end{array}\]
+We have that $\cptyp{Copy_{x,z}}{x:\cpdual{Peano}, z:Peano \otimes Peano}$ and that
+$\cptyp{Drop_{x,z}}{x:\cpdual{Peano},z:1}$. Finally, we can demonstrate the stream of naturals:
+\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
+  CNats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
+  & & \quad & \mkwd{case}\:y \{ & \clabel{end}: \cut{a}{}{Drop_{z,a}}{a().y[].0}; \\
+  & & & & \clabel{more}: \mkwd{new}\:w\:(Copy_{z,w} \mid \\
+  & & & & \quad w(z).y[x].(\link{x}{z} \mid \cut{v}{}{Inc_{w,v}}{\link{y}{v}}))\})
+\end{array}\]
+In the $\clabel{more}$ case, we begin by copying the coinvariant numeral $z$ as $z$ and $w$.  We
+then send $z$ along the channel $y$, increment $w$ giving $v$, and re-establish the coinvariant
+using $v$.  As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
@@ -1250,6 +1233,27 @@ existing translation to each case.  Define
 \end{theorem}
 
 \section{Related Work}\label{sec:related}
+
+\begin{itemize}
+\item Session types
+  \begin{itemize}
+  \item Honda
+  \item Honda, Vasconcelos, Kubo
+  \item Other examples of recursion?
+  \item Giovanni Bernardi?
+  \end{itemize}
+\item CH correspondence
+  \begin{itemize}
+  \item Abramsky~\cite{Abramsky92,BellinScott94}
+  \item Caires and Pfenning~\cite{CairesPfenning10}
+  \item Wadler~\cite{Wadler12}
+  \end{itemize}
+\item LL and fixed points
+  \begin{itemize}
+  \item Girard~\cite{Girard87}
+  \item Baelde~\cite{Baelde12}
+  \end{itemize}
+\end{itemize}
 
 \section{Conclusion and Future Work}\label{sec:future}
 
