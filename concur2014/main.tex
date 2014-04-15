@@ -97,20 +97,19 @@
 \maketitle
 
 \begin{abstract}
-  A Curry-Howard correspondence between session types and linear logic was first demonstarted by
+  A Curry-Howard correspondence between session types and linear logic was first demonstrated by
   Caires and Pfenning for intuitionistic linear logic, and later adapted to the classical setting by
-  Wadler.  These correspondences give both a logical interpretation of session types and computation
-  interpretation of linear logic proofs, and can be used to establish properties such as
-  deadlock-freedom and termination of well-typed processes.  However, neither system accomodates
-  recursive sessions, as might be used to represent stateful servers or inductive data types.
+  Wadler. These correspondences give both a logical interpretation of session types and a
+  computational interpretation of linear logic proofs, and ensure race freedom, deadlock freedom,
+  and termination of well-typed processes. However, neither system accomodates recursive sessions,
+  as might be used to represent stateful servers or inductive data types.
 
-  We extend Wadler's correspondence to include recursive processes and sessions.  We present a
-  system with equirecursive session types and a (limited) form of recursive definition, and show the
-  resulting types and processes are in correspondence with the propositions and proofs of Baelde's
-  extension of linear logic with greatest and least fixed points.  Unlike existing approaches to
-  recursive processes, our system introduces both recursive and corecursive processes, and exploits
-  their duality to maintain termination and deadlock freedom even in the presence of unbounded
-  processes.
+  We extend Wadler's correspondence to recursive processes and sessions using equirecursive session
+  types. We show that the resulting types and processes are in correspondence with the propositions
+  and proofs of Baelde's extension of linear logic with greatest and least fixed points. Unlike
+  prior accounts of recursive session typing, our system distinguishes recursive and corecursive
+  processes, and exploits their duality to maintain race freedom, deadlock freedom, and termination,
+  even in the presence of unbounded corecursive processes.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -1008,7 +1007,7 @@ $\cpdual{(Source(A))} = Sink(\cpdual{A})$.
 We can define several streams, building on our previous encoding of Peano numerals in \mucp.  we
 begin with a stream of zeros:
 \[
-  Zeros_y =\ &\corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
+  Zeros_y =\ \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
 \]
 We have no need for the coinvariant in this definition, so we use the trivial coinvariant 1.  Next,
 we describe the stream of naturals $0,1,2,\dots$.  As in \mugv, we will rely on the coinvariant to
@@ -1201,6 +1200,9 @@ first two and last two cases: this aligns with the derivation of the rules for $
               {\link{z}{x}}
               {\map{G}{x,y}{\rec{x}.\link{x}{y}}}}
 \end{gather*}
+
+\todo{Clarify - the following sentence is unintelligible}
+
 Finally, the translation of $\lrkwd$ depends on, first, extracting the expected state from the
 coinvariant and, second, replacing the recursive behavior with re-establishing the coinvariant.
 \[
