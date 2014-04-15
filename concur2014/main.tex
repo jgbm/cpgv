@@ -377,8 +377,9 @@ Syntactic sugar for let binding:
 \]
 
 \todo{This example is useless because we cannot actually use a stream of ints without introducing a
-  way of terminating the stream! ($\nu X.\with \{next: !Int.X, done: \outterm \}$)}
+  way of terminating the stream! ($\nu X.\with \{\clabel{more}: !Int.X, \clabel{end}: \outterm \}$)}
 
+\todo{Change the example to match the equivalent CP one}
 
 Type of a stream of integers:
 \[
