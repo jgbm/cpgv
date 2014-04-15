@@ -333,6 +333,7 @@ Recursive session rules
 \inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm}}
           {\gvtyp{}{\gvfix{f}{\vec{x}\,c}{M}}{\langle \vec{T}, \nu G \rangle \uto \outterm}}
 \end{mathpar}
+
 \caption{\mugv Terms and Typing Rules}\label{fig:gv-typing}
 \end{figure}
 
@@ -744,6 +745,7 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
            \cptyp{Q}{y:\cpdual{A},x:F(A)}}
           {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
 \end{mathpar}
+\todo{Server and client output look like sequencing... Shouldn't they have a dot?}
 \caption{Terms and typing rules of \mucp}\label{fig:cp-typing}
 \end{figure}
 
@@ -1298,12 +1300,13 @@ We now present the translation $\togv{-}$ from CP to \gvpi. The translation on t
 \ea
 \]
 The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
-are expanded to \gvpi as follows:
+are expanded to \gvpi as follows
 \[
 \gvlet{x}{M}{N} \equiv
   \topi{(\lambda x.N) M} \equiv
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]%
+and the translation on terms is as follows
 \begin{equations}
   \togv{x[y].(P \mid Q)} &=&
     \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}})}{x}}{\togv{Q}} \\
@@ -1326,20 +1329,18 @@ are expanded to \gvpi as follows:
     \gvsend{(\gvfork{x}{\togv{P}})\,c}{(\gvrequest{(\gvfix{p}{x\,c}{Q_{F,p,x,c}})})} \\
   \togv{\rec{x}.P} &=& \togv{P} \\
 \end{equations}%
-where
+where:
 %
-\[
-  Q_{F,p,x,c} =
-    \gvlet{c'}{\gvfork{c}{\togv{Q}}}
-              {\gvmap{\togv{F}}{c,c'}{(\gvsend{c\,c'}{(\gvrequest{p})})}}
-\]%
+%% \[
+%%   Q_{F,p,x,c} =
+%%     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
+%%               {\gvmap{\togv{F}}{c,c'}{(\gvsend{c\,c'}{(\gvrequest{p})})}}
+%% \]%
 \[
   Q_{F,p,x,c} =
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}{z[c, c'].p[].0}}}}
 \]%
-
-\todo{Annotate corec with the functor?}
 
 %% \todo{The above is clearly nonsense. We must need to send two things to the result of a fix in order
 %%   to obtain an end!. Also $c$ isn't bound anywhere!}
@@ -1356,10 +1357,9 @@ where
 %%           {\togv{\map{F}{x,c}{p[x].p[c].p[].0}}}
 %% \]%
 
-The translation is the same as in our previous work~\cite{LindleyM14} except for the translation of
-recursion and corecursion, which is new.
-
-\todo{Explain the translation}
+The translation is the same as in our previous work~\cite{LindleyM14} except for recursion and
+corecursion. Formally, it is a translation from judgements to terms (as we need to know the type
+operator in the case of $\key{corec}$).
 
 %% %
 %% \[
@@ -1374,31 +1374,29 @@ recursion and corecursion, which is new.
 %% If $\cpj{P}{\G}$ then $\gvj{\cptogv{\G}}{\cptogv{P}}{\gvEndOutput}$.
 %% \end{theorem}
 
-We can transfer the functoriality result from \mucp to \mugv:
+%% We can transfer the functoriality result from \mucp to \mugv:
 
-\todo{explain what the hell ``functoriality result'' means}
+%% \begin{lemma}
+%%   If $\gvtyp{c:S,d:S'}{M}{\outterm}$, then there is a term, which we call $\gvmap{G}{c,d}{M}$, such
+%%   that $\gvtyp{c:G(S),d:\gvdual{G}(S')}{\gvmap{G}{c,d}{M}}{\outterm}$.
+%% \end{lemma}
 
-\begin{lemma}
-  If $\gvtyp{c:S,d:S'}{M}{\outterm}$, then there is a term, which we call $\gvmap{G}{c,d}{M}$, such
-  that $\gvtyp{c:G(S),d:\gvdual{G}(S')}{\gvmap{G}{c,d}{M}}{\outterm}$.
-\end{lemma}
+%% Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
+%% existing translation to each case.  Define
+%% \[
+%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
+%% \]
 
-Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
-existing translation to each case.  Define
-\[
-  Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-\]
+%% \begin{lemma}
+%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
+%%   \[
+%%     \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
+%%   \]
+%% \end{lemma}
 
-\begin{lemma}
-  If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
-  \[
-    \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
-  \]
-\end{lemma}
-
-\begin{corollary}
-  If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then $\gvtyp{}{\gvfix{p}{y\,c}{Q^\dagger}}{\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{\nu \togv{F}}{\outterm}})}}$.
-\end{corollary}
+%% \begin{theorem}
+%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then $\gvtyp{}{\gvfix{p}{y\,c}{Q^\dagger}}{\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{\nu \togv{F}}{\outterm}})}}$.
+%% \end{theorem}
 
 
 %% \begin{align*}
