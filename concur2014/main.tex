@@ -159,28 +159,37 @@ We conclude with a survey of related~\secref{related} and future~\secref{future}
 \item Simulating exponentials with fixed points
 \end{enumerate}}
 
-\section{A Session-Typed Functional Language}\label{sec:mugv}
+\section{A Session-Typed Functional Language}
+\label{sec:mugv}
 
-\subsection{Types and Terms of \mugv}\label{sec:mugv-syntax}
+In this section, we present \mugv, a simple functional language with session types patterned on the
+language of Gay and Vasconcelos~\cite{GayVasconcelos10} (which we call LAST) and Wadler's language
+GV.
+
+\subsection{Types}
+\label{sec:mugv-types}
 
 \begin{figure}\small
 \[\begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
-  \text{Types} & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
-  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \} \mid \outterm \mid \interm \\
-   & & \mid & X \mid \gvdual{X} \mid \mu G \mid \nu G \mid \gvservice{S} \mid \gvserver{S} \\
-  \text{Type operators} & G & ::= & X.S % \\
+  \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
+  \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
+                                \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
+                                \mid   \outterm \mid \interm \\
+                            & & \mid & X \mid \gvdual{X}
+                                \mid   \mu G \mid \nu G
+                                \mid   \gvservice{S} \mid \gvserver{S} \\
+  \text{Type Operators} & G    & ::= & X.S % \\
 %  \text{Terms} & M,N & ::= & x \mid \lambda x.N \mid M\,N \mid (M,N) \mid \gvlet{(x,y)}{M}{N} \\
 %   & & \mid & \gvsend{M}{N} \mid \gvreceive{M} \mid \gvselect{l_i}{M} \mid \gvcase{M}{l_i : N_i} \\
 %   & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
 \end{array}\]
-\caption{\mugv Types and Session Types}\label{fig:gv-syntax}
+\caption{Types, Session Types, and Type Operators for \mugv}
+\label{fig:gv-types}
 \end{figure}
 
-In this section, we present \mugv, a simple functional language with session types patterned on the
-language of Gay and Vasconcelos~\cite{GayVasconcelos10} (which we call LAST) and Wadler's language
-GV. Figure~\ref{fig:gv-syntax} gives the syntax of \mugv terms and types. Types include linear pairs
-($T \otimes U$), and both linear ($T \lto U$) and unlimited ($T \uto U$) functions. Session types
-include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i \}$) and choice
+Figure~\ref{fig:gv-types} gives the syntax of \mugv types. These include linear pairs ($T \otimes
+U$), and both linear ($T \lto U$) and unlimited ($T \uto U$) functions. Session types include input
+($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i \}$) and choice
 ($\with\{l_i:S_i\}$). We have two variations on the closed channel ($\interm$ and $\outterm$). These
 arise from our interpretation of session types in classical linear logic, where there is no
 self-dual proposition to implement closed channels. We include a notion of replicated sessions,
@@ -246,6 +255,9 @@ operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
 %% pos(X, !T.S) = neg(X, T) and pos(X, S)
 %% etc.
 
+
+\subsection{Typing Rules}
+\label{sec:mugv-typing}
 
 \begin{figure}
 Structural rules
@@ -334,11 +346,11 @@ Recursive session rules
           {\gvtyp{}{\gvfix{f}{\vec{x}\,c}{M}}{\langle \vec{T}, \nu G \rangle \uto \outterm}}
 \end{mathpar}
 
-\caption{\mugv Terms and Typing Rules}\label{fig:gv-typing}
+\caption{\mugv Typing Rules}\label{fig:gv-typing}
 \end{figure}
 
-Figure~\ref{fig:gv-typing} gives the terms and typing rules of \mugv. The structural rules account
-for variables, and for weakening and contraction on variables of unlimited type. The rules for the
+Figure~\ref{fig:gv-typing} gives the typing rules of \mugv. The structural rules account for
+variables, and for weakening and contraction on variables of unlimited type. The rules for the
 functional terms are standard; note that, to account for linearity, the context is split in the
 rules for application and pair introduction and elimination, and is limited to unlimited types in
 the introduction of unlimited arrows.
@@ -362,8 +374,11 @@ equivalence relation on types, taking unfolding into account, and interpretting 
 equivalence. We present explicit rules in order to simplify the translation into \mucp, where these
 rules correspond to explicit terms implementing the equivalences.
 %
-The fixed point construct $\gvfix{f}{\vec{x}\,c}{M}$ is used to define corecursive sessions. We
-introduce the following syntactic sugar for multi-argument functions:
+The fixed point construct $\gvfix{f}{\vec{x}\,c}{M}$ is used to define corecursive sessions.
+
+\subsection{Streams}
+
+We introduce the following syntactic sugar for multi-argument functions:
 \[
   \langle T_1, T_2, \dots, T_n \rangle \uto U \equiv T_1 \uto T_2 \lto \dots \lto T_n \lto U
 \]
