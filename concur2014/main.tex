@@ -1277,11 +1277,13 @@ homomorphic extension of the following equations:
 %                   &=& \gvin{\gvdual{\topi{T}}}{\gvdual{\topi{U}}} \\
 %\ea
 %\]
-\begin{align*}
-\topi{T \lto U} &= \gvout{\topi{T}}{\topi{U}} \\
-\topi{T \uto U} &= \gvservice{(\gvout{\topi{T}}{\topi{U}})} \\
-\topi{T \otimes U} &= \gvin{\topi{T}}{\topi{U}}
-\end{align*}
+\[
+\ba{@{}c@{}}
+\topi{T \lto U} = \gvout{\topi{T}}{\topi{U}} \qquad
+\topi{T \uto U} = \gvservice{(\gvout{\topi{T}}{\topi{U}})} \\
+\topi{T \otimes U} = \gvin{\topi{T}}{\topi{U}} \\
+\ea
+\]
 Each target type is the interface to the simulated source type. A
 linear function is simulated by input on a channel; its interface is
 output on the other end of the channel. An unlimited function is
@@ -1320,7 +1322,7 @@ The full translation on terms is as follows.
 \\[1ex]
 \topi{\gvfix{f}{c\,\vec{x}}{M}} &=&
   \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\
-&& \text{where }L = \lambda c \vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
+&& \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
 Formally, this is a translation from derivations to terms. We write type annotations to indicate
 $\to$ introduction and elimination. For all other cases, it is unambiguous to give the translation
