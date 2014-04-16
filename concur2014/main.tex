@@ -52,7 +52,7 @@
 \newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
 \newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
-\newcommand{\lrkwd}{\mkwd{fix}}
+\newcommand{\lrkwd}{\mkwd{cofix}}
 \newcommand{\gvfix}[3]{\lrkwd\:#1\:#2 = #3}
 \newcommand{\gvletrec}[4]{\gvlet{#1}{\gvfix{#1}{#2}{#3}}{#4}}
 \newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
@@ -62,7 +62,7 @@
 
 
 \newcommand{\key}{\mkwd}
-\newcommand{\fix}{\lrkwd}
+\newcommand{\cofix}{\lrkwd}
 
 \newcommand{\tocpbig}[1]{\left\llbracket #1 \right\rrbracket}
 
@@ -169,8 +169,9 @@ GV.
 \subsection{Types}
 \label{sec:mugv-types}
 
-\begin{figure}\small
-\[\begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+Types, session types, and type operators in \mugv are given by the following grammar:
+\[
+\begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
   \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
                                 \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
@@ -179,28 +180,24 @@ GV.
                                 \mid   \mu G \mid \nu G
                                 \mid   \gvservice{S} \mid \gvserver{S} \\
   \text{Type Operators} & G    & ::= & X.S % \\
-%  \text{Terms} & M,N & ::= & x \mid \lambda x.N \mid M\,N \mid (M,N) \mid \gvlet{(x,y)}{M}{N} \\
-%   & & \mid & \gvsend{M}{N} \mid \gvreceive{M} \mid \gvselect{l_i}{M} \mid \gvcase{M}{l_i : N_i} \\
-%   & & \mid & \gvlink{M}{N} \mid \gvfork{x}{M} \mid \gvletrec{x}{M}{N}
-\end{array}\]
-\caption{Types, Session Types, and Type Operators for \mugv}
-\label{fig:gv-types}
-\end{figure}
-
-Figure~\ref{fig:gv-types} gives the syntax of \mugv types. These include linear pairs ($T \otimes
-U$), and both linear ($T \lto U$) and unlimited ($T \uto U$) functions. Session types include input
-($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i \}$) and choice
-($\with\{l_i:S_i\}$). We have two variations on the closed channel ($\interm$ and $\outterm$). These
-arise from our interpretation of session types in classical linear logic, where there is no
-self-dual proposition to implement closed channels. We include a notion of replicated sessions,
-corresponding to exponentials in linear logic: a channel of type $\gvservice{S}$ is a ``service'',
-providing any number of channels of type $S$; a channel of type $\gvserver{S}$ is the ``server''
-providing such a service. Finally, we include session variables and their duals ($X,\gvdual{X}$),
-and two forms of recursive session types, corresponding to least ($\mu X.S$) and greatest ($\nu
-X.S$) fixed points. If $G$ is an operator $X.S$, we write $G(S')$ for the substitution instance
-$S[S'/X]$.
+\end{array}
+\]%
 %
-Each type $T$ is either linear ($\lin{T}$) or unlimited ($\un{T}$). The linearity of $T$ is
+The types comprise session types, linear pairs ($T \otimes U$), and both linear ($T \lto U$) and
+unlimited ($T \uto U$) functions.
+%
+Session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i
+\}$) and choice ($\with\{l_i:S_i\}$). There are two variations on the closed channel ($\interm$) and
+($\outterm$), which arise from our interpretation of session types in classical linear logic, where
+there is no self-dual proposition to implement closed channels. We include a notion of replicated
+sessions, corresponding to exponentials in linear logic: a channel of type $\gvservice{S}$ is a
+``service'', providing any number of channels of type $S$; a channel of type $\gvserver{S}$ is the
+``server'' providing such a service. Finally, we include session variables and their duals
+($X,\gvdual{X}$), and two forms of recursive session types, corresponding to least ($\mu X.S$) and
+greatest ($\nu X.S$) fixed points. If $G$ is an operator $X.S$, we write $G(S')$ for the
+substitution instance $S[S'/X]$.
+
+Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$). The linearity of $T$ is
 determined entirely by its top level type constructor.
 %
 All types are linear except unlimited functions $T \uto U$, replicated channels $\gvservice{S}$, and
@@ -219,7 +216,12 @@ Duality on non-recursive session types is standard.
   \gvdual{\gvserver{S}} &= \gvservice{\gvdual{S}} &
   \gvdual{\gvdual{X}} &= X
 \end{align*}}%
-We define the dual of an operator $G = X.S$ as:
+%
+Duality on recursive session types is defined as follows:
+\[
+\gvdual{\mu G} = \nu \gvdual{G} \qquad \gvdual{\nu G} = \mu \gvdual{G} \
+\]%
+where we define the dual of an operator $G = X.S$ as:
 \[
 \gvdual{G} = X.\gvdual{G(\gvdual{X})}
 \]%
@@ -227,9 +229,6 @@ We define the dual of an operator $G = X.S$ as:
 Observe that $\gvdual{G}(\gvdual{S}) = \gvdual{G(S)}$, which allows us to
 give a natural definition of duality for fixed points:
 %
-{\small\begin{align*}
-\gvdual{\mu G} &= \nu \gvdual{G} & \gvdual{\nu G} = \mu \gvdual{G}
-\end{align*}}%
 Unlike many notions of duality for session types, our definition preserves duality when recursive
 session types are unfolded, even when the recursion occurs in messages.  For example, consider the
 operator $G = X.\gvin{X}{\interm}$, its dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and the
@@ -342,11 +341,11 @@ Recursive session rules
 \inferrule{\gvtyp{\Phi}{M}{\nu G}}
           {\gvtyp{\Phi}{M}{G(\nu G)}}
 
-\inferrule{\gvtyp{\vec{x}:\vec{T},f:\langle \vec{T}, X \rangle \uto \outterm, c:G(X)}{M}{\outterm}}
-          {\gvtyp{}{\gvfix{f}{\vec{x}\,c}{M}}{\langle \vec{T}, \nu G \rangle \uto \outterm}}
+\inferrule{\gvtyp{f:X \uto \vec{T} \lto \outterm, c:G(X), \vec{x}:\vec{T}}{M}{\outterm}}
+          {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
 \end{mathpar}
 
-\caption{\mugv Typing Rules}\label{fig:gv-typing}
+\caption{Typing Rules for \mugv}\label{fig:gv-typing}
 \end{figure}
 
 Figure~\ref{fig:gv-typing} gives the typing rules of \mugv. The structural rules account for
@@ -374,7 +373,7 @@ equivalence relation on types, taking unfolding into account, and interpretting 
 equivalence. We present explicit rules in order to simplify the translation into \mucp, where these
 rules correspond to explicit terms implementing the equivalences.
 %
-The fixed point construct $\gvfix{f}{\vec{x}\,c}{M}$ is used to define corecursive sessions.
+The fixed point construct $\gvfix{f}{c\,\vec{x}}{M}$ is used to define corecursive sessions.
 
 \subsection{Streams}
 
@@ -401,12 +400,12 @@ Type of a stream of integers:
 Ints = \nu X.!Int.X
 \]
 
-Using $\fix$ we can define a function that outputs a stream of zeros along a corecursive
+Using $\cofix$ we can define a function that outputs a stream of zeros along a corecursive
 channel:
 \[
   \bl
   makeZeros : Ints \uto \outterm \\
-  makeZeros = \fix\:f\:c = \gvlet{d}{\gvsend{0}{c}}{f\:d} \\
+  makeZeros = \cofix\:f\:c = \gvlet{d}{\gvsend{0}{c}}{f\:d} \\
   \el
 \]
 The body outputs a single zero and then recurses. In order to read from the stream, we use
@@ -427,14 +426,14 @@ We might expect to assign $c$ the type $\nu X.\gvout{Int}{X} = \gvout{Int}{(\nu 
 and $d$ the type $\nu X.\gvout{Int}{X}$, but then productivity would not be assured. For example,
 under the same typing assumptions for $f$ and $c$ we could then write:
 \[
-\fix\:f\:c = f\:c
+\cofix\:f\:c = f\:c
 \]
 %
-We restrict the typing rule for $\fix$ in order to ensure productivity. We use a fresh type variable
-$X$ to abstract the recursive behavior; the channel $c$ then has type $G(X)$ (in our example
-$\gvout{Int}{X}$) instead of $G(\nu G)$ (in our example $\gvout{Int}{(\nu X.\gvout{Int}{X})}$), and
-$f$ has type $X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\lrkwd$ is thus
-required to provide precisely one iteration of the recursive behavior.
+We restrict the typing rule for $\cofix$ in order to ensure productivity. We use a fresh type
+variable $X$ to abstract the recursive behavior; the channel $c$ then has type $G(X)$ (in our
+example $\gvout{Int}{X}$) instead of $G(\nu G)$ (in our example $\gvout{Int}{(\nu
+  X.\gvout{Int}{X})}$), and $f$ has type $X \uto \outterm$ instead of $\nu G \uto \outterm$. The
+body of $\lrkwd$ is thus required to provide precisely one iteration of the recursive behavior.
 
 \paragraph{coinvariants}
 
@@ -442,21 +441,21 @@ We allow recursive sessions to maintain internal state (a \emph{coinvariant}). I
 this is captured by the additional arguments $\vec{x}$. For example, we can construct a stream of
 consecutive naturals using the expression:
 \[
-  \gvfix{nats}{x\:c}{\gvlet{c}{\gvsend{x}{c}}{nats\:(x + 1)\:c}}
+  \gvfix{nats}{c\:x}{\gvlet{c}{\gvsend{x}{c}}{nats\:c\:(x + 1)}}
 \]
 The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
 recursive call. We can maintain coinvariants of arbitrary complexity; for example, we can define a
 stream of the Fibonacci numbers as follows:
 \[
-  \gvfix{fibs}{m\:n\:c}{\gvlet{c}{\gvsend{m}{c}}{fibs\:n\:(m + n)\:c}}
+  \gvfix{fibs}{c\:m\:n}{\gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m + n)}}
 \]
 
 Having shown how to define recursive channels, we now how to use them. The following example returns
 an input channel for reading the Fibonacci numbers.
 \[
 \bl
-\key{let}\:fibs = (\gvfix{fibs}{m\:n\:c}{\gvlet{c}{\gvsend{m}{c}}{fibs\:n\:(m + n)\:c}})\:\key{in} \\
-\gvfork{c}{fibs\:0\:1\:c} \\
+\key{let}\:fibs = (\gvfix{fibs}{c\:m\:n}{\gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m + n)}})\:\key{in} \\
+\gvfork{c}{fibs\:c\:0\:1} \\
 \el
 \]
 The channel $c$ passed to $fibs$ implements the Fibonacci numbers as a stream of outputs of type
@@ -746,9 +745,9 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
 
 \inferrule{ }{\cptyp{\case{x}{}}{x:\top,\Gamma}}
 
-\inferrule{\cptyp{P}{y:A,\Gamma}}{\cptyp{\derelict{x}{y}{P}}{x:\cpquery{A},\Gamma}}
+\inferrule{\cptyp{P}{y:A,\Gamma}}{\cptyp{\derelict{x}{y}.P}{x:\cpquery{A},\Gamma}}
 
-\inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}{P}}{x:\cpbang{A}, \Gamma}}
+\inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{x:\cpbang{A}, \Gamma}}
 
 \inferrule{\cptyp{P}{\Gamma,x:A} \\
            \cptyp{Q}{x:\cpdual{A},\Delta}}
@@ -761,7 +760,6 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
            \cptyp{Q}{y:\cpdual{A},x:F(A)}}
           {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
 \end{mathpar}
-\todo{Server and client output look like sequencing... Shouldn't they have a dot?}
 \caption{Terms and typing rules of \mucp}\label{fig:cp-typing}
 \end{figure}
 
@@ -886,7 +884,7 @@ And these are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}
    \inferrule*
      {\cptyp{Q}{y:\cpdual{A},\Delta}}
      {\cptyp{\derelict{x}{y}.Q}{x:\cpquery{\cpdual{A}},\Delta}}}
-  {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}{P}}{\derelict{x}{y}{Q}}}{\Gamma,\Delta}}
+  {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}}{\Gamma,\Delta}}
 \Longrightarrow
 \inferrule
   {\cptyp{P}{x:A,\Gamma} \\
@@ -1133,8 +1131,8 @@ adopt a simplified session-oriented variant of the $\key{corec}$ rule
 for \gvpi.
 %
 \begin{mathpar}
-\inferrule{\gvtyp{x:T,p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})}, c:G(X)}{M}{\outterm}}
-          {\gvtyp{\Phi}{\gvfix{p}{x\,c}{M}}{\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}}
+\inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
+          {\gvtyp{\Phi}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}}
 \end{mathpar}
 %
 This rule takes advantage of the fact that we can always translate
@@ -1155,9 +1153,9 @@ The full translation on terms is as follows.
 \topi{L : T \lto U} &=& \gvrequest{\topi{L}} \\
 \topi{\gvreceive{M}} &=& \topi{M}
 \\[1ex]
-\topi{\gvfix{f}{\vec{x}\,c}{M}} &=&
+\topi{\gvfix{f}{c\,\vec{x}}{M}} &=&
   \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\
-&& \text{where }L = \lambda \vec{x} c.\gvsend{c}{(\gvsend{\vec{x}}{(\gvrequest{p})})} \\
+&& \text{where }L = \lambda c \vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
 Formally, this is a translation from derivations to terms. We write type annotations to indicate
 $\to$ introduction and elimination. For all other cases, it is unambiguous to give the translation
@@ -1271,11 +1269,11 @@ coinvariant and, second, replacing the recursive behavior with re-establishing t
 \[
 \bl
 \left\llbracket
-\inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},x:T,c:G(X)}{M}{\outterm}}
-          {\gvtyp{}{\gvfix{p}{x\,c}{M}}{\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}}
+\inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
+          {\gvtyp{}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
 \right\rrbracket z = \\
-\replicate{z}{y}.y(x).y(c).y(). \\
-\quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(x).y(c).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
+\replicate{z}{y}.y(c).y(x).y(). \\
+\quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
 \el
 \]
 where we have used the following syntactic sugar for output along a channel:
@@ -1337,12 +1335,12 @@ and the translation on terms is as follows
   \togv{\cut{x}{}{P}{Q}} &=&
     \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
   \togv{\link{x}{y}} &=& \gvlink{x}{y} \\
-  \togv{\replicate{s}{x}{P}} &=&
+  \togv{\replicate{s}{x}.P} &=&
     \gvlink{s}{(\gvserve{x}{\togv{P}})} \\
-  \togv{\derelict{s}{x}{P}} &=&
+  \togv{\derelict{s}{x}.P} &=&
     \gvlet{x}{\gvrequest{s}}{\togv{P}} \\
   \togv{\cptyp{\corec{c}{x}{}{P}{Q}}{\Gamma, x:\nu F}} &=&
-    \gvsend{(\gvfork{x}{\togv{P}})\,c}{(\gvrequest{(\gvfix{p}{x\,c}{Q_{F,p,x,c}})})} \\
+    \gvsend{(\gvfork{x}{\togv{P}})\,c}{(\gvrequest{(\gvfix{p}{c\,x}{Q_{F,p,x,c}})})} \\
   \togv{\rec{x}.P} &=& \togv{P} \\
 \end{equations}%
 where:
@@ -1355,7 +1353,7 @@ where:
 \[
   Q_{F,p,x,c} =
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
-          {\togv{\map{F}{c,c'}{\derelict{p}{z}{z[c, c'].p[].0}}}}
+          {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].p[].0}}}
 \]%
 
 %% \todo{The above is clearly nonsense. We must need to send two things to the result of a fix in order
