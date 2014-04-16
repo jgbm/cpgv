@@ -525,7 +525,7 @@ For convenience, we define a helper macro for describing how to generate the nex
 \[
 \bl
 SendNext : \langle \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}, Int \rangle \uto \outterm \\
-SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c},
+SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
                             \clabel{stop}\,c.c}
 \el
 \]
@@ -1512,54 +1512,52 @@ where:
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].p[].0}}}
 \]%
 
-\todo{The above is clearly nonsense. We must need to send two things to the result of a fix in order
-  to obtain an end!. Also $c$ isn't bound anywhere!}
-% \[
-%   Q^\dagger =
-%     \gvlet{c}
-%           {\gvfork{x}{\togv{Q}}}
-%           {\gvmap{\togv{F}}{x,c}{(\gvsend{c}{(\gvsend{x}{p})})}}
-% \]%
-% \[
-%   Q^\dagger =
-%     \gvlet{y'}
-%           {\gvfork{y}{\togv{Q}}}
-%           {\togv{\map{F}{x,c}{p[x].p[c].p[].0}}}
-% \]%
+%% % \[
+%% %   Q^\dagger =
+%% %     \gvlet{c}
+%% %           {\gvfork{x}{\togv{Q}}}
+%% %           {\gvmap{\togv{F}}{x,c}{(\gvsend{c}{(\gvsend{x}{p})})}}
+%% % \]%
+%% % \[
+%% %   Q^\dagger =
+%% %     \gvlet{y'}
+%% %           {\gvfork{y}{\togv{Q}}}
+%% %           {\togv{\map{F}{x,c}{p[x].p[c].p[].0}}}
+%% % \]%
 
-The translation is the same as in our previous work~\cite{LindleyM14} except for recursion and
-corecursion. Formally, it is a translation from judgements to terms (as we need to know the type
-operator in the case of $\key{corec}$).
+%% The translation is the same as in our previous work~\cite{LindleyM14} except for recursion and
+%% corecursion. Formally, it is a translation from judgements to terms (as we need to know the type
+%% operator in the case of $\key{corec}$).
 
-%
-\[
-  Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-\]
+%% %
+%% \[
+%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
+%% \]
 
 
-We can transfer the functoriality result from \mucp to \mugv:
+%% We can transfer the functoriality result from \mucp to \mugv:
 
-\begin{lemma}
-  If $\gvtyp{c:S,d:S'}{M}{\outterm}$, then there is a term, which we call $\gvmap{G}{c,d}{M}$, such
-  that $\gvtyp{c:G(S),d:\gvdual{G}(S')}{\gvmap{G}{c,d}{M}}{\outterm}$.
-\end{lemma}
+%% \begin{lemma}
+%%   If $\gvtyp{c:S,d:S'}{M}{\outterm}$, then there is a term, which we call $\gvmap{G}{c,d}{M}$, such
+%%   that $\gvtyp{c:G(S),d:\gvdual{G}(S')}{\gvmap{G}{c,d}{M}}{\outterm}$.
+%% \end{lemma}
 
-Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
-existing translation to each case.  Define
-\[
-  Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-\]
+%% Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
+%% existing translation to each case.  Define
+%% \[
+%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
+%% \]
 
-\begin{lemma}
-  If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
-  \[
-    \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
-  \]
-\end{lemma}
+%% \begin{lemma}
+%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
+%%   \[
+%%     \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
+%%   \]
+%% \end{lemma}
 
-\begin{theorem}
-  If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then $\gvtyp{}{\gvfix{p}{y\,c}{Q^\dagger}}{\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{\nu \togv{F}}{\outterm}})}}$.
-\end{theorem}
+%% \begin{theorem}
+%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then $\gvtyp{}{\gvfix{p}{y\,c}{Q^\dagger}}{\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{\nu \togv{F}}{\outterm}})}}$.
+%% \end{theorem}
 
 \begin{theorem}
   If $\cptyp{P}{\Gamma}$, then $\gvtyp{\togv{\Gamma}}{\togv{P}}{\outterm}$.
