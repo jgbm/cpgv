@@ -89,6 +89,8 @@
 \newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
 \newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
 
+\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
+
 \newcommand{\secref}[1]{(\S\ref{sec:#1})}
 
 \title{Recursive Session Types and Linear Logic}
@@ -624,8 +626,6 @@ Our next example is a simple multi-function calculator. Our goal is to provide a
 accepts an arbitrary stream of addition and multiplication requests, and can at any time provide the
 accumulated result.  We can implement the provider of this session as follows:
 
-\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
-
 \[
 \bl
 MakeCalc : \langle Int, Calc \rangle \uto \outterm \\
@@ -650,7 +650,7 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
       \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in} \\
       calc\:accum\:c; \\
       \el \\
-    \clabel{done}\:c.c \; \}
+    \clabel{stop}\:c.c \; \}
     \el \\
   \el \\
 \el
@@ -660,7 +660,7 @@ In this case, the type of the recursive channel is
  Calc = \nu X. \with \{ \clabel{add}: \gvin{Int}{X},
                         \clabel{mul}: \gvin{Int}{X},
                         \clabel{result}: \gvout{Int}{X},
-                        \clabel{done}: \outterm \}.
+                        \clabel{stop}: \outterm \}.
 \]%
 Here is a consumer of the service:
 \[\begin{array}{l}
@@ -668,13 +668,13 @@ Here is a consumer of the service:
   \gvlet{d}{\gvsend{6}{(\gvselect{\clabel{add}}{myCalc})}}{} \\
   \gvlet{myCalc}{\gvsend{7}{(\gvselect{\clabel{mul}}{myCalc})}}{} \\
   \gvlet{(x,d)}{\gvreceive{(\gvselect{\clabel{result}}{myCalc})}}{} \\
-  \gvlet{myCalc}{\gvselect{\clabel{done}}{myCalc}}{x}
+  \gvlet{myCalc}{\gvselect{\clabel{stop}}{myCalc}}{x}
 \end{array}\]
 We begin by constructing an instance of the calculator with the accumulator starting at 0; in the
 body of \tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called
 $myCalc$), has type
 \[
-\mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{done}: \interm \}.
+\mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{stop}: \interm \}.
 \]
 We perform several calculations, adding 6 to the accumulator and multiplying by 7.  Finally, we get
 the result and close the channel.
@@ -693,16 +693,11 @@ We begin with the type $Link$ of the links in the chain. Each is a recursive pro
 three operations: compute the integer value encoded by the chain, increment the chain, and dispose
 of the chain.
 %
-%{\small\[\begin{array}{l@{\hspace{1mm}}l}
-% NodeT = \nu X. \with \{ &\clabel{val}: \cpdual{Nat} \parr (Nat \otimes X), \\
-% & \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \\
-% & \clabel{halt}: 1 \}.
-%\end{array}\]}
 \[
  Link = \nu X. \with \{ \clabel{val}: \gvin{Int}{\gvout{Int}{X}},
                         \clabel{inc}: \oplus \{ \clabel{carry}: X,
-                        \clabel{done}: X \},
-                        \clabel{halt}: \outterm \}
+                                                \clabel{done}: X \},
+                        \clabel{stop}: \outterm \}
 \]
 Choosing $\clabel{val}$ cascades down the chain (from most- to least-significant bit), returning the
 computed value. Choosing $\clabel{inc}$ cascades similarly, but returns the carry bit.
@@ -726,28 +721,17 @@ Epsilon = \lrkwd\:epsilon\:c = \\
     \gvlet{c}{\gvselect{\clabel{carry}}{c}}{} \\
     epsilon\:c \\
     \el \\
-  \clabel{halt}\:c. c\}  \\
+  \clabel{stop}\:c. c\}  \\
   \el \\
 \el
 \]
 
-%To give internal nodes in the string, we need some representation of the bit each stores.  Let's use
-%Booleans!
-%
-%{\small\begin{align*}
-%Bool &= \oplus \{ \clabel{t}:1, \clabel{f}:1 \}. \\
-%True_x &= \sel{x}{t}.x[].0. \\
-%False_x &= \sel{x}{f}.x[].0.
-%\end{align*}}
-%
-%As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
 We can now define internal nodes. In response to a value request, an internal node adds its value to
 the value accumulated so far, and passes the result to the next node in the chain; the response is
 passed up the chain unchanged. In response to an increment request, the bit flips, passing on a
 carry option if needed. Internal nodes require two state components: the represented bit ($b$) and
 the remainder of the chain ($d$).
 %
-
 \[
 \bl
 Node : \langle Bool, \gvdual{Link}, Link \rangle \uto \outterm \\
@@ -778,7 +762,7 @@ Node = \lrkwd\:node\:b\:d\:c = \\
             \el \\
           \el \\
         \el \\
-      \clabel{halt}\:c. \gvlet{d}{\gvselect{\clabel{halt}}{d}}{c} \} \\
+      \clabel{stop}\:c. \gvlet{d}{\gvselect{\clabel{stop}}{d}}{c} \} \\
       \el \\
   \el \\
 \el
@@ -787,10 +771,10 @@ Node = \lrkwd\:node\:b\:d\:c = \\
 Now we can define the top level interface to a bit string. The interface supports the same three
 operations as the links---increment, retrieve value, and disposal---but with simpler behavior:
 \[
-  Count = \nu X. \with \{ \clabel{val}: \gvout{Int}{X}, \clabel{inc}: X, \clabel{halt}: \outterm \}
+  Count = \nu X. \with \{ \clabel{val}: \gvout{Int}{X}, \clabel{inc}: X, \clabel{stop}: \outterm \}
 \]
 Value retrieval outputs the value of the string, increment increases the stored value by one, and
-halting closes the channel. The implementation requires one state component, the first link of the
+stopping closes the channel. The implementation requires one state component, the first link of the
 chain (called $d$).
 \[
 \bl
@@ -817,7 +801,7 @@ CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
       \clabel{done}\:d.counterImpl\:d\:c\:\}; \\
       \el \\
     \el \\
-  \clabel{halt}\:c.\gvlet{d}{\gvselect{\clabel{halt}}{d}}{c}\:\}
+  \clabel{stop}\:c.\gvlet{d}{\gvselect{\clabel{stop}}{d}}{c}\:\}
   \el \\
 \el
 \]
@@ -835,7 +819,7 @@ Here is a simple example of using the counter:
 \gvlet{(i,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{ctr})}}{} \\
 \gvlet{(j,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{ctr})})}}{} \\
 \gvlet{(k,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{(\gvselect{\clabel{inc}}{ctr})})})}}{} \\
-\gvlet{ctr}{\gvselect{\clabel{halt}}{ctr}}{(i,j,k)}
+\gvlet{ctr}{\gvselect{\clabel{stop}}{ctr}}{(i,j,k)}
 \end{array}\]
 We begin by creating a new counter on channel $ctr$; we then perform a mixture of increment and
 value operations before closing the $ctr$ channel.  The whole expression evaluates to $(0,1,3)$.
