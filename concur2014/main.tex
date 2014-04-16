@@ -58,6 +58,7 @@
 \newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
 \newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
 
+\newcommand{\gvifthen}[3]{\mkwd{if}\:#1\:\mkwd{then}\:#2\:\mkwd{else}\:#3}
 \newcommand{\gvreceivek}[4]{\gvlet{({#1}, {#2})}{\gvreceive{#3}}{#4}}
 
 
@@ -486,14 +487,22 @@ We introduce the following syntactic sugar for multi-argument functions:
   \langle T_1, T_2, \dots, T_n \rangle \uto U \equiv T_1 \uto T_2 \lto \dots \lto T_n \lto U
 \]
 Note that the right-hand side is isomorphic to $(T_1 \otimes \dots \otimes T_n) \uto U$.
-
-Syntactic sugar for let binding:
+%
+We introduce the following syntactic sugar for let binding:
 \[
 \key{let}\:x=M\:\key{in}\:N \equiv (\lambda x.M)\:N
 \]
 
-For the purposes of our examples, we assume our term language has been extended by integer constants
-of type $Int$, along with addition ($+$) and multiplication ($\times$) operators.
+\paragraph{Base Types}
+
+For the purposes of our examples, we assume our term language has been extended with integer ($Int$)
+and ($Boolean$) base types along with integer constants ($\dots,-1,0,1,\dots$), addition ($+$)
+and multiplication ($\times$), boolean constants ($True, False$), and conditionals
+($\gvifthen{M}{N}{N'}$).
+%
+This does not change the expressivity of \mugv---we could encode each of these constructs using
+processes, along the lines illustrated later for \mucp~\secref{peano}---but does significantly
+streamline the presentation.
 
 \subsection{Streams}
 
@@ -513,7 +522,7 @@ Sink = \mu X.\oplus \{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}
 For convenience, we define a helper macro for describing how to generate the next value in a stream:
 \[
 \bl
-SendNext : \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \} \uto Int \lto \outterm \\
+SendNext : \langle \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}, Int \rangle \uto \outterm \\
 SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c},
                             \clabel{stop}\,c.c}
 \el
@@ -680,12 +689,6 @@ represents a string of bits (0 or 1) by a chain of processes, each storing one b
 supports operations to increment and retrieve the stored value as an integer encoded by the bit
 string. Each link in the chain functions as a one-bit adder.
 
-As in the previous section, we will assume constants for integers, along with addition and
-multiplication operators.  We will also assume Boolean constants and an if-then-else expression.
-This does not change the expressivity of \mugv---we could encode each of these constructs using
-processes, as we will demonstrate for \mucp~\secref{peano}---but does significantly streamline the
-presentation.
-
 We begin with the type $Link$ of the links in the chain. Each is a recursive process supporting
 three operations: compute the integer value encoded by the chain, increment the chain, and dispose
 of the chain.
@@ -743,8 +746,6 @@ the value accumulated so far, and passes the result to the next node in the chai
 passed up the chain unchanged. In response to an increment request, the bit flips, passing on a
 carry option if needed. Internal nodes require two state components: the represented bit ($b$) and
 the remainder of the chain ($d$).
-%
-\newcommand{\gvifthen}[3]{\mkwd{if}\:#1\:\mkwd{then}\:#2\:\mkwd{else}\:#3}
 %
 
 \[
