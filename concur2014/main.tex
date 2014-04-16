@@ -484,13 +484,17 @@ illustrate its use in the rest of this section through a selection of basic exam
 
 \paragraph{Syntactic Sugar}
 
-We introduce the following syntactic sugar for multi-argument functions:
+For multi-argument functions, we write:
 \[
-  \langle T_1, T_2, \dots, T_n \rangle \uto U \equiv T_1 \uto T_2 \lto \dots \lto T_n \lto U
+  \bl
+  (T_1, \dots, T_n) \lto U \equiv T_1 \lto \dots \lto T_n \lto U \\
+  \langle T_1, T_2, \dots, T_n \rangle \uto U \equiv T_1 \uto T_2 \lto \dots \lto T_n \lto U \\
+  \el
 \]
-Note that the right-hand side is isomorphic to $(T_1 \otimes \dots \otimes T_n) \uto U$.
+Note that the right-hand side of the second equation is isomorphic to $(T_1 \otimes \dots \otimes
+T_n) \uto U$.
 %
-We introduce the following syntactic sugar for let binding:
+For let binding, we write:
 \[
 \key{let}\:x=M\:\key{in}\:N \equiv (\lambda x.M)\:N
 \]
@@ -498,13 +502,13 @@ We introduce the following syntactic sugar for let binding:
 \paragraph{Base Types}
 
 For the purposes of our examples, we assume our term language has been extended with integer ($Int$)
-and ($Boolean$) base types along with integer constants ($\dots,-1,0,1,\dots$), addition ($+$)
+and Boolean ($Bool$) base types along with integer constants ($\dots,-1,0,1,\dots$), addition ($+$)
 and multiplication ($\times$), boolean constants ($True, False$), and conditionals
 ($\gvifthen{M}{N}{N'}$).
 %
-This does not change the expressivity of \mugv---we could encode each of these constructs using
-processes, along the lines illustrated later for \mucp~\secref{peano}---but does significantly
-streamline the presentation.
+%% This does not change the expressivity of \mugv---we could encode each of these constructs using
+%% processes, along the lines illustrated later for \mucp~\secref{peano}---but does significantly
+%% streamline the presentation.
 
 \subsection{Streams}
 
@@ -521,7 +525,7 @@ sink.
 Sink = \mu X.\oplus \{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}
 \]
 
-For convenience, we define a helper macro for describing how to generate the next value in a stream:
+Let us define a helper macro for generating the next value in a stream:
 \[
 \bl
 SendNext : \langle \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}, Int \rangle \uto \outterm \\
@@ -529,7 +533,7 @@ SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
                             \clabel{stop}\,c.c}
 \el
 \]
-
+%
 Using $\cofix$ we can define a function that outputs a stream of zeros along a corecursive
 channel:
 \[
@@ -541,13 +545,12 @@ channel:
 If the next number is chosen, then a zero is sent along the channel and we recurse. Otherwise we
 stop.
 %
-In order to actually read from the stream, we use $\key{fork}$ to create a recursive channel of type
-$Sink = \gvdual{Source} = \mu X.\oplus\{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}$:
+To read from a source, we can use $\key{fork}$ to create a sink:
 \[
 \gvfork{c}{MakeZeros\:c}
 \]
 %
-Now we can read some numbers from the stream and stop. First we define a helper macro:
+First we define a helper macro:
 \[
 \bl
 GetNext : Sink \uto Int \otimes Sink \\
@@ -558,8 +561,8 @@ and now:
 \[
 \bl
 \key{let}\:c = \gvfork{c}{MakeZeros\:c}\:\key{in} \\
-\key{let}\:(x, c) = GetNext\:c\:\key{in} \\
-\key{let}\:(y, c) = GetNext\:c\:\key{in} \\
+\key{let}\:(x, c) = GetNext\:c\:\key{in}\:
+\key{let}\:(y, c) = GetNext\:c\:\key{in}\:
 \key{let}\:(z, c) = GetNext\:c\:\key{in} \\
 \key{let}\:c = \gvselect{\clabel{stop}}{c}\:\key{in}\:(x, (y, z)) \\
 \el
@@ -576,7 +579,7 @@ case allows us to simulate weakening on such a channel.
 \paragraph{Productivity}
 We might expect to assign $c$ the type $\with \{\clabel{next}: !Int.Source, \clabel{stop}: \outterm
 \}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
-same typing assumptions for $f$ and $c$ we could then write:
+same typing assumptions for $f$ and $c$ we could write:
 \[
 \cofix\:f\:c = f\:c
 \]
@@ -602,9 +605,9 @@ The variable $x$ tracks the next value to send to the stream, and is accordingly
 recursive call. Now, the following:
 \[
 \bl
-\key{let}\:c = \gvfork{c}{MakeFibs\:c\:0\:1}\:\key{in} \\
-\key{let}\:(x, c) = GetNext\:c\:\key{in} \\
-\key{let}\:(y, c) = GetNext\:c\:\key{in} \\
+\key{let}\:c = \gvfork{c}{MakeNats\:c\:0\:1}\:\key{in} \\
+\key{let}\:(x, c) = GetNext\:c\:\key{in}\:
+\key{let}\:(y, c) = GetNext\:c\:\key{in}\:
 \key{let}\:(z, c) = GetNext\:c\:\key{in} \\
 \key{let}\:c = \gvselect{\clabel{stop}}{c}\:\key{in}\:(x,(y,z)) \\
 \el
@@ -637,18 +640,18 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
     \bl
     \clabel{add}\:c. 
       \bl
-      \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in} \\
-      calc\:(accum + x)\:c; \\
+      \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in}\:
+      calc\:(accum + x)\:c \\
       \el \\
     \clabel{mul}\:c.
       \bl
-      \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in} \\
+      \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in}\:
       calc\:(accum \times x)\:c \\
       \el \\
     \clabel{result}\:c. 
       \bl
-      \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in} \\
-      calc\:accum\:c; \\
+      \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in}\:
+      calc\:accum\:c \\
       \el \\
     \clabel{stop}\:c.c \; \}
     \el \\
@@ -663,31 +666,33 @@ In this case, the type of the recursive channel is
                         \clabel{stop}: \outterm \}.
 \]%
 Here is a consumer of the service:
-\[\begin{array}{l}
-  \gvlet{myCalc}{\gvfork{c}{MakeCalc\:0\:c}}{} \\
-  \gvlet{d}{\gvsend{6}{(\gvselect{\clabel{add}}{myCalc})}}{} \\
-  \gvlet{myCalc}{\gvsend{7}{(\gvselect{\clabel{mul}}{myCalc})}}{} \\
-  \gvlet{(x,d)}{\gvreceive{(\gvselect{\clabel{result}}{myCalc})}}{} \\
-  \gvlet{myCalc}{\gvselect{\clabel{stop}}{myCalc}}{x}
-\end{array}\]
+\[
+\bl
+  \gvlet{c}{\gvfork{c}{MakeCalc\:0\:c}}{} \\
+  \gvlet{c}{\gvsend{6}{(\gvselect{\clabel{add}}{c})}}{
+  \gvlet{c}{\gvsend{7}{(\gvselect{\clabel{mul}}{c})}}{}} \\
+  \gvlet{(x,c)}{\gvreceive{(\gvselect{\clabel{result}}{c})}}{
+  \gvlet{c}{\gvselect{\clabel{stop}}{c}}{x}}
+\el
+\]
 We begin by constructing an instance of the calculator with the accumulator starting at 0; in the
 body of \tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called
-$myCalc$), has type
+$myCalc$), has type:
 \[
 \mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{stop}: \interm \}.
 \]
-We perform several calculations, adding 6 to the accumulator and multiplying by 7.  Finally, we get
-the result and close the channel.
+We perform several calculations, adding 6 to the accumulator and multiplying by 7.  Finally, we
+obtain the result (13) and close the channel.
 
 \subsection{Bit Strings}
 %
 %\todo{Validating the translation requires extending the GV interpreter with Booleans, addition and
 %  multiplication.}
 
-We now adapt an example due to Toninho et al.~\cite{Toninho13} to our setting. This example
-represents a string of bits (0 or 1) by a chain of processes, each storing one bit. The chain
-supports operations to increment and retrieve the stored value as an integer encoded by the bit
-string. Each link in the chain functions as a one-bit adder.
+We now adapt an example of Toninho et al.~\cite{Toninho13}, in which a string of bits (0 or 1) is
+represented by a chain of processes, each storing one bit. The chain supports operations to
+increment and retrieve the stored value as an integer encoded by the bit string. Each link in the
+chain functions as a one-bit adder.
 
 We begin with the type $Link$ of the links in the chain. Each is a recursive process supporting
 three operations: compute the integer value encoded by the chain, increment the chain, and dispose
@@ -699,11 +704,11 @@ of the chain.
                                                 \clabel{done}: X \},
                         \clabel{stop}: \outterm \}
 \]
-Choosing $\clabel{val}$ cascades down the chain (from most- to least-significant bit), returning the
-computed value. Choosing $\clabel{inc}$ cascades similarly, but returns the carry bit.
+Choosing $\clabel{val}$ or $\clabel{inc}$ cascades down the chain from most- to least-significant
+bit. The former returns the computed value; the latter returns the carry bit.
 
-The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
-cannot store a value so it must respond to increment requests with a carry.
+The simplest node is the terminator $Epsilon$. It adds nothing to the value, and cannot store a
+responds to increment requests with a carry.
 \[
 \bl
 Epsilon : Link \to \outterm \\
@@ -712,14 +717,14 @@ Epsilon = \lrkwd\:epsilon\:c = \\
   \bl
   \clabel{val}\:c.
     \bl
-    \gvlet{(n,c)}{\gvreceive{c}}{} \\
-    \gvlet{c}{\gvsend{n}{c}}{} \\
-    epsilon\:c \\
+    \gvlet{(n,c)}{\gvreceive{c}}{
+    \gvlet{c}{\gvsend{n}{c}}{
+    epsilon\:c}} \\
     \el \\
   \clabel{inc}\:c.
     \bl
-    \gvlet{c}{\gvselect{\clabel{carry}}{c}}{} \\
-    epsilon\:c \\
+    \gvlet{c}{\gvselect{\clabel{carry}}{c}}{
+    epsilon\:c} \\
     \el \\
   \clabel{stop}\:c. c\}  \\
   \el \\
@@ -745,9 +750,9 @@ Node = \lrkwd\:node\:b\:d\:c = \\
         \bl
         \gvlet{(m,c)}{\gvreceive{c}}{} \\
         \gvlet{d}{\gvsend{(\gvifthen{b}{2 \times m + 1}{2 \times m})}{(\gvselect{\clabel{val}}{d})}}{} \\
-        \gvlet{(n,d)}{\gvreceive{d}}{} \\
-        \gvlet{c}{\gvsend{n}{c}}{} \\
-        node\:b\:d\:c; \\
+        \gvlet{(n,d)}{\gvreceive{d}}{
+        \gvlet{c}{\gvsend{n}{c}}{
+        node\:b\:d\:c}} \\
         \el \\
       \clabel{inc}\:c.
         \bl
@@ -758,7 +763,7 @@ Node = \lrkwd\:node\:b\:d\:c = \\
           \clabel{carry}\:d.
             \bl
             \gvlet{c}{\gvifthen{b}{\gvselect{\clabel{carry}}{c}}{\gvselect{\clabel{done}}{c}}}{} \\
-            node\:(not\:b)\:d\:c \}; \\
+            node\:(not\:b)\:d\:c \} \\
             \el \\
           \el \\
         \el \\
@@ -785,8 +790,8 @@ CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
   \bl
   \clabel{val}\:c.
      \bl
-     \gvlet{(n,d)}{\gvreceive{(\gvsend{0}{(\gvselect{\clabel{val}}{d})})}} \\
-     counterImpl\:d\:(\gvsend{n}{c}) \\
+     \gvlet{(n,d)}{\gvreceive{(\gvsend{0}{(\gvselect{\clabel{val}}{d})})}}
+     {counterImpl\:d\:(\gvsend{n}{c})} \\
      \el \\
   \clabel{inc}\:c.
     \bl
@@ -795,10 +800,10 @@ CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
       \bl
       \clabel{carry}\:d.
          \bl
-         \gvlet{e}{\gvfork{e}{Node\:True\:d\:e}}{} \\
-         counterImpl\:e\:c; \\
+         \gvlet{e}{\gvfork{e}{Node\:True\:d\:e}}{
+         counterImpl\:e\:c} \\
          \el \\
-      \clabel{done}\:d.counterImpl\:d\:c\:\}; \\
+      \clabel{done}\:d.counterImpl\:d\:c\:\} \\
       \el \\
     \el \\
   \clabel{stop}\:c.\gvlet{d}{\gvselect{\clabel{stop}}{d}}{c}\:\}
