@@ -435,6 +435,8 @@ Recursive session rules
           {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
 \end{mathpar}
 
+\todo{add definition of $un$ to this figure?}
+
 \caption{Typing Rules for \mugv}\label{fig:gv-typing}
 \end{figure}
 
@@ -457,131 +459,193 @@ provides the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
 \gvservice{\gvdual{S}}$).
 % As a consequence, there is no rule involving type $\gvserver{S}$.
 
-Finally, we provide recursive channels. The first four typing rules allow recursive types to be used
-as their unfoldings, and vice versa. Previous work on recursive sessions has typically included an
-equivalence relation on types, taking unfolding into account, and interpretting typing rules up to
-equivalence. We present explicit rules in order to simplify the translation into \mucp, where these
-rules correspond to explicit terms implementing the equivalences.
+The novelty of \mugv is in its recursive and corecursive channels. The first four typing rules allow
+recursive and corecursive session types to be used as their unfoldings, and vice versa. Previous
+work on recursive sessions has typically included an equivalence relation on types, taking unfolding
+into account, and interpretting typing rules up to equivalence. We present explicit rules in order
+to simplify the translation into \mucp, where these rules correspond to explicit terms implementing
+the equivalences.
 %
-The fixed point construct $\gvfix{f}{c\,\vec{x}}{M}$ is used to define corecursive sessions.
+The fixed point construct $\gvfix{f}{c\,\vec{x}}{M}$ is used to define corecursive sessions. We
+illustrate its use in the rest of this section through a selection of basic examples.
 
-\subsection{Streams}
+\paragraph{Syntactic Sugar}
 
 We introduce the following syntactic sugar for multi-argument functions:
 \[
   \langle T_1, T_2, \dots, T_n \rangle \uto U \equiv T_1 \uto T_2 \lto \dots \lto T_n \lto U
 \]
-Note that the right-hand side is isomorphic to $(T_1 \otimes \dots \otimes T_n) \uto U$.  In the
-remainder of the section, we will give several simple examples to motivate the typing and use of
-$\lrkwd$.
+Note that the right-hand side is isomorphic to $(T_1 \otimes \dots \otimes T_n) \uto U$.
 
 Syntactic sugar for let binding:
 \[
 \key{let}\:x=M\:\key{in}\:N \equiv (\lambda x.M)\:N
 \]
 
-\todo{This example is useless because we cannot actually use a stream of ints without introducing a
-  way of terminating the stream! ($\nu X.\with \{\clabel{more}: !Int.X, \clabel{end}: \outterm \}$)}
+For the purposes of our examples, we assume our term language has been extended by integer constants
+of type $Int$, along with addition ($+$) and multiplication ($\times$) operators.
 
-\todo{Change the example to match the equivalent CP one}
+\subsection{Streams}
 
-Type of a stream of integers:
+A canonical example of a corecursive data type is a stream. Let us consider a session type for
+producing a stream of integers.
+%
 \[
-Ints = \nu X.!Int.X
+Source = \nu X.\with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}
+\]
+%
+A channel of type $Source$ can either produce the next number or stop. The dual of a source is a
+sink.
+\[
+Sink = \mu X.\oplus \{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}
+\]
+
+For convenience, we define a helper macro for describing how to generate the next value in a stream:
+\[
+\bl
+SendNext : \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \} \uto Int \lto \outterm \\
+SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c},
+                            \clabel{stop}\,c.c}
+\el
 \]
 
 Using $\cofix$ we can define a function that outputs a stream of zeros along a corecursive
 channel:
 \[
   \bl
-  makeZeros : Ints \uto \outterm \\
-  makeZeros = \cofix\:f\:c = \gvlet{d}{\gvsend{0}{c}}{f\:d} \\
+  MakeZeros : Source \uto \outterm \\
+  MakeZeros = \cofix\:f\:c = SendNext\:c\:0
   \el
 \]
-The body outputs a single zero and then recurses. In order to read from the stream, we use
-$\key{fork}$ to create a recursive channel of type $\gvdual{Ints}$:
+If the next number is chosen, then a zero is sent along the channel and we recurse. Otherwise we
+stop.
+%
+In order to actually read from the stream, we use $\key{fork}$ to create a recursive channel of type
+$Sink = \gvdual{Source} = \mu X.\oplus\{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}$:
+\[
+\gvfork{c}{MakeZeros\:c}
+\]
+%
+Now we can read some numbers from the stream and stop. First we define a helper macro:
 \[
 \bl
-zeros : \gvdual{Ints} \\
-zeros = \gvfork{c}{makeZeros\:c} \\
+GetNext : Sink \uto Int \otimes Sink \\
+GetNext\:c = \gvreceive{(\gvselect{\clabel{next}}{c})} \\
 \el
 \]
+and now:
+\[
+\bl
+\key{let}\:c = \gvfork{c}{MakeZeros\:c}\:\key{in} \\
+\key{let}\:(x, c) = GetNext\:c\:\key{in} \\
+\key{let}\:(y, c) = GetNext\:c\:\key{in} \\
+\key{let}\:(z, c) = GetNext\:c\:\key{in} \\
+\key{let}\:c = \gvselect{\clabel{stop}}{c}\:\key{in}\:(x, (y, z)) \\
+\el
+\]
+returns $(0, (0, 0))$.
 
-\todo{Oops! Only infinite programs can consume zeros, due to linearity.}
+\paragraph{Simulating Weakening}
+We might expect to be able to use the session type $\nu X.!Int.X$ for streams. This does not work in
+a linear setting because in order to read from the stream we would need to use the dual session type
+$\mu X.?Int.X$. We cannot write a program that uses this session type because it would have to
+consume an infinite amount of data in order to satisfy linearity. In essence, the $\clabel{stop}$
+case allows us to simulate weakening on such a channel.
 
-
-\paragraph{productivity}
-
-We might expect to assign $c$ the type $\nu X.\gvout{Int}{X} = \gvout{Int}{(\nu X.\gvout{Int}{X})}$,
-and $d$ the type $\nu X.\gvout{Int}{X}$, but then productivity would not be assured. For example,
-under the same typing assumptions for $f$ and $c$ we could then write:
+\paragraph{Productivity}
+We might expect to assign $c$ the type $\with \{\clabel{next}: !Int.Source, \clabel{stop}: \outterm
+\}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
+same typing assumptions for $f$ and $c$ we could then write:
 \[
 \cofix\:f\:c = f\:c
 \]
 %
-We restrict the typing rule for $\cofix$ in order to ensure productivity. We use a fresh type
-variable $X$ to abstract the recursive behavior; the channel $c$ then has type $G(X)$ (in our
-example $\gvout{Int}{X}$) instead of $G(\nu G)$ (in our example $\gvout{Int}{(\nu
-  X.\gvout{Int}{X})}$), and $f$ has type $X \uto \outterm$ instead of $\nu G \uto \outterm$. The
-body of $\lrkwd$ is thus required to provide precisely one iteration of the recursive behavior.
+We restrict the typing rule for $\cofix$ in order to guarantee productivity. We use a fresh type
+variable $X$ to abstract the recursive behavior, so the channel $c$ has type $G(X)$ (in our example
+$\with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$ has type
+$X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\cofix$ is thus required to provide
+precisely one iteration of the recursive behavior.
 
-\paragraph{coinvariants}
+\paragraph{Coinvariants}
 
-We allow recursive sessions to maintain internal state (a \emph{coinvariant}). In the typing rule,
-this is captured by the additional arguments $\vec{x}$. For example, we can construct a stream of
-consecutive naturals using the expression:
-\[
-  \gvfix{nats}{c\:x}{\gvlet{c}{\gvsend{x}{c}}{nats\:c\:(x + 1)}}
-\]
-The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
-recursive call. We can maintain coinvariants of arbitrary complexity; for example, we can define a
-stream of the Fibonacci numbers as follows:
-\[
-  \gvfix{fibs}{c\:m\:n}{\gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m + n)}}
-\]
-
-Having shown how to define recursive channels, we now how to use them. The following example returns
-an input channel for reading the Fibonacci numbers.
+We allow recursive sessions to maintain internal state (a \emph{coinvariant}). In the $\cofix$
+typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
+stream of consecutive naturals using the expression:
 \[
 \bl
-\key{let}\:fibs = (\gvfix{fibs}{c\:m\:n}{\gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m + n)}})\:\key{in} \\
-\gvfork{c}{fibs\:c\:0\:1} \\
+  MakeNats : Source \uto \outterm \\
+  MakeNats = \gvfix{nats}{c\:x}{SendNext\:c\:(x + 1)} \\
 \el
 \]
-The channel $c$ passed to $fibs$ implements the Fibonacci numbers as a stream of outputs of type
-$\nu X.!Int.X$. The $\key{fork}$ construct returns the other end of that channel, whose type is $\mu
-X.?Int.X$: in any given program we can request an arbitrary finite number of elements of the
-Fibonacci sequence.
+The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
+recursive call. Now, the following:
+\[
+\bl
+\key{let}\:c = \gvfork{c}{MakeFibs\:c\:0\:1}\:\key{in} \\
+\key{let}\:(x, c) = GetNext\:c\:\key{in} \\
+\key{let}\:(y, c) = GetNext\:c\:\key{in} \\
+\key{let}\:(z, c) = GetNext\:c\:\key{in} \\
+\key{let}\:c = \gvselect{\clabel{stop}}{c}\:\key{in}\:(x,(y,z)) \\
+\el
+\]
+returns $(0, (1, 2))$.
+%
+We can maintain coinvariants of arbitrary complexity; for example, we can define a
+stream of the Fibonacci numbers as follows:
+\[
+\bl
+  MakeFibs : Source \uto \outterm \\
+  MakeFibs = \gvfix{fibs}{c\:m\:n}{SendNext\:c\:(m + n)} \\
+\el
+\]
 
 \subsection{Multi-function calculator}
 
-Our next example is a simple multi-function calculator. For the purposes of this example, we will
-assume that our term language has been extended by integer constants, along with addition ($+$) and
-multiplication ($\times$) operators.  Our goal is to provide a session that accepts an arbitrary
-stream of addition and multiplication requests, and can at any time provide the accumulated result.
-We can implement the provider of this session as follows:
+Our next example is a simple multi-function calculator. Our goal is to provide a session that
+accepts an arbitrary stream of addition and multiplication requests, and can at any time provide the
+accumulated result.  We can implement the provider of this session as follows:
 
 \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
-\[\begin{array}{llll}
- \mcl{4}{calc : \langle Int, Calc \rangle \uto \outterm} \\
- \mcl{4}{calc = \lrkwd\:calc\:accum\:c =} \\
- \quad & \mcl{3}{\mkwd{case}\:c\;\mkwd{of}\:\{} \\
- & \quad & \clabel{add}\:c. &\mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in} \\
- & & & calc\:(accum + x)\:c; \\
- & & \clabel{mul}\:c. &\mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in} \\
- & & & calc\:(accum \times x)\:c \\
- & & \clabel{result}\:c. &\mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in} \\
- & & & calc\:accum\:c; \\
- & & \clabel{done}\:c.& c \; \}
-\end{array}\]
+\[
+\bl
+MakeCalc : \langle Int, Calc \rangle \uto \outterm \\
+MakeCalc = \lrkwd\:calc\:accum\:c = \\
+\quad
+  \bl
+  \mkwd{case}\:c\;\mkwd{of}\:\{ \\
+  \quad
+    \bl
+    \clabel{add}\:c. 
+      \bl
+      \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in} \\
+      calc\:(accum + x)\:c; \\
+      \el \\
+    \clabel{mul}\:c.
+      \bl
+      \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in} \\
+      calc\:(accum \times x)\:c \\
+      \el \\
+    \clabel{result}\:c. 
+      \bl
+      \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in} \\
+      calc\:accum\:c; \\
+      \el \\
+    \clabel{done}\:c.c \; \}
+    \el \\
+  \el \\
+\el
+\]
 In this case, the type of the recursive channel is
 \[
- Calc = \nu X. \with \{ \clabel{add}: \gvin{Int}{X}, \clabel{mul}: \gvin{Int}{X}, \clabel{result}: \gvout{Int}{X}, \clabel{done}: \outterm \}.
+ Calc = \nu X. \with \{ \clabel{add}: \gvin{Int}{X},
+                        \clabel{mul}: \gvin{Int}{X},
+                        \clabel{result}: \gvout{Int}{X},
+                        \clabel{done}: \outterm \}.
 \]%
 Here is a consumer of the service:
 \[\begin{array}{l}
-  \gvlet{myCalc}{\gvfork{c}{calc\:0\:c}}{} \\
+  \gvlet{myCalc}{\gvfork{c}{MakeCalc\:0\:c}}{} \\
   \gvlet{d}{\gvsend{6}{(\gvselect{\clabel{add}}{myCalc})}}{} \\
   \gvlet{myCalc}{\gvsend{7}{(\gvselect{\clabel{mul}}{myCalc})}}{} \\
   \gvlet{(x,d)}{\gvreceive{(\gvselect{\clabel{result}}{myCalc})}}{} \\
@@ -619,37 +683,32 @@ of the chain.
 % & \clabel{halt}: 1 \}.
 %\end{array}\]}
 \[
- Link = \nu X. \with \{ \clabel{val}: \gvin{Int}{\gvout{Int}{X}}, \clabel{inc}: \oplus \{ \clabel{carry}: X, \clabel{done}: X \}, \clabel{halt}: \outterm \}
+ Link = \nu X. \with \{ \clabel{val}: \gvin{Int}{\gvout{Int}{X}},
+                        \clabel{inc}: \oplus \{ \clabel{carry}: X,
+                        \clabel{done}: X \},
+                        \clabel{halt}: \outterm \}
 \]
-The val operation cascades down the chain (from most- to least-significant bit), returning the
-computed value.  The increment operator cascades similarly, but returns the carry bit.
+Choosing $\clabel{val}$ cascades down the chain (from most- to least-significant bit), returning the
+computed value. Choosing $\clabel{inc}$ cascades similarly, but returns the carry bit.
 
 The simplest node is the terminator $Epsilon$: it adds nothing to the value of the string, and
-cannot store a value so it must respond to increment requests with carry.
-%
-%{\small\[\begin{array}{rcll}
-%  Epsilon_x & = & \mcl{2}{\lrkwd\:x\langle y \rangle ( y[].0,} \\
-%  & & \quad \mkwd{case}\:x\: \{ &\clabel{val}: x(n).x[n].\link{y}{x}; \\
-%  & & &\clabel{inc}:\sel{x}{carry}.\link{y}{x}; \\
-%  & & &\clabel{halt}: \link{y}{x} \}).
-%\end{array}\]}
-%
+cannot store a value so it must respond to increment requests with a carry.
 \[
 \bl
 Epsilon : Link \to \outterm \\
-Epsilon = \lrkwd\:Epsilon\:c = \\
+Epsilon = \lrkwd\:epsilon\:c = \\
 \quad \mkwd{case}\:c\:\mkwd{of}\:\{
   \bl
   \clabel{val}\:c.
     \bl
     \gvlet{(n,c)}{\gvreceive{c}}{} \\
     \gvlet{c}{\gvsend{n}{c}}{} \\
-    Epsilon\:c \\
+    epsilon\:c \\
     \el \\
   \clabel{inc}\:c.
     \bl
     \gvlet{c}{\gvselect{\clabel{carry}}{c}}{} \\
-    Epsilon\:c \\
+    epsilon\:c \\
     \el \\
   \clabel{halt}\:c. c\}  \\
   \el \\
@@ -666,91 +725,96 @@ Epsilon = \lrkwd\:Epsilon\:c = \\
 %\end{align*}}
 %
 %As for numeric operations, I'll write $x[True].P$ for $x[b].(True_b \mid P)$.
-We can now define internal nodes. In response to a value request, it adds its value to the value
-accululated so far, and passes the result to the next node in the chain; the response is passed up
-the chain unchanged. In response to an increment request, the bit flips, passing on a carry option
-if needed. Internal nodes require two state components: the represented bit ($b$)
-and the remainder of the chain ($d$).
-%
-%{\small\[\begin{array}{rcllll}
-%  Node_{i,y,n} & = & \mcl{4}{\lrkwd\:n \langle x \rangle (x[j].(\link{j}{i} \mid \link{x}{y}),} \\
-%  & & \quad x(b).\mkwd{case}\:n\: \{ &\mcl{3}{\clabel{val}: \rec{x}.\sel{x}{val}.n(m).} \\
-%  & & & \quad \mkwd{case}\:b\: \{ &\mcl{2}{\clabel{t}: b().x[2m + 1].x(m).} \\
-%  & & & & \mcl{2}{\quad n[m].n[True].\link{x}{n};} \\
-%  & & & & \mcl{2}{\clabelx{f}: b().x[2m].x(m).} \\
-%  & & & & \mcl{2}{\quad n[m].n[False].\link{x}{n} \};} \\
-%  & & & \mcl{3}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
-%  & & & \quad \mkwd{case}\:x\:\{ &\mcl{2}{\clabel{done}: \sel{n}{done}.n[b].\link{x}{n}} \\
-%  & & & &\clabel{carry}: \mkwd{case}\:b\: \{ &\clabel{t}: b().\sel{n}{carry}.n[False].\link{x}{n} \\
-%  & & & & &\clabel{f}: b().\sel{n}{done}.n[True].\link{x}{n} \} \}; \\
-%  & & &\clabel{halt}: \\
-%  & & &\quad \mkwd{case}\:b\:\{ &\mcl{2}{\clabel{t}: b().\rec{x}.\sel{x}{halt}.x().n[].0;} \\
-%  & & & &\mcl{2}{\clabel{f}: b().\rec{x}.\sel{x}{halt}.x().n[].0 \} \})}.
-%\end{array}\]}
+We can now define internal nodes. In response to a value request, an internal node adds its value to
+the value accumulated so far, and passes the result to the next node in the chain; the response is
+passed up the chain unchanged. In response to an increment request, the bit flips, passing on a
+carry option if needed. Internal nodes require two state components: the represented bit ($b$) and
+the remainder of the chain ($d$).
 %
 \newcommand{\gvifthen}[3]{\mkwd{if}\:#1\:\mkwd{then}\:#2\:\mkwd{else}\:#3}
 %
-\[\begin{array}{lllll}
-\mcl{5}{Node : \langle Bool, \gvdual{Link}, Link \rangle \uto \outterm} \\
-\mcl{5}{Node = \lrkwd\:Node\:b\:d\:c =} \\
-\mcl{5}{\quad \mkwd{case}\:c\:\mkwd{of}\:\{} \\
-\quad \quad & \clabel{val}\:c. & \mcl{3}{\gvlet{(m,c)}{\gvreceive{c}}{}} \\
-& & \mcl{3}{\gvlet{d}{\gvsend{(\gvifthen{b}{2 \times m + 1}{2 \times m})}{(\gvselect{\clabel{val}}{d})}}{}} \\
-& & \mcl{3}{\gvlet{(n,d)}{\gvreceive{d}}{}} \\
-& & \mcl{3}{\gvlet{c}{\gvsend{n}{c}}{}} \\
-& & \mcl{3}{Node\:b\:d\:c;} \\
-& \clabel{inc}\:c. & \mcl{3}{\mkwd{case}\:(\gvselect{\clabel{inc}}{d})\:\mkwd{of}\:\{} \\
-& & \quad & \clabel{done}\:d. & Node\:b\:d\:(\gvselect{\clabel{done}}{c}) \\
-& & & \clabel{carry}\:d. & \gvlet{c}{\gvifthen{b}{\gvselect{\clabel{carry}}{c}}{\gvselect{\clabel{done}}{c}}}{} \\
-& & & & Node\:(not\:b)\:d\:c \}; \\
-& \clabel{halt}\:c. & \mcl{3}{\gvlet{d}{\gvselect{\clabel{halt}}{d}}{c} \}}
-\end{array}\]
-%% SL: unnecessary - typing rule for fix is always like this
-%%
-%% (The arrows are linear as $Node$ values are linear, and so closures that capture them must be as
-%% well.)
 
-Finally, we can define the top level interface to a bit string.  The interface supports the same
-three operations as the links---increment, retrieve value, and disposal---but with simpler behavior:
+\[
+\bl
+Node : \langle Bool, \gvdual{Link}, Link \rangle \uto \outterm \\
+Node = \lrkwd\:node\:b\:d\:c = \\
+\quad
+  \bl
+  \mkwd{case}\:c\:\mkwd{of}\:\{ \\
+    \quad
+      \bl
+      \clabel{val}\:c.
+        \bl
+        \gvlet{(m,c)}{\gvreceive{c}}{} \\
+        \gvlet{d}{\gvsend{(\gvifthen{b}{2 \times m + 1}{2 \times m})}{(\gvselect{\clabel{val}}{d})}}{} \\
+        \gvlet{(n,d)}{\gvreceive{d}}{} \\
+        \gvlet{c}{\gvsend{n}{c}}{} \\
+        node\:b\:d\:c; \\
+        \el \\
+      \clabel{inc}\:c.
+        \bl
+        \mkwd{case}\:(\gvselect{\clabel{inc}}{d})\:\mkwd{of}\:\{ \\
+        \quad
+          \bl
+          \clabel{done}\:d. node\:b\:d\:(\gvselect{\clabel{done}}{c}) \\
+          \clabel{carry}\:d.
+            \bl
+            \gvlet{c}{\gvifthen{b}{\gvselect{\clabel{carry}}{c}}{\gvselect{\clabel{done}}{c}}}{} \\
+            node\:(not\:b)\:d\:c \}; \\
+            \el \\
+          \el \\
+        \el \\
+      \clabel{halt}\:c. \gvlet{d}{\gvselect{\clabel{halt}}{d}}{c} \} \\
+      \el \\
+  \el \\
+\el
+\]
+
+Now we can define the top level interface to a bit string. The interface supports the same three
+operations as the links---increment, retrieve value, and disposal---but with simpler behavior:
 \[
   Count = \nu X. \with \{ \clabel{val}: \gvout{Int}{X}, \clabel{inc}: X, \clabel{halt}: \outterm \}
 \]
 Value retrieval outputs the value of the string, increment increases the stored value by one, and
 halting closes the channel. The implementation requires one state component, the first link of the
 chain (called $d$).
-\[\begin{array}{llll}
-\mcl{4}{CounterImpl : \langle \gvdual{Link}, Count \rangle \uto \outterm} \\
-\mcl{4}{CounterImpl = \lrkwd\:CounterImpl\:d\:c =} \\
-\mcl{4}{\quad \mkwd{case}\:c\:\mkwd{of}\:\{} \\
-\quad \quad & \clabel{val}\:c. & \mcl{2}{\gvlet{(n,d)}{\gvreceive{(\gvsend{0}{(\gvselect{\clabel{val}}{d})})}}} \\
-& & \mcl{2}{CounterImpl\:d\:(\gvsend{n}{c})} \\
-& \clabel{inc}\:c. & \mcl{2}{\mkwd{case}\:\gvselect{\clabel{inc}}{d}\:\mkwd{of}\:\{} \\
-& & \quad \clabel{carry}\:d. & \gvlet{e}{\gvfork{e}{Node\:True\:d\:e}}{} \\
-& & & CounterImpl\:e\:c; \\
-& & \quad \clabel{done}\:d. & CounterImpl\:d\:c\:\}; \\
-& \clabel{halt}\:c. & \mcl{2}{\gvlet{d}{\gvselect{\clabel{halt}}{d}}{c}\:\}}
-\end{array}\]
+\[
+\bl
+CounterImpl : \langle \gvdual{Link}, Count \rangle \uto \outterm \\
+CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
+\quad \mkwd{case}\:c\:\mkwd{of}\:\{ \\
+\quad \quad
+  \bl
+  \clabel{val}\:c.
+     \bl
+     \gvlet{(n,d)}{\gvreceive{(\gvsend{0}{(\gvselect{\clabel{val}}{d})})}} \\
+     counterImpl\:d\:(\gvsend{n}{c}) \\
+     \el \\
+  \clabel{inc}\:c.
+    \bl
+    \mkwd{case}\:\gvselect{\clabel{inc}}{d}\:\mkwd{of}\:\{ \\
+    \quad
+      \bl
+      \clabel{carry}\:d.
+         \bl
+         \gvlet{e}{\gvfork{e}{Node\:True\:d\:e}}{} \\
+         counterImpl\:e\:c; \\
+         \el \\
+      \clabel{done}\:d.counterImpl\:d\:c\:\}; \\
+      \el \\
+    \el \\
+  \clabel{halt}\:c.\gvlet{d}{\gvselect{\clabel{halt}}{d}}{c}\:\}
+  \el \\
+\el
+\]
 The value case uses the value behavior of the links, providing the initial value 0.  The increment
 option adds a new link to the chain if incrementing the existing chain requires
 carrying. $CounterImpl$ takes an initial chain as an argument. For a counter, we initialise this to
 the empty chain encoding $0$:
 \[\bl
   Counter : Count \uto \outterm \\
-  Counter = \lambda c.CounterImpl\:(\gvfork{x}{Epsilon\:x})\:c. \\
+  Counter = \lambda c.CounterImpl\:(\gvfork{x}{Epsilon\:x})\:c \\
 \el\]
-%
-%{\small\[
-% CounterT = \nu X. \with \{ \clabel{val}: Nat \otimes X, \clabel{inc}:X, \clabel{halt}:1 \}.
-%\]}
-%
-%{\small\[\begin{array}{rclll}
-%  Counter_z & = & \mcl{3}{\lrkwd\:z \langle x \rangle (Epsilon_x,} \\
-%  & & \quad \mkwd{case}\:z\:\{ &\mcl{2}{\clabel{val}: \rec{x}.\sel{x}{val}.x[Zero].x(n).z[n].\link{z}{x};} \\
-%  & & &  \mcl{2}{\clabel{inc}: \rec{x}.\sel{x}{inc}.} \\
-%  & & & \quad \mkwd{case}\:x\:\{ &\clabel{carry}: \cut{n}{CImp}{\cut{i}{Bool}{True_i}{Node_{i,x,n}}}{\link{z}{n}}; \\
-%  & & & &\clabel{done}: \link{z}{x} \} \\
-%  & & &\mcl{2}{\clabel{halt}:\rec{x}.\sel{x}{halt}.x().z[].0 \}).}
-%\end{array}\]}
 Here is a simple example of using the counter:
 \[\begin{array}{l}
 \gvlet{ctr}{\gvfork{c}{Counter\:c}}{} \\
@@ -1139,7 +1203,7 @@ that
 
 \subsection{Streams}
 
-As in our discussion of the $\lrkwd$ form in \mugv~\secref{mugv-syntax}, we can use \mucp fixed
+As in our discussion of the $\lrkwd$ form in \mugv~\secref{mugv-types}, we can use \mucp fixed
 points to encode streams.  The encoding of the stream type is quite intuitive:
 \begin{align*}
   Sink(A) &= \mu X. \oplus \{ \clabel{end}: \bot, \clabel{more}: A \parr X \}, \\
