@@ -244,15 +244,105 @@ subformulas. As usual, the subformula $T$ in types $T \lto U$ and $T \uto U$ is
 negative. Futhermore, the argument $T$ in the session type $\gvout{T}{S}$ is negative. All other
 subformulas are positive. Thus, the operator $X.\gvout{X}{\outterm}$ is not monotonic, but the
 operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
+%
+Formally, $X.S$ is monotonic iff the predicate $pos_{X,S}$ holds, where $pos$ and $neg$ are the
+predicates defined by the homomorphic extensions of the following equations:
+\[
+\ba{@{}c@{\qquad}c@{}}
+\begin{eqs}
+pos_{X,X} \\
+\neg pos_{X,\gvdual{X}} \\
+pos_{X,!T.S} &=& neg_{X,T} \wedge pos_{X,S} \\
+pos_{X,T \lto U} &=& neg_{X,T} \wedge pos_{X,U} \\
+pos_{X,T \uto U} &=& neg_{X,T} \wedge pos_{X,U} \\
+\end{eqs}
+&
+\begin{eqs}
+\neg neg_{X,X} \\
+neg_{X,\gvdual{X}} \\
+neg_{X,!T.S} &=& pos_{X,T} \wedge neg_{X,S} \\
+neg_{X,T \lto U} &=& pos_{X,T} \wedge neg_{X,U} \\
+neg_{X,T \uto U} &=& pos_{X,T} \wedge neg_{X,U} \\
+\end{eqs}
+\ea
+\]
 
-\todo{Formally define monotonicity of operators}
 
-%% pos(X, ~X) = false
-%% pos(X, X) = true
-%% pos(X, T -o U) = neg(X, T) and pos(X, U)
-%% pos(X, T -> U) = neg(X, T) and pos(X, U)
-%% pos(X, !T.S) = neg(X, T) and pos(X, S)
-%% etc.
+
+%% \[
+%% \ba{@{}cc@{}}
+%% \begin{eqs}
+%% pos_X(!T.S) &=& neg_X(T) \wedge pos_X(S) \\
+%% pos_X(?T.S) &=& pos_X(T) \wedge pos_X(S) \\
+%% pos_X(+\{l_i:S_i\}_i) &=& \forall i.pos(S_i) \\
+%% pos_X(\with\{l_i:S_i\}_i) &=& \forall i.pos(S_i) \\
+%% pos_X(\outterm) \\
+%% pos_X(\interm) \\
+%% pos_X(X) \\
+%% \neg pos_X(\gvdual{X}) \\
+%% pos_X(\mu G) &=& pos_X(G) \\
+%% pos_X(\nu G) &=& pos_X(G) \\
+%% pos_X(X.S) \\
+%% pos_X(Y.S) &=& pos_X(S), \text{ if }X \neq Y \\
+%% pos_X(T \otimes  U) &=& pos_X(T) \wedge pos_X(U) \\
+%% pos_X(T \lto U) &=& neg_X(T) \wedge pos_X(U) \\
+%% pos_X(T \uto U) &=& neg_X(T) \wedge pos_X(U) \\
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% neg_X(!T.S) &=& pos_X(T) \wedge neg_X(S) \\
+%% neg_X(?T.S) &=& neg_X(T) \wedge neg_X(S) \\
+%% neg_X(+\{l_i:S_i\}_i) &=& \forall i.neg(S_i) \\
+%% neg_X(\with\{l_i:S_i\}_i) &=& \forall i.neg(S_i) \\
+%% neg_X(\outterm) \\
+%% neg_X(\interm) \\
+%% \neg neg_X(X) \\
+%% neg_X(\gvdual{X}) \\
+%% neg_X(\mu G) &=& neg_X(G) \\
+%% neg_X(\nu G) &=& neg_X(G) \\
+%% neg_X(X.S) \\
+%% neg_X(Y.S) &=& neg_X(S), \text{ if }X \neq Y \\
+%% neg_X(T \otimes  U) &=& neg_X(T) \wedge neg_X(U) \\
+%% neg_X(T \lto U) &=& pos_X(T) \wedge neg_X(U) \\
+%% neg_X(T \uto U) &=& pos_X(T) \wedge neg_X(U) \\
+%% \end{eqs}
+%% \ea
+%% \]
+
+%% \todo{Formally define monotonicity of operators}
+
+%% pos(X, !T.S) = neg(X, T) /\ pos(X, S)
+%% pos(X, ?T.S) = pos(X, T) /\ pos(X, S)
+%% pos(X, +{li:Si}i) = forall i.pos(Si)
+%% pos(X, &{li:Si}i) = forall i.pos(Si)
+%% pos(X, end!)
+%% pos(X, end!)
+%% pos(X, X)
+%% ¬pos(X, ~X)
+%% pos(X, mu G) = pos(X, G)
+%% pos(X, nu G) = pos(X, G)
+%% pos(X, X.S)
+%% pos(X, Y.S) = pos(X, S), if X =/= Y
+%% pos(X, T *  U) = pos(X, T) /\ pos(X, U)
+%% pos(X, T -o U) = neg(X, T) /\ pos(X, U)
+%% pos(X, T -> U) = neg(X, T) /\ pos(X, U)
+
+%% neg(X, !T.S) = pos(X, T) /\ neg(X, S)
+%% neg(X, ?T.S) = neg(X, T) /\ neg(X, S)
+%% neg(X, +{li:Si}i) = forall i.neg(Si)
+%% neg(X, &{li:Si}i) = forall i.neg(Si)
+%% neg(X, end!)
+%% neg(X, end!)
+%% ¬neg(X, X)
+%% neg(X, ~X)
+%% neg(X, mu G) = neg(X, G)
+%% neg(X, nu G) = neg(X, G)
+%% neg(X, X.S)
+%% neg(X, Y.S) = neg(X, S), if X =/= Y
+%% neg(X, T *  U) = neg(X, T) /\ neg(X, U)
+%% neg(X, T -o U) = pos(X, T) /\ neg(X, U)
+%% neg(X, T -> U) = pos(X, T) /\ neg(X, U)
+
 
 
 \subsection{Typing Rules}
