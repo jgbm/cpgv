@@ -1350,14 +1350,14 @@ for \gvpi.
 %
 \begin{mathpar}
 \inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
-          {\gvtyp{\Phi}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{T}{\gvout{\nu G}{\outterm}})}}}
+          {\gvtyp{\Phi}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
 \end{mathpar}
 %
 This rule takes advantage of the fact that we can always translate
 away functions using the $\topi{-}$ translation, and we can simulate
 multiple arguments using a tensor.
 
-The full translation on terms is as follows.
+The translation on terms is given by the homomorphic extension of the following equations:
 \begin{equations}
 \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
 \topi{L\,M} &=& \gvsend{\topi{M}}{\topi{L}} \\
