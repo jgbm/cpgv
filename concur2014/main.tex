@@ -1,6 +1,6 @@
 % -*- fill-column: 100 -*-
 
-\documentclass[orivec,envcountsame]{llncs}
+\documentclass[orivec,envcountsame,oribbl]{llncs}
 
 \usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
 \usepackage[authoryear,round]{natbib}
@@ -97,7 +97,7 @@
 \title{Recursive Session Types and Linear Logic}
 \author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
 \institute{University of Edinburgh \\
-           \email{Garrett.Morris@ed.ac.uk,\{slindley,wadler\}@inf.ed.ac.uk}}
+           \email{\{Garrett.Morris,Sam.Lindley\}@ed.ac.uk,wadler@inf.ed.ac.uk}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
 %\newcommand{\todo}[1]{}
@@ -471,7 +471,7 @@ rules for application and pair introduction and elimination, and is limited to u
 the introduction of unlimited arrows.
 
 The session rules for input, output, choice and selection are standard. Following our earlier
-work~\cite{LindleyM14}, we provide a term $\gvlink{M}{N}$ to implement channel forwarding; while a
+work~\citep{LindleyM14}, we provide a term $\gvlink{M}{N}$ to implement channel forwarding; while a
 version of \tkwd{link} exists for any session type $S$, it has no generic implementation in terms of
 other constructs of \mugv. The \tkwd{fork} construct provides session initiation; like Wadler's GV,
 but unlike LAST (and much other work on process calculi), our system is deterministic.
@@ -700,7 +700,7 @@ obtain the result (42) and close the channel.
 %\todo{Validating the translation requires extending the GV interpreter with Booleans, addition and
 %  multiplication.}
 
-We now adapt an example of Toninho et al.~\cite{Toninho13}, in which a string of bits (0 or 1) is
+We now adapt an example of \citet{Toninho13}, in which a string of bits (0 or 1) is
 represented by a chain of processes, each storing one bit. The chain supports operations to
 increment and retrieve the stored value as an integer encoded by the bit string. Each link in the
 chain functions as a one-bit adder.
@@ -966,7 +966,7 @@ captured by requiring that each be of type $\cpquery{B}$ for some $B$.
 \paragraph{Recursion and Corecursion.}
 
 We introduce least fixed points $\mu F$ and greatest fixed points $\mu F$ to CP, following Baelde's
-proof theoretic treatment of fixed points in linear logic~\cite{Baelde12}.  The proof rules can be
+proof theoretic treatment of fixed points in linear logic~\citep{Baelde12}.  The proof rules can be
 understood from traditional two-sided rules for least and greated fixed points, combined with the
 duality between the fixed points.  We begin with a two-sided presentation:
 \begin{mathpar}
@@ -1192,8 +1192,8 @@ show elimination of all cuts in a well-typed \mucp term.
 
 \subsection{Streams}
 
-As in our discussion of the $\lrkwd$ form in \mugv~\secref{mugv-types}, we can use \mucp fixed
-points to encode streams.  The encoding of the stream type is quite intuitive:
+We can use \mucp fixed points to encode streams of naturals, paralleling our similar development in
+\mugv~\secref{mugv-types}.  The encoding of the stream type is quite intuitive:
 \begin{align*}
   Sink(A) &= \mu X. \oplus \{ \clabel{end}: \bot, \clabel{more}: A \parr X \}, \\
   Source(A) &= \nu X. \with \{ \clabel{end}: 1, \clabel{more}: A \otimes X \}.
@@ -1201,41 +1201,38 @@ points to encode streams.  The encoding of the stream type is quite intuitive:
 Note that, following the typical treatment of duality in linear logic, we have that
 $\cpdual{(Source(A))} = Sink(\cpdual{A})$.
 
-We can define several streams, building on our previous encoding of Peano numerals in \mucp.  we
-begin with a stream of zeros:
-\[
-  Zeros_y =\ \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
-\]
-We have no need for the coinvariant in this definition, so we use the trivial coinvariant 1.  Next,
-we describe the stream of naturals $0,1,2,\dots$.  As in \mugv, we will rely on the coinvariant to
-track the next number to send to the channel.  However, unlike in \mugv, $Peano$ is a linear
-proposition.  To account for this, we begin by demonstrating that we can duplicate and discard
-proofs of $Peano$:
-\[\begin{array}{lll}
-  \multicolumn{3}{l}{Copy_{x,z} = \lrkwd\:x\langle y \rangle ( \link{y}{z},} \\
-  \quad \quad & \mkwd{case}\:x\:\{\:&\clabel{zero}: x().y[y'].(Zero_{y'} \mid Zero_{y}) \\
-  & & \clabel{succ}: x(x').y[y'].(Inc_{x',y'} \mid Inc_{x,y}) \}) \\
-  \multicolumn{3}{l}{Drop_{x,z} = \lrkwd\:x \langle y \rangle (\link{y}{z},} \\
-  \quad \quad & \mkwd{case}\:x\:\{\:&\clabel{zero}: \link{x}{y} \\
-  & & \clabel{succ}: \link{x}{y} \})
-\end{array}\]
-We have that $\cptyp{Copy_{x,z}}{x:\cpdual{Peano}, z:Peano \otimes Peano}$ and that
-$\cptyp{Drop_{x,z}}{x:\cpdual{Peano},z:1}$. Finally, we can demonstrate the stream of naturals:
+As in \mugv, we will assume that our language is extended with constants implementing unlimited
+natural numbers.  In particular, we will assume there is some proposition $Nat$ and terms
+\[\begin{eqs}
+Zero_x &\vdash& x:\cpquery{Nat} \\
+Inc_{y,x} &\vdash& y:\cpbang{\cpdual{Nat}},x:\cpquery{Nat}.
+\end{eqs}\]
+providing zero and successor.
+
+We can define a process which generates a stream of zeros.  In this example, we make no use of the
+coinvariant, and so choose the trivial proposition 1:
+\[\begin{eqs}
+  Zeros_y &\vdash& y:Stream(\cpquery{Nat}) \\
+  Zeros_y &=& \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
+\end{eqs}\]
+Next, we extend this example to a stream of naturals.  As in the corresponding \mugv example, we use
+the coinvariant to track the next number to appear in the stream.
 \[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
+  CNats_y & \vdash & \mcl{3}{y:Stream(\cpquery{Nat})} \\
   CNats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
-  & & \quad & \mkwd{case}\:y \{ & \clabel{end}: \cut{a}{}{Drop_{z,a}}{a().y[].0}; \\
-  & & & & \clabel{more}: \mkwd{new}\:w\:(Copy_{z,w} \mid \\
-  & & & & \quad w(z).y[x].(\link{x}{z} \mid \cut{v}{}{Inc_{w,v}}{\link{y}{v}}))\})
+  & & \quad & \mkwd{case}\:y \:\{ & \clabel{end}: y[].0; \\
+  & & & & \clabel{more}: y[x].(\link{z}{x} \mid \cut{v}{}{Inc_{z,w}}{\link{w}{y}})\})
 \end{array}\]
-In the $\clabel{more}$ case, we begin by copying the coinvariant numeral $z$ as $z$ and $w$.  We
-then send $z$ along the channel $y$, increment $w$ giving $v$, and re-establish the coinvariant
-using $v$.  As we expect, we have that $\cptyp{CNats_y}{y:Stream(Nat)}$.
+In the $\clabel{end}$, we rely on weakening for $\cpquery{Nat}$ to dispose of the coinvariant.  In
+the $\clabel{more}$ case, we rely on contraction to copy the coinvariant $z$.  We then send one
+copyalong the channel $y$, increment the other giving $w$, and re-establish the coinvariant using
+$v$.
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
 \subsection{Translation from \mugv to \gvpi}\label{sec:gvtogvpi}
 
-Following our previous work~\cite{LindleyM14} we factor the
+Following our previous work~\citep{LindleyM14} we factor the
 translation of \mugv into \mucp through an intermediate
 translation. The language \gvpi is the restriction of \mugv to session
 types, that is, \mugv without $\lto$, $\uto$, or $\otimes$. In order
@@ -1562,14 +1559,14 @@ where:
   \end{itemize}
 \item CH correspondence
   \begin{itemize}
-  \item Abramsky~\cite{Abramsky92,BellinScott94}
-  \item Caires and Pfenning~\cite{CairesPfenning10}
-  \item Wadler~\cite{Wadler12}
+  \item Abramsky~\citep{Abramsky92,BellinScott94}
+  \item Caires and Pfenning~\citep{CairesPfenning10}
+  \item Wadler~\citep{Wadler12}
   \end{itemize}
 \item LL and fixed points
   \begin{itemize}
-  \item Girard~\cite{Girard87}
-  \item Baelde~\cite{Baelde12}
+  \item Girard~\citep{Girard87}
+  \item Baelde~\citep{Baelde12}
   \end{itemize}
 \end{itemize}
 
@@ -1582,7 +1579,7 @@ where:
 \end{itemize}
 
 \label{sect:bib}
-\bibliographystyle{plainnat}
+\bibliographystyle{abbrvnat}
 \bibliography{main}
 
 \end{document}
