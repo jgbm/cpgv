@@ -542,9 +542,9 @@ For let binding, we write:
 
 \paragraph{Base Types.}
 
-For the purposes of our examples, we assume our term language has been extended with integer ($Int$)
-and Boolean ($Bool$) base types along with integer constants ($\dots,-1,0,1,\dots$), addition ($+$)
-and multiplication ($\times$), boolean constants ($True, False$), and conditionals
+For the purposes of our examples, we assume our term language has been extended with natural number
+($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
+addition ($+$) and multiplication ($\times$), boolean constants ($True, False$), and conditionals
 ($\gvifthen{M}{N}{N'}$).
 %
 %% This does not change the expressivity of \mugv---we could encode each of these constructs using
@@ -554,22 +554,22 @@ and multiplication ($\times$), boolean constants ($True, False$), and conditiona
 \subsection{Streams}
 
 A canonical example of a corecursive data type is a stream. Let us consider a session type for
-producing a stream of integers.
+producing a stream of naturals.
 %
 \[\small
-Source = \nu X.\with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}
+Source = \nu X.\with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \}
 \]
 %
 A channel of type $Source$ can either produce the next number or stop. The dual of a source is a
 sink.
 \[\small
-Sink = \mu X.\oplus \{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}
+Sink = \mu X.\oplus \{\clabel{next}: ?Nat.X, \clabel{stop}: \interm \}
 \]
 
 Let us define a helper macro for generating the next value in a stream:
 \[\small
 \bl
-SendNext : \langle \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}, Int \rangle \uto \outterm \\
+SendNext : \langle \with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \}, Nat \rangle \uto \outterm \\
 SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
                             \clabel{stop}\,c.c}
 \el
@@ -594,7 +594,7 @@ To read from a source, we can use $\key{fork}$ to create a sink:
 First we define a helper macro:
 \[\small
 \bl
-GetNext : Sink \uto Int \otimes Sink \\
+GetNext : Sink \uto Nat \otimes Sink \\
 GetNext\:c = \gvreceive{(\gvselect{\clabel{next}}{c})} \\
 \el
 \]
@@ -611,14 +611,14 @@ and now:
 returns $(0, (0, 0))$.
 
 \paragraph{Simulating Weakening.}
-We might expect to be able to use the session type $\nu X.!Int.X$ for streams. This does not work in
+We might expect to be able to use the session type $\nu X.!Nat.X$ for streams. This does not work in
 a linear setting because in order to read from the stream we would need to use the dual session type
-$\mu X.?Int.X$. We cannot write a program that uses this session type because it would have to
+$\mu X.?Nat.X$. We cannot write a program that uses this session type because it would have to
 consume an infinite amount of data in order to satisfy linearity. In essence, the $\clabel{stop}$
 case allows us to simulate weakening on such a channel.
 
 \paragraph{Productivity.}
-We might expect to assign $c$ the type $\with \{\clabel{next}: !Int.Source, \clabel{stop}: \outterm
+We might expect to assign $c$ the type $\with \{\clabel{next}: !Nat.Source, \clabel{stop}: \outterm
 \}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
 same typing assumptions for $f$ and $c$ we could write:
 \[\small
@@ -627,7 +627,7 @@ same typing assumptions for $f$ and $c$ we could write:
 %
 We restrict the typing rule for $\cofix$ in order to guarantee productivity. We use a fresh type
 variable $X$ to abstract the recursive behavior, so the channel $c$ has type $G(X)$ (in our example
-$\with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$ has type
+$\with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$ has type
 $X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\cofix$ is thus required to provide
 precisely one iteration of the recursive behavior.
 
@@ -635,7 +635,7 @@ precisely one iteration of the recursive behavior.
 
 We allow recursive sessions to maintain internal state (a \emph{coinvariant}). In the $\cofix$
 typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
-stream of consecutive naturals using the expression:
+stream of consecutive naturals:
 \[\small
 \bl
   MakeNats : Source \uto \outterm \\
@@ -672,12 +672,11 @@ accumulated result.  We can implement the provider of this session as follows:
 
 \[\small
 \bl
-MakeCalc : \langle Int, Calc \rangle \uto \outterm \\
+MakeCalc : \langle Nat, Calc \rangle \uto \outterm \\
 MakeCalc = \lrkwd\:calc\:accum\:c = \\
 \quad
   \bl
-  \mkwd{case}\:c\;\mkwd{of}\:\{ \\
-  \quad
+  \mkwd{case}\:c\;\mkwd{of}\:\{
     \bl
     \clabel{add}\:c.
       \bl
@@ -701,9 +700,9 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
 \]
 In this case, the type of the recursive channel is
 \[\small
- Calc = \nu X. \with \{ \clabel{add}: \gvin{Int}{X},
-                        \clabel{mul}: \gvin{Int}{X},
-                        \clabel{result}: \gvout{Int}{X},
+ Calc = \nu X. \with \{ \clabel{add}: \gvin{Nat}{X},
+                        \clabel{mul}: \gvin{Nat}{X},
+                        \clabel{result}: \gvout{Nat}{X},
                         \clabel{stop}: \outterm \}.
 \]%
 Here is a consumer of the service:
@@ -720,7 +719,7 @@ We begin by constructing an instance of the calculator with the accumulator star
 body of \tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called
 $c$), has type:
 \[\small
-\mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{stop}: \interm \}.
+\mu X. \oplus \{ \clabel{add}: \gvout{Nat}{X}, \clabel{mul}: \gvout{Nat}{X}, \clabel{result}: \gvin{Nat}{X}, \clabel{stop}: \interm \}.
 \]
 We perform several calculations, adding 6 to the accumulator and multiplying by 7.  Finally, we
 obtain the result (42) and close the channel.
@@ -730,17 +729,17 @@ obtain the result (42) and close the channel.
 %\todo{Validating the translation requires extending the GV interpreter with Booleans, addition and
 %  multiplication.}
 
-We now adapt an example of \citet{Toninho13}, in which a string of bits (0 or 1) is
-represented by a chain of processes, each storing one bit. The chain supports operations to
-increment and retrieve the stored value as an integer encoded by the bit string. Each link in the
-chain functions as a one-bit adder.
+We now adapt an example of \citet{Toninho13}, in which a string of bits (0 or 1) is represented by a
+chain of processes, each storing one bit. The chain supports operations to increment and retrieve
+the stored value as a natural encoded by the bit string. Each link in the chain functions as a
+one-bit adder.
 
 We begin with the type $Link$ of the links in the chain. Each is a recursive process supporting
-three operations: compute the integer value encoded by the chain, increment the chain, and dispose
+three operations: compute the natural value encoded by the chain, increment the chain, and dispose
 of the chain.
 %
 \[\small
- Link = \nu X. \with \{ \clabel{val}: \gvin{Int}{\gvout{Int}{X}},
+ Link = \nu X. \with \{ \clabel{val}: \gvin{Nat}{\gvout{Nat}{X}},
                         \clabel{inc}: \oplus \{ \clabel{carry}: X,
                                                 \clabel{done}: X \},
                         \clabel{stop}: \outterm \}
@@ -784,8 +783,7 @@ Node : \langle Bool, \gvdual{Link}, Link \rangle \uto \outterm \\
 Node = \lrkwd\:node\:b\:d\:c = \\
 \quad
   \bl
-  \mkwd{case}\:c\:\mkwd{of}\:\{ \\
-    \quad
+  \mkwd{case}\:c\:\mkwd{of}\:\{
       \bl
       \clabel{val}\:c.
         \bl
@@ -817,7 +815,7 @@ Node = \lrkwd\:node\:b\:d\:c = \\
 Now we can define the top level interface to a bit string. The interface supports the same three
 operations as the links---increment, retrieve value, and disposal---but with simpler behavior:
 \[\small
-  Count = \nu X. \with \{ \clabel{val}: \gvout{Int}{X}, \clabel{inc}: X, \clabel{stop}: \outterm \}
+  Count = \nu X. \with \{ \clabel{val}: \gvout{Nat}{X}, \clabel{inc}: X, \clabel{stop}: \outterm \}
 \]
 Value retrieval outputs the value of the string, increment increases the stored value by one, and
 stopping closes the channel. The implementation requires one state component, the first link of the
@@ -826,8 +824,7 @@ chain (called $d$).
 \bl
 CounterImpl : \langle \gvdual{Link}, Count \rangle \uto \outterm \\
 CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
-\quad \mkwd{case}\:c\:\mkwd{of}\:\{ \\
-\quad \quad
+\quad \mkwd{case}\:c\:\mkwd{of}\:\{
   \bl
   \clabel{val}\:c.
      \bl
@@ -1229,40 +1226,40 @@ show elimination of all cuts in a well-typed \mucp term.
 \subsection{Streams}
 
 We can use \mucp fixed points to encode streams of naturals, paralleling our similar development in
-\mugv~\secref{mugv-types}.  The encoding of the stream type is quite intuitive:
-\begin{align*}
-  Sink(A) &= \mu X. \oplus \{ \clabel{end}: \bot, \clabel{more}: A \parr X \}, \\
-  Source(A) &= \nu X. \with \{ \clabel{end}: 1, \clabel{more}: A \otimes X \}.
-\end{align*}
-Note that, following the typical treatment of duality in linear logic, we have that
-$\cpdual{(Source(A))} = Sink(\cpdual{A})$.
-
-As in \mugv, we will assume that our language is extended with constants implementing unlimited
-natural numbers.  In particular, we will assume there is some proposition $Nat$ and terms
+\mugv~\secref{mugv-types}: %. The encoding of the stream type is quite intuitive:
+\begin{equations}
+  Sink &=& \mu X. \oplus \{ \clabel{next}: Nat \parr X, \clabel{stop}: \bot \}, \\
+  Source &=& \nu X. \with \{ \clabel{next}: Nat \otimes X, \clabel{stop}: 1 \} \\
+\end{equations}%
+where, as in \mugv, we assume that our language is extended with constants implementing unlimited
+natural numbers. In particular, we will assume there is some proposition $Nat$ and terms:
 \[\small\begin{eqs}
 Zero_x &\vdash& x:\cpquery{Nat} \\
 Inc_{y,x} &\vdash& y:\cpbang{\cpdual{Nat}},x:\cpquery{Nat}.
 \end{eqs}\]
 providing zero and successor.
 
+%% Note that, following the typical treatment of duality in linear logic, we have that
+%% $\cpdual{(Source(A))} = Sink(\cpdual{A})$.
+
 We can define a process which generates a stream of zeros.  In this example, we make no use of the
 coinvariant, and so choose the trivial proposition 1:
 \[\small\begin{eqs}
   Zeros_y &\vdash& y:Stream(\cpquery{Nat}) \\
-  Zeros_y &=& \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
+  Zeros_y &=& \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{next}: y[x].(Zero_x | y[].0); \clabel{stop}: y[].0}}.
 \end{eqs}\]
 Next, we extend this example to a stream of naturals.  As in the corresponding \mugv example, we use
 the coinvariant to track the next number to appear in the stream.
 \[\small\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  CNats_y & \vdash & \mcl{3}{y:Stream(\cpquery{Nat})} \\
-  CNats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
-  & & \quad & \mkwd{case}\:y \:\{ & \clabel{end}: y[].0; \\
-  & & & & \clabel{more}: y[x].(\link{z}{x} \mid \cut{v}{}{Inc_{z,w}}{\link{w}{y}})\})
+  Nats_y & \vdash & \mcl{3}{y:Stream(\cpquery{Nat})} \\
+  Nats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
+  & & \quad & \mkwd{case}\:y \:\{ & \clabel{next}: y[x].(\link{z}{x} \mid \cut{w}{}{Inc_{z,w}}{\link{w}{y}}); \\
+  & & & & \clabel{stop}: y[].0\})
 \end{array}\]
-In the $\clabel{end}$, we rely on weakening for $\cpquery{Nat}$ to dispose of the coinvariant.  In
-the $\clabel{more}$ case, we rely on contraction to copy the coinvariant $z$.  We then send one
-copyalong the channel $y$, increment the other giving $w$, and re-establish the coinvariant using
-$v$.
+In the $\clabel{next}$ case, we rely on contraction to copy the coinvariant $z$. In the
+$\clabel{stop}$ case, we rely on weakening for $\cpquery{Nat}$ to dispose of the coinvariant. We
+then send one copy along the channel $y$, increment the other giving $w$, and re-establish the
+coinvariant using $w$.
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
