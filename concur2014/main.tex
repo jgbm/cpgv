@@ -458,12 +458,13 @@ Session rules
 \inferrule{\gvtyp{\Phi}{M}{\with \{ l_i:S_i \}} \\
            \gvtyp{\Psi,x:S_i}{N_i}{T}}
           {\gvtyp{\Phi,\Psi}{\gvcase{M}{l_i\,x.N_i}}{T}}
-\end{mathpar}
-Replicated session rules
-\begin{mathpar}
+
+%% \end{mathpar}
+%% Replicated session rules
+%% \begin{mathpar}
 \inferrule{\gvtyp{\Phi,x:\gvdual{S}}{M}{\outterm} \\
            un(\Phi)}
-          {\gvtyp{\Phi}{\gvserve{x}{M}}{\gvdual{\gvserver{S}}}}
+          {\gvtyp{\Phi}{\gvserve{x}{M}}{\gvservice{S}}}
 
 \inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
           {\gvtyp{\Phi}{\gvrequest{M}}{S}}
