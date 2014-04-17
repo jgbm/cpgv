@@ -1,11 +1,14 @@
 % -*- fill-column: 100 -*-
 
-\documentclass[orivec,envcountsame,oribbl]{llncs}
+\documentclass[orivec,envcountsame]{llncs}
 
 \usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
-\usepackage[authoryear,round]{natbib}
-
 \addtolength{\jot}{-3px}
+
+% Attempt to duplicate Springer's style of references
+\usepackage[authoryear,compress,round]{natbib}
+\renewcommand{\bibsection}{\section*{References}}
+\renewcommand{\bibpreamble}{\small}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
@@ -842,7 +845,7 @@ We begin by creating a new counter on channel $ctr$; we then perform a mixture o
 value operations before closing the $ctr$ channel.  The whole expression evaluates to $(0,1,3)$.
 
 
-\section{\mucp Syntax and Semantics}\label{sec:mucp}
+\section{A Linear Logic-Based Process Calculus}\label{sec:mucp}
 
 \subsection{Types and Terms}
 
