@@ -3,6 +3,7 @@
 \documentclass[orivec,envcountsame]{llncs}
 
 \usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
+\usepackage[authoryear,round]{natbib}
 \addtolength{\jot}{-3px}
 
 \usepackage{mathpartir}
@@ -106,19 +107,29 @@
 \maketitle
 
 \begin{abstract}
-  A Curry-Howard correspondence between session types and linear logic was first demonstrated by
-  Caires and Pfenning for intuitionistic linear logic, and later adapted to the classical setting by
-  Wadler. These correspondences give both a logical interpretation of session types and a
-  computational interpretation of linear logic proofs, and ensure race freedom, deadlock freedom,
-  and termination of well-typed processes. However, neither system accomodates recursive sessions,
-  as might be used to represent stateful servers or inductive data types.
+  We extend a propositions-as-types correspondence between linear logic and session types to include
+  recursive sessions.  Our extension takes least and greatest fixpoints as dual, an idea well-known
+  to theorists, but which has not previously appeared in the treatment of recursive sessions. As a
+  result, some problems with recursion that appear in other systems do not arise in ours. Our
+  extension also preserves the race-freedom and deadlock-freedom that are a hallmark of basing
+  session types in a correspondence to linear logic. We treat two systems, one based on classical
+  linear logic, derived from work of Caires and Pfenning and of Wadler, and one based on a
+  linear functional language, derived from work of Gay and Vasconcelos. Our treatment of recursion
+  is inspired by Baelde.
 
-  We extend Wadler's correspondence to recursive processes and sessions using equirecursive session
-  types. We show that the resulting types and processes are in correspondence with the propositions
-  and proofs of Baelde's extension of linear logic with greatest and least fixed points. Unlike
-  prior accounts of recursive session typing, our system distinguishes recursive and corecursive
-  processes, and exploits their duality to maintain race freedom, deadlock freedom, and termination,
-  even in the presence of unbounded corecursive processes.
+  % A Curry-Howard correspondence between session types and linear logic was first demonstrated by
+  % Caires and Pfenning for intuitionistic linear logic, and later adapted to the classical setting by
+  % Wadler. These correspondences give both a logical interpretation of session types and a
+  % computational interpretation of linear logic proofs, and ensure race freedom, deadlock freedom,
+  % and termination of well-typed processes. However, neither system accomodates recursive sessions,
+  % as might be used to represent stateful servers or inductive data types.
+
+  % We extend Wadler's correspondence to recursive processes and sessions using equirecursive session
+  % types. We show that the resulting types and processes are in correspondence with the propositions
+  % and proofs of Baelde's extension of linear logic with greatest and least fixed points. Unlike
+  % prior accounts of recursive session typing, our system distinguishes recursive and corecursive
+  % processes, and exploits their duality to maintain race freedom, deadlock freedom, and termination,
+  % even in the presence of unbounded corecursive processes.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -126,26 +137,26 @@
 Session types provide a type-based approach to structuring communication among concurrent or
 distributed processes.  In this approach, types are used to describe communication protocols, and
 type checking guarantees that processes observe these protocols.  Session types have been applied in
-a variety of languages, including process calculi~\cite{Honda93,Honda98} and functional
-languages~\cite{GayVasconcelos10}.
+a variety of languages, including process calculi~\citep{Honda93,Honda98} and functional
+languages~\citep{GayVasconcelos10}.
 
-Caires and Pfenning~\cite{CairesPfenning10} first demonstrated a Curry-Howard correspondence between
+\citet{CairesPfenning10} first demonstrated a Curry-Howard correspondence between
 session-typed process calculi and intuitionistic linear logic (ILL).  Their correspondence gives
 both an interpretation of session types as ILL propositions, and a computational interpretation of
 ILL proofs as $\pi$-calculus processes.  As a result, they are able to show that well-typed
 processes are terminating, race-free, and deadlock-free, by analogy with corresponding
 cut-elimination results for ILL.  Wadler adapted their approach to classical linear logic (CLL).  In
 doing so, he presented two languages, CP and GV.  CP is a process calculus-like term-assignment for
-the proof rules of CLL.  GV is a session-typed functional language, based on the language of Gay and
-Vasconcelos~\cite{GayVasconcelos10}.  He shows that all GV typing derivations correspond to
-well-typed CP terms; subsequently, Lindley and Morris extended GV such that all CP derivations
-correspond to GV terms as well~\cite{LindleyM14}.
+the proof rules of CLL.  GV is a session-typed functional language, based on the language of
+\citet{GayVasconcelos10}.  He shows that all GV typing derivations correspond to
+well-typed CP terms; subsequently, \cite{LindleyM14} extended GV such that all CP derivations
+correspond to GV terms as well.
 
 Most work on session-typed systems permit recursive processes and recursive session types.  However,
 neither of the Curry-Howard treatments of session types include recursive sessions.  This work
 extends Wadler's approach to include recursive sessions.  We extend CP to include notions of
 greatest and least fixed point, drawing Baelde's proof-theoretic study of fixed points in linear
-logic~\cite{Baelde12}.  Likewise, we extend GV with recursive and corecursive sessions, providing
+logic~\citep{Baelde12}.  Likewise, we extend GV with recursive and corecursive sessions, providing
 bounded and unbounded iteration respectively.  Finally, we show that the resulting languages are
 still interconvertible.  We preserve the significant results of the existing correspondence (race
 freedom, deadlock freedom, and termination).
@@ -1602,7 +1613,7 @@ where:
 \end{itemize}
 
 \label{sect:bib}
-\bibliographystyle{plain}
+\bibliographystyle{plainnat}
 \bibliography{main}
 
 \end{document}
