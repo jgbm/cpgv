@@ -482,7 +482,7 @@ the equivalences.
 The fixed point construct $\gvfix{f}{c\,\vec{x}}{M}$ is used to define corecursive sessions. We
 illustrate its use in the rest of this section through a selection of basic examples.
 
-\paragraph{Syntactic Sugar}
+\paragraph{Syntactic Sugar.}
 
 For multi-argument functions, we write:
 \[
@@ -499,7 +499,7 @@ For let binding, we write:
 \key{let}\:x=M\:\key{in}\:N \equiv (\lambda x.M)\:N
 \]
 
-\paragraph{Base Types}
+\paragraph{Base Types.}
 
 For the purposes of our examples, we assume our term language has been extended with integer ($Int$)
 and Boolean ($Bool$) base types along with integer constants ($\dots,-1,0,1,\dots$), addition ($+$)
@@ -569,14 +569,14 @@ and now:
 \]
 returns $(0, (0, 0))$.
 
-\paragraph{Simulating Weakening}
+\paragraph{Simulating Weakening.}
 We might expect to be able to use the session type $\nu X.!Int.X$ for streams. This does not work in
 a linear setting because in order to read from the stream we would need to use the dual session type
 $\mu X.?Int.X$. We cannot write a program that uses this session type because it would have to
 consume an infinite amount of data in order to satisfy linearity. In essence, the $\clabel{stop}$
 case allows us to simulate weakening on such a channel.
 
-\paragraph{Productivity}
+\paragraph{Productivity.}
 We might expect to assign $c$ the type $\with \{\clabel{next}: !Int.Source, \clabel{stop}: \outterm
 \}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
 same typing assumptions for $f$ and $c$ we could write:
@@ -590,7 +590,7 @@ $\with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}$) instead of $G(\nu G
 $X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\cofix$ is thus required to provide
 precisely one iteration of the recursive behavior.
 
-\paragraph{Coinvariants}
+\paragraph{Coinvariants.}
 
 We allow recursive sessions to maintain internal state (a \emph{coinvariant}). In the $\cofix$
 typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
@@ -638,7 +638,7 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
   \mkwd{case}\:c\;\mkwd{of}\:\{ \\
   \quad
     \bl
-    \clabel{add}\:c. 
+    \clabel{add}\:c.
       \bl
       \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in}\:
       calc\:(accum + x)\:c \\
@@ -648,7 +648,7 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
       \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in}\:
       calc\:(accum \times x)\:c \\
       \el \\
-    \clabel{result}\:c. 
+    \clabel{result}\:c.
       \bl
       \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in}\:
       calc\:accum\:c \\
@@ -677,12 +677,12 @@ Here is a consumer of the service:
 \]
 We begin by constructing an instance of the calculator with the accumulator starting at 0; in the
 body of \tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called
-$myCalc$), has type:
+$c$), has type:
 \[
 \mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{stop}: \interm \}.
 \]
 We perform several calculations, adding 6 to the accumulator and multiplying by 7.  Finally, we
-obtain the result (13) and close the channel.
+obtain the result (42) and close the channel.
 
 \subsection{Bit Strings}
 %
@@ -834,20 +834,6 @@ value operations before closing the $ctr$ channel.  The whole expression evaluat
 
 \subsection{Types and Terms}
 
-\todo{
-\begin{itemize}
-\item There are a couple of changes from previous presentations of CP.  First, I've changed the
-  scoping operator from $\nu$ to \tkwd{new} to avoid confusion with fixed points.  Second, I've
-  attempted to make $.$ mean sequencing, as it does in $\pi$-calculus; this meant changing the
-  syntax of \tkwd{new} and \tkwd{case} to eliminate extra $.$'s.
-\item I'm unsure on whether to prefer a minimal presentation, to simplify the later technical
-  development, or a full presentation, to make it look most like a complete language.  For example,
-  as it is, I've left out second-order quantification; this isn't because there's any particular
-  problem with it, but because I haven't used it in any of the examples and it doesn't interact
-  surprisingly with any of the new features.  Some places the paper is schizophrenic: the syntax and
-  cut rules use binary sums, but the examples assume $n$-ary sums.
-\end{itemize}\vspace{-2mm}}
-
 The types of \mucp are the propositions of CLL, extended with type operators $F$ and fixed points
 $\mu F,\nu F$.
 \[\begin{array}{l@{\hspace{2mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
@@ -957,9 +943,14 @@ $\top$ can reduce.
 
 \paragraph{Replication and Dereliction.}
 
-The exponential connectives $!$ and $?$ provide servers and services. The process $!x(y).P$ defines
-the behavior of a server $x$. It accepts a channel $y$ which is bound in $P$. The process $?x[y].P$
-sends channel $y$ to the server associated with $x$, and then continues as $P$.
+The exponential connectives $!$ and $?$ in linear logic provide limited access to the classical
+rules of weakening and contraction.  We interpret them as providing replicated processes: a process
+with type $\cpbang{A}$ provides arbitrarily copies of a process providing behavior $A$, while a
+process of type $\cpquery{A}$ can choose to use one, many, or none of those copies.  There are three
+rules for types $\cpquery{A}$; note that, in contrast to the other typing rules of \mucp, we leave
+uses of weakening and contraction implicit.  Finally, since the process proving $\cpbang{A}$ may be
+replicated arbitrarily, each channel that process uses must be replicatable as well.  This is
+captured by requiring that each be of type $\cpquery{B}$ for some $B$.
 
 \paragraph{Recursion and Corecursion.}
 
@@ -1138,10 +1129,19 @@ where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
 \caption{Definition of $\mapname$ for positive combinators.}\label{fig:map}
 \end{figure}
 
-Principal cut reductions are given in Fig.~\ref{fig:beta-reduction}. Cut reduction for fixed points
-corresponds to one step of unrolling, and depends on a auxiliary function $\mapname$. The positive
-cases of $\mapname$ are given in Fig.~\ref{fig:map}; the remaining cases can be obtained by
-exchanging channels $x$ and $w$.
+Cut elimination corresponds to process reduction.  The principal cut reductions are given in
+Fig.~\ref{fig:beta-reduction}. The majority of these are standard; for instance, cut reduction of
+$\with$ against $\oplus$ corresponds to picking one of the offered alternatives.  Cut reduction for
+fixed points corresponds to unrolling one iteration from the \tkwd{corec} term, directed by the type
+of the fixed point operator $F$.  It depends on a proof construction known as functoriality, which
+derives the following proof rule for any type operator $F$:
+\[
+\inferrule{\vdash A,B}{\vdash F(A),\cpdual{F}(B)}
+\]
+We call the term implementing this construction $\mapname$ by analogy with a similar construct in
+functional programming: taking $C = \cpdual{B}$, the above proof rule gives a transformation from a
+proof of $C \lto A$ to one of $F(C) \lto F(A)$.  The positive cases of $\mapname$ are given in
+Fig.~\ref{fig:map}; the remaining cases can be obtained by exchanging channels $x$ and $w$.
 
 \begin{lemma}
   If $\cptyp{Q}{x:A,w:B}$ then \(\cptyp{\map{F}{x,w}{Q}}{x:F(A), w:\cpdual{F}(B)}.\)
@@ -1150,8 +1150,8 @@ exchanging channels $x$ and $w$.
 \begin{figure}\small
 \begin{align*}
   \cut{x}{A}{z(y).P}{Q} &\Longrightarrow z(y).\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(\cut{x}{A}{P}{R} \mid Q) &&\text{if $x \not\in fn(Q)$} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(P \mid \cut{x}{A}{Q}{R}) &&\text{if $x \not\in fn(P)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
   \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow \rec{z}.\cut{x}{A}{P}{Q} \\
@@ -1160,7 +1160,8 @@ exchanging channels $x$ and $w$.
 \caption{Commuting conversions}\label{fig:commuting}
 \end{figure}
 
-Commuting conversions are given in Fig.~\ref{fig:commuting}, and are unsurprising.
+The commuting conversions push communication under process prefixes, and are given in
+Fig.~\ref{fig:commuting}.  We can show that cut reduction preserves typing.
 
 \begin{theorem}
   If $\cptyp{P}{\Gamma}$ and $P \Longrightarrow Q$, then $\cptyp{Q}{\Gamma}.$
@@ -1168,51 +1169,15 @@ Commuting conversions are given in Fig.~\ref{fig:commuting}, and are unsurprisin
 
 Define $\Longrightarrow^\star$ to be the reflexive, transitive closure of $\equiv\Longrightarrow\equiv$.
 
-\begin{theorem}
+\begin{theorem}\label{thm:cut-reduction}
   If $\cptyp{P}{\Gamma}$, then there is a $Q$ such that $P \Longrightarrow^\star Q$ and the bottom
   rule of $Q$ is not a cut.
 \end{theorem}
 
-\subsection{Peano Numerals}\label{sec:peano}
-
-To demonstrate the use of fixed points in \mucp, we will begin with a simple example, demonstrating
-Peano numbers.  The type of Peano numbers is natural:
-\[
-  Peano = \mu X.\oplus\{zero: 1, succ: X\}.
-\]
-Note that this is a least fixed point: any individual Peano numeral will have finite behavior.  The
-encoding of numerals is quite natural in this framework.  For example, we have 0 and increment
-encoded as follows:
-\begin{align*}
-  Zero_x &= \rec{x}.\sel{x}{zero}.x[].0 \\
-  Inc_{x,y} &= \rec{y}.\sel{y}{succ}.\link{x}{y}
-\end{align*}
-As we would expect, we have that $\cptyp{Zero_x}{x:Peano}$ and
-$\cptyp{Inc_{x,y}}{x:\cpdual{Peano},y:Peano}$.  We can also show that increment behaves as we
-expect.  For example, we have that
-\[
-  \cut{x}{Peano}{Zero_x}{Inc_{x,y}} \Longrightarrow^\star \rec{y}.\sel{y}{succ}.\rec{y}.\sel{y}{zero}.y[].0.
-\]
-As a more interesting example, we present a term that adds two numbers:
-\[\begin{array}{rcl@{\hspace{0mm}}ll}
-  Add_{x,y,z} & = & \mcl{3}{\mkwd{corec}\:x\langle a \rangle} \\
-  & & \quad (&\mcl{2}{a[y].\link{a}{z},} \\
-  & & & a(b).\mkwd{case}\:x\:\{&\clabel{zero}: x().\link{a}{b}; \\
-  & & & & \clabel{succ}: x[b'].(Inc_{b,b'} \mid  \link{a}{x}) \}).
-\end{array}\]
-The term is structured as a case over the input numeral $x$.  If $x$ is zero, then the result $a$
-should be equal to the other input numeral $b$; we accomplish this using the axiom rule.  If $x$ is
-a successor, then we must increment $b$ in the recursive call.  We can show that
-$\cptyp{Add_{x,y,z}}{x:\cpdual{Peano}, y:\cpdual{Peano}, z:Peano}$ and, for instance, that if we
-have defined
-\begin{align*}
-  One_x &= \cut{y}{}{Zero_y}{Inc_{y,x}} \\
-  Two_x &= \cut{y}{}{One_y}{Inc_{y,x}}
-\end{align*}
-then $Add$ behaves as we would expect:
-\[
-  \cut{x}{Peano}{One_x}{\cut{y}{Peano}{One_y}{Add_{x,y,z}}} \Longrightarrow^\star Two_z.
-\]
+Note that while we commute cuts under prefixes, we do not perform cut reduction under prefixes.
+This corresponds to the usual notions of process communication.  Were we to extend our reduction
+rules with congruences for each operator, we could then extend Theorem~\ref{thm:cut-reduction} to
+show elimination of all cuts in a well-typed \mucp term.
 
 \subsection{Streams}
 
@@ -1538,18 +1503,20 @@ where:
 %% corecursion. Formally, it is a translation from judgements to terms (as we need to know the type
 %% operator in the case of $\key{corec}$).
 
-%% %
-%% \[
-%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-%% \]
+%
+\[
+  Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
+\]
 
 
 %% We can transfer the functoriality result from \mucp to \mugv:
 
-%% \begin{lemma}
-%%   If $\gvtyp{c:S,d:S'}{M}{\outterm}$, then there is a term, which we call $\gvmap{G}{c,d}{M}$, such
-%%   that $\gvtyp{c:G(S),d:\gvdual{G}(S')}{\gvmap{G}{c,d}{M}}{\outterm}$.
-%% \end{lemma}
+\begin{lemma}
+  If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
+  \[
+    \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
+  \]
+\end{lemma}
 
 %% Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
 %% existing translation to each case.  Define
