@@ -1464,10 +1464,14 @@ proofs of the corresponding equivalences; for example, unfolding the GV session 
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z &=&
   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z &=&
-\cut{y}{\tocp{G}(\mu \tocp{G})}{\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}
-       {\corec{z}{x}{\tocp{G}(\mu \tocp{G})}
-              {\link{y}{x}}
-              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}}
+\key{new}\:y\:
+  \bl
+  (    %{\tocp{G}(\mu \tocp{G})}
+       {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
+  \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+             {\link{y}{x}}
+             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+  \el \\
 \end{equations}
 
 %% The folding and unfolding of recursive session types in GV can be translated to cuts against the CP
