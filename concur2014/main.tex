@@ -202,6 +202,7 @@ GV.
 
 Types, session types, and type operators in \mugv are given by the following grammar:
 \[
+\small
 \begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
   \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
@@ -235,24 +236,43 @@ All types are linear except unlimited functions $T \uto U$, replicated channels 
 closed input channels $\interm$.
 
 Duality on non-recursive session types is standard.
-\begin{align*}
-\gvdual{\gvout{T}{S}} &= \gvin{T}{\gvdual{S}} &
-  \gvdual{\oplus \{ l_i: S_i \}} &= \with \{ l_i : \gvdual{S_i} \} &
-  \gvdual{\interm} &= \outterm &
-  \gvdual{\gvservice{S}} &= \gvserver{\gvdual{S}} &
-  \gvdual{X} &= \gvdual{X} \\
-\gvdual{\gvin{T}{S}} &= \gvout{T}{\gvdual{S}} &
-  \gvdual{\with \{ l_i: S_i \}} &= \oplus \{ l_i : \gvdual{S_i} \} &
-  \gvdual{\outterm} &= \interm &
-  \gvdual{\gvserver{S}} &= \gvservice{\gvdual{S}} &
-  \gvdual{\gvdual{X}} &= X
-\end{align*}%
+\[
+\small
+\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{\quad}@{}}
+\begin{eqs}
+\gvdual{\gvout{T}{S}} &=& \gvin{T}{\gvdual{S}} \\
+\gvdual{\gvin{T}{S}} &=& \gvout{T}{\gvdual{S}} \\
+\end{eqs}
+&
+\begin{eqs}
+  \gvdual{\oplus \{ l_i: S_i \}} &=& \with \{ l_i : \gvdual{S_i} \} \\
+  \gvdual{\with \{ l_i: S_i \}} &=& \oplus \{ l_i : \gvdual{S_i} \} \\
+\end{eqs}
+&
+\begin{eqs}
+  \gvdual{\interm} &=& \outterm \\
+  \gvdual{\outterm} &=& \interm \\
+\end{eqs}
+&
+\begin{eqs}
+  \gvdual{\gvserver{S}} &=& \gvservice{\gvdual{S}} \\
+  \gvdual{\gvservice{S}} &=& \gvserver{\gvdual{S}} \\
+\end{eqs}
+&
+\begin{eqs}
+  \gvdual{X} &=& \gvdual{X} \\
+  \gvdual{\gvdual{X}} &=& X
+\end{eqs} \\
+\ea
+\]
 Duality on recursive session types is defined as follows:
 \[
+\small
 \gvdual{\mu G} = \nu \gvdual{G} \qquad \gvdual{\nu G} = \mu \gvdual{G} \
 \]%
 where we define the dual of an operator $G = X.S$ as:
 \[
+\small
 \gvdual{G} = X.\gvdual{G(\gvdual{X})}
 \]%
 %
@@ -265,6 +285,7 @@ operator $G = X.\gvin{X}{\interm}$, its dual $\gvdual{G} = X.\gvout{\gvdual{X}}{
 session types $\mu G$ and $\nu \gvdual{G}$.  Unfolding the first type yields $G(\mu G)$, or
 $\gvin{\mu G}{\interm}$; unfolding the second yields
 \[
+\small
   \gvdual{G}(\nu \gvdual{G}) = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm} = \gvout{\mu G}{\outterm},
 \]
 which is the dual of $\gvin{\mu G}{\interm}$.
@@ -279,6 +300,7 @@ operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
 Formally, $X.S$ is monotonic iff the predicate $pos_{X,S}$ holds, where $pos$ and $neg$ are the
 predicates defined by the homomorphic extensions of the following equations:
 \[
+\small
 \ba{@{}c@{\qquad}c@{}}
 \begin{eqs}
 pos_{X,X} \\
@@ -376,7 +398,8 @@ neg_{X,T \uto U} &=& pos_{X,T} \wedge neg_{X,U} \\
 \subsection{Typing Rules}
 \label{sec:mugv-typing}
 
-\begin{figure}
+\begin{figure}[t]
+\scriptsize
 Structural rules
 \begin{mathpar}
 \inferrule{ }{\gvtyp{x:T}{x}{T}}
@@ -453,17 +476,17 @@ Recursive session rules
 \inferrule{\gvtyp{\Phi}{M}{\mu G}}
           {\gvtyp{\Phi}{M}{G (\mu G)}}
 
-\inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}
-          {\gvtyp{\Phi}{M}{\nu G}}
-
-\inferrule{\gvtyp{\Phi}{M}{\nu G}}
-          {\gvtyp{\Phi}{M}{G(\nu G)}}
-
+%% \inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}
+%%           {\gvtyp{\Phi}{M}{\nu G}}
+%%
+%% \inferrule{\gvtyp{\Phi}{M}{\nu G}}
+%%           {\gvtyp{\Phi}{M}{G(\nu G)}}
+%%
 \inferrule{\gvtyp{f:X \uto \vec{T} \lto \outterm, c:G(X), \vec{x}:\vec{T}}{M}{\outterm}}
           {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
 \end{mathpar}
 
-\todo{add definition of $un$ to this figure?}
+%% \todo{add definition of $un$ to this figure?}
 
 \caption{Typing Rules for \mugv}\label{fig:gv-typing}
 \end{figure}
@@ -501,6 +524,7 @@ illustrate its use in the rest of this section through a selection of basic exam
 
 For multi-argument functions, we write:
 \[
+\small
   \bl
   (T_1, \dots, T_n) \lto U \equiv T_1 \lto \dots \lto T_n \lto U \\
   \langle T_1, T_2, \dots, T_n \rangle \uto U \equiv T_1 \uto T_2 \lto \dots \lto T_n \lto U \\
@@ -511,6 +535,7 @@ T_n) \uto U$.
 %
 For let binding, we write:
 \[
+\small
 \key{let}\:x=M\:\key{in}\:N \equiv (\lambda x.M)\:N
 \]
 
@@ -530,18 +555,18 @@ and multiplication ($\times$), boolean constants ($True, False$), and conditiona
 A canonical example of a corecursive data type is a stream. Let us consider a session type for
 producing a stream of integers.
 %
-\[
+\[\small
 Source = \nu X.\with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}
 \]
 %
 A channel of type $Source$ can either produce the next number or stop. The dual of a source is a
 sink.
-\[
+\[\small
 Sink = \mu X.\oplus \{\clabel{next}: ?Int.X, \clabel{stop}: \interm \}
 \]
 
 Let us define a helper macro for generating the next value in a stream:
-\[
+\[\small
 \bl
 SendNext : \langle \with \{\clabel{next}: !Int.X, \clabel{stop}: \outterm \}, Int \rangle \uto \outterm \\
 SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
@@ -551,7 +576,7 @@ SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
 %
 Using $\cofix$ we can define a function that outputs a stream of zeros along a corecursive
 channel:
-\[
+\[\small
   \bl
   MakeZeros : Source \uto \outterm \\
   MakeZeros = \cofix\:f\:c = SendNext\:c\:0
@@ -561,19 +586,19 @@ If the next number is chosen, then a zero is sent along the channel and we recur
 stop.
 %
 To read from a source, we can use $\key{fork}$ to create a sink:
-\[
+\[\small
 \gvfork{c}{MakeZeros\:c}
 \]
 %
 First we define a helper macro:
-\[
+\[\small
 \bl
 GetNext : Sink \uto Int \otimes Sink \\
 GetNext\:c = \gvreceive{(\gvselect{\clabel{next}}{c})} \\
 \el
 \]
 and now:
-\[
+\[\small
 \bl
 \key{let}\:c = \gvfork{c}{MakeZeros\:c}\:\key{in} \\
 \key{let}\:(x, c) = GetNext\:c\:\key{in}\:
@@ -595,7 +620,7 @@ case allows us to simulate weakening on such a channel.
 We might expect to assign $c$ the type $\with \{\clabel{next}: !Int.Source, \clabel{stop}: \outterm
 \}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
 same typing assumptions for $f$ and $c$ we could write:
-\[
+\[\small
 \cofix\:f\:c = f\:c
 \]
 %
@@ -610,7 +635,7 @@ precisely one iteration of the recursive behavior.
 We allow recursive sessions to maintain internal state (a \emph{coinvariant}). In the $\cofix$
 typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
 stream of consecutive naturals using the expression:
-\[
+\[\small
 \bl
   MakeNats : Source \uto \outterm \\
   MakeNats = \gvfix{nats}{c\:x}{SendNext\:c\:(x + 1)} \\
@@ -618,7 +643,7 @@ stream of consecutive naturals using the expression:
 \]
 The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
 recursive call. Now, the following:
-\[
+\[\small
 \bl
 \key{let}\:c = \gvfork{c}{MakeNats\:c\:0\:1}\:\key{in} \\
 \key{let}\:(x, c) = GetNext\:c\:\key{in}\:
@@ -631,7 +656,7 @@ returns $(0, (1, 2))$.
 %
 We can maintain coinvariants of arbitrary complexity; for example, we can define a
 stream of the Fibonacci numbers as follows:
-\[
+\[\small
 \bl
   MakeFibs : Source \uto \outterm \\
   MakeFibs = \gvfix{fibs}{c\:m\:n}{SendNext\:c\:(m + n)} \\
@@ -644,7 +669,7 @@ Our next example is a simple multi-function calculator. Our goal is to provide a
 accepts an arbitrary stream of addition and multiplication requests, and can at any time provide the
 accumulated result.  We can implement the provider of this session as follows:
 
-\[
+\[\small
 \bl
 MakeCalc : \langle Int, Calc \rangle \uto \outterm \\
 MakeCalc = \lrkwd\:calc\:accum\:c = \\
@@ -674,14 +699,14 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
 \el
 \]
 In this case, the type of the recursive channel is
-\[
+\[\small
  Calc = \nu X. \with \{ \clabel{add}: \gvin{Int}{X},
                         \clabel{mul}: \gvin{Int}{X},
                         \clabel{result}: \gvout{Int}{X},
                         \clabel{stop}: \outterm \}.
 \]%
 Here is a consumer of the service:
-\[
+\[\small
 \bl
   \gvlet{c}{\gvfork{c}{MakeCalc\:0\:c}}{} \\
   \gvlet{c}{\gvsend{6}{(\gvselect{\clabel{add}}{c})}}{
@@ -693,7 +718,7 @@ Here is a consumer of the service:
 We begin by constructing an instance of the calculator with the accumulator starting at 0; in the
 body of \tkwd{fork}, $c$ has the $\nu$-type given above, so the result of \tkwd{fork} (called
 $c$), has type:
-\[
+\[\small
 \mu X. \oplus \{ \clabel{add}: \gvout{Int}{X}, \clabel{mul}: \gvout{Int}{X}, \clabel{result}: \gvin{Int}{X}, \clabel{stop}: \interm \}.
 \]
 We perform several calculations, adding 6 to the accumulator and multiplying by 7.  Finally, we
@@ -713,7 +738,7 @@ We begin with the type $Link$ of the links in the chain. Each is a recursive pro
 three operations: compute the integer value encoded by the chain, increment the chain, and dispose
 of the chain.
 %
-\[
+\[\small
  Link = \nu X. \with \{ \clabel{val}: \gvin{Int}{\gvout{Int}{X}},
                         \clabel{inc}: \oplus \{ \clabel{carry}: X,
                                                 \clabel{done}: X \},
@@ -724,7 +749,7 @@ bit. The former returns the computed value; the latter returns the carry bit.
 
 The simplest node is the terminator $Epsilon$. It adds nothing to the value, and cannot store a
 responds to increment requests with a carry.
-\[
+\[\small
 \bl
 Epsilon : Link \to \outterm \\
 Epsilon = \lrkwd\:epsilon\:c = \\
@@ -752,7 +777,7 @@ passed up the chain unchanged. In response to an increment request, the bit flip
 carry option if needed. Internal nodes require two state components: the represented bit ($b$) and
 the remainder of the chain ($d$).
 %
-\[
+\[\small
 \bl
 Node : \langle Bool, \gvdual{Link}, Link \rangle \uto \outterm \\
 Node = \lrkwd\:node\:b\:d\:c = \\
@@ -790,13 +815,13 @@ Node = \lrkwd\:node\:b\:d\:c = \\
 
 Now we can define the top level interface to a bit string. The interface supports the same three
 operations as the links---increment, retrieve value, and disposal---but with simpler behavior:
-\[
+\[\small
   Count = \nu X. \with \{ \clabel{val}: \gvout{Int}{X}, \clabel{inc}: X, \clabel{stop}: \outterm \}
 \]
 Value retrieval outputs the value of the string, increment increases the stored value by one, and
 stopping closes the channel. The implementation requires one state component, the first link of the
 chain (called $d$).
-\[
+\[\small
 \bl
 CounterImpl : \langle \gvdual{Link}, Count \rangle \uto \outterm \\
 CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
@@ -829,18 +854,20 @@ The value case uses the value behavior of the links, providing the initial value
 option adds a new link to the chain if incrementing the existing chain requires
 carrying. $CounterImpl$ takes an initial chain as an argument. For a counter, we initialise this to
 the empty chain encoding $0$:
-\[\bl
+\[\small\bl
   Counter : Count \uto \outterm \\
   Counter = \lambda c.CounterImpl\:(\gvfork{x}{Epsilon\:x})\:c \\
 \el\]
 Here is a simple example of using the counter:
-\[\begin{array}{l}
+\[\small
+\bl
 \gvlet{ctr}{\gvfork{c}{Counter\:c}}{} \\
 \gvlet{(i,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{ctr})}}{} \\
 \gvlet{(j,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{ctr})})}}{} \\
 \gvlet{(k,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{(\gvselect{\clabel{inc}}{ctr})})})}}{} \\
 \gvlet{ctr}{\gvselect{\clabel{stop}}{ctr}}{(i,j,k)}
-\end{array}\]
+\el
+\]
 We begin by creating a new counter on channel $ctr$; we then perform a mixture of increment and
 value operations before closing the $ctr$ channel.  The whole expression evaluates to $(0,1,3)$.
 
@@ -851,7 +878,7 @@ value operations before closing the $ctr$ channel.  The whole expression evaluat
 
 The types of \mucp are the propositions of CLL, extended with type operators $F$ and fixed points
 $\mu F,\nu F$.
-\[\begin{array}{l@{\hspace{2mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+\[\small\begin{array}{l@{\hspace{2mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
    & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \mu F \mid \nu F \\
    \text{Type operators} & F & ::= & X.A %\\
@@ -870,7 +897,8 @@ where $X^{\perp\perp}  = X$, and we define the dual of a type operator by $\cpdu
 X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{F(A)} =
 \cpdual{F}(\cpdual{A})$.
 
-\begin{figure}
+\begin{figure}[t]
+\scriptsize
 \begin{mathpar}
 \inferrule{ }{\cptyp{\link{x}{y}}{x:A,y:\cpdual{A}}}
 
@@ -915,10 +943,10 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
            \cptyp{Q}{y:\cpdual{A},x:F(A)}}
           {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
 \end{mathpar}
-\caption{Terms and typing rules of \mucp}\label{fig:cp-typing}
+\caption{Typing Rules for \mucp}\label{fig:cp-typing}
 \end{figure}
 
-\paragraph{Structural rules.}
+\paragraph{Structural Rules.}
 
 \mucp has two structural rules, axiom and cut.  We interpret the axiom $\link{x}{y}$ as channel
 forwarding: actions on channel $x$ are mirrored on $y$, and vice versa.  Thus, $x$ and $y$ must have
@@ -930,12 +958,13 @@ against a use of the axiom rule provides channel substitution (we write $P[x/y]$
 of channel $y$ for channel $x$ in process $P$).
 
 \begin{figure}
-\begin{align*}
-  \cut{x}{A}{P}{Q} &\equiv \cut{x}{\cpdual{A}}{Q}{P} \\
-  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv \cut{y}{B}{\cut{x}{A}{P}{Q}}{R} &&\text{if $x \not\in fn(R)$} \\
-  \cut{x}{A}{P}{\link{x}{y}} &\equiv P[y/x]
-\end{align*}
-\caption{Structural equivalences}\label{fig:equivalences}
+\scriptsize
+\begin{equations}
+  \cut{x}{A}{P}{Q} &\equiv& \cut{x}{\cpdual{A}}{Q}{P} \\
+  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in fn(R)$} \\
+  \cut{x}{A}{P}{\link{x}{y}} &\equiv& P[y/x] \\
+\end{equations}
+\caption{Structural Equivalences}\label{fig:equivalences}
 \end{figure}
 
 \paragraph{Input and Output.}
@@ -1005,7 +1034,8 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
 
 \subsection{Cut Elimination}
 
-\begin{figure}\small
+\begin{figure}
+\tiny
 \begin{multline*}
 \inferrule
   {\inferrule*
@@ -1132,16 +1162,16 @@ where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
 \caption{Principal cut elimination rules}\label{fig:beta-reduction}
 \end{figure}
 
-\begin{figure}\small
-\begin{align*}
-  \map{X.C}{x,w}{Q} &= \link{x}{w} \\
-  \map{X.X}{x,w}{Q} &= Q \\
-  \map{X.C_1 \otimes C_2}{x,w}{Q} &= w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
-  \map{X.C_1 \oplus C_2}{x,w}{Q} &= \case{w}{\sel{x}{inl}.\map{X.C_1}{x,w}{Q}; \sel{x}{inr}.\map{X.C_2}{x,w}{Q}} \\
-  \map{X.\cpquery{C}}{x,w}{Q} &= \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
-  \map{X.\mu F'}{x,w}{Q} &= \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
-\end{align*}
-\caption{Definition of $\mapname$ for positive combinators.}\label{fig:map}
+\begin{figure}\scriptsize
+\begin{equations}
+  \map{X.C}{x,w}{Q} &=& \link{x}{w} \\
+  \map{X.X}{x,w}{Q} &=& Q \\
+  \map{X.C_1 \otimes C_2}{x,w}{Q} &=& w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
+  \map{X.C_1 \oplus C_2}{x,w}{Q} &=& \case{w}{\sel{x}{inl}.\map{X.C_1}{x,w}{Q}; \sel{x}{inr}.\map{X.C_2}{x,w}{Q}} \\
+  \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
+  \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
+\end{equations}
+\caption{Definition of $\mapname$ for Positive Combinators.}\label{fig:map}
 \end{figure}
 
 Cut elimination corresponds to process reduction.  The principal cut reductions are given in
@@ -1150,7 +1180,7 @@ $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
 fixed points corresponds to unrolling one iteration from the \tkwd{corec} term, directed by the type
 of the fixed point operator $F$.  It depends on a proof construction known as functoriality, which
 derives the following proof rule for any type operator $F$:
-\[
+\[\small
 \inferrule{\vdash A,B}{\vdash F(A),\cpdual{F}(B)}
 \]
 We call the term implementing this construction $\mapname$ by analogy with a similar construct in
@@ -1162,17 +1192,18 @@ Fig.~\ref{fig:map}; the remaining cases can be obtained by exchanging channels $
   If $\cptyp{Q}{x:A,w:B}$ then \(\cptyp{\map{F}{x,w}{Q}}{x:F(A), w:\cpdual{F}(B)}.\)
 \end{lemma}
 
-\begin{figure}\small
-\begin{align*}
-  \cut{x}{A}{z(y).P}{Q} &\Longrightarrow z(y).\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
-  \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
-  \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow \rec{z}.\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
-\end{align*}
-\caption{Commuting conversions}\label{fig:commuting}
+\begin{figure}
+\scriptsize
+\begin{equations}
+  \cut{x}{A}{z(y).P}{Q} &\Longrightarrow& z(y).\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
+  \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow& \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
+  \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
+\end{equations}
+\caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
 
 The commuting conversions push communication under process prefixes, and are given in
@@ -1207,7 +1238,7 @@ $\cpdual{(Source(A))} = Sink(\cpdual{A})$.
 
 As in \mugv, we will assume that our language is extended with constants implementing unlimited
 natural numbers.  In particular, we will assume there is some proposition $Nat$ and terms
-\[\begin{eqs}
+\[\small\begin{eqs}
 Zero_x &\vdash& x:\cpquery{Nat} \\
 Inc_{y,x} &\vdash& y:\cpbang{\cpdual{Nat}},x:\cpquery{Nat}.
 \end{eqs}\]
@@ -1215,13 +1246,13 @@ providing zero and successor.
 
 We can define a process which generates a stream of zeros.  In this example, we make no use of the
 coinvariant, and so choose the trivial proposition 1:
-\[\begin{eqs}
+\[\small\begin{eqs}
   Zeros_y &\vdash& y:Stream(\cpquery{Nat}) \\
   Zeros_y &=& \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{end}: y[].0; \clabel{more}: y[x].(Zero_x | y[].0)}}.
 \end{eqs}\]
 Next, we extend this example to a stream of naturals.  As in the corresponding \mugv example, we use
 the coinvariant to track the next number to appear in the stream.
-\[\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
+\[\small\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
   CNats_y & \vdash & \mcl{3}{y:Stream(\cpquery{Nat})} \\
   CNats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
   & & \quad & \mkwd{case}\:y \:\{ & \clabel{end}: y[].0; \\
@@ -1260,7 +1291,7 @@ homomorphic extension of the following equations:
 %                   &=& \gvin{\gvdual{\topi{T}}}{\gvdual{\topi{U}}} \\
 %\ea
 %\]
-\[
+\[\small
 \ba{@{}c@{}}
 \topi{T \lto U} = \gvout{\topi{T}}{\topi{U}} \qquad
 \topi{T \uto U} = \gvservice{(\gvout{\topi{T}}{\topi{U}})} \\
@@ -1329,7 +1360,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 
 We now give a translation from \gvpi to CP. Post composing this with the embedding of \mugv in \gvpi
 yields a semantics for \mugv. The translation on session types is as follows:
-\[
+\[\small
 \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
 \tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
@@ -1391,6 +1422,7 @@ The folding and unfolding of least fixed points in GV can be translated to cuts 
 proofs of the corresponding equivalences; for example, unfolding the GV session type $\mu G$ to $G
 (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
 \begin{equations}
+\small
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z &=&
   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z &=&
@@ -1426,7 +1458,7 @@ proofs of the corresponding equivalences; for example, unfolding the GV session 
 
 The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is
 represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$.
-\[
+\[\small
 \bl
 \left\llbracket
 \inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
@@ -1450,7 +1482,7 @@ x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 \subsection{Translating from \mucp to \gvpi}\label{sec:cptogvpi}
 
 We now present the translation $\togv{-}$ from CP to \gvpi. The translation on types is as follows:
-\[
+\[\small
 \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
 \togv{A \otimes B} &=& \gvout{\gvdual{\togv{A}}}{\togv{B}} \\
@@ -1477,7 +1509,7 @@ We now present the translation $\togv{-}$ from CP to \gvpi. The translation on t
 \]
 The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
 are expanded to \gvpi as follows:
-\[
+\[\small
 \gvlet{x}{M}{N} \equiv
   \topi{(\lambda x.N) M} \equiv
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
@@ -1507,12 +1539,12 @@ and the translation on terms is as follows:
 \end{equations}%
 where:
 %
-%% \[
+%% \[\small
 %%   Q_{F,p,x,c} =
 %%     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
 %%               {\gvmap{\togv{F}}{c,c'}{(\gvsend{c\,c'}{(\gvrequest{p})})}}
 %% \]%
-\[
+\[\small
   Q_{F,p,c,x} =
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}
