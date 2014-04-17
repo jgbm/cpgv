@@ -1028,7 +1028,8 @@ type operator, and so the four rules above are just two instances each of the tw
 
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 \end{mathpar}
-These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$.
+These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$.  As in \mugv,
+\tkwd{corec} terms maintain a coinvariant of type $A$.
 
 \subsection{Cut Elimination}
 
@@ -1609,34 +1610,45 @@ translation of functoriality from \mucp to \mugv.
 
 \section{Related Work}\label{sec:related}
 
-\begin{itemize}
-\item Session types
-  \begin{itemize}
-  \item Honda
-  \item Honda, Vasconcelos, Kubo
-  \item Other examples of recursion?
-  \item Giovanni Bernardi?
-  \end{itemize}
-\item CH correspondence
-  \begin{itemize}
-  \item Abramsky~\citep{Abramsky92,BellinScott94}
-  \item Caires and Pfenning~\citep{CairesPfenning10}
-  \item Wadler~\citep{Wadler12}
-  \end{itemize}
-\item LL and fixed points
-  \begin{itemize}
-  \item Girard~\citep{Girard87}
-  \item Baelde~\citep{Baelde12}
-  \end{itemize}
-\end{itemize}
+Session types were originally introduced by \citet{Honda93}, and were further extended by
+\citet{Takeuchi94}, \citet{Honda98}, and \citet{Yoshida07}.  The systems of \citet{Honda98} and
+\citet{Yoshida07} include recursive session types.  They do not distinguish between recursion and
+corecursion, and do not claim to show deadlock freedom.  \citet{Bernardi13} demonstrated that the
+definition of duality for recursive sessions did not commute with unfolding recursive types.  He
+proposes a different solution than ours, however, and we hope to investigate the consequences of
+these different approaches in future work.
+
+\citet{CairesPfenning10} showed the first complete propositions-as-types correspondence between
+intuitionistic linear logic (ILL) and session types.  Their work shows both an interpretation of
+session types as ILL propositions, and a computational interpretation of ILL proofs as
+$\pi$-calculus processes.  As a result, they are able to show that well-typed processes are
+terminating, race-free, and deadlock-free, by analogy with corresponding cut-elimination results for
+ILL.  \citet{Toninho13} demonstrate an embedding of their calculus within a functional language; the
+resulting system admits unrestricted recursion in the functional setting, and can thus provide
+recursive communication behavior, but without guaranteeing that the evaluation of function terms
+terminates.
+
+\citet{Girard87} speculated that linear logic would be well-suited to reasoning about concurrency.
+\citet{Abramsky92} and \citet{BellinScott94} explored the interpretation of linear logic proofs as
+concurrent programs.  \citet{Kobayashi96} introduced the use of linear typing to the $\pi$-calculus,
+and demonstrated a form of linear channels similar in usage to session-typed channels;
+\citet{Dardha12} extend this approach to full session types.
 
 \section{Conclusion and Future Work}\label{sec:future}
 
-\begin{itemize}
-\item Direct (asynchronous) semantics of \mugv{}?
-\item Recursive types (instead of just recursive sessions)?
-\item $\mathrm{MIX}_0,\mathrm{MIX}_2$ and the treatment of closed channels.
-\end{itemize}
+We have demonstrated a propositions-as-types correspondence linking recursive session types and
+fixed points in linear logic.  Unlike previous work on recursive session types, our presentation
+distinguishes between (bounded) recursive processes and (unbounded) corecursive processes.  As a
+consequence of cut elimination in linear logic, we have that well-typed processes are terminating
+and deadlock-free.  We conclude by identifying several areas of future work.  First, we would like
+to give an asynchronous semantics to \mugv, following the original presentation of LAST by
+\citet{GayVasconcelos10}, and show that it is equivalent to the synchronous semantics provided by
+cut elimination in \mucp.  Second, we would like to extend our treatment of recursive sessions to
+encode arbitrary recursive types in \mugv, similarly to our encoding of function and pair types in
+terms of input and output on channels.  Finally, we would like to explore further extensions of
+\mucp and their consequences for \mugv; in particular, the addition of the MIX$_0$ and MIX$_2$ rules
+would provide additional notions of parallel composition, and could provide a way of unifying the
+types $\outterm$ and $\interm$.
 
 \label{sect:bib}
 \bibliographystyle{abbrvnat}
