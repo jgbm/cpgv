@@ -47,7 +47,7 @@
 \newcommand{\derelict}[2]{{?#1[#2]}}
 \newcommand{\rec}[1]{\mkwd{rec}\:#1}
 \newcommand{\corec}[5]{\mkwd{corec}\:#1 \langle #2 \rangle (#4,#5)}
-\newcommand{\clabel}[1]{\mathrm{#1}}
+\newcommand{\clabel}[1]{\mathit{#1}}
 \renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\sel}[2]{#1[\clabel{#2}]}
 \newcommand{\gvsend}[2]{\mkwd{send}\:#1\:#2}
@@ -1573,7 +1573,12 @@ and the translation on terms is as follows:
   \togv{\derelict{s}{x}.P} &=&
     \gvlet{x}{\gvrequest{s}}{\togv{P}} \\
   \togv{\cptyp{\corec{c}{x}{}{P}{Q}}{\Gamma, c:\nu F}} &=&
-    \gvsend{c}{(\gvsend{(\gvfork{x}{\togv{P}})}{(\gvrequest{(\gvfix{p}{c\,x}{Q_{F,p,c,x}})})})} \\
+    \key{send}\:c\:(
+      \key{send}\:
+         \bl
+         (\gvfork{x}{\togv{P}}) \\
+         (\gvrequest{(\gvfix{p}{c\,x}{Q_{F,p,c,x}})})) \\
+         \el \\
   \togv{\rec{x}.P} &=& \togv{P} \\
 \end{equations}%
 where:
