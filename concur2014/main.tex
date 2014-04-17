@@ -933,7 +933,6 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
 
 \inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{x:\cpbang{A}, \Gamma}}
 
-
 \inferrule{\cptyp{P}{x:F(\mu F), \Gamma}}
           {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}
 
@@ -1038,8 +1037,8 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
 \tkwd{corec} terms maintain a coinvariant of type $A$.
 
 \subsection{Cut Elimination}
-\begin{figure}[float]
-\small
+
+\begin{figure}[float]\small
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
   &\Longrightarrow& P[w/x] \\
@@ -1066,7 +1065,6 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
     \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}} \\
 && \text{where }E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}
 \end{equations}%
-
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
 \end{figure}
 
