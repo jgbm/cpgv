@@ -570,7 +570,7 @@ Let us define a helper macro for generating the next value in a stream:
 \[\small
 \bl
 SendNext : \langle \with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \}, Nat \rangle \uto \outterm \\
-SendNext\:c\:v = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
+SendNext\:v\:c = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
                             \clabel{stop}\,c.c}
 \el
 \]
@@ -580,7 +580,7 @@ channel:
 \[\small
   \bl
   MakeZeros : Source \uto \outterm \\
-  MakeZeros = \cofix\:f\:c = SendNext\:c\:0
+  MakeZeros = \cofix\:f\:c = SendNext\:0\:c
   \el
 \]
 If the next number is chosen, then a zero is sent along the channel and we recurse. Otherwise we
@@ -618,7 +618,7 @@ consume an infinite amount of data in order to satisfy linearity. In essence, th
 case allows us to simulate weakening on such a channel.
 
 \paragraph{Productivity.}
-We might expect to assign $c$ the type $\with \{\clabel{next}: !Nat.Source, \clabel{stop}: \outterm
+We might expect to assign $c$ the type $\with \{\clabel{next}:\:!Nat.Source, \clabel{stop}:\:\outterm
 \}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
 same typing assumptions for $f$ and $c$ we could write:
 \[\small
@@ -639,7 +639,7 @@ stream of consecutive naturals:
 \[\small
 \bl
   MakeNats : Source \uto \outterm \\
-  MakeNats = \gvfix{nats}{c\:x}{SendNext\:c\:(x + 1)} \\
+  MakeNats = \gvfix{nats}{c\:x}{SendNext\:(x + 1)\:c} \\
 \el
 \]
 The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
@@ -660,7 +660,7 @@ stream of the Fibonacci numbers as follows:
 \[\small
 \bl
   MakeFibs : Source \uto \outterm \\
-  MakeFibs = \gvfix{fibs}{c\:m\:n}{SendNext\:c\:(m + n)} \\
+  MakeFibs = \gvfix{fibs}{c\:m\:n}{SendNext\:(m + n)\:c} \\
 \el
 \]
 
@@ -672,8 +672,8 @@ accumulated result.  We can implement the provider of this session as follows:
 
 \[\small
 \bl
-MakeCalc : \langle Nat, Calc \rangle \uto \outterm \\
-MakeCalc = \lrkwd\:calc\:accum\:c = \\
+MakeCalc : \langle Calc, Nat \rangle \uto \outterm \\
+MakeCalc = \lrkwd\:calc\:c\:accum = \\
 \quad
   \bl
   \mkwd{case}\:c\;\mkwd{of}\:\{
@@ -681,24 +681,24 @@ MakeCalc = \lrkwd\:calc\:accum\:c = \\
     \clabel{add}\:c.
       \bl
       \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in}\:
-      calc\:(accum + x)\:c \\
+      calc\:c\:(accum + x) \\
       \el \\
     \clabel{mul}\:c.
       \bl
       \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in}\:
-      calc\:(accum \times x)\:c \\
+      calc\:c\:(accum \times x) \\
       \el \\
     \clabel{result}\:c.
       \bl
       \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in}\:
-      calc\:accum\:c \\
+      calc\:c\:accum \\
       \el \\
     \clabel{stop}\:c.c \; \}
     \el \\
   \el \\
 \el
 \]
-In this case, the type of the recursive channel is
+In this case, the type of the recursive channel is:
 \[\small
  Calc = \nu X. \with \{ \clabel{add}: \gvin{Nat}{X},
                         \clabel{mul}: \gvin{Nat}{X},
@@ -708,7 +708,7 @@ In this case, the type of the recursive channel is
 Here is a consumer of the service:
 \[\small
 \bl
-  \gvlet{c}{\gvfork{c}{MakeCalc\:0\:c}}{} \\
+  \gvlet{c}{\gvfork{c}{MakeCalc\:c\:0}}{} \\
   \gvlet{c}{\gvsend{6}{(\gvselect{\clabel{add}}{c})}}{
   \gvlet{c}{\gvsend{7}{(\gvselect{\clabel{mul}}{c})}}{}} \\
   \gvlet{(x,c)}{\gvreceive{(\gvselect{\clabel{result}}{c})}}{
@@ -752,7 +752,7 @@ responds to increment requests with a carry.
 \[\small
 \bl
 Epsilon : Link \to \outterm \\
-Epsilon = \lrkwd\:epsilon\:c = \\
+Epsilon = \lrkwd\:c\:epsilon = \\
 \quad \mkwd{case}\:c\:\mkwd{of}\:\{
   \bl
   \clabel{val}\:c.
@@ -779,8 +779,8 @@ the remainder of the chain ($d$).
 %
 \[\small
 \bl
-Node : \langle Bool, \gvdual{Link}, Link \rangle \uto \outterm \\
-Node = \lrkwd\:node\:b\:d\:c = \\
+Node : \langle Link, Bool, \gvdual{Link} \rangle \uto \outterm \\
+Node = \lrkwd\:node\:c\:b\:d = \\
 \quad
   \bl
   \mkwd{case}\:c\:\mkwd{of}\:\{
@@ -791,22 +791,22 @@ Node = \lrkwd\:node\:b\:d\:c = \\
         \gvlet{d}{\gvsend{(\gvifthen{b}{2 \times m + 1}{2 \times m})}{(\gvselect{\clabel{val}}{d})}}{} \\
         \gvlet{(n,d)}{\gvreceive{d}}{
         \gvlet{c}{\gvsend{n}{c}}{
-        node\:b\:d\:c}} \\
+        node\:c\:b\:d}} \\
         \el \\
       \clabel{inc}\:c.
         \bl
         \mkwd{case}\:(\gvselect{\clabel{inc}}{d})\:\mkwd{of}\:\{ \\
         \quad
           \bl
-          \clabel{done}\:d. node\:b\:d\:(\gvselect{\clabel{done}}{c}) \\
+          \clabel{done}\:d. node\:(\gvselect{\clabel{done}}{c})\:b\:d \\
           \clabel{carry}\:d.
             \bl
             \gvlet{c}{\gvifthen{b}{\gvselect{\clabel{carry}}{c}}{\gvselect{\clabel{done}}{c}}}{} \\
-            node\:(not\:b)\:d\:c \} \\
+            node\:c\:(not\:b)\:d \} \\
             \el \\
           \el \\
         \el \\
-      \clabel{stop}\:c. \gvlet{d}{\gvselect{\clabel{stop}}{d}}{c} \} \\
+      \clabel{stop}\:c.\gvlet{d}{\gvselect{\clabel{stop}}{d}}{c} \} \\
       \el \\
   \el \\
 \el
@@ -822,14 +822,14 @@ stopping closes the channel. The implementation requires one state component, th
 chain (called $d$).
 \[\small
 \bl
-CounterImpl : \langle \gvdual{Link}, Count \rangle \uto \outterm \\
-CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
+CounterImpl : \langle Count, \gvdual{Link} \rangle \uto \outterm \\
+CounterImpl = \lrkwd\:counterImpl\:c\:d = \\
 \quad \mkwd{case}\:c\:\mkwd{of}\:\{
   \bl
   \clabel{val}\:c.
      \bl
      \gvlet{(n,d)}{\gvreceive{(\gvsend{0}{(\gvselect{\clabel{val}}{d})})}}
-     {counterImpl\:d\:(\gvsend{n}{c})} \\
+     {counterImpl\:(\gvsend{n}{c})}\:d \\
      \el \\
   \clabel{inc}\:c.
     \bl
@@ -839,9 +839,9 @@ CounterImpl = \lrkwd\:counterImpl\:d\:c = \\
       \clabel{carry}\:d.
          \bl
          \gvlet{e}{\gvfork{e}{Node\:True\:d\:e}}{
-         counterImpl\:e\:c} \\
+         counterImpl\:c\:e} \\
          \el \\
-      \clabel{done}\:d.counterImpl\:d\:c\:\} \\
+      \clabel{done}\:d.counterImpl\:c\:d\:\} \\
       \el \\
     \el \\
   \clabel{stop}\:c.\gvlet{d}{\gvselect{\clabel{stop}}{d}}{c}\:\}
@@ -854,20 +854,20 @@ carrying. $CounterImpl$ takes an initial chain as an argument. For a counter, we
 the empty chain encoding $0$:
 \[\small\bl
   Counter : Count \uto \outterm \\
-  Counter = \lambda c.CounterImpl\:(\gvfork{x}{Epsilon\:x})\:c \\
+  Counter = \lambda c.CounterImpl\:c\:(\gvfork{x}{Epsilon\:x}) \\
 \el\]
 Here is a simple example of using the counter:
 \[\small
 \bl
-\gvlet{ctr}{\gvfork{c}{Counter\:c}}{} \\
-\gvlet{(i,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{ctr})}}{} \\
-\gvlet{(j,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{ctr})})}}{} \\
-\gvlet{(k,ctr)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{(\gvselect{\clabel{inc}}{ctr})})})}}{} \\
-\gvlet{ctr}{\gvselect{\clabel{stop}}{ctr}}{(i,j,k)}
+\gvlet{c}{\gvfork{c}{Counter\:c}}{} \\
+\gvlet{(i,c)}{\gvreceive{(\gvselect{\clabel{val}}{c})}}{} \\
+\gvlet{(j,c)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{c})})}}{} \\
+\gvlet{(k,c)}{\gvreceive{(\gvselect{\clabel{val}}{(\gvselect{\clabel{inc}}{(\gvselect{\clabel{inc}}{c})})})}}{} \\
+\gvlet{c}{\gvselect{\clabel{stop}}{c}}{(i,j,k)}
 \el
 \]
-We begin by creating a new counter on channel $ctr$; we then perform a mixture of increment and
-value operations before closing the $ctr$ channel.  The whole expression evaluates to $(0,1,3)$.
+We begin by creating a new counter on channel $c$; we then perform a mixture of increment and value
+operations before closing the $c$ channel. The whole expression evaluates to $(0,1,3)$.
 
 
 \section{A Linear Logic-Based Process Calculus}\label{sec:mucp}
