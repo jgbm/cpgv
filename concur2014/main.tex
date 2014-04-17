@@ -1398,6 +1398,7 @@ we abbreviate their translations as mappings on plain terms. The majority of tra
 our previous work:
 
 \begin{equations}
+\small
 \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
   \inferrule
     {\cptyp{\tocp{N}z}{\tocp{\Phi},z:\cpdual{\tocp{S}}}}
@@ -1517,6 +1518,7 @@ are expanded to \gvpi as follows:
 \]%
 and the translation on terms is as follows:
 \begin{equations}
+\small
   \togv{x[y].(P \mid Q)} &=&
     \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}})}{x}}{\togv{Q}} \\
   \togv{x(y).P} &=&
