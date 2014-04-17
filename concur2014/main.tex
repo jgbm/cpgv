@@ -925,8 +925,8 @@ dual type.  Cut $\cut{x}{A}{P}{Q}$ is interpreted as commuication between proces
 channel $x$; the duality of the typing of $x$ assures that the uses of the $x$ in $P$ and $Q$ are
 compatible.  Figure~\ref{fig:equivalences} gives the structural equivalences of \mucp terms.  The
 first two capture that cut is commutative and associative, while the last captures that a cut
-against a use of the axiom rule provides name substitution (we write $P[x/y]$ for the substution of
-name $y$ for name $x$ in process $P$).
+against a use of the axiom rule provides channel substitution (we write $P[x/y]$ for the substution
+of channel $y$ for channel $x$ in process $P$).
 
 \begin{figure}
 \begin{align*}
@@ -937,29 +937,31 @@ name $y$ for name $x$ in process $P$).
 \caption{Structural equivalences}\label{fig:equivalences}
 \end{figure}
 
-\paragraph{Input and Output}
+\paragraph{Input and Output.}
 
-The multiplicative connectives $\otimes$ and $\parr$ are interpreted as input and output.  The
-process $x(y).P$ performs to input of name $y$ on channel $x$, and continues as $P$. The process
-$x[y].(P \mid Q)$ is interpreted as bound output.  The name $y$ is bound and send along channel $x$;
-process $P$ provides the behavior of $y$, while process $Q$ provides the remainder of the behavior
-of $x$.  The units of $\otimes$ and $\parr$, $1$ and $\bot$ are interpreted as nullary output and
-nullary input, respectively.
+The multiplicative connectives $\otimes$ and $\parr$ are interpreted as input and output. The
+process $x(y).P$ inputs channel $y$ on channel $x$, and continues as $P$. The process $x[y].(P \mid
+Q)$ is interpreted as bound output: it outputs a fresh channel $y$ along $x$, spawns a process $P$
+in which $y$ is used, and continues as process $Q$ in which $x$ is used. In $\pi$-calculus it
+amounts to $\nu y.\overline{x}(y).(P \mid Q)$. The units of $\otimes$ and $\parr$, $1$ and $\bot$
+are interpreted as nullary output and nullary input, respectively.
 
-\paragraph{Selection and Choice}
+\paragraph{Selection and Choice.}
 
-The additive connectives $\oplus$ and $\with$ are interpreted as selection and choice.  The process
+The additive connectives $\oplus$ and $\with$ are interpreted as selection and choice. The process
 $\case{x}{P;Q}$ offers a choice of processes $P$ and $Q$; dually, the process $\sel{x}{inl}.P$
 chooses the left alternative, and the process $\sel{x}{inr}.P$ chooses the right.  The unit for
-choice is $0$, indicating absurdity.  Note that there is no term proving $0$.  The dual of absurdity
+choice is $0$, indicating absurdity. Note that there is no term proving $0$.  The dual of absurdity
 is $\top$, and provides arbitrary behavior; as there is no term proving $0$, no term relying on
 $\top$ can reduce.
 
-\paragraph{Replication and Dereliction}
+\paragraph{Replication and Dereliction.}
 
-The exponential connectives $!$ and $?$ provide
+The exponential connectives $!$ and $?$ provide servers and services. The process $!x(y).P$ defines
+the behavior of a server $x$. It accepts a channel $y$ which is bound in $P$. The process $?x[y].P$
+sends channel $y$ to the server associated with $x$, and then continues as $P$.
 
-\paragraph{Recursion and Corecursion}
+\paragraph{Recursion and Corecursion.}
 
 We introduce least fixed points $\mu F$ and greatest fixed points $\mu F$ to CP, following Baelde's
 proof theoretic treatment of fixed points in linear logic~\cite{Baelde12}.  The proof rules can be
@@ -974,9 +976,9 @@ duality between the fixed points.  We begin with a two-sided presentation:
 
 \inferrule{A \vdash F(A) \\ \Gamma \vdash A}{\Gamma \vdash \nu F}
 \end{mathpar}
-Functional programmers should recognize the first as the typing rule of a fold, and the fourth as
-the typing rule of an unfold.  We can translate this to a one sided presentation, as follows.  (As
-$\Gamma$ denotes any context, we will write $\Gamma$ instead of $\cpdual{\Gamma}$).
+Functional programmers may recognize the first as the typing rule of a fold, and the fourth as the
+typing rule of an unfold. We can translate this to a one sided presentation, as follows.  (As
+$\Gamma$ denotes any context, we write $\Gamma$ instead of $\cpdual{\Gamma}$).
 \begin{mathpar}
 \inferrule{\vdash \cpdual{F}(\cpdual{A}),A \\ \vdash \Gamma,\cpdual{A},B}{\vdash \Gamma,\nu \cpdual{F},B}
 
