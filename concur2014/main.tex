@@ -4,6 +4,7 @@
 
 \usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
 \usepackage[authoryear,round]{natbib}
+
 \addtolength{\jot}{-3px}
 
 \usepackage{mathpartir}
@@ -1230,6 +1231,10 @@ $v$.
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
+In our previous work~\citep{LindleyM14} we give translations back and forth between CP and HGV, an
+extension of GV, corresponding to \mucp without recursive session types. In this section, we extend
+these translations to incorporate recursive session types.
+
 \subsection{Translation from \mugv to \gvpi}\label{sec:gvtogvpi}
 
 Following our previous work~\citep{LindleyM14} we factor the
@@ -1354,56 +1359,70 @@ The translation on terms is formally specified as a CPS translation on derivatio
 presentation. We provide the full translations of weakening and contraction for $\interm$, and for
 rolling and unrolling of recursive session types $\nu G$ and $\mu G$, as these steps are implicit in
 the syntax of \mugv terms. The other constructs depend only on the immediate syntactic structure, so
-we abbreviate their translations as mappings on plain terms.  The majority of translations are as in
+we abbreviate their translations as mappings on plain terms. The majority of translations are as in
 our previous work:
 
-\begin{align*}
-\left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=
+\begin{equations}
+\left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
   \inferrule
     {\cptyp{\tocp{N}z}{\tocp{\Phi},z:\cpdual{\tocp{S}}}}
     {\cptyp{x().\tocp{N}z}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
 \\[3ex]
 \left\llbracket \inferrule{\gvtyp{\Phi,x:\interm,x':\interm}{N}{S}}
-                          {\gvtyp{\Phi,x:\interm}{N[x/x']}{S}} \right\rrbracket \!\!z &=
+                          {\gvtyp{\Phi,x:\interm}{N[x/x']}{S}} \right\rrbracket \!\!z &=&
   \inferrule
     {\cptyp{\tocp{N}z}{\tocp{\Phi},x:\bot,x':\bot,z:\cpdual{\tocp{S}}}}
     {\cptyp{\cut{x'}{}{\tocp{N}z}{x'[].0}}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
 \\[3ex]
-\tocp{x}z &= \link{x}{z} \\
-\tocp{\gvsend{M}{N}}z &= \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
-\tocp{\gvlet{(x,y)}{\gvreceive{M}}{M}}z &= \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
-\tocp{\gvselect{l}{M}}z &= \cut{x}{}{\tocp{M}x}{x[l].\link{x}{z}} \\
-\tocp{\gvcase{M}{l_n\,x.N_i}}z &=  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}} \\
-\tocp{\gvfork{x}{M}}z &= \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
-\tocp{\gvlink{M}{N}}z &= z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
-\tocp{\gvserve{y}{M}}z &= \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
-\tocp{\gvrequest{M}}z &= \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[3ex]
-\end{align*}
-The folding and unfolding of recursive session types in GV can be translated to cuts against the CP
+\tocp{x}z &=& \link{x}{z} \\
+\tocp{\gvsend{M}{N}}z &=& \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
+\tocp{\gvlet{(x,y)}{\gvreceive{M}}{M}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
+\tocp{\gvselect{l}{M}}z &=& \cut{x}{}{\tocp{M}x}{x[l].\link{x}{z}} \\
+\tocp{\gvcase{M}{l_n\,x.N_i}}z &=&  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}} \\
+\tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
+\tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
+\tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
+\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[3ex]
+\end{equations}%
+The folding and unfolding of least fixed points in GV can be translated to cuts against the CP
 proofs of the corresponding equivalences; for example, unfolding the GV session type $\mu G$ to $G
-(\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.  Note the parallels between the
-first two and last two cases: this aligns with the derivation of the rules for $\mu$ and $\nu$ in
-\mucp.
-\begin{gather*}
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z = \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}{\gvtyp{\Phi}{M}{\nu G}}} z = \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G(\nu G)}}y}{\rec{z}.\link{y}{z}} \\[3ex]
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z =
+(\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
+\begin{equations}
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z &=&
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z &=&
 \cut{y}{\tocp{G}(\mu \tocp{G})}{\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}
        {\corec{z}{x}{\tocp{G}(\mu \tocp{G})}
               {\link{y}{x}}
               {\map{G}{x,z}{\rec{x}.\link{x}{z}}}}
-\\[3ex]
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\nu G}}{\gvtyp{\Phi}{M}{G (\nu G)}}} z =
-\cut{y}{\mu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\nu G}}}
-       {\corec{y}{x}{\cpdual{\tocp{G}}(\nu \cpdual{\tocp{G}})}
-              {\link{z}{x}}
-              {\map{G}{x,y}{\rec{x}.\link{x}{y}}}}
-\end{gather*}
+\end{equations}
 
-\todo{Clarify - the following sentence is unintelligible}
+%% The folding and unfolding of recursive session types in GV can be translated to cuts against the CP
+%% proofs of the corresponding equivalences; for example, unfolding the GV session type $\mu G$ to $G
+%% (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$. Note the parallels between the
+%% first two and last two cases: this aligns with the derivation of the rules for $\mu$ and $\nu$ in
+%% \mucp.
+%% \begin{gather*}
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z =
+%%   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}{\gvtyp{\Phi}{M}{\nu G}}} z =
+%%   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G(\nu G)}}y}{\rec{z}.\link{y}{z}} \\[3ex]
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z =
+%% \cut{y}{\tocp{G}(\mu \tocp{G})}{\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}
+%%        {\corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+%%               {\link{y}{x}}
+%%               {\map{G}{x,z}{\rec{x}.\link{x}{z}}}}
+%% \\[3ex]
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\nu G}}{\gvtyp{\Phi}{M}{G (\nu G)}}} z =
+%% \cut{y}{\mu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\nu G}}}
+%%        {\corec{y}{x}{\cpdual{\tocp{G}}(\nu \cpdual{\tocp{G}})}
+%%               {\link{z}{x}}
+%%               {\map{G}{x,y}{\rec{x}.\link{x}{y}}}}
+%% \end{gather*}
 
-Finally, the translation of $\lrkwd$ depends on, first, extracting the expected state from the
-coinvariant and, second, replacing the recursive behavior with re-establishing the coinvariant.
+
+The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is
+represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$.
 \[
 \bl
 \left\llbracket
@@ -1418,6 +1437,8 @@ where we have used the following syntactic sugar for output along a channel:
 \[
 x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 \]
+
+
 
 \begin{theorem}
   If $\gvtyp{\Phi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Phi},z:\cpdual{\tocp{T}}}$.
@@ -1452,13 +1473,13 @@ We now present the translation $\togv{-}$ from CP to \gvpi. The translation on t
 \ea
 \]
 The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
-are expanded to \gvpi as follows
+are expanded to \gvpi as follows:
 \[
 \gvlet{x}{M}{N} \equiv
   \topi{(\lambda x.N) M} \equiv
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]%
-and the translation on terms is as follows
+and the translation on terms is as follows:
 \begin{equations}
   \togv{x[y].(P \mid Q)} &=&
     \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}})}{x}}{\togv{Q}} \\
@@ -1478,7 +1499,7 @@ and the translation on terms is as follows
   \togv{\derelict{s}{x}.P} &=&
     \gvlet{x}{\gvrequest{s}}{\togv{P}} \\
   \togv{\cptyp{\corec{c}{x}{}{P}{Q}}{\Gamma, c:\nu F}} &=&
-    \gvsend{c}{(\gvsend{(\gvfork{x}{\togv{P}})}{(\gvrequest{(\gvfix{p}{x\,c}{Q_{F,p,x,c}})})})} \\
+    \gvsend{c}{(\gvsend{(\gvfork{x}{\togv{P}})}{(\gvrequest{(\gvfix{p}{c\,x}{Q_{F,p,c,x}})})})} \\
   \togv{\rec{x}.P} &=& \togv{P} \\
 \end{equations}%
 where:
@@ -1489,10 +1510,14 @@ where:
 %%               {\gvmap{\togv{F}}{c,c'}{(\gvsend{c\,c'}{(\gvrequest{p})})}}
 %% \]%
 \[
-  Q_{F,p,x,c} =
+  Q_{F,p,c,x} =
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
-          {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].p[].0}}}
+          {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}
 \]%
+Formally, the translation is from judgements to terms. The interesting case, which is the only one
+to use the type environment, is $\key{corec}$. Crucially, it is type-directed, and depends on the
+translation of functoriality from \mucp to \mugv.
+
 
 %% % \[
 %% %   Q^\dagger =
@@ -1512,19 +1537,19 @@ where:
 %% operator in the case of $\key{corec}$).
 
 %
-\[
-  Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-\]
+%% \[
+%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
+%% \]
 
 
 %% We can transfer the functoriality result from \mucp to \mugv:
 
-\begin{lemma}
-  If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
-  \[
-    \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
-  \]
-\end{lemma}
+%% \begin{lemma}
+%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
+%%   \[
+%%     \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
+%%   \]
+%% \end{lemma}
 
 %% Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
 %% existing translation to each case.  Define
