@@ -1043,6 +1043,7 @@ We introduce least fixed points $\mu F$ and greatest fixed points $\mu F$ to CP,
 Baelde's~\citeyearpar{Baelde12} proof theoretic treatment of fixed points in linear logic.  The
 proof rules can be understood from traditional two-sided rules for least and greated fixed points,
 combined with the duality between the fixed points.  We begin with a two-sided presentation:
+{\small
 \begin{mathpar}
 \inferrule{F(A) \vdash A \\ \Gamma, A \vdash B}{\Gamma, \mu F \vdash B}
 
@@ -1051,26 +1052,30 @@ combined with the duality between the fixed points.  We begin with a two-sided p
 \inferrule{\Gamma, F (\nu F) \vdash B}{\Gamma, \nu F \vdash B}
 
 \inferrule{A \vdash F(A) \\ \Gamma \vdash A}{\Gamma \vdash \nu F}
-\end{mathpar}
+\end{mathpar}}%
 Functional programmers may recognize the first as the typing rule of a fold, and the fourth as the
 typing rule of an unfold. We can translate this to a one sided presentation, as follows.  (As
 $\Gamma$ denotes any context, we write $\Gamma$ instead of $\cpdual{\Gamma}$).
+{\small
 \begin{mathpar}
 \inferrule{\vdash \cpdual{F}(\cpdual{A}),A \\ \vdash \Gamma,\cpdual{A},B}{\vdash \Gamma,\nu \cpdual{F},B}
 
 \inferrule{\vdash \Gamma, F (\mu F)}{\vdash \Gamma, \mu F}
 \\
+
 \inferrule{\vdash \Gamma, \cpdual{F}(\mu \cpdual{F}), B}{\vdash \Gamma, \mu \cpdual{F}, B}
 
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 \end{mathpar}
+}%
 However, now we can observe that $\Gamma,B$ is itself an instance of a context, and $\cpdual{F}$ a
 type operator, and so the four rules above are just two instances each of the two rules below.
+{\small
 \begin{mathpar}
 \inferrule{\vdash \Gamma, F (\mu F)}{\vdash \Gamma, \mu F}
 
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
-\end{mathpar}
+\end{mathpar}}%
 These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$.  As in \mugv,
 \tkwd{corec} terms maintain an arbitrary coinvariant, of type $A$.
 
@@ -1266,10 +1271,11 @@ In order to translate away the arrows in the $\key{corec}$ rule, we
 adopt a simplified session-oriented variant of the $\key{corec}$ rule
 for \gvpi.
 %
+{\small
 \begin{mathpar}
 \inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
           {\gvtyp{\Phi}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
-\end{mathpar}
+\end{mathpar}}
 %
 This rule takes advantage of the fact that we can always translate
 away functions using the $\topi{-}$ translation, and we can simulate
