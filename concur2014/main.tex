@@ -10,7 +10,7 @@
 % Attempt to duplicate Springer's style of references
 \usepackage[authoryear,compress,round]{natbib}
 \renewcommand{\bibsection}{\section*{References}}
-\renewcommand{\bibpreamble}{\small}
+\renewcommand{\bibpreamble}{\scriptsize}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
@@ -189,17 +189,13 @@ languages are still interconvertible.  We preserve the significant results of th
 correspondence (race freedom, deadlock freedom, and termination).
 
 The paper proceeds as follows. We begin by presenting a simple, session-typed functional
-language~\secref{mugv}, which includes support for recursive session types.  In contrast to existing
-approaches to recursive session types, we distinguish between the greatest and least fixed points of
-recursive equations.  We give several examples of recursive processes and their use.  We next extend
-Wadler's CP language to include terms corresponding to recursion and corecursion~\secref{mucp},
-based on Baelde's proof rules for fixed points in linear logic, and demonstrate their use.  Finally,
-we show that the languages \mugv and \mucp are equally expressive.  This has two stages.  First, we
-show a translation of the functional features of \mugv into its process oriented
-features~\secref{gvtogvpi}; we call the resulting restricted language \gvpi.  Second, we show that
-programs in \gvpi can be translated to terms of \mucp~\secref{gvpitocp}, and that terms of \mucp can
-be translated to terms of \gvpi~\secref{cptogvpi}.  We conclude with a survey of
-related~\secref{related} and future~\secref{future} work.
+language~\secref{mugv}, which includes support for recursive session types.  We next extend Wadler's
+CP language to include terms corresponding to recursion and corecursion~\secref{mucp}, based on
+Baelde's proof rules for fixed points in linear logic, and demonstrate their use.  We show that the
+languages \mugv and \mucp are equally expressive, by showing that \mugv can be reduced to its
+session-typed features~\secref{gvtogvpi}, and that terms in that reduced language are
+interconvertible with terms in \mucp~(\S\S\ref{sec:gvpitocp},\ref{sec:cptogvpi}).  We conclude with
+surveys of related~\secref{related} and future~\secref{future} work.
 
 %\todo{Full list of examples: \begin{enumerate}
 %\item Stream of zeros (no use of coinvariant);
@@ -233,7 +229,7 @@ Types in \mugv are given by the following grammar:
                                 \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
                                 \mid   \outterm \mid \interm \\
                             & & \mid & \gvservice{S} \mid \gvserver{S}
-                                \mid   X \mid \gvdual{X} 
+                                \mid   X \mid \gvdual{X}
                                 \mid   \shade{\mu G} \mid \shade{\nu G} \\  \shaderow
   \text{Type Operators} & G    & ::= & X.S \\
 \end{array}
@@ -259,10 +255,11 @@ Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$).
 All types are linear except unlimited functions $T \uto U$, replicated channels $\gvservice{S}$, and
 closed input channels $\interm$.
 
-Duality on non-recursive session types is standard.
+We extend the standard duality for non-recursive session types to include recursive session types:
 \[
 \small
-\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{\quad}@{}}
+%\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{}}
+\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{}}
 \begin{eqs}
 \gvdual{\gvout{T}{S}} &=& \gvin{T}{\gvdual{S}} \\
 \gvdual{\gvin{T}{S}} &=& \gvout{T}{\gvdual{S}} \\
@@ -282,25 +279,25 @@ Duality on non-recursive session types is standard.
   \gvdual{\gvserver{S}} &=& \gvservice{\gvdual{S}} \\
   \gvdual{\gvservice{S}} &=& \gvserver{\gvdual{S}} \\
 \end{eqs}
+%&
+%\begin{eqs}
+%  \gvdual{X} &=& \gvdual{X} \\
+%  \gvdual{\gvdual{X}} &=& X
+%\end{eqs}
 &
 \begin{eqs}
-  \gvdual{X} &=& \gvdual{X} \\
-  \gvdual{\gvdual{X}} &=& X
-\end{eqs} \\
+  \shaderow \gvdual{\mu G} &=& \nu \gvdual{G} \\
+  \shaderow \gvdual{\nu G} &=& \mu \gvdual{G}
+\end{eqs}
 \ea
 \]
-Duality on recursive session types is defined by:
-\[
-\small
-\shade{\gvdual{\mu G} = \nu \gvdual{G}} \qquad \shade{\gvdual{\nu G} = \mu \gvdual{G}}
-\]%
-where we define the dual of an operator $G = X.S$ as $\gvdual{G} = X.\gvdual{G(\gvdual{X})}.$
-Observe that $\gvdual{G(S)} = \gvdual{G}(\gvdual{S})$.  Unlike many notions of duality for session
-types, our definition preserves duality when recursive session types are unfolded, even when the
-recursion occurs in messages.  For example, consider the operator $G = X.\gvin{X}{\interm}$, its
-dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and the dual session types $\mu G$ and $\nu
-\gvdual{G}$.  Unfolding the first type yields $G(\mu G)$, or $\gvin{\mu G}{\interm}$; unfolding the
-second yields
+where $\gvdual{\gvdual{X}} = X$ and we define the dual of an operator $G = X.S$ as $\gvdual{G} =
+X.\gvdual{G(\gvdual{X})}.$ Observe that $\gvdual{G(S)} = \gvdual{G}(\gvdual{S})$.  Unlike many
+notions of duality for session types, our definition preserves duality when recursive session types
+are unfolded, even when the recursion occurs in messages.  For example, consider the operator $G =
+X.\gvin{X}{\interm}$, its dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and the dual session
+types $\mu G$ and $\nu \gvdual{G}$.  Unfolding the first type yields $G(\mu G)$, or $\gvin{\mu
+  G}{\interm}$; unfolding the second yields
 \[
 \small
   \gvdual{G}(\nu \gvdual{G}) = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm} = \gvout{\mu G}{\outterm},
@@ -415,7 +412,7 @@ neg_{X,T \uto U} &=& pos_{X,T} \wedge neg_{X,U} \\
 \subsection{Typing Rules}
 \label{sec:mugv-typing}
 
-\begin{figure}[t]
+\begin{figure}[float]
 \scriptsize
 Structural rules
 \begin{mathpar}
@@ -485,9 +482,7 @@ Session Rules
 
 \inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
           {\gvtyp{\Phi}{\gvrequest{M}}{S}}
-\end{mathpar}
-Recursive Session Rules
-\begin{mathpar}
+\\
 \shade{
 \inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
           {\gvtyp{\Phi}{M}{\mu G}}
@@ -562,10 +557,13 @@ We write $\key{let}\:x=M\:\key{in}\:N$ for $(\lambda x.M)\:N$.
 
 \paragraph{Base Types.}
 
-For the purposes of our examples, we assume our term language has been extended with natural number
-($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
-addition ($+$) and multiplication ($\times$), boolean constants ($True, False$), and conditionals
-($\gvifthen{M}{N}{N'}$).
+For the purposes of our examples, we assume our term language has been extended with a type of
+natural numbers ($Nat$), along with suitable constants and addition.
+
+%                                                                                      natural number
+% ($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
+% addition ($+$) and multiplication ($\times$), boolean constants ($True, False$), and conditionals
+% ($\gvifthen{M}{N}{N'}$).
 %
 %% This does not change the expressivity of \mugv---we could encode each of these constructs using
 %% processes, along the lines illustrated later for \mucp~\secref{peano}---but does significantly
@@ -933,7 +931,7 @@ where $X^{\perp\perp}  = X$, and we define the dual of a type operator by $\cpdu
 X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{F(A)} =
 \cpdual{F}(\cpdual{A})$.
 
-\begin{figure}[t]
+\begin{figure}[float]
 \small
 \begin{mathpar}
 \inferrule{ }{\cptyp{\link{x}{y}}{x:A,y:\cpdual{A}}}
@@ -1031,7 +1029,7 @@ The exponential connectives $!$ and $?$ in linear logic provide limited access t
 rules of weakening and contraction.  We interpret them as providing replicated processes.
 % a process with type $\cpbang{A}$ provides arbitrarily many copies of a process providing behavior
 % $A$, while a process of type $\cpquery{A}$ can choose to use one, many, or none of those copies.
-There are threerules for types $\cpquery{A}$; note that, in contrast to the other typing rules of
+There are three rules for types $\cpquery{A}$; note that, in contrast to the other typing rules of
 \mucp, we leave uses of weakening and contraction implicit.  Finally, since the process proving
 $\cpbang{A}$ may be replicated arbitrarily, each channel that process uses must be replicatable as
 well.  We write $\cpquery{\Gamma}$ to require that all types in $\Gamma$ be of the form
@@ -1267,8 +1265,8 @@ interface is input on the other end of that channel. This duality
 between implementation and interface explains the flipping of types in
 Wadler's original CPS translation from GV to CP.
 
-In order to translate away the arrows in the $\key{corec}$ rule, we
-adopt a simplified session-oriented variant of the $\key{corec}$ rule
+In order to translate away the arrows in the $\lrkwd$ rule, we
+adopt a simplified session-oriented variant of the $\lrkwd$ rule
 for \gvpi.
 %
 {\small
@@ -1279,10 +1277,9 @@ for \gvpi.
 %
 This rule takes advantage of the fact that we can always translate
 away functions using the $\topi{-}$ translation, and we can simulate
-multiple arguments using a tensor.
+multiple arguments using $\otimes$.
 
-The translation on terms is given by the homomorphic extension of the following equations:
-\begin{figure}[t]\small
+\begin{figure}[float]\small
 \begin{equations}
 \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
 \topi{L\,M} &=& \gvsend{\topi{M}}{\topi{L}} \\
@@ -1300,10 +1297,12 @@ The translation on terms is given by the homomorphic extension of the following 
   \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\ \shaderow
 && \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
-\caption{Translation of \mugv terms to \gvpi.}
+\caption{Translation of \mugv terms to \gvpi.}\label{fig:togvpi}
 \end{figure}
-Formally, this is a translation from derivations to terms. We write type annotations to indicate
-$\to$ introduction and elimination.
+
+The translation on terms is given by the homomorphic extension of the equations in
+Fig.~\ref{fig:togvpi}.  Formally, this is a translation from derivations to terms. We write type
+annotations to indicate $\to$ introduction and elimination.
 % For all other cases, it is unambiguous to give the translation
 % on plain term syntax. Each introduction form translates to an interface $\gvfork{z}{M}$ of type
 % $\gvdual{S}$, where $M : \outterm$ provides the implementation, with $z : S$ bound in $M$.
@@ -1323,44 +1322,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 
 \subsection{Translation from \gvpi to \mucp}\label{sec:gvpitocp}
 
-We now give a translation from \gvpi to CP. Post composing this with the embedding of \mugv in \gvpi
-yields a semantics for \mugv. The translation on session types is as follows:
-\[\small
-\ba{@{}c@{\qquad}c@{\qquad}c@{}}
-\begin{eqs}
-\tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
-\tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
-\tocp{\gvservice{S}}       &=& \cpquery{\tocp{S}} \\
-\tocp{\gvserver{S}}        &=& \cpbang{\tocp{S}} \\
-\end{eqs}
-&
-\begin{eqs}
-\tocp{\oplus \{l_i:S_i \}} &=& \oplus \{l_i:\tocp{S_i}\} \\
-\tocp{\with \{l_i:S_i \}}  &=& \with \{l_i:\tocp{S_i}\} \\ \shaderow
-\tocp{\nu G}               &=& \nu\tocp{G} \\ \shaderow
-\tocp{\mu G}               &=& \mu\tocp{G} \\ \shaderow
-\tocp{X.S} &=& X.\tocp{S} \\
-\end{eqs}
-&
-\begin{eqs}
-\tocp{\outterm}            &=& 1 \\
-\tocp{\interm}             &=& \bot \\
-\tocp{X}                   &=& X \\
-\tocp{\gvdual{X}}          &=& \cpdual{X} \\
-\end{eqs}\\
-\ea
-\]
-The translation is homomorphic except for output, where the output type is dual. This accounts
-for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $\cpdual{(A \otimes
-  B)} = \cpdual{A} \parr \cpdual{B}.$
-
-The translation on terms is formally specified as a CPS translation on derivations as in Wadler's
-presentation. We provide the full translations of weakening and contraction for $\interm$, and for
-rolling and unrolling of recursive session types $\nu G$ and $\mu G$, as these steps are implicit in
-the syntax of \mugv terms. The other constructs depend only on the immediate syntactic structure, so
-we abbreviate their translations as mappings on plain terms. The majority of translations are as in
-our previous work:
-\begin{figure}[t]\small
+\begin{figure}[float]\small
 \begin{equations}
 \small
 \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
@@ -1406,10 +1368,52 @@ our previous work:
 \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
 \el}
 \]
-\caption{Translation of \gvpi terms into \mucp.}
+\caption{Translation of \gvpi terms into \mucp.}\label{fig:tomucp}
 \end{figure}
-The folding and unfolding of least fixed points in GV can be translated to cuts against the CP
-proofs of the corresponding equivalences.
+
+We now give a translation from \gvpi to CP. Post composing this with the embedding of \mugv in \gvpi
+yields a semantics for \mugv. The translation on session types is as follows:
+\[\small
+\ba{@{}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
+\tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
+\tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
+\tocp{\gvservice{S}}       &=& \cpquery{\tocp{S}} \\
+\tocp{\gvserver{S}}        &=& \cpbang{\tocp{S}} \\
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\oplus \{l_i:S_i \}} &=& \oplus \{l_i:\tocp{S_i}\} \\
+\tocp{\with \{l_i:S_i \}}  &=& \with \{l_i:\tocp{S_i}\} \\
+\tocp{\nu G}               &=& \nu\tocp{G} \\
+\tocp{\mu G}               &=& \mu\tocp{G} \\
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\outterm}            &=& 1 \\
+\tocp{\interm}             &=& \bot \\
+\tocp{X}                   &=& X \\
+\tocp{\gvdual{X}}          &=& \cpdual{X} \\
+\end{eqs}\\
+& \tocp{X.S} = X.\tocp{S} & \\
+\ea
+\]
+The translation is homomorphic except for output, where the output type is dual. This accounts
+for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $\cpdual{(A \otimes
+  B)} = \cpdual{A} \parr \cpdual{B}.$
+%
+The translation on terms (Fig.~\ref{fig:tomucp}) is formally specified as a CPS translation on
+derivations as in Wadler's presentation. We provide the full translations of weakening and
+contraction for $\interm$, and for rolling and unrolling of recursive session types $\nu G$ and $\mu
+G$, as these steps are implicit in the syntax of \mugv terms. The other constructs depend only on
+the immediate syntactic structure, so we abbreviate their translations as mappings on plain
+terms. The majority of translations are as in our previous work.  The folding and unfolding of least
+fixed points in GV can be translated to cuts against the CP proofs of the corresponding
+equivalences. The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of
+type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$, where rely
+on syntactic sugar for output along a channel: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
+\]
+
 % ; for example, unfolding the GV session type $\mu G$ to $G
 % (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
 %% The folding and unfolding of recursive session types in GV can be translated to cuts against the CP
@@ -1436,13 +1440,6 @@ proofs of the corresponding equivalences.
 %% \end{gather*}
 %
 %
-The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is
-represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$.
-%
-where we have used the following syntactic sugar for output along a channel:
-\[
-x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
-\]
 
 \begin{theorem}
   If $\gvtyp{\Phi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Phi},z:\cpdual{\tocp{T}}}$.
@@ -1450,41 +1447,7 @@ x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 
 \subsection{Translating from \mucp to \gvpi}\label{sec:cptogvpi}
 
-We now present the translation $\togv{-}$ from CP to \gvpi. The translation on types is as follows:
-\[\small
-\ba{@{}c@{\qquad}c@{\qquad}c@{}}
-\begin{eqs}
-\togv{A \otimes B} &=& \gvout{\gvdual{\togv{A}}}{\togv{B}} \\
-\togv{A \parr B}   &=& \gvin{\togv{A}}{\togv{B}} \\
-\togv{\cpbang{A}}   &=& \gvservice{\togv{A}} \\
-\togv{\cpquery{A}}  &=& \gvserver{\togv{A}} \\
-\end{eqs}
-&
-\begin{eqs}
-\togv{+\{l_i:A_i\}_i}     &=& +\{l_i:\togv{A_i}\}_i  \\
-\togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\ \shaderow
-\togv{\nu F} &=& \nu \togv{F} \\ \shaderow
-\togv{\mu F} &=& \mu \togv{F} \\ \shaderow
-\togv{X.A} &=& X.\togv{A} \\
-\end{eqs}
-&
-\begin{eqs}
-\togv{1}           &=& \outterm \\
-\togv{\bot}              &=& \interm \\
-\togv{X}            &=& X \\
-\togv{\cpdual{X}}   &=& \gvdual{X} \\
-\end{eqs}
-\ea
-\]
-The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
-are expanded to \gvpi as follows:
-\[\small
-\gvlet{x}{M}{N} \equiv
-  \topi{(\lambda x.N) M} \equiv
-  \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
-\]%
-and the translation on terms is as follows:
-\begin{figure}[t]\small
+\begin{figure}[float]\small
 \begin{equations}
 \small
   \togv{x[y].(P \mid Q)} &=&
@@ -1518,11 +1481,46 @@ and the translation on terms is as follows:
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
 \end{equations}%
-\caption{Translation of \mucp terms into \gvpi.}
+\caption{Translation of \mucp terms into \gvpi.}\label{fig:fromcp}
 \end{figure}
-Formally, the translation is from judgements to terms. The interesting case, which is the only one
-to use the type environment, is $\key{corec}$. Crucially, it is type-directed, and depends on the
-translation of functoriality from \mucp to \mugv.
+
+We now present the translation $\togv{-}$ from CP to \gvpi. The translation on types is as follows:
+\[\small
+\ba{@{}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
+\togv{A \otimes B} &=& \gvout{\gvdual{\togv{A}}}{\togv{B}} \\
+\togv{A \parr B}   &=& \gvin{\togv{A}}{\togv{B}} \\
+\togv{\cpbang{A}}   &=& \gvservice{\togv{A}} \\
+\togv{\cpquery{A}}  &=& \gvserver{\togv{A}} \\
+\end{eqs}
+&
+\begin{eqs}
+\togv{+\{l_i:A_i\}_i}     &=& +\{l_i:\togv{A_i}\}_i  \\
+\togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\
+\togv{\nu F} &=& \nu \togv{F} \\
+\togv{\mu F} &=& \mu \togv{F} \\
+\togv{X.A} &=& X.\togv{A} \\
+\end{eqs}
+&
+\begin{eqs}
+\togv{1}           &=& \outterm \\
+\togv{\bot}              &=& \interm \\
+\togv{X}            &=& X \\
+\togv{\cpdual{X}}   &=& \gvdual{X} \\
+\end{eqs}
+\ea
+\]
+The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
+are expanded to \gvpi as follows:
+\[\small
+\gvlet{x}{M}{N} \equiv
+  \topi{(\lambda x.N) M} \equiv
+  \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
+\]%
+The translation on terms is given in Fig.~\ref{fig:fromcp}.  Formally, the translation is from
+judgements to terms. The interesting case, which is the only one to use the type environment, is
+$\key{corec}$. Crucially, it is type-directed, and depends on the translation of functoriality from
+\mucp to \mugv.
 
 
 %% % \[
