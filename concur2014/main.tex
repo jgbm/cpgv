@@ -10,7 +10,7 @@
 % Attempt to duplicate Springer's style of references
 \usepackage[authoryear,compress,round]{natbib}
 \renewcommand{\bibsection}{\section*{References}}
-\renewcommand{\bibpreamble}{\scriptsize}
+%\renewcommand{\bibpreamble}{\scriptsize}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
@@ -98,7 +98,8 @@
 
 % \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
-\newcommand{\secref}[1]{(\S\ref{sec:#1})}
+%\newcommand{\secref}[1]{(\S\ref{sec:#1})}
+\newcommand{\secref}[1]{Section~\ref{sec:#1}}
 
 %%% grey shading
 \definecolor{shade}{RGB}{223,223,223}
@@ -124,11 +125,11 @@
   We extend a propositions-as-types correspondence between linear logic and session types to include
   recursive sessions.  Our extension takes least and greatest fixpoints as dual, an idea well-known
   to theorists, but which has not previously appeared in the treatment of recursive sessions. We
-  preserve the race freedom and deadlock freedom that are a hallmark of linear logic-based session
-  types, and avoid some problems with recursion that appear in other systems.  We treat two systems,
-  one based on classical linear logic, derived from work of Caires and Pfenning and of Wadler, and
-  one based on a linear functional language, derived from work of Gay and Vasconcelos. Our treatment
-  of recursion is inspired by Baelde.
+  preserve the freedom from races, deadlock, and livelock that are a hallmark of the
+  propositions-as-types approach, and avoid some problems with recursion that
+  appear in other systems.  We treat two systems, one based on classical linear logic, derived from
+  work of Caires and Pfenning and of Wadler, and one based on a linear functional language, derived
+  from work of Gay and Vasconcelos. Our treatment of recursion is inspired by Baelde.
 
   % A Curry-Howard correspondence between session types and linear logic was first demonstrated by
   % Caires and Pfenning for intuitionistic linear logic, and later adapted to the classical setting by
@@ -153,48 +154,83 @@ channel performs output the other performs input, and when one end offers a choi
 other selects from these alternatives.  Session types are of limited use without \emph{recursion},
 which permits defining sessions of arbitrary size.  Recursion traditionally comes in two dual forms,
 least fixpoint and greatest fixpoint.  However, in previous work on session types recursion was
-introduced in a way where both ends of a channel are treated as least fixpoints.  Here, we introduce
-a notion of recursion for session types that restores the traditional notion that least fixpoints
-are dual to greatest fixpoints.
+introduced in a way where both ends of a channel are treated as least fixpoints, a mismatch with the
+treatment of the other connectives.  Here, we introduce a notion of recursion for session types that
+restores the traditional notion that least fixpoints are dual to greatest fixpoints.
 
-%%% PHIL TO CONTINUE FROM HERE %%%
+Session types were introduced as a type system for process calculi by \citet{Honda93}, further
+developed by \citet{Honda98}, and reformulated in the context of a functional language with linear
+types by \citet{GayVasconcelos10}.  A propositions-as-types connection between session types and
+intuitionistic linear logic was uncovered by \citet{CairesPfenning10} and adapted to classical
+linear logic by \citet{Wadler12}.  Wadler defines two systems, a process calculus CP (inspired by
+Caires and Pfenning) and a linear functional language GV (inspired by Gay and Vasconcelos), and
+presents a type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} extended GV
+to support translation in the other direction, giving type-preserving translations not only from GV
+to CP but also from CP to GV.  A hallmark of the process-as-types approach is that it yields systems
+guaranteed free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
 
+There is much previous work that supports recursive session types, but this work has not previously
+been carried over to the propositions-as-types approach, and suffers from the mismatch mentioned
+above.  Here, drawing on work of \citet{Baelde12}, we extend both CP and GV with recursive session
+types, taking least and greatest fixpoints as duals.  We show that the type-preserving translations
+extend to the new systems, and that the new systems are still guaranteed free of races, deadlock,
+and livelock.
 
-Session types provide a type-based approach to structuring communication among concurrent or
-distributed processes.  In this approach, types are used to describe communication protocols, and
-type checking guarantees that processes observe these protocols.  Session types have been applied in
-a variety of languages, including process calculi~\citep{Honda93,Honda98} and functional
-languages~\citep{GayVasconcelos10}.
+This paper makes the following contributions.
+\begin{itemize}
+\item Section~\ref{sec:mugv} extends GV to support recursion, yielding \mugv; and demonstrates its
+  power with a series of examples including streams, a calculator, and a translation of a bit stream
+  example due to \citet{Toninho13}. In \mugv, unlike in previous session type systems, least fixpoints
+  are dual to greatest fixpoints.
+\item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and present a
+  translation of some of the same examples. We show \mucp, like previous systems based on
+  propositions as types, is guaranteed free of races, deadlock, and livelock.
+\item Section~\ref{sec:translation} presents type-preserving translations from \mugv into \mucp and
+  inversely. The translation guarantees that GV also is free of races, deadlock, and livelock.
+  As a technical aid, we also present a type-preserving translation from \mugv into a
+  subset of itself, similar to one in \citet{LindleyM14}, showing how function and product
+  types can be represented by session types.
+\end{itemize}
+Section~\ref{sec:related} surveys related work and Section~\ref{sec:future} concludes.
 
-\citet{CairesPfenning10} first demonstrated a Curry-Howard correspondence between session-typed
-process calculi and intuitionistic linear logic (ILL).  Their correspondence gives both an
-interpretation of session types as ILL propositions, and a computational interpretation of ILL
-proofs as $\pi$-calculus processes.  As a result, they are able to show that well-typed processes
-are terminating, race-free, and deadlock-free, by analogy with corresponding cut-elimination results
-for ILL.  \citet{Wadler12} adapted their approach to classical linear logic (CLL).  In doing so, he
-presented two languages, CP and GV.  CP is a process calculus-like term-assignment for the proof
-rules of CLL.  GV is a session-typed functional language, based on the language of
-\citet{GayVasconcelos10}.  He shows that all GV typing derivations correspond to well-typed CP
-terms; subsequently, \cite{LindleyM14} extended GV such that all CP derivations correspond to GV
-terms as well.
+\todo{The introduction should contain a sentence to compare with the recent work by Gay and
+  colleagues.}
 
-Most work on session-typed systems permit recursive processes and recursive session types.  However,
-neither of the correspondences between session types and linear logic include recursive sessions.
-This work extends Wadler's approach to include recursive sessions.  We extend CP to include notions
-of greatest and least fixed point, drawing on Baelde's~\citeyearpar{Baelde12} proof-theoretic study of
-fixed points in linear logic.  Likewise, we extend GV with recursive and corecursive sessions,
-providing bounded and unbounded iteration respectively.  Finally, we show that the resulting
-languages are still interconvertible.  We preserve the significant results of the existing
-correspondence (race freedom, deadlock freedom, and termination).
+% Session types provide a type-based approach to structuring communication among concurrent or
+% distributed processes.  In this approach, types are used to describe communication protocols, and
+% type checking guarantees that processes observe these protocols.  Session types have been applied in
+% a variety of languages, including process calculi~\citep{Honda93,Honda98} and functional
+% languages~\citep{GayVasconcelos10}.
 
-The paper proceeds as follows. We begin by presenting a simple, session-typed functional
-language~\secref{mugv}, which includes support for recursive session types.  We next extend Wadler's
-CP language to include terms corresponding to recursion and corecursion~\secref{mucp}, based on
-Baelde's proof rules for fixed points in linear logic, and demonstrate their use.  We show that the
-languages \mugv and \mucp are equally expressive, by showing that \mugv can be reduced to its
-session-typed features~\secref{gvtogvpi}, and that terms in that reduced language are
-interconvertible with terms in \mucp~(\S\S\ref{sec:gvpitocp},\ref{sec:cptogvpi}).  We conclude with
-surveys of related~\secref{related} and future~\secref{future} work.
+% \citet{CairesPfenning10} first demonstrated a Curry-Howard correspondence between session-typed
+% process calculi and intuitionistic linear logic (ILL).  Their correspondence gives both an
+% interpretation of session types as ILL propositions, and a computational interpretation of ILL
+% proofs as $\pi$-calculus processes.  As a result, they are able to show that well-typed processes
+% are terminating, race-free, and deadlock-free, by analogy with corresponding cut-elimination results
+% for ILL.  \citet{Wadler12} adapted their approach to classical linear logic (CLL).  In doing so, he
+% presented two languages, CP and GV.  CP is a process calculus-like term-assignment for the proof
+% rules of CLL.  GV is a session-typed functional language, based on the language of
+% \citet{GayVasconcelos10}.  He shows that all GV typing derivations correspond to well-typed CP
+% terms; subsequently, \cite{LindleyM14} extended GV such that all CP derivations correspond to GV
+% terms as well.
+
+% Most work on session-typed systems permit recursive processes and recursive session types.  However,
+% neither of the correspondences between session types and linear logic include recursive sessions.
+% This work extends Wadler's approach to include recursive sessions.  We extend CP to include notions
+% of greatest and least fixed point, drawing on Baelde's~\citeyearpar{Baelde12} proof-theoretic study of
+% fixed points in linear logic.  Likewise, we extend GV with recursive and corecursive sessions,
+% providing bounded and unbounded iteration respectively.  Finally, we show that the resulting
+% languages are still interconvertible.  We preserve the significant results of the existing
+% correspondence (race freedom, deadlock freedom, and termination).
+
+% The paper proceeds as follows. We begin by presenting a simple, session-typed functional
+% language~\secref{mugv}, which includes support for recursive session types.  We next extend Wadler's
+% CP language to include terms corresponding to recursion and corecursion~\secref{mucp}, based on
+% Baelde's proof rules for fixed points in linear logic, and demonstrate their use.  We show that the
+% languages \mugv and \mucp are equally expressive, by showing that \mugv can be reduced to its
+% session-typed features~\secref{gvtogvpi}, and that terms in that reduced language are
+% interconvertible with terms in \mucp~(\S\S\ref{sec:gvpitocp},\ref{sec:cptogvpi}).  We conclude with
+% surveys of related~\secref{related} and future~\secref{future} work.
 
 %\todo{Full list of examples: \begin{enumerate}
 %\item Stream of zeros (no use of coinvariant);
@@ -229,7 +265,7 @@ Types in \mugv are given by the following grammar:
                                 \mid   \outterm \mid \interm \\
                             & & \mid & \gvservice{S} \mid \gvserver{S}
                                 \mid   X \mid \gvdual{X}
-                                \mid   \shade{\mu G} \mid \shade{\nu G} \\  \shaderow
+                                \mid   \shade{\mu G \mid \nu G} \\  \shaderow
   \text{Type Operators} & G    & ::= & X.S \\
 \end{array}
 \]%
@@ -244,7 +280,9 @@ Session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection 
 % corresponding to closed channels.
 We include a notion of replicated sessions, corresponding to exponentials in linear logic: a channel
 of type $\gvservice{S}$ is a service, offering any number of channels of type $S$; a channel of type
-$\gvserver{S}$ is the server providing such a service. Finally, we include session variables and
+$\gvserver{S}$ is the server providing such a service (unfortunately, we cannot use the traditional
+! and ? of linear logic to denote replication because these are already used for input and output).
+Finally, we include session variables and
 their duals ($X,\gvdual{X}$), and two forms of recursive session types, corresponding to bounded
 ($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator $X.S$, we write $G(S')$ for
 the substitution instance $S[S'/X]$.
@@ -258,7 +296,7 @@ We extend the standard duality for non-recursive session types to include recurs
 \[
 \small
 %\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{}}
-\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{}}
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
 \gvdual{\gvout{T}{S}} &=& \gvin{T}{\gvdual{S}} \\
 \gvdual{\gvin{T}{S}} &=& \gvout{T}{\gvdual{S}} \\
@@ -414,6 +452,9 @@ neg_{X,T \uto U} &=& pos_{X,T} \wedge neg_{X,U} \\
 \begin{figure}[float]
 \scriptsize
 Structural rules
+\begin{mathpar}
+\un{(T \uto U)}  \qquad  \un{(\gvservice{S})}  \qquad  \un{(\interm)}
+\end{mathpar}
 \begin{mathpar}
 \inferrule{ }{\gvtyp{x:T}{x}{T}}
 
@@ -895,36 +936,46 @@ The types of \mucp are the propositions of CLL, extended with type operators $F$
 $\mu F,\nu F$.
 \[\small\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
-   & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \shade{\mu F} \mid \shade{\nu F} \\ \shaderow
+   & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \shade{\mu F \mid \nu F} \\ \shaderow
    \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]
 If $F = X.A$, define $F(B) = A[B/X]$.  The standard notion of CLL duality is extended to fixed
 points in the expected fashion:
 \[
-\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{}}
+\ba{c}
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
   \cpdual{(A \otimes B)} &=& \cpdual{A} \parr \cpdual{B} \\
   \cpdual{(A \parr B)} &=& \cpdual{A} \otimes \cpdual{B} \\
-  \cpdual{(\cpbang{A})} &=& \cpquery{\cpdual{A}} \\
 \end{eqs}
 &
 \begin{eqs}
   \cpdual{1} &=& \bot \\
   \cpdual{\bot} &=& 1 \\
-  \cpdual{(\cpquery{A})} &=& \cpbang{\cpdual{A}} \\
 \end{eqs}
 &
 \begin{eqs}
   \cpdual{(A \oplus B)} &=& \cpdual{A} \with \cpdual{B} \\
-  \cpdual{(A \with B)} &=& \cpdual{A} \oplus \cpdual{B} \\ \shaderow
-  \cpdual{(\nu F)} &=& \mu \cpdual{F} \\
+  \cpdual{(A \with B)} &=& \cpdual{A} \oplus \cpdual{B} \\ 
 \end{eqs}
 &
 \begin{eqs}
   \cpdual{\top} &=& 0 \\
-  \cpdual{0} &=& \top \\ \shaderow
-  \cpdual{(\mu F)} &=& \nu \cpdual{F} \\
-\end{eqs} \\
+  \cpdual{0} &=& \top \\ 
+\end{eqs}
+\ea
+\\
+\ba{@{}c@{\qquad}c@{}}
+\begin{eqs}
+  \cpdual{(\cpbang{A})} &=& \cpquery{\cpdual{A}} \\
+  \cpdual{(\cpquery{A})} &=& \cpbang{\cpdual{A}} \\
+\end{eqs}
+&
+\begin{eqs}
+  \shaderow \cpdual{(\nu F)} &=& \mu \cpdual{F} \\
+  \shaderow \cpdual{(\mu F)} &=& \nu \cpdual{F} \\
+\end{eqs}
+\ea
 \ea
 \]
 where $X^{\perp\perp}  = X$, and we define the dual of a type operator by $\cpdual{F} =
