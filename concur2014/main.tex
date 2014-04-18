@@ -465,9 +465,6 @@ un(\interm)
 
 Structural rules
 \begin{mathpar}
-\un{(T \uto U)}  \qquad  \un{(\gvservice{S})}  \qquad  \un{(\interm)}
-\end{mathpar}
-\begin{mathpar}
 \inferrule{ }{\gvtyp{x:T}{x}{T}}
 
 \inferrule{\gvtyp{\Phi}{M}{U} \\
@@ -1358,7 +1355,7 @@ multiple arguments using $\otimes$.
   \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\ \shaderow
 && \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
-\caption{Translation of \mugv terms to \gvpi.}\label{fig:togvpi}
+\caption{Translation of \mugv Terms to \gvpi.}\label{fig:togvpi}
 \end{figure}
 
 The translation on terms is given by the homomorphic extension of the equations in
@@ -1401,7 +1398,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
-\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[3ex] \shaderow
+\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[1ex] \shaderow
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z &=&
   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex] \shaderow
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z &=&
@@ -1412,7 +1409,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
   \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
-  \el \\
+  \el \\[-1ex]
 \end{equations}%
 \[\small
 \shade{
