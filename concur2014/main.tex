@@ -413,7 +413,7 @@ neg_{X,T \uto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
 \begin{figure}[float]
 \scriptsize
 \[
-un(T \lto U)
+un(T \uto U)
 \qquad
 un(\gvservice{S})
 \qquad
@@ -1635,7 +1635,8 @@ $\outterm$ and $\interm$.
 \newpage
 \appendix
 
-\begin{figure}
+\section{Cut Elimination for \mucp}
+
 \begin{multline*}
 \inferrule
   {\inferrule*
@@ -1758,8 +1759,5 @@ $\outterm$ and $\interm$.
 \el
 \]
 where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
-
-\caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
-\end{figure}
 
 \end{document}
