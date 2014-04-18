@@ -1012,8 +1012,9 @@ The multiplicative connectives $\parr$ and $\otimes$ are interpreted as input an
 process $x(y).P$ inputs channel $y$ on channel $x$, and continues as $P$. The process $x[y].(P \mid
 Q)$ is interpreted as bound output: it sends a fresh name $y$ along $x$, spawns a process $P$ in
 which $y$ is used, and continues as process $Q$ in which $x$ is used.  It amounts to the
-$\pi$-calculus term $(\nu y) \overline{x}(y).(P \mid Q)$. The units of $\parr$ and $\otimes$, $\bot$
-and $1$ are interpreted as nullary input and nullary output, respectively.
+$\pi$-calculus term $(\nu y) \overline{x}(y).(P \mid Q)$. We write $x[y].P$ as syntactic sugar for
+$x[y'].(\link{y}{y'} \mid P)$. The units of $\parr$ and $\otimes$, $\bot$ and $1$ are interpreted as
+nullary input and nullary output, respectively.
 
 \paragraph{Selection and Choice.}
 
@@ -1413,8 +1414,11 @@ fixed points in GV can be translated to cuts against the CP proofs of the corres
 equivalences. The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of
 type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially read the
 coinvariant $x$ from a channel $w$, and provide a channel $p$ which abstracts re-establishing the
-coinvariant at the end of each iteration.  In both, we rely on syntactic sugar for output: $x[y].P
-\equiv x[y'].(\link{y}{y'} \mid P)$.
+coinvariant at the end of each iteration.
+
+%% SL: now mention this earlier
+%%
+%% In both, we rely on syntactic sugar for output: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
 
 % ; for example, unfolding the GV session type $\mu G$ to $G
 % (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
