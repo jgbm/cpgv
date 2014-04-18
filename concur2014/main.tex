@@ -94,7 +94,7 @@
 \newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
 \newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
 
-\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
+% \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
 \newcommand{\secref}[1]{(\S\ref{sec:#1})}
 
@@ -1276,13 +1276,18 @@ coinvariant, and so choose the trivial proposition 1:
 \end{eqs}\]
 Next, we extend this example to a stream of naturals.  As in the corresponding \mugv example, we use
 the coinvariant to track the next number to appear in the stream.
-\[\small\begin{array}{r@{\hspace{2mm}}c@{\hspace{2mm}}l@{\hspace{0mm}}l@{\:}l}
-  Nats_y & \vdash & \mcl{3}{y:Stream(\cpquery{Nat})} \\
-  Nats_y & = & \mcl{3}{\lrkwd \: y \langle z \rangle (Zero_z,} \\
-  & & \quad & \mkwd{case}\:y \:\{ & \clabel{next}: y[x].(\link{z}{x} \mid \cut{w}{}{Inc_{z,w}}{\link{w}{y}}); \\
-  & & & & \clabel{stop}: y[].0\})
-\end{array}\]
-
+\[\small
+\bl
+  Nats_y \vdash y:Stream(\cpquery{Nat}) \\
+  Nats_y = \lrkwd \: y \langle z \rangle (Zero_z, 
+    \key{case}\:y \:\{
+       \bl
+       \clabel{next}: y[x].(\link{z}{x} \mid \cut{w}{}{Inc_{z,w}}{\link{w}{y}}) \\
+       \clabel{stop}: y[].0\}) \\
+       \el \\
+\el
+\]
+%
 In the $\clabel{stop}$ case, we rely on weakening for $\cpquery{Nat}$ to dispose of the coinvariant.
 In the $\clabel{next}$ case, we rely on contraction to copy the coinvariant $z$.  We then send one
 copy along the channel $y$, increment the other giving $w$, and re-establish the coinvariant using
