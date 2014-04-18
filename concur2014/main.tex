@@ -2,7 +2,9 @@
 
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xcolor,xspace}
+\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xspace}
+\usepackage[table]{xcolor}
+\usepackage{colortbl}
 \addtolength{\jot}{-3px}
 
 % Attempt to duplicate Springer's style of references
@@ -97,6 +99,15 @@
 % \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
 \newcommand{\secref}[1]{(\S\ref{sec:#1})}
+
+%%% grey shading
+\definecolor{shade}{RGB}{223,223,223}
+\newcommand\shade[1]{\setlength{\fboxsep}{0pt}\colorbox{shade}{\ensuremath{#1}}}
+%\newcommand{\shade}[1]{\colorbox{shade}{\ensuremath{#1}}}
+
+\newcommand\shaderow{\noalign{\vskip-0.4pt}\rowcolor{shade}[1.2mm]}
+\newcommand\shaderowless{\noalign{\vskip-0.4pt}\rowcolor{shade}[0.6mm]}
+%%%
 
 \title{Recursive Session Types and Linear Logic}
 \author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
@@ -193,6 +204,9 @@ related~\secref{related} and future~\secref{future} work.
 
 In this section, we present \mugv, a simple functional language with session types patterned on the
 language of \citet{GayVasconcelos10} (which we call LAST) and Wadler's language GV.
+%
+Throughout the paper we highlight the novel parts of \mugv and \mucp by shading them in
+\shade{\mathrm{gray}}.
 
 \subsection{Types}
 \label{sec:mugv-types}
@@ -205,10 +219,10 @@ Types in \mugv are given by the following grammar:
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
                                 \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
                                 \mid   \outterm \mid \interm \\
-                            & & \mid & X \mid \gvdual{X}
-                                \mid   \mu G \mid \nu G
-                                \mid   \gvservice{S} \mid \gvserver{S} \\
-  \text{Type Operators} & G    & ::= & X.S % \\
+                            & & \mid & \gvservice{S} \mid \gvserver{S}
+                                \mid   X \mid \gvdual{X} 
+                                \mid   \shade{\mu G} \mid \shade{\nu G} \\  \shaderow
+  \text{Type Operators} & G    & ::= & X.S \\
 \end{array}
 \]%
 %
@@ -265,7 +279,7 @@ Duality on non-recursive session types is standard.
 Duality on recursive session types is defined by:
 \[
 \small
-\gvdual{\mu G} = \nu \gvdual{G} \qquad \gvdual{\nu G} = \mu \gvdual{G} \
+\shade{\gvdual{\mu G} = \nu \gvdual{G}} \qquad \shade{\gvdual{\nu G} = \mu \gvdual{G}}
 \]%
 where we define the dual of an operator $G = X.S$ as $\gvdual{G} = X.\gvdual{G(\gvdual{X})}.$
 Observe that $\gvdual{G(S)} = \gvdual{G}(\gvdual{S})$.  Unlike many notions of duality for session
@@ -402,7 +416,7 @@ Structural rules
            un(T)}
           {\gvtyp{\Phi,x:T}{M[x/x']}{U}}
 \end{mathpar}
-Lambda rules
+Lambda Rules
 \begin{mathpar}
 \inferrule{\gvtyp{\Phi,x:T}{M}{U}}
           {\gvtyp{\Phi}{\lambda x.M}{T \lto U}}
@@ -426,7 +440,7 @@ Lambda rules
            \gvtyp{\Psi,x:T,y:U}{N}{V}}
           {\gvtyp{\Phi,\Psi}{\gvlet{(x,y)}{M}{N}}{V}}
 \end{mathpar}
-Session rules
+Session Rules
 \begin{mathpar}
 \inferrule{\gvtyp{\Phi}{M}{S} \\
            \gvtyp{\Psi}{N}{\gvdual{S}}}
@@ -459,13 +473,17 @@ Session rules
 \inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
           {\gvtyp{\Phi}{\gvrequest{M}}{S}}
 \end{mathpar}
-Recursive session rules
+Recursive Session Rules
 \begin{mathpar}
+\shade{
 \inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
           {\gvtyp{\Phi}{M}{\mu G}}
+}
 
+\shade{
 \inferrule{\gvtyp{\Phi}{M}{\mu G}}
           {\gvtyp{\Phi}{M}{G (\mu G)}}
+}
 
 %% \inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}
 %%           {\gvtyp{\Phi}{M}{\nu G}}
@@ -473,8 +491,10 @@ Recursive session rules
 %% \inferrule{\gvtyp{\Phi}{M}{\nu G}}
 %%           {\gvtyp{\Phi}{M}{G(\nu G)}}
 %%
+\shade{
 \inferrule{\gvtyp{f:X \uto \vec{T} \lto \outterm, c:G(X), \vec{x}:\vec{T}}{M}{\outterm}}
           {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
+}
 \end{mathpar}
 
 %% \todo{add definition of $un$ to this figure?}
@@ -864,19 +884,38 @@ The types of \mucp are the propositions of CLL, extended with type operators $F$
 $\mu F,\nu F$.
 \[\small\begin{array}{l@{\hspace{2mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
-   & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \mu F \mid \nu F \\
-   \text{Type operators} & F & ::= & X.A %\\
+   & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \shade{\mu F} \mid \shade{\nu F} \\ \shaderow
+   \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]
 If $F = X.A$, define $F(B) = A[B/X]$.  The standard notion of CLL duality is extended to fixed
 points in the expected fashion:
-\begin{align*}
-  \cpdual{(A \otimes B)} &= \cpdual{A} \parr \cpdual{B} & \cpdual{1} &= \bot &
-    \cpdual{(A \oplus B)} &= \cpdual{A} \with \cpdual{B} & \cpdual{\top} &= 0 \\
-  \cpdual{(A \parr B)} &= \cpdual{A} \otimes \cpdual{B} & \cpdual{\bot} &= 1 &
-    \cpdual{(A \with B)} &= \cpdual{A} \oplus \cpdual{B} & \cpdual{0} &= \top \\
-  \cpdual{(\cpbang{A})} &= \cpquery{\cpdual{A}} & \cpdual{(\cpquery{A})} &= \cpbang{\cpdual{A}} &
-     \cpdual{(\nu F)} &= \mu \cpdual{F} & \cpdual{(\mu F)} &= \nu \cpdual{F}
-\end{align*}
+\[
+\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{}}
+\begin{eqs}
+  \cpdual{(A \otimes B)} &=& \cpdual{A} \parr \cpdual{B} \\
+  \cpdual{(A \parr B)} &=& \cpdual{A} \otimes \cpdual{B} \\
+  \cpdual{(\cpbang{A})} &=& \cpquery{\cpdual{A}} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{1} &=& \bot \\
+  \cpdual{\bot} &=& 1 \\
+  \cpdual{(\cpquery{A})} &=& \cpbang{\cpdual{A}} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{(A \oplus B)} &=& \cpdual{A} \with \cpdual{B} \\
+  \cpdual{(A \with B)} &=& \cpdual{A} \oplus \cpdual{B} \\ \shaderow
+  \cpdual{(\nu F)} &=& \mu \cpdual{F} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{\top} &=& 0 \\
+  \cpdual{0} &=& \top \\ \shaderow
+  \cpdual{(\mu F)} &=& \nu \cpdual{F} \\
+\end{eqs} \\
+\ea
+\]
 where $X^{\perp\perp}  = X$, and we define the dual of a type operator by $\cpdual{F} =
 X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{F(A)} =
 \cpdual{F}(\cpdual{A})$.
@@ -919,12 +958,12 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
 
 \inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{x:\cpbang{A}, \Gamma}}
 
-\inferrule{\cptyp{P}{x:F(\mu F), \Gamma}}
-          {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}
+\shade{\inferrule{\cptyp{P}{x:F(\mu F), \Gamma}}
+                 {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}}
 
-\inferrule{\cptyp{P}{y:A,\Gamma} \\
-           \cptyp{Q}{y:\cpdual{A},x:F(A)}}
-          {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
+\shade{\inferrule{\cptyp{P}{y:A,\Gamma} \\
+                  \cptyp{Q}{y:\cpdual{A},x:F(A)}}
+                 {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}}
 \end{mathpar}
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
 \end{figure}
@@ -1045,13 +1084,14 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
      Q, \qquad x \notin FV(Q) \\
 \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}
   &\Longrightarrow&
-    \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\
-\cut{x^{\nu F}}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}
+    \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\ \shaderowless
+\key{new}\:x^{\nu F} %{\nu F}
+  (\corec{x}{y}{B}{P}{Q} \mid \rec{x}.R)
   &\Longrightarrow&
-    \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}} \\
+    \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}} \\ \shaderowless
 && \text{where }E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}
 \end{equations}%
-\caption{Principal cut elimination rules}\label{fig:beta-reduction}
+\caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
 \end{figure}
 
 
@@ -1192,7 +1232,7 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
   \map{X.C_1 \otimes C_2}{x,w}{Q} &=& w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
   \map{X.C_1 \oplus C_2}{x,w}{Q} &=&
     \case{w}{\sel{x}{in_1}.\map{X.C_1}{x,w}{Q}; \sel{x}{in_2}.\map{X.C_2}{x,w}{Q}} \\
-  \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
+  \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\ \shaderow
   \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
 \end{equations}
 \caption{Definition of $\mapname$ for positive combinators.}\label{fig:map}
@@ -1223,9 +1263,9 @@ Fig.~\ref{fig:map}; the remaining cases can be obtained by exchanging channels $
   \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
   \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
   \cut{x}{A}{\sel{z}{in_i}.P}{Q} &\Longrightarrow& \sel{z}{in_i}.\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
-  \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
+  \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\ \shaderow
+  \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\ \shaderow
+  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q} \\
 \end{equations}
 \caption{Commuting conversions}\label{fig:commuting}
 \end{figure}
@@ -1364,9 +1404,9 @@ The translation on terms is given by the homomorphic extension of the following 
   \gvserve{z}{\gvlink{\topi{L}}{z}} \\
 \topi{L : T \lto U} &=& \gvrequest{\topi{L}} \\
 \topi{\gvreceive{M}} &=& \topi{M}
-\\[1ex]
+\\ \shaderow
 \topi{\gvfix{f}{c\,\vec{x}}{M}} &=&
-  \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\
+  \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\ \shaderow
 && \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
 \caption{Translation of \mugv terms to \gvpi.}
@@ -1405,9 +1445,10 @@ yields a semantics for \mugv. The translation on session types is as follows:
 &
 \begin{eqs}
 \tocp{\oplus \{l_i:S_i \}} &=& \oplus \{l_i:\tocp{S_i}\} \\
-\tocp{\with \{l_i:S_i \}}  &=& \with \{l_i:\tocp{S_i}\} \\
-\tocp{\nu G}               &=& \nu\tocp{G} \\
-\tocp{\mu G}               &=& \mu\tocp{G} \\
+\tocp{\with \{l_i:S_i \}}  &=& \with \{l_i:\tocp{S_i}\} \\ \shaderow
+\tocp{\nu G}               &=& \nu\tocp{G} \\ \shaderow
+\tocp{\mu G}               &=& \mu\tocp{G} \\ \shaderow
+\tocp{X.S} &=& X.\tocp{S} \\
 \end{eqs}
 &
 \begin{eqs}
@@ -1416,7 +1457,6 @@ yields a semantics for \mugv. The translation on session types is as follows:
 \tocp{X}                   &=& X \\
 \tocp{\gvdual{X}}          &=& \cpdual{X} \\
 \end{eqs}\\
-& \tocp{X.S} = X.\tocp{S} & \\
 \ea
 \]
 The translation is homomorphic except for output, where the output type is dual. This accounts
@@ -1450,10 +1490,10 @@ our previous work:
 \tocp{\gvcase{M}{l_n\,x.N_i}}z &=&  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}} \\
 \tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
-\tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
-\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[3ex]
+\tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\ \shaderow
+\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[3ex] \shaderow
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z &=&
-  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex] \shaderow
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z &=&
 \key{new}\:y\:
   \bl
@@ -1465,6 +1505,7 @@ our previous work:
   \el \\
 \end{equations}%
 \[\small
+\shade{
 \bl
 \left\llbracket
 \inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
@@ -1472,7 +1513,7 @@ our previous work:
 \right\rrbracket z = \\
 \replicate{z}{y}.y(c).y(x).y(). \\
 \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
-\el
+\el}
 \]
 \caption{Translation of \gvpi terms into \mucp.}
 \end{figure}
@@ -1530,9 +1571,9 @@ We now present the translation $\togv{-}$ from CP to \gvpi. The translation on t
 &
 \begin{eqs}
 \togv{+\{l_i:A_i\}_i}     &=& +\{l_i:\togv{A_i}\}_i  \\
-\togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\
-\togv{\nu F} &=& \nu \togv{F} \\
-\togv{\mu F} &=& \mu \togv{F} \\
+\togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\ \shaderow
+\togv{\nu F} &=& \nu \togv{F} \\ \shaderow
+\togv{\mu F} &=& \mu \togv{F} \\ \shaderow
 \togv{X.A} &=& X.\togv{A} \\
 \end{eqs}
 &
@@ -1571,28 +1612,21 @@ and the translation on terms is as follows:
   \togv{\replicate{s}{x}.P} &=&
     \gvlink{s}{(\gvserve{x}{\togv{P}})} \\
   \togv{\derelict{s}{x}.P} &=&
-    \gvlet{x}{\gvrequest{s}}{\togv{P}} \\
+    \gvlet{x}{\gvrequest{s}}{\togv{P}} \\ \shaderow
+  \togv{\rec{x}.P} &=& \togv{P} \\ \shaderow
   \togv{\cptyp{\corec{c}{x}{}{P}{Q}}{\Gamma, c:\nu F}} &=&
     \key{send}\:c\:(
       \key{send}\:
          \bl
          (\gvfork{x}{\togv{P}}) \\
          (\gvrequest{(\gvfix{p}{c\,x}{Q_{F,p,c,x}})})) \\
-         \el \\
-  \togv{\rec{x}.P} &=& \togv{P} \\
-\end{equations}%
-where:
-%
-%% \[\small
-%%   Q_{F,p,x,c} =
-%%     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
-%%               {\gvmap{\togv{F}}{c,c'}{(\gvsend{c\,c'}{(\gvrequest{p})})}}
-%% \]%
-\[\small
+         \el \\ \shaderow
+\multicolumn{3}{@{}l@{}}
+{\qquad\text{where }
   Q_{F,p,c,x} =
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
-          {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}
-\]%
+          {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
+\end{equations}%
 \caption{Translation of \mucp terms into \gvpi.}
 \end{figure}
 Formally, the translation is from judgements to terms. The interesting case, which is the only one
