@@ -29,8 +29,8 @@
 \newcommand{\gvin}[2]{{?#1.#2}}
 \newcommand{\lto}{\ensuremath{\multimap}}
 \newcommand{\uto}{\ensuremath{\rightarrow}}
-\newcommand{\outterm}{\mathrm{end}_!}
-\newcommand{\interm}{\mathrm{end}_?}
+\newcommand{\outterm}{\mkwd{end}_!}
+\newcommand{\interm}{\mkwd{end}_?}
 \newcommand{\gvserver}[1]{\flat #1}
 \newcommand{\gvservice}[1]{\sharp #1}
 \newcommand{\trule}[1]{(\textit{#1})}
@@ -96,7 +96,7 @@
 \newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
 \newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
 
-% \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
+\newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
 \newcommand{\secref}[1]{(\S\ref{sec:#1})}
 
@@ -109,9 +109,9 @@
 %%%
 
 \title{Recursive Session Types and Linear Logic}
-\author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
+\author{J. Garrett Morris \and Sam Lindley}
 \institute{University of Edinburgh \\
-           \email{\{Garrett.Morris,Sam.Lindley\}@ed.ac.uk,wadler@inf.ed.ac.uk}}
+           \email{\{Garrett.Morris,Sam.Lindley\}@ed.ac.uk}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
 %\newcommand{\todo}[1]{}
@@ -238,16 +238,16 @@ The types comprise session types, linear pairs ($T \otimes U$), and both linear 
 unlimited ($T \uto U$) functions.
 %
 Session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i
-\}$), choice ($\with\{l_i:S_i\}$), and closed channels ($\interm$ and $\outterm$).
-% There are two variations on the closed channel ($\interm$) and ($\outterm$); these arise from our
-% interpretation of session types in classical linear logic, where there is no self-dual proposition
-% corresponding to closed channels.
-We include a notion of replicated sessions, corresponding to exponentials in linear logic: a channel
-of type $\gvservice{S}$ is a service, offering any number of channels of type $S$; a channel of type
-$\gvserver{S}$ is the server providing such a service. Finally, we include session variables and
-their duals ($X,\gvdual{X}$), and two forms of recursive session types, corresponding to bounded
-($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator $X.S$, we write $G(S')$ for
-the substitution instance $S[S'/X]$.
+\}$), choice ($\with\{l_i:S_i\}$), and closed channels ($\interm$ and $\outterm$).  There are two
+variations on the closed channel ($\interm$) and ($\outterm$); these arise from our interpretation
+of session types in classical linear logic, where there is no self-dual proposition corresponding to
+closed channels.  We include a notion of replicated sessions, corresponding to exponentials in
+linear logic: a channel of type $\gvservice{S}$ is a service, offering any number of channels of
+type $S$; a channel of type $\gvserver{S}$ is the server providing such channels. (We have chosen
+the syntax $\gvserver{S}$ and $\gvservice{S}$ as $!$ and $?$ are already used for input and output.)
+Finally, we include session variables and their duals ($X,\gvdual{X}$), and types corresponding to
+bounded ($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator $X.S$, we write
+$G(S')$ for the substitution instance $S[S'/X]$.
 
 Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$).
 % The linearity of $T$ is determined by its top level type constructor.
@@ -305,30 +305,29 @@ which is the dual of $\gvin{\mu G}{\interm}$.
 
 To ensure that fixed points exist, we require that all operators $X.S$ be monotonic; that is,
 variables may appear only as positive subformulas of $S$, and negated variables only as negative
-subformulas.  As usual, the subformula $T$ in types $T \lto U$ and $T \uto U$ is
-negative. Futhermore, the argument $T$ in the session type $\gvout{T}{S}$ is negative. All other
-subformulas are positive.  Thus, the operator $X.\gvout{X}{\outterm}$ is not monotonic, but the
-operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
+subformulas.  The subformula $T$ is negative in types $T \lto U$ and $T \uto U$ and in the session
+type $\gvout{T}{S}$; all other subformulae are positive.  Thus, the operator $X.\gvout{X}{\outterm}$
+is not monotonic, but the operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
 %
-Formally, $X.S$ is monotonic iff the predicate $pos_{X,S}$ holds, where $pos$ and $neg$ are the
-predicates defined by the homomorphic extensions of the following equations:
+Formally, $X.S$ is monotonic iff the predicate $pos_{X,S}$ holds, where $pos$ and $neg$ are defined
+by the homomorphic extensions of the following implications:
 \[
 \small
 \ba{@{}c@{\qquad}c@{}}
 \begin{eqs}
 pos_{X,X} \\
 \neg pos_{X,\gvdual{X}} \\
-pos_{X,!T.S} &=& neg_{X,T} \wedge pos_{X,S} \\
-pos_{X,T \lto U} &=& neg_{X,T} \wedge pos_{X,U} \\
-pos_{X,T \uto U} &=& neg_{X,T} \wedge pos_{X,U} \\
+pos_{X,!T.S} &\iff& neg_{X,T} \wedge pos_{X,S} \\
+pos_{X,T \lto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
+pos_{X,T \uto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
 \end{eqs}
 &
 \begin{eqs}
 \neg neg_{X,X} \\
 neg_{X,\gvdual{X}} \\
-neg_{X,!T.S} &=& pos_{X,T} \wedge neg_{X,S} \\
-neg_{X,T \lto U} &=& pos_{X,T} \wedge neg_{X,U} \\
-neg_{X,T \uto U} &=& pos_{X,T} \wedge neg_{X,U} \\
+neg_{X,!T.S} &\iff& pos_{X,T} \wedge neg_{X,S} \\
+neg_{X,T \lto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
+neg_{X,T \uto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
 \end{eqs}
 \ea
 \]
@@ -415,6 +414,15 @@ neg_{X,T \uto U} &=& pos_{X,T} \wedge neg_{X,U} \\
 \scriptsize
 Structural rules
 \begin{mathpar}
+
+un(T \lto U)
+
+un(\gvservice{S})
+
+un(\interm)
+
+\\
+
 \inferrule{ }{\gvtyp{x:T}{x}{T}}
 
 \inferrule{\gvtyp{\Phi}{M}{U} \\
@@ -519,22 +527,16 @@ The rules for input, output, choice and selection are those of \citet{GayVasconc
 our earlier work~\citep{LindleyM14}, we provide a term $\gvlink{M}{N}$ to implement channel
 forwarding; while a version of \tkwd{link} exists for any session type $S$, it has no generic
 implementation in terms of other constructs of \mugv. The \tkwd{fork} construct provides session
-initiation; like Wadler's GV, but unlike LAST (and much other work on process calculi), \mugv
-is deterministic.
-
-Channels of type $\gvservice{S}$ offer arbitrarily many sessions of type $S$; correspondingly,
-channels of type $\gvserver{S}$ must provide arbitrarily many $S$ sessions. (These types correspond
-to the exponential propositions in linear logic; we have chosen the syntax $\gvserver{S}$ and
-$\gvservice{S}$ as $!$ and $?$ are already used for input and output.)  The rule for
-$\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines a server which replicates $M$, and
-returns the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
-\gvservice{\gvdual{S}}$).
+initiation; like Wadler's GV, but unlike LAST (and much other work on process calculi), \mugv is
+deterministic. The rule for $\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines a server
+which replicates $M$, and returns the channel by which it may be used (of type
+$\gvdual{\gvserver{S}} = \gvservice{\gvdual{S}}$).
 
 The novelty of \mugv is in its recursive and corecursive channels. The first two typing rules allow
 recursive session types to be used as their unfoldings. Previous work on recursive sessions has
-typically included an equivalence relation on types, taking unfolding into account, and interpreted
-typing rules up to equivalence. We present explicit rules in order to simplify the translation into
-\mucp, in which these rules will correspond to terms implementing the equivalences.
+defined typing rules up to unfolding of recursive types. We present explicit rules in order to
+simplify the translation into \mucp, in which these rules will correspond to terms implementing the
+equivalences.
 %
 The fixed point construct $\gvfix{f}{c\,\vec{x}}{M}$ is used to define corecursive sessions. We
 illustrate its use in the remainder of this section through a series of examples.
@@ -557,11 +559,10 @@ We write $\key{let}\:x=M\:\key{in}\:N$ for $(\lambda x.M)\:N$.
 
 \paragraph{Base Types.}
 
-For the purposes of our examples, we assume our term language has been extended with a type of
-natural numbers ($Nat$), along with suitable constants and addition.
+For the purposes of our examples, we assume an extension of \mugv with a type of naturals
+($Nat$), suitable constants ($0,1,\dots$), and addition ($+$).
 
-%                                                                                      natural number
-% ($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
+% natural number ($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
 % addition ($+$) and multiplication ($\times$), boolean constants ($True, False$), and conditionals
 % ($\gvifthen{M}{N}{N'}$).
 %
@@ -583,22 +584,22 @@ sink.
 \[\small
 Sink = \mu X.\oplus \{\clabel{next}: ?Nat.X, \clabel{stop}: \interm \}
 \]
-
-Let us define a helper macro for generating the next value in a stream:
-\[\small
-\bl
-SendNext : \with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \} \uto Nat \lto \outterm \\
-SendNext\:v\:c = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
-                            \clabel{stop}\,c.c}
-\el
-\]
 %
-Using $\cofix$ we can define a function that outputs a stream of zeros along a corecursive
-channel:
+%Let us define a helper macro for generating the next value in a stream:
+%\[\small
+%\bl
+%SendNext : \with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \} \uto Nat \lto \outterm \\
+%SendNext\:v\:c = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{v}{c}}{f\:c};
+%                            \clabel{stop}\,c.c}
+%\el
+%\]
+%%
+Using $\cofix$ we can define a function that sends a stream of zeros along a corecursive channel:
 \[\small
   \bl
   MakeZeros : Source \uto \outterm \\
-  MakeZeros = \cofix\:f\:c = SendNext\:0\:c
+  MakeZeros = \cofix\:f\:c = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{0}{c}}{f\:c};
+                                        \clabel{stop}\,c.c}
   \el
 \]
 If the next number is chosen, then a zero is sent along the channel and we recurse. Otherwise we
@@ -656,10 +657,11 @@ We allow recursive sessions to maintain internal state (a \emph{coinvariant}). I
 typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
 stream of consecutive naturals:
 \[\small
-\bl
-  MakeNats : Source \uto \outterm \\
-  MakeNats = \gvfix{nats}{c\:x}{SendNext\:(x + 1)\:c} \\
-\el
+\begin{array}{ll}
+  \mcl{2}{MakeNats : Source \uto \outterm} \\
+  MakeNats = \gvfix{nats}{c\:x}{\mkwd{case}\:c\:\{ &\clabel{next}\,c.\gvlet{c}{\gvsend{x}{c}}{nats\:c\:(x+1)}; \\
+                                &\clabel{stop}\,c.c\}}
+\end{array}
 \]
 The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
 recursive call. Now, the following:
@@ -677,16 +679,17 @@ returns $(0, (1, 2))$.
 We can maintain coinvariants of arbitrary complexity; for example, we can define a
 stream of the Fibonacci numbers as follows:
 \[\small
-\bl
-  MakeFibs : Source \uto \outterm \\
-  MakeFibs = \gvfix{fibs}{c\:m\:n}{SendNext\:(m + n)\:c} \\
-\el
+\begin{array}{ll}
+  \mcl{2}{MakeFibs : Source \uto \outterm} \\
+  MakeFibs = \gvfix{fibs}{c\:m\:n}{\mkwd{case}\:c\:\{ &\clabel{next}\,c.\gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m+n)}; \\
+    &\clabel{stop}\,c.c\}}
+\end{array}
 \]
 
 \subsection{Multi-function calculator}
 
-Our next example is a simple multi-function calculator. Our goal is to provide a session that
-accepts an arbitrary stream of addition and multiplication requests, and can at any time provide the
+Our next example is a simple multi-function calculator. Our goal is a session that accepts an
+arbitrary stream of addition and multiplication requests, and can at any time provide the
 accumulated result.  We can implement the provider of this session as follows:
 
 \[\small
@@ -717,7 +720,7 @@ MakeCalc = \lrkwd\:calc\:c\:accum = \\
   \el \\
 \el
 \]
-In this case, the type of the recursive channel is:
+The type of the recursive channel is:
 \[\small
  Calc = \nu X. \with \{ \clabel{add}: \gvin{Nat}{X},
                         \clabel{mul}: \gvin{Nat}{X},
@@ -1029,11 +1032,10 @@ The exponential connectives $!$ and $?$ in linear logic provide limited access t
 rules of weakening and contraction.  We interpret them as providing replicated processes.
 % a process with type $\cpbang{A}$ provides arbitrarily many copies of a process providing behavior
 % $A$, while a process of type $\cpquery{A}$ can choose to use one, many, or none of those copies.
-There are three rules for types $\cpquery{A}$; note that, in contrast to the other typing rules of
-\mucp, we leave uses of weakening and contraction implicit.  Finally, since the process proving
-$\cpbang{A}$ may be replicated arbitrarily, each channel that process uses must be replicatable as
-well.  We write $\cpquery{\Gamma}$ to require that all types in $\Gamma$ be of the form
-$\cpquery{B}$.
+There are three rules for types $\cpquery{A}$; note that, uses of weakening and contraction implicit
+in \mucp terms.  Finally, since the process $P$ proving $A$ may be replicated arbitrarily, each
+channel that $P$ uses must be replicatable as well.  We write $\cpquery{\Gamma}$ to require that all
+types in $\Gamma$ be of the form $\cpquery{B}$.
 
 \paragraph{Recursion and Corecursion.}
 
@@ -1075,9 +1077,9 @@ type operator, and so the four rules above are just two instances each of the tw
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 \end{mathpar}}%
 These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$.  As in \mugv,
-\tkwd{corec} terms maintain a coinvariant, of type $A$.  The coinvariant can be seen as being input
-on $y$ and output on $x$; thus, its type is dual in $y$ and $x$.  As messages are not dual in \mugv
-typing, no corresponding duality appeared in the typing rule for $\lrkwd$.
+\tkwd{corec} terms maintain a coinvariant, of type $A$.  The coinvariant can be seen as being
+received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$.  As messages are not dual in
+\mugv sessions, no corresponding duality appeared in the typing rule for $\lrkwd$.
 
 \subsection{Cut Elimination}
 
@@ -1140,7 +1142,7 @@ derives the following proof rule for any type operator $F$:
 We call the term implementing this construction $\mapname$ by analogy with a similar construct in
 functional programming: taking $C = \cpdual{B}$, the above proof rule gives a transformation from a
 proof of $C \lto A$ to one of $F(C) \lto F(A)$.  The positive cases of $\mapname$ are given in
-Fig.~\ref{fig:map}; the remaining cases can be obtained by exchanging channels $x$ and $w$.
+Fig.~\ref{fig:map}; the remaining cases are obtained by exchanging channels $x$ and $w$.
 
 \begin{lemma}
   If $\cptyp{Q}{x:A,w:B}$ then \(\cptyp{\map{F}{x,w}{Q}}{x:F(A), w:\cpdual{F}(B)}.\)
@@ -1170,8 +1172,8 @@ Fig.~\ref{fig:commuting}.  We can show that cut reduction preserves typing.
 Define $\Longrightarrow^\star$ to be the reflexive, transitive closure of $\equiv\Longrightarrow\equiv$.
 
 \begin{theorem}\label{thm:cut-reduction}
-  If $\cptyp{P}{\Gamma}$, then there is a $Q$ such that $P \Longrightarrow^\star Q$ and the bottom
-  rule of $Q$ is not a cut.
+  If $\cptyp{P}{\Gamma}$, then there is a $Q$ such that $P \Longrightarrow^\star Q$ and the final
+  rule in the derivation of $Q$ is not an instance of cut.
 \end{theorem}
 
 Note that while we commute cuts under prefixes, we do not perform cut reduction under prefixes.
@@ -1181,13 +1183,12 @@ to show elimination of all cuts in a well-typed \mucp term.
 
 \subsection{Streams}
 
-We can use \mucp fixed points to encode streams of naturals, paralleling our similar development in
-\mugv~\secref{mugv-types}: %. The encoding of the stream type is quite intuitive:
-\begin{equations}
+We can use \mucp fixed points to encode streams of naturals.
+\begin{equations
   Sink &=& \mu X. \oplus \{ \clabel{next}: Nat \parr X, \clabel{stop}: \bot \}, \\
   Source &=& \nu X. \with \{ \clabel{next}: Nat \otimes X, \clabel{stop}: 1 \} \\
 \end{equations}%
-where, as in \mugv, we assume that our language is extended with constants implementing unlimited
+As in \mugv, we assume that our language is extended with constants implementing unlimited
 natural numbers. In particular, we will assume there is some proposition $Nat$ and terms:
 \[\small\begin{eqs}
 Zero_x &\vdash& x:\cpquery{Nat} \\
@@ -1220,8 +1221,8 @@ the coinvariant to track the next number to appear in the stream.
 %
 In the $\clabel{stop}$ case, we rely on weakening for $\cpquery{Nat}$ to dispose of the coinvariant.
 In the $\clabel{next}$ case, we rely on contraction to copy the coinvariant $z$.  We then send one
-copy along the channel $y$, increment the other giving $w$, and re-establish the coinvariant using
-$w$.
+copy along the channel $y$ and increment the other giving $w$, which we use to re-establish the
+coinvariant.
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
@@ -1231,16 +1232,12 @@ translations to incorporate recursion.
 
 \subsection{Translation from \mugv to \gvpi}\label{sec:gvtogvpi}
 
-Following our previous work, we factor the
-translation of \mugv into \mucp through an intermediate
-translation. The language \gvpi is the restriction of \mugv to session
-types; that is, \mugv without $\lto$, $\uto$, or $\otimes$. In order
-to avoid $\otimes$, we disallow plain $\gvreceive{M}$, but do permit
-it to be fused with a pair elimination $\gvlet{(x,
-  y)}{\gvreceive{M}}{N}$. We can simulate all non-session types as
-session types via a translation from \mugv to \gvpi.  The translation
-on types is exactly as in our previous work. It is given by the
-homomorphic extension of the following equations:
+Following our previous work, we factor the translation of \mugv into \mucp through an intermediate
+translation. The language \gvpi is the restriction of \mugv to session types; that is, \mugv without
+$\lto$, $\uto$, or $\otimes$. In order to avoid $\otimes$, we permit $\gvreceive{M}$, only fused
+with a pair elimination $\gvlet{(x, y)}{\gvreceive{M}}{N}$. We can simulate all non-session types as
+session types via a translation from \mugv to \gvpi.  The translation on types is exactly as in our
+previous work. It is given by the homomorphic extension of the following equations:
 %\[
 %\ba{@{}rclcl@{}}
 %\topi{T \lto U}    &=& \gvdual{\gvin{\gvdual{\topi{T}}}{\topi{U}}}
@@ -1274,11 +1271,10 @@ for \gvpi.
 {\small
 \begin{mathpar}
 \inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
-          {\gvtyp{\Phi}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
+          {\gvtyp{\Phi}{\gvfix{p}{c\:x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
 \end{mathpar}}%
 %
-This rule takes advantage of the fact that we can always translate
-away functions using the $\topi{-}$ translation, and we can simulate
+This rule takes advantage of the translation of functions given by $\topi{-}$, and simulates
 multiple arguments using $\otimes$.
 
 \begin{figure}[float]\small
@@ -1312,11 +1308,8 @@ annotations to indicate $\to$ introduction and elimination.
 The only new case is that for $\key{corec}$. We collect the arguments into a tuple, and simulate the
 interface to the arrows using session operations as in the rest of the $\topi{-}$ translation.
 
-We can extend the translation on types to a translation on contexts:
-\begin{equations}
-\topi{x_1:T_1, \dots, x_n:T_n} &=& x_1:\topi{T_1}, \dots, x_n:\topi{T_n} \\
-\end{equations}%
-It is straightforward to verify that our translation preserves typing.
+Let $\topi{\Phi}$ be the pointwise extension of $\topi{T}$.  It is straightforward to verify that
+our translation preserves typing.
 \begin{theorem}
 If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \end{theorem}
@@ -1446,6 +1439,11 @@ coinvariant at the end of each iteration.  In both, we rely on syntactic sugar f
 \begin{theorem}
   If $\gvtyp{\Phi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Phi},z:\cpdual{\tocp{T}}}$.
 \end{theorem}
+
+Note that the type environment $\Phi$ is not dual in the result of the translation.  This reflects
+the different interpretations of types in \mucp and \mugv: a \mugv type $\gvout{T}{S}$ designates a
+channel that expects output, whereas the \mucp type $T \otimes S$ designates a process that performs
+output.
 
 \subsection{Translating from \mucp to \gvpi}\label{sec:cptogvpi}
 
@@ -1586,17 +1584,17 @@ Session types were originally introduced by \citet{Honda93}, and were further ex
 \citet{Yoshida07} include recursive session types.  They do not distinguish between recursion and
 corecursion, and do not claim to show deadlock freedom.  \citet{Bernardi13} demonstrated that
 duality in those systems was not preserved under unfolding of recursive types.  Our approach avoids
-this difficulty.  He proposes a different solution than ours, however, and we hope to investigate
+this difficulty.  They propose a different solution than ours, however, and we hope to investigate
 the consequences of these different approaches in future work.
 
 \citet{CairesPfenning10} showed the first complete propositions-as-types correspondence between
 intuitionistic linear logic (ILL) and session types.  Their work shows both an interpretation of
 session types as ILL propositions, and a computational interpretation of ILL proofs as
-$\pi$-calculus processes.  As a result, they are able to show that well-typed processes are
-terminating, race-free, and deadlock-free, by analogy with corresponding cut-elimination results for
-ILL.  \citet{Toninho13} demonstrate an embedding of their calculus within a functional language; the
+$\pi$-calculus processes.  As a result, they are able to show that well-typed processes are race
+free and deadlock free, by analogy with corresponding cut-elimination results for ILL.
+\citet{Toninho13} demonstrate an embedding of their calculus within a functional language; the
 resulting system admits unrestricted recursion in the functional setting, and can thus provide
-recursive communication behavior, but without guaranteeing that the evaluation of function terms
+recursive communication behavior, but does not guarantee that the evaluation of function terms
 terminates.
 
 \citet{Girard87} speculated that linear logic would be well-suited to reasoning about concurrency.
