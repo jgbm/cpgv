@@ -10,7 +10,7 @@
 % Attempt to duplicate Springer's style of references
 \usepackage[authoryear,compress,round]{natbib}
 \renewcommand{\bibsection}{\section*{References}}
-%\renewcommand{\bibpreamble}{\scriptsize}
+\renewcommand{\bibpreamble}{\scriptsize}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
@@ -126,10 +126,11 @@
   recursive sessions.  Our extension takes least and greatest fixpoints as dual, an idea well-known
   to theorists, but which has not previously appeared in the treatment of recursive sessions. We
   preserve the freedom from races, deadlock, and livelock that are a hallmark of the
-  propositions-as-types approach, and avoid some problems with recursion that
-  appear in other systems.  We treat two systems, one based on classical linear logic, derived from
-  work of Caires and Pfenning and of Wadler, and one based on a linear functional language, derived
-  from work of Gay and Vasconcelos. Our treatment of recursion is inspired by Baelde.
+  propositions-as-types approach, and avoid a problem with preservation of duality that appears in
+  the standard treatment of recursive session types. We treat two systems, one based on classical
+  linear logic, derived from work of Caires and Pfenning and of Wadler, and one based on a linear
+  functional language, derived from work of Gay and Vasconcelos. Our treatment of recursion is
+  inspired by Baelde.
 
   % A Curry-Howard correspondence between session types and linear logic was first demonstrated by
   % Caires and Pfenning for intuitionistic linear logic, and later adapted to the classical setting by
@@ -149,39 +150,48 @@
 \section{Introduction}\label{sec:intro}
 
 Previous work on session types suffers from a mismatch.  Session types capture communication
-protocols.  The two ends of a channel must be \emph{dual}, which ensures that when one end of a
+protocols. The two ends of a channel must be \emph{dual}, which ensures that when one end of a
 channel performs output the other performs input, and when one end offers a choice of actions the
-other selects from these alternatives.  Session types are of limited use without \emph{recursion},
-which permits defining sessions of arbitrary size.  Recursion traditionally comes in two dual forms,
-least fixpoint and greatest fixpoint.  However, in previous work on session types recursion was
-introduced in a way where both ends of a channel are treated as least fixpoints, a mismatch with the
-treatment of the other connectives.  Here, we introduce a notion of recursion for session types that
-restores the traditional notion that least fixpoints are dual to greatest fixpoints.
+other selects from these alternatives. Session types are of limited use without \emph{recursion},
+which permits defining sessions of arbitrary size. Recursion traditionally comes in two dual forms,
+least fixpoint and greatest fixpoint. However, in previous work on session types recursion was
+introduced in a way in which both ends of a channel are treated as least fixpoints, a mismatch with
+the treatment of the other connectives. Here, we introduce a notion of recursion for session types
+that restores the traditional notion that least fixpoints are dual to greatest fixpoints.
 
-Session types were introduced as a type system for process calculi by \citet{Honda93}, further
-developed by \citet{Honda98}, and reformulated in the context of a functional language with linear
-types by \citet{GayVasconcelos10}.  A propositions-as-types connection between session types and
-intuitionistic linear logic was uncovered by \citet{CairesPfenning10} and adapted to classical
-linear logic by \citet{Wadler12}.  Wadler defines two systems, a process calculus CP (inspired by
-Caires and Pfenning) and a linear functional language GV (inspired by Gay and Vasconcelos), and
-presents a type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} extended GV
-to support translation in the other direction, giving type-preserving translations not only from GV
-to CP but also from CP to GV.  A hallmark of the process-as-types approach is that it yields systems
-guaranteed free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
+\citet{Honda93} introduced session types as a type system for process calculi, and
+\citet{GayVasconcelos10} reformulated session types in the context of a functional language with
+linear types. \citet{CairesPfenning10} uncovered a propositions-as-types correspondence between
+session types and intuitionistic linear logic, and \citet{Wadler12} adapted the correspondence to
+classical linear logic. Wadler defines two systems, a process calculus CP (inspired by Caires and
+Pfenning) and a linear functional language GV (inspired by Gay and Vasconcelos), and presents a
+type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} extended GV to support
+translation in the other direction, giving type-preserving translations not only from GV to CP but
+also from CP to GV. A hallmark of the process-as-types approach is that it yields systems guaranteed
+free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
+\citet{Toninho13,Toninho14} also treat recursion in a system inspired by a propositions-as-types
+correspondence, but they have no notion of duality for least and greatest fixed points.
 
-There is much previous work that supports recursive session types, but this work has not previously
-been carried over to the propositions-as-types approach, and suffers from the mismatch mentioned
-above.  Here, drawing on work of \citet{Baelde12}, we extend both CP and GV with recursive session
-types, taking least and greatest fixpoints as duals.  We show that the type-preserving translations
-extend to the new systems, and that the new systems are still guaranteed free of races, deadlock,
-and livelock.
+There is much previous work that supports recursive session types, starting with \citet{Honda98},
+and including \citet{Yoshida07} and \citet{Domangion11}, all of which suffer from the mismatch
+mentioned above. Here, drawing on work of \citet{Baelde12}, we extend both CP and GV with recursive
+session types, taking least and greatest fixpoints as duals. We show that the type-preserving
+translations extend to the new systems, and that the new systems are still guaranteed free of races,
+deadlock, and livelock.
+
+\citet{Bernardi13} observes that the standard treatment of recursive session types fails to preserve
+duality in the case that the recursive variable appears within the type of a value that is input or
+output. Their solution relies on an unusual form of substitution that applies only to the
+problematic positions within a session type, while our solution avoids the problem while using only
+standard forms of substitution.
 
 This paper makes the following contributions.
 \begin{itemize}
 \item Section~\ref{sec:mugv} extends GV to support recursion, yielding \mugv; and demonstrates its
-  power with a series of examples including streams, a calculator, and a translation of a bit stream
-  example due to \citet{Toninho13}. In \mugv, unlike in previous session type systems, least fixpoints
-  are dual to greatest fixpoints.
+  power with a series of examples of streams and a calculator.
+  %, and a translation of a bit stream example due to \citet{Toninho13}.
+  In \mugv, unlike in previous session type systems, least fixpoints are dual to greatest fixpoints
+  and duality is preserved in all cases.
 \item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and present a
   translation of some of the same examples. We show \mucp, like previous systems based on
   propositions as types, is guaranteed free of races, deadlock, and livelock.
@@ -192,9 +202,6 @@ This paper makes the following contributions.
   types can be represented by session types.
 \end{itemize}
 Section~\ref{sec:related} surveys related work and Section~\ref{sec:future} concludes.
-
-\todo{The introduction should contain a sentence to compare with the recent work by Gay and
-  colleagues.}
 
 % Session types provide a type-based approach to structuring communication among concurrent or
 % distributed processes.  In this approach, types are used to describe communication protocols, and
