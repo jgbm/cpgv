@@ -148,6 +148,19 @@
 
 \section{Introduction}\label{sec:intro}
 
+Previous work on session types suffers from a mismatch.  Session types capture communication
+protocols.  The two ends of a channel must be \emph{dual}, which ensures that when one end of a
+channel performs output the other performs input, and when one end offers a choice of actions the
+other selects from these alternatives.  Session types are of limited use without \emph{recursion},
+which permits defining sessions of arbitrary size.  Recursion traditionally comes in two dual forms,
+least fixpoint and greatest fixpoint.  However, in previous work on session types recursion was
+introduced in a way where both ends of a channel are treated as least fixpoints.  Here, we introduce
+a notion of recursion for session types that restores the traditional notion that least fixpoints
+are dual to greatest fixpoints.
+
+%%% PHIL TO CONTINUE FROM HERE %%%
+
+
 Session types provide a type-based approach to structuring communication among concurrent or
 distributed processes.  In this approach, types are used to describe communication protocols, and
 type checking guarantees that processes observe these protocols.  Session types have been applied in
@@ -1096,134 +1109,6 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
 
 
 
-%% \begin{figure}
-%% \tiny
-%% \begin{multline*}
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{y:A,\Gamma} \\
-%%       \cptyp{Q}{x:B,\Gamma'}}
-%%      {\cptyp{x[y].(P \mid Q)}{x: A \otimes B,\Gamma,\Gamma'}} \\
-%%    \inferrule*
-%%      {\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
-%%      {\cptyp{x(y).R}{x:\cpdual{A} \parr \cpdual{B},\Delta}}}
-%%   {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}}{\Gamma,\Gamma',\Delta}}
-%% \Longrightarrow \\
-%% \inferrule
-%%   {\cptyp{Q}{y:A,\Gamma} \\
-%%    \inferrule*
-%%      {\cptyp{P}{x:B,\Gamma'} \\
-%%       \cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
-%%      {{\cptyp{\cut{x}{B}{P}{R}}{y:\cpdual{A},\Gamma',\Delta}}}}
-%%   {\cptyp{\cut{y}{A}{Q}{\cut{x}{B}{P}{R}}}{\Gamma,\Gamma',\Delta}}
-%% \end{multline*}
-%% \[
-%% \inferrule
-%%   {\inferrule*
-%%      { }{\cptyp{x[].0}{x:1}} \\
-%%    \inferrule*
-%%      {\cptyp{P}{\Gamma}}
-%%      {\cptyp{x().P}{x:\bot,\Gamma}}}
-%%   {\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}}
-%% \Longrightarrow
-%% \cptyp{P}{\Gamma}
-%% \]
-%% \begin{multline*}
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{x:A,\Gamma}}
-%%      {\cptyp{\sel{x}{inl}.P}{x:A \oplus B, \Gamma}} \\
-%%    \inferrule*
-%%      {\cptyp{Q}{x:\cpdual{A},\Delta} \\
-%%       \cptyp{R}{x:\cpdual{B},\Delta}}
-%%      {\cptyp{\case{x}{Q;R}}{x:\cpdual{A} \with \cpdual{B},\Delta}}}
-%%   {\cptyp{\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}}{\Gamma,\Delta}}
-%% \Longrightarrow \\
-%% \inferrule
-%%   {\cptyp{P}{x:A,\Gamma} \\
-%%    \cptyp{Q}{x:\cpdual{A},\Delta}}
-%%   {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
-%% \end{multline*}
-%% \[
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-%%      {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
-%%    \inferrule*
-%%      {\cptyp{Q}{y:\cpdual{A},\Delta}}
-%%      {\cptyp{\derelict{x}{y}.Q}{x:\cpquery{\cpdual{A}},\Delta}}}
-%%   {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}}{\Gamma,\Delta}}
-%% \Longrightarrow
-%% \inferrule
-%%   {\cptyp{P}{x:A,\Gamma} \\
-%%    \cptyp{Q}{y:\cpdual{A},\Delta}}
-%%   {\cptyp{\cut{y}{A}{P}{Q}}{\Gamma,\Delta}}
-%% \]
-%% \[
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{y:A,?\Gamma}}
-%%      {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
-%%    \inferrule*
-%%      {\cptyp{Q}{\Delta} \\ un(\cpquery{\cpdual{A}})}
-%%      {\cptyp{Q}{y:\cpquery{\cpdual{A}}}}}
-%%   {\cptyp{\cut{y}{\cpbang{A}}{\replicate{x}{y}.P}{Q}}{\Gamma,\Delta}}
-%% \Longrightarrow
-%% \inferrule
-%%   {\cptyp{Q}{\Delta}}
-%%   {\cptyp{Q}{\Gamma,\Delta}}
-%% \]
-%% \begin{multline*}
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-%%      {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
-%%    \inferrule*
-%%      {\cptyp{Q}{x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}},\Delta}}
-%%      {\cptyp{Q[x/x']}{x:\cpquery{\cpdual{A}},\Delta}}}
-%%   {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}}{\Gamma,\Delta}}
-%% \Longrightarrow \\
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-%%      {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
-%%    \inferrule*
-%%      {\inferrule*
-%%          {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-%%          {\cptyp{\replicate{x'}{y}.P}{x':\cpbang{A},\Gamma}} \\
-%%       \cptyp{Q}{x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}},\Delta}}
-%%      {\cptyp{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}}{\Gamma,\Delta}}}
-%%   {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}}}{\Gamma,\Delta}}
-%% \end{multline*}
-%% \[
-%% \bl
-%% \inferrule
-%%   {\inferrule*
-%%      {\cptyp{P}{y:B,\Gamma} \\
-%%       \cptyp{Q}{y:\cpdual{B},x:F(B)}}
-%%      {\cptyp{\corec{x}{y}{B}{P}{Q}}{x:\nu F,\Gamma}} \\
-%%    \inferrule*
-%%      {\cptyp{R}{x:\cpdual{F}(\mu (\cpdual{F})),\Delta}}
-%%      {\cptyp{\rec{x}.R}{x:\mu (\cpdual{F}),\Delta}}}
-%%   {\cptyp{\cut{x}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}}{\Gamma,\Delta}}
-%% \Longrightarrow \\
-%% \inferrule
-%%   {\cptyp{P}{y:B,\Gamma} \\
-%%    \inferrule*
-%%      {\cptyp{Q}{y:\cpdual{B},x:F(B)} \\
-%%       \inferrule*
-%%           {\cptyp{E}{x:\cpdual{F}(\cpdual{B}),z:F(\nu F)} \\\\
-%%          \cptyp{R[z/x]}{z:\cpdual{F}(\mu \cpdual{F}),\Delta}}
-%%         {\cptyp{\cut{z}{F(\nu F)}{E}{R[z/x]}}{x:\cpdual{F}(\cpdual{B}),\Delta}}}
-%%      {\cptyp{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}{y:\cpdual{B},\Delta}}}
-%%   {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
-%% \el
-%% \]
-%% where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
-%%
-%% \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
-%% \end{figure}
-
 \begin{figure}[float]
 \small
 \begin{equations}
@@ -1732,5 +1617,135 @@ types $\outterm$ and $\interm$.
 \label{sect:bib}
 \bibliographystyle{abbrvnat}
 \bibliography{main}
+
+\newpage
+\appendix
+
+\begin{figure}
+\begin{multline*}
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:A,\Gamma} \\
+      \cptyp{Q}{x:B,\Gamma'}}
+     {\cptyp{x[y].(P \mid Q)}{x: A \otimes B,\Gamma,\Gamma'}} \\
+   \inferrule*
+     {\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
+     {\cptyp{x(y).R}{x:\cpdual{A} \parr \cpdual{B},\Delta}}}
+  {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}}{\Gamma,\Gamma',\Delta}}
+\Longrightarrow \\
+\inferrule
+  {\cptyp{Q}{y:A,\Gamma} \\
+   \inferrule*
+     {\cptyp{P}{x:B,\Gamma'} \\
+      \cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
+     {{\cptyp{\cut{x}{B}{P}{R}}{y:\cpdual{A},\Gamma',\Delta}}}}
+  {\cptyp{\cut{y}{A}{Q}{\cut{x}{B}{P}{R}}}{\Gamma,\Gamma',\Delta}}
+\end{multline*}
+\[
+\inferrule
+  {\inferrule*
+     { }{\cptyp{x[].0}{x:1}} \\
+   \inferrule*
+     {\cptyp{P}{\Gamma}}
+     {\cptyp{x().P}{x:\bot,\Gamma}}}
+  {\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}}
+\Longrightarrow
+\cptyp{P}{\Gamma}
+\]
+\begin{multline*}
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{x:A,\Gamma}}
+     {\cptyp{\sel{x}{inl}.P}{x:A \oplus B, \Gamma}} \\
+   \inferrule*
+     {\cptyp{Q}{x:\cpdual{A},\Delta} \\
+      \cptyp{R}{x:\cpdual{B},\Delta}}
+     {\cptyp{\case{x}{Q;R}}{x:\cpdual{A} \with \cpdual{B},\Delta}}}
+  {\cptyp{\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}}{\Gamma,\Delta}}
+\Longrightarrow \\
+\inferrule
+  {\cptyp{P}{x:A,\Gamma} \\
+   \cptyp{Q}{x:\cpdual{A},\Delta}}
+  {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
+\end{multline*}
+\[
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:A,\cpquery{\Gamma}}}
+     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+   \inferrule*
+     {\cptyp{Q}{y:\cpdual{A},\Delta}}
+     {\cptyp{\derelict{x}{y}.Q}{x:\cpquery{\cpdual{A}},\Delta}}}
+  {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}}{\Gamma,\Delta}}
+\Longrightarrow
+\inferrule
+  {\cptyp{P}{x:A,\Gamma} \\
+   \cptyp{Q}{y:\cpdual{A},\Delta}}
+  {\cptyp{\cut{y}{A}{P}{Q}}{\Gamma,\Delta}}
+\]
+\[
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:A,?\Gamma}}
+     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+   \inferrule*
+     {\cptyp{Q}{\Delta} \\ un(\cpquery{\cpdual{A}})}
+     {\cptyp{Q}{y:\cpquery{\cpdual{A}}}}}
+  {\cptyp{\cut{y}{\cpbang{A}}{\replicate{x}{y}.P}{Q}}{\Gamma,\Delta}}
+\Longrightarrow
+\inferrule
+  {\cptyp{Q}{\Delta}}
+  {\cptyp{Q}{\Gamma,\Delta}}
+\]
+\begin{multline*}
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:A,\cpquery{\Gamma}}}
+     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+   \inferrule*
+     {\cptyp{Q}{x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}},\Delta}}
+     {\cptyp{Q[x/x']}{x:\cpquery{\cpdual{A}},\Delta}}}
+  {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}}{\Gamma,\Delta}}
+\Longrightarrow \\
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:A,\cpquery{\Gamma}}}
+     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+   \inferrule*
+     {\inferrule*
+         {\cptyp{P}{y:A,\cpquery{\Gamma}}}
+         {\cptyp{\replicate{x'}{y}.P}{x':\cpbang{A},\Gamma}} \\
+      \cptyp{Q}{x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}},\Delta}}
+     {\cptyp{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}}{\Gamma,\Delta}}}
+  {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}}}{\Gamma,\Delta}}
+\end{multline*}
+\[
+\bl
+\inferrule
+  {\inferrule*
+     {\cptyp{P}{y:B,\Gamma} \\
+      \cptyp{Q}{y:\cpdual{B},x:F(B)}}
+     {\cptyp{\corec{x}{y}{B}{P}{Q}}{x:\nu F,\Gamma}} \\
+   \inferrule*
+     {\cptyp{R}{x:\cpdual{F}(\mu (\cpdual{F})),\Delta}}
+     {\cptyp{\rec{x}.R}{x:\mu (\cpdual{F}),\Delta}}}
+  {\cptyp{\cut{x}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}}{\Gamma,\Delta}}
+\Longrightarrow \\
+\inferrule
+  {\cptyp{P}{y:B,\Gamma} \\
+   \inferrule*
+     {\cptyp{Q}{y:\cpdual{B},x:F(B)} \\
+      \inferrule*
+          {\cptyp{E}{x:\cpdual{F}(\cpdual{B}),z:F(\nu F)} \\\\
+         \cptyp{R[z/x]}{z:\cpdual{F}(\mu \cpdual{F}),\Delta}}
+        {\cptyp{\cut{z}{F(\nu F)}{E}{R[z/x]}}{x:\cpdual{F}(\cpdual{B}),\Delta}}}
+     {\cptyp{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}{y:\cpdual{B},\Delta}}}
+  {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
+\el
+\]
+where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
+
+\caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
+\end{figure}
 
 \end{document}
