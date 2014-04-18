@@ -525,9 +525,10 @@ is deterministic.
 Channels of type $\gvservice{S}$ offer arbitrarily many sessions of type $S$; correspondingly,
 channels of type $\gvserver{S}$ must provide arbitrarily many $S$ sessions. (These types correspond
 to the exponential propositions in linear logic; we have chosen the syntax $\gvserver{S}$ and
-$\gvservice{S}$ as $?!$ are already used for input and output.)  The rule for $\gvserve{x}{M}$
-parallels that for $\tkwd{fork}$: it defines a server which replicates $M$, and returns the
-channel by which it may be used (of type $\gvdual{\gvserver{S}} = \gvservice{\gvdual{S}}$).
+$\gvservice{S}$ as $!$ and $?$ are already used for input and output.)  The rule for
+$\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines a server which replicates $M$, and
+returns the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
+\gvservice{\gvdual{S}}$).
 
 The novelty of \mugv is in its recursive and corecursive channels. The first two typing rules allow
 recursive session types to be used as their unfoldings. Previous work on recursive sessions has
@@ -1410,10 +1411,10 @@ the immediate syntactic structure, so we abbreviate their translations as mappin
 terms. The majority of translations are as in our previous work.  The folding and unfolding of least
 fixed points in GV can be translated to cuts against the CP proofs of the corresponding
 equivalences. The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of
-type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially
-read the coinvariant $x$ from a channel $w$, and provide a channel $p$ which abstracts
-re-establishing the coinvariant at the end of each iteration.  In both, we rely on syntactic sugar
-for output: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
+type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially read the
+coinvariant $x$ from a channel $w$, and provide a channel $p$ which abstracts re-establishing the
+coinvariant at the end of each iteration.  In both, we rely on syntactic sugar for output: $x[y].P
+\equiv x[y'].(\link{y}{y'} \mid P)$.
 
 % ; for example, unfolding the GV session type $\mu G$ to $G
 % (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
