@@ -1075,7 +1075,9 @@ type operator, and so the four rules above are just two instances each of the tw
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 \end{mathpar}}%
 These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$.  As in \mugv,
-\tkwd{corec} terms maintain an arbitrary coinvariant, of type $A$.
+\tkwd{corec} terms maintain a coinvariant, of type $A$.  The coinvariant can be seen as being input
+on $y$ and output on $x$; thus, its type is dual in $y$ and $x$.  As messages are not dual in \mugv
+typing, no corresponding duality appeared in the typing rule for $\lrkwd$.
 
 \subsection{Cut Elimination}
 
@@ -1229,10 +1231,10 @@ translations to incorporate recursion.
 
 \subsection{Translation from \mugv to \gvpi}\label{sec:gvtogvpi}
 
-Following our previous work~\citep{LindleyM14} we factor the
+Following our previous work, we factor the
 translation of \mugv into \mucp through an intermediate
 translation. The language \gvpi is the restriction of \mugv to session
-types, that is, \mugv without $\lto$, $\uto$, or $\otimes$. In order
+types; that is, \mugv without $\lto$, $\uto$, or $\otimes$. In order
 to avoid $\otimes$, we disallow plain $\gvreceive{M}$, but do permit
 it to be fused with a pair elimination $\gvlet{(x,
   y)}{\gvreceive{M}}{N}$. We can simulate all non-session types as
@@ -1307,9 +1309,8 @@ annotations to indicate $\to$ introduction and elimination.
 % on plain term syntax. Each introduction form translates to an interface $\gvfork{z}{M}$ of type
 % $\gvdual{S}$, where $M : \outterm$ provides the implementation, with $z : S$ bound in $M$.
 %
-The only new case is that for $\key{corec}$. We package up all of the arguments into a tuple, and
-simulate the interface to the arrows using session operations in the obvious way dictated by the
-rest of the $\topi{-}$ translation.
+The only new case is that for $\key{corec}$. We collect the arguments into a tuple, and simulate the
+interface to the arrows using session operations as in the rest of the $\topi{-}$ translation.
 
 We can extend the translation on types to a translation on contexts:
 \begin{equations}
@@ -1410,8 +1411,10 @@ the immediate syntactic structure, so we abbreviate their translations as mappin
 terms. The majority of translations are as in our previous work.  The folding and unfolding of least
 fixed points in GV can be translated to cuts against the CP proofs of the corresponding
 equivalences. The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of
-type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$, where rely
-on syntactic sugar for output along a channel: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
+type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$.  We initially
+read the coinvariant $x$ from a channel $w$, and provide a channel $p$ which abstracts
+re-establishing the coinvariant at the end of each iteration.  In both, we rely on syntactic sugar
+for output: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
 \]
 
 % ; for example, unfolding the GV session type $\mu G$ to $G
@@ -1519,8 +1522,9 @@ are expanded to \gvpi as follows:
 \]%
 The translation on terms is given in Fig.~\ref{fig:fromcp}.  Formally, the translation is from
 judgements to terms. The interesting case, which is the only one to use the type environment, is
-$\key{corec}$. Crucially, it is type-directed, and depends on the translation of functoriality from
-\mucp to \mugv.
+$\key{corec}$.  The translation must simulate the expansion of the term $Q$, using $p$ to
+re-establish the coinvariant after each expansion, and thus depends on the translation of
+functoriality from \mucp to \mugv.
 
 
 %% % \[
