@@ -480,7 +480,7 @@ Recursive session rules
 
 %% \todo{add definition of $un$ to this figure?}
 
-\caption{Typing rules for \mugv}\label{fig:gv-typing}
+\caption{Typing Rules for \mugv}\label{fig:gv-typing}
 \end{figure}
 
 Figure~\ref{fig:gv-typing} gives the typing rules of \mugv. The structural rules account for
@@ -903,8 +903,8 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
 \inferrule{\cptyp{P}{\Gamma}}
           {\cptyp{x().P}{x:\bot,\Gamma}}
 
-\inferrule{\cptyp{P}{x:A,\Gamma}}
-          {\cptyp{\sel{x}{inl}.P}{x:A \oplus B,\Gamma}}
+\inferrule{\cptyp{P}{x:A_i,\Gamma}}
+          {\cptyp{\sel{x}{in_i}.P}{x:A_1 \oplus A_2,\Gamma}}
 
 \inferrule{\cptyp{P}{x:A,\Gamma} \\
            \cptyp{Q}{x:B,\Gamma}}
@@ -927,7 +927,7 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
            \cptyp{Q}{y:\cpdual{A},x:F(A)}}
           {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}
 \end{mathpar}
-\caption{Typing rules for \mucp}\label{fig:cp-typing}
+\caption{Typing Rules for \mucp}\label{fig:cp-typing}
 \end{figure}
 
 \paragraph{Structural Rules.}
@@ -969,11 +969,10 @@ and $1$ are interpreted as nullary input and nullary output, respectively.
 \paragraph{Selection and Choice.}
 
 The additive connectives $\oplus$ and $\with$ are interpreted as selection and choice. The process
-$\case{x}{P;Q}$ offers a choice of processes $P$ and $Q$; dually, the process $\sel{x}{inl}.P$
-chooses the left alternative, and the process $\sel{x}{inr}.P$ chooses the right.  The unit for
-choice is $0$, indicating absurdity. Note that there is no term proving $0$.  The dual of absurdity
-is $\top$, and provides arbitrary behavior; as there is no term proving $0$, no term relying on
-$\top$ can reduce.
+$\case{x}{P_1;P_2}$ offers a choice of processes $P_1$ and $P_2$; dually, the process
+$\sel{x}{in_i}.P_i$ chooses the $i$-th alternative. The unit for choice is $0$, indicating
+absurdity. Note that there is no term proving $0$. The dual of absurdity is $\top$, and provides
+arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ can reduce.
 
 \paragraph{Replication and Dereliction.}
 
@@ -1035,9 +1034,9 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
 \cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}
   &\Longrightarrow&
     P \\
-\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}
+\cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
   &\Longrightarrow&
-    \cut{x}{A}{P}{Q} \\
+    \cut{x}{A}{P}{Q_i} \\
 \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}
   &\Longrightarrow&
     \cut{y}{A}{P}{Q} \\
@@ -1191,7 +1190,8 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
   \map{X.C}{x,w}{Q} &=& \link{x}{w} \\
   \map{X.X}{x,w}{Q} &=& Q \\
   \map{X.C_1 \otimes C_2}{x,w}{Q} &=& w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
-  \map{X.C_1 \oplus C_2}{x,w}{Q} &=& \case{w}{\sel{x}{inl}.\map{X.C_1}{x,w}{Q}; \sel{x}{inr}.\map{X.C_2}{x,w}{Q}} \\
+  \map{X.C_1 \oplus C_2}{x,w}{Q} &=&
+    \case{w}{\sel{x}{in_1}.\map{X.C_1}{x,w}{Q}; \sel{x}{in_2}.\map{X.C_2}{x,w}{Q}} \\
   \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
   \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
 \end{equations}
@@ -1222,7 +1222,7 @@ Fig.~\ref{fig:map}; the remaining cases can be obtained by exchanging channels $
   \cut{x}{A}{z(y).P}{Q} &\Longrightarrow& z(y).\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
   \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
-  \cut{x}{A}{\sel{z}{inl}.P}{Q} &\Longrightarrow& \sel{z}{inl}.\cut{x}{A}{P}{Q} \\
+  \cut{x}{A}{\sel{z}{in_i}.P}{Q} &\Longrightarrow& \sel{z}{in_i}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q}
