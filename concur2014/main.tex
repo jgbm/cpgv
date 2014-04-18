@@ -105,8 +105,7 @@
 \newcommand\shade[1]{\setlength{\fboxsep}{0pt}\colorbox{shade}{\ensuremath{#1}}}
 %\newcommand{\shade}[1]{\colorbox{shade}{\ensuremath{#1}}}
 
-\newcommand\shaderow{\noalign{\vskip-0.4pt}\rowcolor{shade}[1.2mm]}
-\newcommand\shaderowless{\noalign{\vskip-0.4pt}\rowcolor{shade}[0.6mm]}
+\newcommand\shaderow{\noalign{\vskip-0.4pt}\rowcolor{shade}[0.6mm]}
 %%%
 
 \title{Recursive Session Types and Linear Logic}
@@ -223,7 +222,7 @@ Throughout the paper we highlight the novel parts of \mugv and \mucp by shading 
 Types in \mugv are given by the following grammar:
 \[
 \small
-\begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
   \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
                                 \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
@@ -893,7 +892,7 @@ obtain the result (42) and close the channel.
 
 The types of \mucp are the propositions of CLL, extended with type operators $F$ and fixed points
 $\mu F,\nu F$.
-\[\small\begin{array}{l@{\hspace{2mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
+\[\small\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
    & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \shade{\mu F} \mid \shade{\nu F} \\ \shaderow
    \text{Type Operators} & F & ::= & X.A \\
@@ -1100,11 +1099,11 @@ These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P
      Q, \qquad x \notin FV(Q) \\
 \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}
   &\Longrightarrow&
-    \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\ \shaderowless
+    \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\ \shaderow
 \key{new}\:x^{\nu F} %{\nu F}
   (\corec{x}{y}{B}{P}{Q} \mid \rec{x}.R)
   &\Longrightarrow&
-    \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}} \\ \shaderowless
+    \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}} \\ \shaderow
 && \text{where }E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
@@ -1273,7 +1272,7 @@ for \gvpi.
 \begin{mathpar}
 \inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
           {\gvtyp{\Phi}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
-\end{mathpar}}
+\end{mathpar}}%
 %
 This rule takes advantage of the fact that we can always translate
 away functions using the $\topi{-}$ translation, and we can simulate
@@ -1410,9 +1409,8 @@ the immediate syntactic structure, so we abbreviate their translations as mappin
 terms. The majority of translations are as in our previous work.  The folding and unfolding of least
 fixed points in GV can be translated to cuts against the CP proofs of the corresponding
 equivalences. The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of
-type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$, where rely
-on syntactic sugar for output along a channel: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
-\]
+type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes 1$, where we rely on
+syntactic sugar for output: $x[y].P \equiv x[y'].(\link{y}{y'} \mid P)$.
 
 % ; for example, unfolding the GV session type $\mu G$ to $G
 % (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
