@@ -1185,16 +1185,18 @@ to show elimination of all cuts in a well-typed \mucp term.
 \subsection{Streams}
 
 We can use \mucp fixed points to encode streams of naturals.
-\begin{equations
+\begin{equations}
   Sink &=& \mu X. \oplus \{ \clabel{next}: Nat \parr X, \clabel{stop}: \bot \}, \\
   Source &=& \nu X. \with \{ \clabel{next}: Nat \otimes X, \clabel{stop}: 1 \} \\
 \end{equations}%
 As in \mugv, we assume that our language is extended with constants implementing unlimited
 natural numbers. In particular, we will assume there is some proposition $Nat$ and terms:
-\[\small\begin{eqs}
+\[\small
+\begin{eqs}
 Zero_x &\vdash& x:\cpquery{Nat} \\
-Inc_{y,x} &\vdash& y:\cpbang{\cpdual{Nat}},x:\cpquery{Nat}.
-\end{eqs}\]
+Inc_{y,x} &\vdash& y:\cpbang{\cpdual{Nat}},x:\cpquery{Nat} \\
+\end{eqs}
+\]
 providing zero and successor.
 
 %% Note that, following the typical treatment of duality in linear logic, we have that
