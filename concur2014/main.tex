@@ -192,13 +192,12 @@ related~\secref{related} and future~\secref{future} work.
 \label{sec:mugv}
 
 In this section, we present \mugv, a simple functional language with session types patterned on the
-language of Gay and Vasconcelos~\cite{GayVasconcelos10} (which we call LAST) and Wadler's language
-GV.
+language of \citet{GayVasconcelos10} (which we call LAST) and Wadler's language GV.
 
 \subsection{Types}
 \label{sec:mugv-types}
 
-Types, session types, and type operators in \mugv are given by the following grammar:
+Types in \mugv are given by the following grammar:
 \[
 \small
 \begin{array}{l@{\hspace{1mm}}r@{\hspace{2mm}}c@{\hspace{2mm}}l}
@@ -217,19 +216,19 @@ The types comprise session types, linear pairs ($T \otimes U$), and both linear 
 unlimited ($T \uto U$) functions.
 %
 Session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i
-\}$) and choice ($\with\{l_i:S_i\}$). There are two variations on the closed channel ($\interm$) and
-($\outterm$); these arise from our interpretation of session types in classical linear logic, where
-there is no self-dual proposition corresponding to closed channels. We include a notion of replicated
-sessions, corresponding to exponentials in linear logic: a channel of type $\gvservice{S}$ is a
-``service'', providing any number of channels of type $S$; a channel of type $\gvserver{S}$ is the
-``server'' providing such a service. Finally, we include session variables and their duals
-($X,\gvdual{X}$), and two forms of recursive session types, corresponding to least ($\mu X.S$) and
-greatest ($\nu X.S$) fixed points. If $G$ is an operator $X.S$, we write $G(S')$ for the
-substitution instance $S[S'/X]$.
+\}$), choice ($\with\{l_i:S_i\}$), and closed channels ($\interm$ and $\outterm$}).
+% There are two variations on the closed channel ($\interm$) and ($\outterm$); these arise from our
+% interpretation of session types in classical linear logic, where there is no self-dual proposition
+% corresponding to closed channels.
+We include a notion of replicated sessions, corresponding to exponentials in linear logic: a channel
+of type $\gvservice{S}$ is a service, offering any number of channels of type $S$; a channel of type
+$\gvserver{S}$ is the server providing such a service. Finally, we include session variables and
+their duals ($X,\gvdual{X}$), and two forms of recursive session types, corresponding to bounded
+($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator $X.S$, we write $G(S')$ for
+the substitution instance $S[S'/X]$.
 
-Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$). The linearity of $T$ is
-determined by its top level type constructor.
-%
+Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$).
+% The linearity of $T$ is determined by its top level type constructor.
 All types are linear except unlimited functions $T \uto U$, replicated channels $\gvservice{S}$, and
 closed input channels $\interm$.
 
@@ -263,13 +262,13 @@ Duality on non-recursive session types is standard.
 \end{eqs} \\
 \ea
 \]
-Duality on recursive session types is defined as follows:
+Duality on recursive session types is defined by:
 \[
 \small
 \gvdual{\mu G} = \nu \gvdual{G} \qquad \gvdual{\nu G} = \mu \gvdual{G} \
 \]%
-where we define the dual of an operator $G = X.S$ by $\gvdual{G} = X.\gvdual{G(\gvdual{X})}.$
-Observe that $\gvdual{G}(\gvdual{S}) = \gvdual{G(S)}$.  Unlike many notions of duality for session
+where we define the dual of an operator $G = X.S$ as $\gvdual{G} = X.\gvdual{G(\gvdual{X})}.$
+Observe that $\gvdual{G(S)} = \gvdual{G}(\gvdual{S})$.  Unlike many notions of duality for session
 types, our definition preserves duality when recursive session types are unfolded, even when the
 recursion occurs in messages.  For example, consider the operator $G = X.\gvin{X}{\interm}$, its
 dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and the dual session types $\mu G$ and $\nu
@@ -283,9 +282,9 @@ which is the dual of $\gvin{\mu G}{\interm}$.
 
 To ensure that fixed points exist, we require that all operators $X.S$ be monotonic; that is,
 variables may appear only as positive subformulas of $S$, and negated variables only as negative
-subformulas. As usual, the subformula $T$ in types $T \lto U$ and $T \uto U$ is
+subformulas.  As usual, the subformula $T$ in types $T \lto U$ and $T \uto U$ is
 negative. Futhermore, the argument $T$ in the session type $\gvout{T}{S}$ is negative. All other
-subformulas are positive. Thus, the operator $X.\gvout{X}{\outterm}$ is not monotonic, but the
+subformulas are positive.  Thus, the operator $X.\gvout{X}{\outterm}$ is not monotonic, but the
 operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
 %
 Formally, $X.S$ is monotonic iff the predicate $pos_{X,S}$ holds, where $pos$ and $neg$ are the
@@ -961,8 +960,8 @@ compatible. As usual, we identify \mucp up to structural equivalence:
 
 The multiplicative connectives $\parr$ and $\otimes$ are interpreted as input and output. The
 process $x(y).P$ inputs channel $y$ on channel $x$, and continues as $P$. The process $x[y].(P \mid
-Q)$ is interpreted as bound output: it outputs a fresh channel $y$ along $x$, spawns a process $P$
-in which $y$ is used, and continues as process $Q$ in which $x$ is used.  It amounts to the
+Q)$ is interpreted as bound output: it sends a fresh name $y$ along $x$, spawns a process $P$ in
+which $y$ is used, and continues as process $Q$ in which $x$ is used.  It amounts to the
 $\pi$-calculus term $(\nu y) \overline{x}(y).(P \mid Q)$. The units of $\parr$ and $\otimes$, $\bot$
 and $1$ are interpreted as nullary input and nullary output, respectively.
 
@@ -977,20 +976,21 @@ arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ c
 \paragraph{Replication and Dereliction.}
 
 The exponential connectives $!$ and $?$ in linear logic provide limited access to the classical
-rules of weakening and contraction.  We interpret them as providing replicated processes: a process
-with type $\cpbang{A}$ provides arbitrarily many copies of a process providing behavior $A$, while a
-process of type $\cpquery{A}$ can choose to use one, many, or none of those copies.  There are three
-rules for types $\cpquery{A}$; note that, in contrast to the other typing rules of \mucp, we leave
-uses of weakening and contraction implicit.  Finally, since the process proving $\cpbang{A}$ may be
-replicated arbitrarily, each channel that process uses must be replicatable as well.  We write
-$\cpquery{\Gamma}$ to require that all types in $\Gamma$ be of the form $\cpquery{B}$.
+rules of weakening and contraction.  We interpret them as providing replicated processes.
+% a process with type $\cpbang{A}$ provides arbitrarily many copies of a process providing behavior
+% $A$, while a process of type $\cpquery{A}$ can choose to use one, many, or none of those copies.
+There are threerules for types $\cpquery{A}$; note that, in contrast to the other typing rules of
+\mucp, we leave uses of weakening and contraction implicit.  Finally, since the process proving
+$\cpbang{A}$ may be replicated arbitrarily, each channel that process uses must be replicatable as
+well.  We write $\cpquery{\Gamma}$ to require that all types in $\Gamma$ be of the form
+$\cpquery{B}$.
 
 \paragraph{Recursion and Corecursion.}
 
-We introduce least fixed points $\mu F$ and greatest fixed points $\mu F$ to CP, following Baelde's
-proof theoretic treatment of fixed points in linear logic~\citep{Baelde12}.  The proof rules can be
-understood from traditional two-sided rules for least and greated fixed points, combined with the
-duality between the fixed points.  We begin with a two-sided presentation:
+We introduce least fixed points $\mu F$ and greatest fixed points $\mu F$ to CP, following
+Baelde's~\citeyearpar{Baelde12} proof theoretic treatment of fixed points in linear logic.  The
+proof rules can be understood from traditional two-sided rules for least and greated fixed points,
+combined with the duality between the fixed points.  We begin with a two-sided presentation:
 \begin{mathpar}
 \inferrule{F(A) \vdash A \\ \Gamma, A \vdash B}{\Gamma, \mu F \vdash B}
 
@@ -1279,7 +1279,7 @@ the coinvariant to track the next number to appear in the stream.
 \[\small
 \bl
   Nats_y \vdash y:Stream(\cpquery{Nat}) \\
-  Nats_y = \lrkwd \: y \langle z \rangle (Zero_z, 
+  Nats_y = \lrkwd \: y \langle z \rangle (Zero_z,
     \key{case}\:y \:\{
        \bl
        \clabel{next}: y[x].(\link{z}{x} \mid \cut{w}{}{Inc_{z,w}}{\link{w}{y}}) \\
@@ -1295,9 +1295,9 @@ $w$.
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
-In our previous work~\citep{LindleyM14} we give translations back and forth between CP and HGV, an
-extension of GV, corresponding to \mugv without recursive session types. In this section, we extend
-these translations to incorporate recursive session types.
+In our previous work~\citep{LindleyM14} we give translations between CP and HGV, an extension of GV,
+corresponding to \mugv without recursive session types. In this section, we extend these
+translations to incorporate recursion.
 
 \subsection{Translation from \mugv to \gvpi}\label{sec:gvtogvpi}
 
@@ -1351,6 +1351,7 @@ away functions using the $\topi{-}$ translation, and we can simulate
 multiple arguments using a tensor.
 
 The translation on terms is given by the homomorphic extension of the following equations:
+\begin{figure}[t]\small
 \begin{equations}
 \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
 \topi{L\,M} &=& \gvsend{\topi{M}}{\topi{L}} \\
@@ -1368,10 +1369,13 @@ The translation on terms is given by the homomorphic extension of the following 
   \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\
 && \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
+\caption{Translation of \mugv terms to \gvpi.}
+\end{figure}
 Formally, this is a translation from derivations to terms. We write type annotations to indicate
-$\to$ introduction and elimination. For all other cases, it is unambiguous to give the translation
-on plain term syntax. Each introduction form translates to an interface $\gvfork{z}{M}$ of type
-$\gvdual{S}$, where $M : \outterm$ provides the implementation, with $z : S$ bound in $M$.
+$\to$ introduction and elimination.
+% For all other cases, it is unambiguous to give the translation
+% on plain term syntax. Each introduction form translates to an interface $\gvfork{z}{M}$ of type
+% $\gvdual{S}$, where $M : \outterm$ provides the implementation, with $z : S$ bound in $M$.
 %
 The only new case is that for $\key{corec}$. We package up all of the arguments into a tuple, and
 simulate the interface to the arrows using session operations in the obvious way dictated by the
@@ -1415,7 +1419,7 @@ yields a semantics for \mugv. The translation on session types is as follows:
 & \tocp{X.S} = X.\tocp{S} & \\
 \ea
 \]
-The translation is homomorphic except for output, where the output type is dualised. This accounts
+The translation is homomorphic except for output, where the output type is dual. This accounts
 for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $\cpdual{(A \otimes
   B)} = \cpdual{A} \parr \cpdual{B}.$
 
@@ -1425,7 +1429,7 @@ rolling and unrolling of recursive session types $\nu G$ and $\mu G$, as these s
 the syntax of \mugv terms. The other constructs depend only on the immediate syntactic structure, so
 we abbreviate their translations as mappings on plain terms. The majority of translations are as in
 our previous work:
-
+\begin{figure}[t]\small
 \begin{equations}
 \small
 \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
@@ -1448,12 +1452,6 @@ our previous work:
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
 \tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[3ex]
-\end{equations}%
-The folding and unfolding of least fixed points in GV can be translated to cuts against the CP
-proofs of the corresponding equivalences; for example, unfolding the GV session type $\mu G$ to $G
-(\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
-\begin{equations}
-\small
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}} z &=&
   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}} z &=&
@@ -1465,8 +1463,23 @@ proofs of the corresponding equivalences; for example, unfolding the GV session 
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
   \el \\
-\end{equations}
-
+\end{equations}%
+\[\small
+\bl
+\left\llbracket
+\inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
+          {\gvtyp{}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
+\right\rrbracket z = \\
+\replicate{z}{y}.y(c).y(x).y(). \\
+\quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
+\el
+\]
+\caption{Translation of \gvpi terms into \mucp.}
+\end{figure}
+The folding and unfolding of least fixed points in GV can be translated to cuts against the CP
+proofs of the corresponding equivalences.
+% ; for example, unfolding the GV session type $\mu G$ to $G
+% (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$.
 %% The folding and unfolding of recursive session types in GV can be translated to cuts against the CP
 %% proofs of the corresponding equivalences; for example, unfolding the GV session type $\mu G$ to $G
 %% (\mu G)$ corresponds to the CP proof that $\nu F \lto F(\mu F)$. Note the parallels between the
@@ -1489,26 +1502,15 @@ proofs of the corresponding equivalences; for example, unfolding the GV session 
 %%               {\link{z}{x}}
 %%               {\map{G}{x,y}{\rec{x}.\link{x}{y}}}}
 %% \end{gather*}
-
-
+%
+%
 The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is
 represented as a \mucp coinvariant of type $\tocp{T} \otimes \outterm$.
-\[\small
-\bl
-\left\llbracket
-\inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
-          {\gvtyp{}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
-\right\rrbracket z = \\
-\replicate{z}{y}.y(c).y(x).y(). \\
-\quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
-\el
-\]
+%
 where we have used the following syntactic sugar for output along a channel:
 \[
 x[y].P \equiv x[y'].(\link{y}{y'} \mid P)
 \]
-
-
 
 \begin{theorem}
   If $\gvtyp{\Phi}{M}{T}$, then $\cptyp{\tocp{M}z}{\tocp{\Phi},z:\cpdual{\tocp{T}}}$.
@@ -1550,6 +1552,7 @@ are expanded to \gvpi as follows:
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]%
 and the translation on terms is as follows:
+\begin{figure}[t]\small
 \begin{equations}
 \small
   \togv{x[y].(P \mid Q)} &=&
@@ -1590,6 +1593,8 @@ where:
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}
 \]%
+\caption{Translation of \mucp terms into \gvpi.}
+\end{figure}
 Formally, the translation is from judgements to terms. The interesting case, which is the only one
 to use the type environment, is $\key{corec}$. Crucially, it is type-directed, and depends on the
 translation of functoriality from \mucp to \mugv.
@@ -1672,7 +1677,7 @@ terminates.
 \citet{Abramsky92} and \citet{BellinScott94} explored the interpretation of linear logic proofs as
 concurrent programs.  \citet{Kobayashi96} introduced the use of linear typing to the $\pi$-calculus,
 and demonstrated a form of linear channels similar in usage to session-typed channels;
-\citet{Dardha12} extend this approach to full session types.
+Dardha et al.'s~\citeyearpar{Dardha12} extensions to this work include full session types.
 
 \section{Conclusion and Future Work}\label{sec:future}
 
