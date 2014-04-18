@@ -173,7 +173,7 @@ free of races, deadlock, and livelock, and both CP and GV benefit from these pro
 correspondence, but they have no notion of duality for least and greatest fixed points.
 
 There is much previous work that supports recursive session types, starting with \citet{Honda98},
-and including \citet{Yoshida07} and \citet{Domangion11}, all of which suffer from the mismatch
+and including \citet{Yoshida07} and \citet{DemangeonH11}, all of which suffer from the mismatch
 mentioned above. Here, drawing on work of \citet{Baelde12}, we extend both CP and GV with recursive
 session types, taking least and greatest fixpoints as duals. We show that the type-preserving
 translations extend to the new systems, and that the new systems are still guaranteed free of races,
@@ -1109,7 +1109,7 @@ combined with the duality between the fixed points. We begin with a two-sided pr
 
 \inferrule{A \vdash F(A) \\ \Gamma \vdash A}{\Gamma \vdash \nu F}
 \end{mathpar}}%
-Functional programmers may recognize the first as the typing rule of a fold, and the fourth as the
+Functional programmers may recognize the first as the typing rule of a fold, and the fourth the
 typing rule of an unfold. We adapt the above rules to a one sided presentation as follows. (As
 $\Gamma$ denotes any context, we write $\Gamma$ instead of $\cpdual{\Gamma}$).
 %
