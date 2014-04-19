@@ -726,6 +726,7 @@ are designated $y$.
 
 \begin{figure}[float]
 \small
+\vspace{-1mm}
 \begin{mathpar}
 \inferrule{ }{\cptyp{\link{x}{w}}{x:A,w:\cpdual{A}}}
 
@@ -769,6 +770,7 @@ are designated $y$.
                   \cptyp{Q}{y:\cpdual{A},x:F(A)}}
                  {\cptyp{\corec{x}{y}{A}{P}{Q}}{\Gamma,x:\nu F}}}
 \end{mathpar}
+\vspace{-1mm}
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
 \end{figure}
 
@@ -872,7 +874,9 @@ received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$. As messa
 
 \subsection{Cut Elimination}
 
-\begin{figure}[float]\small
+\begin{figure}[float]
+\vspace{-2mm}
+\small
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
   &\Longrightarrow& P[w/x] \\
@@ -901,6 +905,7 @@ received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$. As messa
 && \text{where }E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
+\vspace{-2mm}
 \end{figure}
 
 
@@ -915,7 +920,8 @@ received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$. As messa
     \case{w}{\sel{x}{in_1}.\map{X.C_1}{x,w}{Q}; \sel{x}{in_2}.\map{X.C_2}{x,w}{Q}} \\
   \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
   \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
-\end{equations}
+\end{equations}%
+\vspace{-1mm}
 \caption{Definition of $\mapname$ for Positive Combinators}\label{fig:map}
 \end{figure}
 
@@ -1071,7 +1077,9 @@ $\lrkwd$ for \gvpi.
 This rule takes advantage of the translation of functions given by $\topi{-}$, and simulates
 multiple arguments using $\otimes$.
 
-\begin{figure}[float]\small
+\begin{figure}[float]
+\vspace{-2mm}
+\small
 \begin{equations}
 \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
 \topi{L\,M} &=& \gvsend{\topi{M}}{\topi{L}} \\
@@ -1086,10 +1094,17 @@ multiple arguments using $\otimes$.
 \topi{\gvreceive{M}} &=& \topi{M}
 \\ \shaderow
 \topi{\gvfix{f}{\!c\,\vec{x}}{M}} &=&
-  \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\ \shaderow
-&& \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
+   \cofix\:p\:c\:z =
+     \bl
+     \key{let}\:f = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})}\:\key{in} \\
+     \gvlet{\vec{x}}{z}{\topi{M}} \\
+     \el \\
+%% \topi{\gvfix{f}{\!c\,\vec{x}}{M}} &=&
+%%   \gvfix{p}{c\,z}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\ \shaderow
+%% && \text{where }L = \lambda\,c\,\vec{x}.\gvsend{c}{(\gvsend{\vec{x}}{(\gvrequest{p})})} \\
 \end{equations}%
-\caption{Translation of \mugv Terms to \gvpi.}\label{fig:togvpi}
+\vspace{-2mm}
+\caption{Translation of \mugv Terms to \gvpi}\label{fig:togvpi}
 \end{figure}
 
 The translation on terms is given by the homomorphic extension of the equations in
@@ -1112,7 +1127,9 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 
 \subsection{Translation from \gvpi to \mucp}\label{sec:gvpitocp}
 
-\begin{figure}[float]\small
+\begin{figure}[float]
+\vspace{-2mm}
+\small
 \begin{equations}
 \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
   \inferrule
@@ -1151,7 +1168,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \bl
 \left\llbracket
 \inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
-          {\gvtyp{}{\gvfix{p}{c\,x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
+          {\gvtyp{}{\gvfix{p}{c\:x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
 \right\rrbracket\!\!z = \\
 \replicate{z}{y}.y(c).y(x).y(). \\
 \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
@@ -1245,7 +1262,9 @@ output.
 
 \subsection{Translating from \mucp to \gvpi}\label{sec:cptogvpi}
 
-\begin{figure}[float]\small
+\begin{figure}[float]
+\vspace{-2mm}
+\small
 \begin{equations}
   \togv{x[y].(P \mid Q)} &=&
     \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}})}{x}}{\togv{Q}} \\
@@ -1278,7 +1297,8 @@ output.
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
 \end{equations}%
-\caption{Translation of \mucp Terms into \gvpi.}\label{fig:fromcp}
+\vspace{-2mm}
+\caption{Translation of \mucp Terms into \gvpi}\label{fig:fromcp}
 \end{figure}
 
 We now present the translation $\togv{-}$ from CP to \gvpi. On types:
