@@ -125,7 +125,7 @@
   We extend a propositions-as-types correspondence between linear logic and session types to include
   recursive sessions.  Our extension takes least and greatest fixpoints as dual, an idea well-known
   to theorists, but which has not previously appeared in the treatment of recursive sessions. We
-  preserve the freedom from races, deadlock, and livelock that are a hallmark of the
+  preserve the freedom from races, deadlock, and livelock that is a hallmark of the
   propositions-as-types approach, and avoid a problem with preservation of duality that appears in
   the standard treatment of recursive session types. We treat two systems, one based on classical
   linear logic, derived from work of Caires and Pfenning and of Wadler, and one based on a linear
@@ -154,8 +154,8 @@ protocols. The two ends of a channel must be \emph{dual}, which ensures that whe
 channel performs output the other performs input, and when one end offers a choice of actions the
 other selects from these alternatives. Session types are of limited use without \emph{recursion},
 which permits defining sessions of arbitrary size. Recursion traditionally comes in two dual forms,
-least fixpoint and greatest fixpoint. However, in previous work on session types recursion was
-introduced in a way in which both ends of a channel are treated as least fixpoints, a mismatch with
+least fixpoint and greatest fixpoint. However, in previous work on session types recursion is
+introduced in such a way that both ends of a channel are treated as least fixpoints, a mismatch with
 the treatment of the other connectives. Here, we introduce a notion of recursion for session types
 that restores the traditional notion that least fixpoints are dual to greatest fixpoints.
 
@@ -169,7 +169,7 @@ type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} exte
 translation in the other direction, giving type-preserving translations not only from GV to CP but
 also from CP to GV. A hallmark of the process-as-types approach is that it yields systems guaranteed
 free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
-\citet{Toninho13,Toninho14} also treat recursion in a system inspired by a propositions-as-types
+\citet{Toninho13,Toninho14} also treat recursion in systems inspired by a propositions-as-types
 correspondence, but they have no notion of duality for least and greatest fixed points.
 
 There is much previous work that supports recursive session types, starting with \citet{Honda98},
@@ -281,16 +281,20 @@ The types comprise session types, linear pairs ($T \otimes U$), and both linear 
 unlimited ($T \uto U$) functions.
 %
 Session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i
-\}$), choice ($\with\{l_i:S_i\}$), and closed channels ($\interm$ and $\outterm$).  There are two
+\}$), choice ($\with\{l_i:S_i\}$), and closed channels ($\interm$ and $\outterm$). There are two
 variations on the closed channel ($\interm$) and ($\outterm$); these arise from our interpretation
 of session types in classical linear logic, where there is no self-dual proposition corresponding to
 closed channels.  We include a notion of replicated sessions, corresponding to exponentials in
 linear logic: a channel of type $\gvservice{S}$ is a service, offering any number of channels of
 type $S$; a channel of type $\gvserver{S}$ is the server providing such channels. (We have chosen
 the syntax $\gvserver{S}$ and $\gvservice{S}$ as $!$ and $?$ are already used for input and output.)
-Finally, we include session variables and their duals ($X$) and ($\gvdual{X}$), and types
-corresponding to bounded ($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator
-$X.S$, we write $G(S')$ for the substitution instance $S[S'/X]$.
+%
+For simplicity, we omit polymorphism~\citep{LindleyM14} as it is an orthogonal concern.
+%
+We include session variables and their duals ($X$) and ($\gvdual{X}$), and types corresponding to
+bounded ($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator $X.S$, we then
+$G(S')$ denotes the standard capture-avoiding substitution of $S'$ for $X$ in $S$, which we write as
+$S[S'/X]$.
 
 Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$).
 % The linearity of $T$ is determined by its top level type constructor.
@@ -360,7 +364,7 @@ by the homomorphic extensions of the following implications:
 \begin{eqs}
 pos_{X,X} \\
 \neg pos_{X,\gvdual{X}} \\
-pos_{X,!T.S} &\iff& neg_{X,T} \wedge pos_{X,S} \\
+pos_{X,\gvout{T}{S}} &\iff& neg_{X,T} \wedge pos_{X,S} \\
 pos_{X,T \lto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
 pos_{X,T \uto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
 \end{eqs}
@@ -368,7 +372,7 @@ pos_{X,T \uto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
 \begin{eqs}
 \neg neg_{X,X} \\
 neg_{X,\gvdual{X}} \\
-neg_{X,!T.S} &\iff& pos_{X,T} \wedge neg_{X,S} \\
+neg_{X,\gvout{T}{S}} &\iff& pos_{X,T} \wedge neg_{X,S} \\
 neg_{X,T \lto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
 neg_{X,T \uto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
 \end{eqs}
@@ -585,7 +589,7 @@ recursive session types to be used as their unfoldings.
 The construct $\gvfix{f}{c\,\vec{x}}{M}$ is used to define corecursive sessions. We illustrate its
 use in the remainder of this section through a series of examples.
 
-\paragraph{Syntactic Sugar.}
+%\paragraph{Syntactic Sugar.}
 %
 %For multi-argument functions, we write:
 %\[
@@ -598,13 +602,13 @@ use in the remainder of this section through a series of examples.
 %Note that the right-hand side of the second equation is isomorphic to $(T_1 \otimes \dots \otimes
 %T_n) \uto U$.
 %%
-We write $\key{let}\:x=M\:\key{in}\:N$ for $(\lambda x.M)\:N$.
 
 
-\paragraph{Base Types.}
+%\paragraph{Naturals.}
 
-For the purposes of our examples, we assume an extension of \mugv with a type of naturals ($Nat$),
-suitable constants ($0,1,\dots$), addition ($+$), and multiplication ($\times$).
+For the examples, We write $\key{let}\:x=M\:\key{in}\:N$ for $(\lambda x.M)\:N$ and assume an
+extension of \mugv with a type of naturals ($Nat$), literals ($0,1,\dots$), addition ($+$), and
+multiplication ($\times$).
 
 % natural number ($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
 % addition ($+$) and multiplication ($\times$), boolean constants ($True, False$), and conditionals
@@ -620,13 +624,13 @@ A canonical example of a corecursive data type is a stream. Let us consider a se
 producing a stream of naturals.
 %
 \[\small
-Source = \nu X.\with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \}
+Source = \nu X.\with \{\clabel{next} : \gvout{Nat}{X}, \clabel{stop} : \outterm \}
 \]
 %
 A channel of type $Source$ can either produce the next number or stop. The dual of a source is a
 sink.
 \[\small
-Sink = \mu X.\oplus \{\clabel{next}: ?Nat.X, \clabel{stop}: \interm \}
+Sink = \mu X.\oplus \{\clabel{next}: \gvin{Nat}{X}, \clabel{stop}: \interm \}
 \]
 %
 %Let us define a helper macro for generating the next value in a stream:
@@ -682,7 +686,7 @@ returning $(0, (0, 0))$.
 %case allows us to simulate weakening on such a channel.
 
 \paragraph{Productivity.}
-We might expect to assign $c$ the type $\with \{\clabel{next}:\:!Nat.Source, \clabel{stop}:\:\outterm
+We might expect to assign $c$ the type $\with \{\clabel{next}:\:\gvout{Nat}{Source}, \clabel{stop}:\:\outterm
 \}$ in the body of $MakeZeros$, but then productivity would not be assured. For example, under the
 same typing assumptions for $f$ and $c$ we could write:
 \[\small
@@ -691,7 +695,7 @@ same typing assumptions for $f$ and $c$ we could write:
 %
 We restrict the typing rule for $\cofix$ in order to guarantee productivity. We use a fresh type
 variable $X$ to abstract the recursive behavior, so the channel $c$ has type $G(X)$ (in our example
-$\with \{\clabel{next}: !Nat.X, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$ has type
+$\with \{\clabel{next}: \gvout{Nat}{X}, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$ has type
 $X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\cofix$ is thus required to provide
 precisely one iteration of the recursive behavior.
 
@@ -936,7 +940,7 @@ obtain the result (42) and close the channel.
 
 \section{A Linear Logic-Based Process Calculus}\label{sec:mucp}
 
-\subsection{Types and Terms}
+% \subsection{Types and Terms}
 
 The types of \mucp are the propositions of CLL, extended with type operators $F$ and fixed points
 $\mu F,\nu F$.
@@ -947,6 +951,7 @@ $\mu F,\nu F$.
        \mid   \shade{\mu F} \mid \shade{\nu F} \\ \shaderow
    \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]
+(As with \mugv, we have omitted polymorphism as it is orthogonal to the rest of the development.)
 If $F = X.A$, define $F(B) = A[B/X]$.  The standard notion of CLL duality is extended to fixed
 points in the expected fashion:
 \[
@@ -982,7 +987,7 @@ points in the expected fashion:
 \begin{eqs}
   \shaderow \cpdual{(\nu F)} &=& \mu \cpdual{F} \\
   \shaderow \cpdual{(\mu F)} &=& \nu \cpdual{F} \\
-\end{eqs}
+\end{eqs} \\
 \ea
 \ea
 \]
@@ -1038,6 +1043,8 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
 \end{figure}
 
+Figure~\ref{fig:cp-typing} gives type typing rules for \mucp.
+
 \paragraph{Structural Rules.}
 
 \mucp has two structural rules, axiom and cut. We interpret the axiom $\link{x}{y}$ as channel
@@ -1047,9 +1054,11 @@ channel $x$; the duality of the typing of $x$ assures that the uses of the $x$ i
 compatible. As usual, we identify \mucp up to structural equivalence:
 \begin{equations}
 \small
+  \link{x}{y} &\equiv& \link{y}{x} \\
   \cut{x}{A}{P}{Q} &\equiv& \cut{x}{\cpdual{A}}{Q}{P} \\
-  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in fn(R)$} \\
+  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in FV(R)$} \\
 \end{equations}%
+where we write $FV(P)$ for the set of free variables of the process $P$.
 %% Figure~\ref{fig:equivalences} gives the structural equivalences of \mucp terms.
 %% The first two capture that cut is commutative and associative, while the last captures that a cut
 %% against a use of the axiom rule provides channel substitution (we write $P[x/y]$ for the substution
@@ -1059,7 +1068,7 @@ compatible. As usual, we identify \mucp up to structural equivalence:
 %% \small
 %% \begin{equations}
 %%   \cut{x}{A}{P}{Q} &\equiv& \cut{x}{\cpdual{A}}{Q}{P} \\
-%%   \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in fn(R)$} \\
+%%   \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in FV(R)$} \\
 %%   \cut{x}{A}{P}{\link{x}{y}} &\equiv& P[y/x] \\
 %% \end{equations}
 %% \caption{Structural Equivalences}\label{fig:equivalences}
@@ -1199,8 +1208,12 @@ derives the following proof rule for any type operator $F$:
 \inferrule{\vdash A,B}{\vdash F(A),\cpdual{F}(B)}
 \]
 We call the term implementing this construction $\mapname$ by analogy with a similar construct in
-functional programming: taking $C = \cpdual{B}$, the above proof rule gives a transformation from a
-proof of $C \lto A$ to one of $F(C) \lto F(A)$.  The positive cases of $\mapname$ are given in
+functional programming.
+%
+%% : taking $C = \cpdual{B}$, the above proof rule gives a transformation from a
+%% proof of $C \lto A$ to one of $F(C) \lto F(A)$.
+%
+The positive cases of $\mapname$ are given in
 Fig.~\ref{fig:map}; the remaining cases are obtained by exchanging channels $x$ and $w$.
 
 \begin{lemma}
@@ -1211,8 +1224,8 @@ Fig.~\ref{fig:map}; the remaining cases are obtained by exchanging channels $x$ 
 \small
 \begin{equations}
   \cut{x}{A}{z(y).P}{Q} &\Longrightarrow& z(y).\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in FV(Q)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in FV(P)$} \\
   \cut{x}{A}{\sel{z}{in_i}.P}{Q} &\Longrightarrow& \sel{z}{in_i}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\ \shaderow
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\ \shaderow
@@ -1353,7 +1366,7 @@ multiple arguments using $\otimes$.
 \topi{L : T \lto U} &=& \gvrequest{\topi{L}} \\
 \topi{\gvreceive{M}} &=& \topi{M}
 \\ \shaderow
-\topi{\gvfix{f}{c\,\vec{x}}{M}} &=&
+\topi{\gvfix{f}{\!c\,\vec{x}}{M}} &=&
   \gvfix{p}{z\,c}{\gvlet{\vec{x}}{z}{\topi{M[L/f]}}} \\ \shaderow
 && \text{where }L = \lambda\,c\,\vec{x}.\gvsend{\vec{x}}{(\gvsend{c}{(\gvrequest{p})})} \\
 \end{equations}%
@@ -1459,16 +1472,16 @@ for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $
   B)} = \cpdual{A} \parr \cpdual{B}.$
 %
 The translation on terms (Fig.~\ref{fig:tomucp}) is formally specified as a CPS translation on
-derivations as in Wadler's presentation. We provide the full translations of weakening and
-contraction for $\interm$, and for rolling and unrolling of recursive session types $\nu G$ and $\mu
-G$, as these steps are implicit in the syntax of \mugv terms. The other constructs depend only on
-the immediate syntactic structure, so we abbreviate their translations as mappings on plain
-terms. The majority of translations are as in our previous work.  The folding and unfolding of least
-fixed points in GV can be translated to cuts against the CP proofs of the corresponding
-equivalences. The translation of $\cofix$ is a corecursive process in which the \mugv coinvariant of
-type $T$ is represented as a \mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially read the
-coinvariant $x$ from a channel $w$, and provide a channel $p$ which abstracts re-establishing the
-coinvariant at the end of each iteration.
+derivations as in Wadler's work. We provide the full translations of weakening and contraction for
+$\interm$, and for rolling and unrolling of recursive session types $\nu G$ and $\mu G$, as these
+steps are implicit in the syntax of \mugv terms. The other constructs depend only on the immediate
+syntactic structure, so we abbreviate their translations as mappings on plain terms. The majority of
+translations are as in our previous work.  The folding and unfolding of least fixed points in GV can
+be translated to cuts against the CP proofs of the corresponding equivalences. The translation of
+$\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is represented as a
+\mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially read the coinvariant $x$ from a
+channel $w$, and provide a channel $p$ which abstracts re-establishing the coinvariant at the end of
+each iteration.
 
 %% SL: now mention this earlier
 %%
@@ -1549,7 +1562,7 @@ output.
 \caption{Translation of \mucp terms into \gvpi.}\label{fig:fromcp}
 \end{figure}
 
-We now present the translation $\togv{-}$ from CP to \gvpi. The translation on types is as follows:
+We now present the translation $\togv{-}$ from CP to \gvpi. On types:
 \[\small
 \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
@@ -1578,8 +1591,8 @@ We now present the translation $\togv{-}$ from CP to \gvpi. The translation on t
 The translation on terms makes use of $\key{let}$ expressions to simplify the presentation; these
 are expanded to \gvpi as follows:
 \[\small
-\gvlet{x}{M}{N} \equiv
-  \topi{(\lambda x.N) M} \equiv
+\gvlet{x}{M}{N} \mapsto
+  \topi{(\lambda x.N) M} =
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]%
 The translation on terms is given in Fig.~\ref{fig:fromcp}. Formally, the translation is actually
@@ -1655,11 +1668,12 @@ consequences of these different approaches in future work.
 \citet{CairesPfenning10} showed the first complete propositions-as-types correspondence between
 intuitionistic linear logic (ILL) and session types. Their work shows both an interpretation of
 session types as ILL propositions, and a computational interpretation of ILL proofs as
-$\pi$-calculus processes. As a result, they are able to show that well-typed processes are race free
-and deadlock free, by analogy with corresponding cut-elimination results for ILL. \citet{Toninho13}
-demonstrate an embedding of their calculus within a functional language; the resulting system admits
-unrestricted recursion in the functional setting, and can thus provide recursive communication
-behavior, but does not guarantee that the evaluation of function terms terminates.
+$\pi$-calculus processes. As a result, they are able to show that well-typed processes are free of
+races, dealock and livelock, by analogy with corresponding cut-elimination results for
+ILL. \citet{Toninho13} demonstrate an embedding of their calculus within a functional language; the
+resulting system admits unrestricted recursion in the functional setting, and can thus provide
+recursive communication behavior, but does not guarantee that the evaluation of function terms
+terminates.
 
 \citet{Girard87} speculated that linear logic would be well-suited to reasoning about concurrency.
 \citet{Abramsky92} and \citet{BellinScott94} explored the interpretation of linear logic proofs as
@@ -1672,9 +1686,9 @@ al.'s~\citeyearpar{Dardha12} extensions to this work include full session types.
 We have demonstrated a propositions-as-types correspondence linking recursive session types and
 fixed points in linear logic. Unlike previous work on recursive session types, our presentation
 distinguishes between (bounded) recursive processes and (unbounded) corecursive processes. As a
-consequence of cut elimination in linear logic, all well-typed processes are terminating, race-free,
-and deadlock-free. We conclude by identifying several areas of future work. First, we would like to
-give an asynchronous semantics to \mugv, following the original presentation of LAST by
+consequence of cut elimination in linear logic, all well-typed processes are free of races,
+deadlock, and livelock. We conclude by identifying several areas of future work. First, we would
+like to give an asynchronous semantics to \mugv, following the original presentation of LAST by
 \citet{GayVasconcelos10}, and show that it is equivalent to the synchronous semantics provided by
 cut elimination in \mucp. Second, we would like to extend our treatment of recursive sessions to
 encode arbitrary recursive types in \mugv, similarly to our encoding of function and pair types in
@@ -1686,6 +1700,8 @@ $\outterm$ and $\interm$.
 \label{sect:bib}
 \bibliographystyle{abbrvnat}
 \bibliography{main}
+
+\end{document}
 
 \newpage
 \appendix
@@ -1815,19 +1831,8 @@ $\outterm$ and $\interm$.
 \]
 where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
 
-\end{document}
 
 TODO:
-
-* Define notation for: FV, fn, substitution
-
-* Mention polymorphism
-
-* Highlight Xs
-
-* do we need commutativity of link in structural equivalence relation?
-
-* Consistent way of saying: race-free, deadlock-free, livelock-free.
 
 * Make last part of conclusion a little more interesting.
 
@@ -1839,4 +1844,9 @@ TODO:
 
 * Better title?
 
-* Space saving
+* explain send \vec{x}, \x y, \x \vec{x} sugar?
+
+* should we mention the slightly more general version of cofix which allows an additional unlimited
+type environment?
+
+* observe that cofix p can be implemented using cofix f?
