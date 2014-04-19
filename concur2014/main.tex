@@ -1353,12 +1353,18 @@ functoriality from \mucp to \mugv.
 \begin{theorem}
   If $\cptyp{P}{\Gamma}$, then $\gvtyp{\togv{\Gamma}}{\togv{P}}{\outterm}$.
 \end{theorem}
-
+%
+%% The key soundness property of our translations is that if we translate a process from \mucp to \mugv
+%% and back, then we obtain a process equivalent to the original.
+%
+%% The following theorem is the key soundness property of our translations.
+As the semantics of \mugv is defined by translation to \mucp, the following soundness theorem tells
+us that \mugv and \mucp are equally expressive.
 \begin{theorem}
 \label{th:soundness}
 If $\cptyp{P}{\Gamma}$ then $\cut{z}{}{z[].0}{\tocp{\togv{P}}z} \Longrightarrow^* P$.
 \end{theorem}
-
+%
 
 \section{Related Work}\label{sec:related}
 
