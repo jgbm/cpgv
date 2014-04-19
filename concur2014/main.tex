@@ -1021,10 +1021,11 @@ we use the coinvariant represent the next number in the stream.
 \el
 \]\normalsize
 %
-In the $\clabel{stop}$ case, we rely on weakening for $\cpquery{Nat}$ to dispose of the coinvariant.
 In the $\clabel{next}$ case, we rely on contraction to copy the coinvariant $z$.  We then send one
 copy along the channel $y$ and increment the other giving $w$, which we use to re-establish the
+coinvariant. In the $\clabel{stop}$ case, we rely on weakening for $\cpquery{Nat}$ to dispose of the
 coinvariant.
+
 
 \section{Relating \mugv and \mucp}\label{sec:translation}
 
@@ -1118,9 +1119,9 @@ The only new case is that for $\key{corec}$. We collect the arguments into a tup
 interface to the arrows using session operations as in the rest of the $\topi{-}$ translation.
 %
 We use the obvious encodings for $n$-ary let binding, lambdas, and send.
-
-Let $\topi{\Phi}$ be the pointwise extension of $\topi{T}$. It is straightforward to verify that our
-translation preserves typing.
+%
+We write $\topi{\Phi}$ for the pointwise extension of $\topi{T}$.
+%% It is straightforward to verify that our translation preserves typing.
 \begin{theorem}
 If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \end{theorem}
@@ -1343,6 +1344,12 @@ functoriality from \mucp to \mugv.
 \begin{theorem}
   If $\cptyp{P}{\Gamma}$, then $\gvtyp{\togv{\Gamma}}{\togv{P}}{\outterm}$.
 \end{theorem}
+
+\begin{theorem}
+\label{th:soundness}
+If $\cptyp{P}{\Gamma}$ then $\cut{z}{}{z[].0}{\tocp{\togv{P}}z} \Longrightarrow^* P$.
+\end{theorem}
+
 
 \section{Related Work}\label{sec:related}
 
