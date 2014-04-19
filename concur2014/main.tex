@@ -207,7 +207,7 @@ Types in \mugv are given by the following grammar:
 \begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
   \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
-                                \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
+                                \mid   \oplus \{ l_i : S_i \}_i \mid \with \{ l_i : S_i \}_i
                                 \mid   \outterm \mid \interm 
                                 \mid   \gvservice{S} \mid \gvserver{S} \\ \shaderow
                             & & \mid & X \mid \gvdual{X}
@@ -220,7 +220,7 @@ The types comprise session types, linear pairs ($T \otimes U$), and both linear 
 unlimited ($T \uto U$) functions.
 %
 Session types include input ($\gvin{T}{S}$), output ($\gvout{T}{S}$), selection ($\oplus\{ l_i:S_i
-\}$), choice ($\with\{l_i:S_i\}$), and closed channels ($\interm$ and $\outterm$). There are two
+\}_i$), choice ($\with\{l_i:S_i\}_i$), and closed channels ($\interm$ and $\outterm$). There are two
 variations on the closed channel ($\interm$) and ($\outterm$); these arise from our interpretation
 of session types in classical linear logic, where there is no self-dual proposition corresponding to
 closed channels.  We include a notion of replicated sessions, corresponding to exponentials in
@@ -250,8 +250,8 @@ We extend the standard duality for non-recursive session types to include recurs
 \end{eqs}
 &
 \begin{eqs}
-  \gvdual{\oplus \{ l_i: S_i \}} &=& \with \{ l_i : \gvdual{S_i} \} \\
-  \gvdual{\with \{ l_i: S_i \}} &=& \oplus \{ l_i : \gvdual{S_i} \} \\
+  \gvdual{\oplus \{ l_i: S_i \}_i} &=& \with \{ l_i : \gvdual{S_i} \}_i \\
+  \gvdual{\with \{ l_i: S_i \}_i} &=& \oplus \{ l_i : \gvdual{S_i} \}_i \\
 \end{eqs}
 &
 \begin{eqs}
@@ -382,12 +382,12 @@ Session Rules
 \inferrule{\gvtyp{\Phi,x:\gvdual{S}}{M}{\outterm}}
           {\gvtyp{\Phi}{\gvfork{x}{M}}{ S}}
 
-\inferrule{\gvtyp{\Phi}{M}{\oplus \{ l_i:S_i \}}}
+\inferrule{\gvtyp{\Phi}{M}{\oplus \{ l_i:S_i \}_i}}
           {\gvtyp{\Phi}{\gvselect{l_i}{M}}{S_i}}
 
-\inferrule{\gvtyp{\Phi}{M}{\with \{ l_i:S_i \}} \\
+\inferrule{\gvtyp{\Phi}{M}{\with \{ l_i:S_i \}_i} \\
            \gvtyp{\Psi,x:S_i}{N_i}{T}}
-          {\gvtyp{\Phi,\Psi}{\gvcase{M}{l_i\,x.N_i}}{T}}
+          {\gvtyp{\Phi,\Psi}{\gvcase{M}{l_i\,x.N_i}_i}{T}}
 
 %% \end{mathpar}
 %% Replicated session rules
@@ -952,7 +952,7 @@ Fig.~\ref{fig:map}; the remaining cases are obtained by exchanging channels $x$ 
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\ \shaderow
   \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q} \\
 \end{equations}
-\caption{Commuting conversions}\label{fig:commuting}
+\caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
 
 The commuting conversions push communication under process prefixes, and are given in
@@ -1059,10 +1059,9 @@ of that channel. A tensor is simulated by output on a channel; its
 interface is input on the other end of that channel. This duality
 between implementation and interface explains the flipping of types in
 Wadler's original CPS translation from GV to CP.
-
-In order to translate away the arrows in the $\lrkwd$ rule, we
-adopt a simplified session-oriented variant of the $\lrkwd$ rule
-for \gvpi.
+%
+To translate away the arrows in the $\lrkwd$ rule, we adopt a simplified session-oriented variant of
+$\lrkwd$ for \gvpi.
 %
 \small\begin{mathpar}
 \inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
@@ -1103,7 +1102,7 @@ annotations to indicate $\to$ introduction and elimination.
 The only new case is that for $\key{corec}$. We collect the arguments into a tuple, and simulate the
 interface to the arrows using session operations as in the rest of the $\topi{-}$ translation.
 %
-We use obvious encodings for $n$-ary let binding, lambdas, and send.
+We use the obvious encodings for $n$-ary let binding, lambdas, and send.
 
 Let $\topi{\Phi}$ be the pointwise extension of $\topi{T}$. It is straightforward to verify that our
 translation preserves typing.
@@ -1130,7 +1129,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \tocp{\gvsend{M}{N}}z &=& \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
 \tocp{\gvlet{(x,y)}{\gvreceive{M}}{M}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
 \tocp{\gvselect{l}{M}}z &=& \cut{x}{}{\tocp{M}x}{x[l].\link{x}{z}} \\
-\tocp{\gvcase{M}{l_n\,x.N_i}}z &=&  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}} \\
+\tocp{\gvcase{M}{l_i\,x.N_i}_i}z &=&  \cut{x}{}{\tocp{M}x}{\case{x}{l_i.\tocp{N_i}z}_i} \\
 \tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
@@ -1158,12 +1157,12 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
 \el}
 \]
-\caption{Translation of \gvpi terms into \mucp.}\label{fig:tomucp}
+\caption{Translation of \gvpi Terms into \mucp}\label{fig:tomucp}
 \end{figure}
 
 We now give a translation from \gvpi to CP. Post composing this with the embedding of \mugv in \gvpi
-yields a semantics for \mugv. The translation on session types is as follows:
-\small\[
+yields a semantics for \mugv. For uniformity, we assume the obvious encodings of $n$-ary $\oplus$,
+$\with$, and $\key{case}$ in CP. The translation on session types is as follows: \small\[
 \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
 \tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
@@ -1173,11 +1172,11 @@ yields a semantics for \mugv. The translation on session types is as follows:
 \end{eqs}
 &
 \begin{eqs}
-\tocp{\oplus \{l_i:S_i \}} &=& \oplus \{l_i:\tocp{S_i}\} \\
-\tocp{\with \{l_i:S_i \}}  &=& \with \{l_i:\tocp{S_i}\} \\ \shaderow
-\tocp{\nu G}               &=& \nu\tocp{G} \\ \shaderow
-\tocp{\mu G}               &=& \mu\tocp{G} \\ \shaderow
-\tocp{X.S}                 &=& X.\tocp{S} \\
+\tocp{\oplus \{l_i:S_i \}_i} &=& \oplus \{l_i:\tocp{S_i}\}_i \\
+\tocp{\with \{l_i:S_i \}_i}  &=& \with \{l_i:\tocp{S_i}\}_i \\ \shaderow
+\tocp{\nu G}                &=& \nu\tocp{G} \\ \shaderow
+\tocp{\mu G}                &=& \mu\tocp{G} \\ \shaderow
+\tocp{X.S}                  &=& X.\tocp{S} \\
 \end{eqs}
 &
 \begin{eqs}
@@ -1254,8 +1253,8 @@ output.
     \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
   \togv{\sel{x}{\mathit{l}}.P} &=&
     \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
-  \togv{\case{x}{l_i.P_i}} &=&
-    \gvcase{x}{l_i.\togv{P_i}} \\
+  \togv{\case{x}{l_i.P_i}_i} &=&
+    \gvcase{x}{l_i.\togv{P_i}}_i \\
   \togv{x[].0} &=& x \\
   \togv{x().P} &=& \togv{P} \\
   \togv{\cut{x}{}{P}{Q}} &=&
@@ -1279,7 +1278,7 @@ output.
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
 \end{equations}%
-\caption{Translation of \mucp terms into \gvpi.}\label{fig:fromcp}
+\caption{Translation of \mucp Terms into \gvpi.}\label{fig:fromcp}
 \end{figure}
 
 We now present the translation $\togv{-}$ from CP to \gvpi. On types:
