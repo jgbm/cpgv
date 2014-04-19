@@ -682,7 +682,7 @@ obtain the result (42) and close the channel.
 The types of \mucp are the propositions of CLL, extended with type operators $F$ and fixed points
 $\mu F,\nu F$.
 \small\[\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
-  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top
+  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top
        \mid   \cpbang{A} \mid \cpquery{A} \\ \shaderow
    & & \mid & {X} \mid {\cpdual{X}}
        \mid   {\mu F} \mid {\nu F} \\ \shaderow
@@ -1574,3 +1574,9 @@ McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
 * mention that we've implemented everything in the paper and more and the code is on github
 
 * mention that we've reimplemented all of Toninho et al's examples in mucp and mugv
+
+* try to be consistent with order of presenting types everywhere
+
+* consider dropping the mu introduction rule - we don't need it in any of our examples because we
+always get a mu session by an invocation of fork with a nu session
+
