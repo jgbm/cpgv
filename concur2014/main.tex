@@ -218,7 +218,7 @@ Types in \mugv are given by the following grammar:
   \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
                                 \mid   \oplus \{ l_i : S_i \}_i \mid \with \{ l_i : S_i \}_i
-                                \mid   \outterm \mid \interm 
+                                \mid   \outterm \mid \interm
                                 \mid   \gvservice{S} \mid \gvserver{S} \\ \shaderow
                             & & \mid & X \mid \gvdual{X}
                                 \mid   {\mu G} \mid {\nu G} \\  \shaderow
@@ -409,10 +409,10 @@ Session Rules
 \inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
           {\gvtyp{\Phi}{\gvrequest{M}}{S}}
 \\
-%% \shade{
-%% \inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
-%%           {\gvtyp{\Phi}{M}{\mu G}}
-%% }
+\shade{
+\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
+          {\gvtyp{\Phi}{M}{\mu G}}
+}
 
 \shade{
 \inferrule{\gvtyp{\Phi}{M}{\mu G}}
@@ -450,15 +450,13 @@ forwarding.
 The \tkwd{fork} construct provides session initiation.
 % ; like Wadler's GV, but unlike LAST (and much
 % other work on process calculi), \mugv is deterministic.
-The rule for $\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines a server that replicates
-$M$, and returns a channel by which it may be used (of type $\gvdual{\gvserver{S}} =
-\gvservice{\gvdual{S}}$).
+The rule for $\gvserve{x}{M}$ parallels that
+for $\tkwd{fork}$: it defines a server which replicates $M$, and returns the channel by which it may
+be used (of type $\gvdual{\gvserver{S}} = \gvservice{\gvdual{S}}$).
 
-The novelty of \mugv is in its recursive and corecursive channels. The rule for $\mu$ allows a
-recursive sesion type to be unfolded.
+The novelty of \mugv is in its recursive and corecursive channels. The first two typing rules allow
+recursive session types to be used as their unfoldings.
 % SL: possibly restore this?
-%
-%% The first two typing rules allow recursive session types to be used as their unfoldings.
 %% Previous work on recursive sessions has defined typing rules up to unfolding of recursive types. We
 %% present explicit rules in order to simplify the translation into \mucp, in which these rules will
 %% correspond to terms implementing the equivalences.
@@ -479,6 +477,7 @@ use in the remainder of this section through a series of examples.
 %Note that the right-hand side of the second equation is isomorphic to $(T_1 \otimes \dots \otimes
 %T_n) \uto U$.
 %%
+
 
 %\paragraph{Naturals.}
 
@@ -1166,18 +1165,16 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
 \tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[1ex] \shaderow
 \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z &=&
-  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex]
-%% \shaderow
-%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z &=&
-%% \key{new}\:y\:
-%%   \bl
-%%   (    %{\tocp{G}(\mu \tocp{G})}
-%%        {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
-%%   \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
-%%              {\link{y}{x}}
-%%              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
-%%   \el \\[-1ex]
-%
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex] \shaderow
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z &=&
+\key{new}\:y\:
+  \bl
+  (    %{\tocp{G}(\mu \tocp{G})}
+       {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
+  \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+             {\link{y}{x}}
+             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+  \el \\[-1ex]
 \end{equations}%
 \vspace{-2ex}
 \[
@@ -1239,11 +1236,12 @@ derivations as in Wadler's work. We provide the full translations of weakening a
 $\interm$, and for rolling and unrolling of recursive session types $\nu G$ and $\mu G$, as these
 steps are implicit in the syntax of \mugv terms. The other constructs depend only on the immediate
 syntactic structure, so we abbreviate their translations as mappings on plain terms. The majority of
-translations are as in our previous work. The elimination of a least fixed point in GV is translated
-to a cut against the introduction of the least fix point. The translation of $\cofix$ is a
-corecursive process in which the \mugv coinvariant of type $T$ is represented as a \mucp coinvariant
-of type $\tocp{T} \otimes 1$. We initially read the coinvariant $x$ from a channel $w$, and provide
-a channel $p$ which abstracts re-establishing the coinvariant at the end of each iteration.
+translations are as in our previous work.  The folding and unfolding of least fixed points in GV can
+be translated to cuts against the CP proofs of the corresponding equivalences. The translation of
+$\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is represented as a
+\mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially read the coinvariant $x$ from a
+channel $w$, and provide a channel $p$ which abstracts re-establishing the coinvariant at the end of
+each iteration.
 
 %% SL: now mention this earlier
 %%
