@@ -118,10 +118,10 @@
 \newcommand\shaderow{\noalign{\vskip-0.4pt}\rowcolor{shade}[0.6mm]}
 %%%
 
-\title{Duality, Recursion, and Session Types}
+\title{Duality, Recursion, and Session Types\vspace{-3mm}}
 \author{J. Garrett Morris \and Sam Lindley}
-\institute{University of Edinburgh \\
-           \email{\{Garrett.Morris,Sam.Lindley\}@ed.ac.uk}}
+\institute{The University of Edinburgh \\
+           \email{\{Garrett.Morris,Sam.Lindley\}@ed.ac.uk} \vspace{-5mm}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
 %\newcommand{\todo}[1]{}
@@ -142,6 +142,7 @@
   inspired by Baelde.
 \end{abstract}
 
+\vspace{-7mm}
 \section{Introduction}\label{sec:intro}
 
 Previous work on session types suffers from a mismatch.  Session types capture communication
@@ -289,11 +290,11 @@ X.\gvdual{G(\gvdual{X})}.$ Observe that $\gvdual{G(S)} = \gvdual{G}(\gvdual{S})$
 notions of duality for session types, our definition preserves duality when recursive session types
 are unfolded, even when the recursion occurs in the carried types.  For example, consider the
 operator $G = X.\gvin{X}{\interm}$, its dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and the
-dual session types $\mu G$ and $\nu \gvdual{G}$.  Unfolding the first type yields $G(\mu G) =
-\gvin{\mu G}{\interm}$; unfolding the second yields
-\small\[
-  \gvdual{G}(\nu \gvdual{G}) = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm} = \gvout{\mu G}{\outterm},
-\]\normalsize
+dual session types $\mu G$ and $\nu \gvdual{G}$. Unfolding $\mu G$ yields $G(\mu G) =
+\gvin{\mu G}{\interm}$; unfolding $\nu \gvdual{G}$ yields
+%\small\[
+  $\gvdual{G}(\nu \gvdual{G}) = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm} = \gvout{\mu G}{\outterm}$,
+%\]\normalsize
 which is the dual of $\gvin{\mu G}{\interm}$.
 
 To ensure that fixed points exist, we require that all operators $X.S$ be monotonic.
