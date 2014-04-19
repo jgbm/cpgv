@@ -832,13 +832,15 @@ arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ c
 \paragraph{Replication and Dereliction.}
 
 The exponential connectives $!$ and $?$ in linear logic provide limited access to the classical
-rules of weakening and contraction.  We interpret them as providing replicated processes.
+rules of weakening and contraction. We interpret them as serving ($!$) and requesting ($?$)
+replicated processes.
 % a process with type $\cpbang{A}$ provides arbitrarily many copies of a process providing behavior
 % $A$, while a process of type $\cpquery{A}$ can choose to use one, many, or none of those copies.
-There are three rules for types $\cpquery{A}$; uses of weakening and contraction implicit in \mucp
-terms. Since the process $P$ proving $A$ may be replicated arbitrarily, each channel that $P$ uses
-must be replicatable as well.  We write $\cpquery{\Gamma}$ to require that all types in $\Gamma$ be
-of the form $\cpquery{B}$.
+For a server channel of type $\cpbang{A}$, the process $P$ proving $A$ may be replicated
+arbitrarily, so each channel that $P$ uses must be replicable as well. We write $\cpquery{\Gamma}$
+to assert that all types in $\Gamma$ be of the form $\cpquery{B}$. As well as the introduction rule
+for a request channel of type $\cpquery{A}$, there are also implicit rules for weakening and
+contraction.
 
 \paragraph{Recursion and Corecursion.}
 
@@ -877,10 +879,10 @@ type operator, and so the four rules above are just two instances each of the tw
 
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 \end{mathpar}\normalsize%
-These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$.  As in \mugv,
-\tkwd{corec} terms maintain a coinvariant, of type $A$.  The coinvariant can be seen as being
-received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$. As messages are not dual in
-\mugv sessions, no corresponding duality appears the typing rule for $\lrkwd$.
+These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$. As in \mugv,
+\tkwd{corec} terms maintain a coinvariant $y$, of type $A$. The coinvariant can be seen as being
+sent from $P$ to $Q$; thus, its type is dual in $P$ and $Q$. As messages are not dual in \mugv, no
+corresponding duality appears the typing rule for $\lrkwd$.
 
 \subsection{Cut Elimination}
 
