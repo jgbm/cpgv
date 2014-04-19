@@ -271,8 +271,8 @@ Types in \mugv are given by the following grammar:
                                 \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
                                 \mid   \outterm \mid \interm \\
                             & & \mid & \gvservice{S} \mid \gvserver{S}
-                                \mid   X \mid \gvdual{X}
-                                \mid   \shade{\mu G \mid \nu G} \\  \shaderow
+                                \mid   \shade{X} \mid \shade{\gvdual{X}}
+                                \mid   \shade{\mu G} \mid \shade{\nu G} \\  \shaderow
   \text{Type Operators} & G    & ::= & X.S \\
 \end{array}
 \]%
@@ -942,7 +942,9 @@ The types of \mucp are the propositions of CLL, extended with type operators $F$
 $\mu F,\nu F$.
 \[\small\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
-   & & \mid & \cpbang{A} \mid \cpquery{A} \mid X \mid \cpdual{X} \mid \shade{\mu F \mid \nu F} \\ \shaderow
+   & & \mid & \cpbang{A} \mid \cpquery{A} 
+       \mid   \shade{X} \mid \shade{\cpdual{X}}
+       \mid   \shade{\mu F} \mid \shade{\nu F} \\ \shaderow
    \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]
 If $F = X.A$, define $F(B) = A[B/X]$.  The standard notion of CLL duality is extended to fixed
@@ -994,53 +996,53 @@ X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual
 \inferrule{ }{\cptyp{\link{x}{y}}{x:A,y:\cpdual{A}}}
 
 \inferrule{\cptyp{P}{\Gamma,x:A} \\
-           \cptyp{Q}{x:\cpdual{A},\Delta}}
+           \cptyp{Q}{\Delta,x:\cpdual{A}}}
           {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
 
 \inferrule{ }{\cptyp{x[].0}{x:1}}
 
-\inferrule{\cptyp{P}{y:A,x:B,\Gamma}}
-          {\cptyp{x(y).P}{x:A \parr B,\Gamma}}
+\inferrule{\cptyp{P}{\Gamma,y:A,x:B}}
+          {\cptyp{x(y).P}{\Gamma,x:A \parr B}}
 
-\inferrule{\cptyp{P}{y:A,\Gamma} \\
-           \cptyp{Q}{x:B,\Delta}}
-          {\cptyp{x[y].(P \mid Q)}{x:A \otimes B,\Gamma,\Delta}}
+\inferrule{\cptyp{P}{\Gamma,y:A} \\
+           \cptyp{Q}{\Delta,x:B}}
+          {\cptyp{x[y].(P \mid Q)}{\Gamma,\Delta,x:A \otimes B}}
 
 \inferrule{\cptyp{P}{\Gamma}}
-          {\cptyp{x().P}{x:\bot,\Gamma}}
+          {\cptyp{x().P}{\Gamma,x:\bot}}
 
-\inferrule{\cptyp{P}{x:A_i,\Gamma}}
-          {\cptyp{\sel{x}{in_i}.P}{x:A_1 \oplus A_2,\Gamma}}
+\inferrule{\cptyp{P}{\Gamma,x:A_i}}
+          {\cptyp{\sel{x}{in_i}.P}{\Gamma,x:A_1 \oplus A_2}}
 
-\inferrule{\cptyp{P}{x:A,\Gamma} \\
-           \cptyp{Q}{x:B,\Gamma}}
-          {\cptyp{\case{x}{P;Q}}{x:A \with B,\Gamma}}
+\inferrule{\cptyp{P}{\Gamma,x:A} \\
+           \cptyp{Q}{\Gamma,x:B}}
+          {\cptyp{\case{x}{P;Q}}{\Gamma,x:A \with B}}
 
-\inferrule{ }{\cptyp{\case{x}{}}{x:\top,\Gamma}}
+\inferrule{ }{\cptyp{\case{x}{}}{\Gamma,x:\top}}
 
-\inferrule{\cptyp{P}{\Gamma}}{\cptyp{P}{x:\cpquery{A},\Gamma}}
+\inferrule{\cptyp{P}{\Gamma}}{\cptyp{P}{\Gamma,x:\cpquery{A}}}
 
-\inferrule{\cptyp{P}{y:A,\Gamma}}{\cptyp{\derelict{x}{y}.P}{x:\cpquery{A},\Gamma}}
+\inferrule{\cptyp{P}{y:A,\Gamma}}{\cptyp{\derelict{x}{y}.P}{\Gamma,x:\cpquery{A}}}
 
-\inferrule{\cptyp{P}{x:\cpquery{A},x':\cpquery{A},\Gamma}}{\cptyp{P[x/x']}{x:\cpquery{A},\Gamma}}
+\inferrule{\cptyp{P}{x:\cpquery{A},x':\cpquery{A},\Gamma}}{\cptyp{P[x/x']}{\Gamma,x:\cpquery{A}}}
 
-\inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{x:\cpbang{A}, \Gamma}}
+\inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}}
 
-\shade{\inferrule{\cptyp{P}{x:F(\mu F), \Gamma}}
-                 {\cptyp{\rec{x}.P}{x:\mu F,\Gamma}}}
+\shade{\inferrule{\cptyp{P}{\Gamma,x:F(\mu F)}}
+                 {\cptyp{\rec{x}.P}{\Gamma,x:\mu F}}}
 
-\shade{\inferrule{\cptyp{P}{y:A,\Gamma} \\
+\shade{\inferrule{\cptyp{P}{\Gamma,y:A} \\
                   \cptyp{Q}{y:\cpdual{A},x:F(A)}}
-                 {\cptyp{\corec{x}{y}{A}{P}{Q}}{x:\nu F,\Gamma}}}
+                 {\cptyp{\corec{x}{y}{A}{P}{Q}}{\Gamma,x:\nu F}}}
 \end{mathpar}
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
 \end{figure}
 
 \paragraph{Structural Rules.}
 
-\mucp has two structural rules, axiom and cut.  We interpret the axiom $\link{x}{y}$ as channel
-forwarding: actions on channel $x$ are mirrored on $y$, and vice versa.  Thus, $x$ and $y$ must have
-dual type.  Cut $\cut{x}{A}{P}{Q}$ is interpreted as commuication between processes $P$ and $Q$ on
+\mucp has two structural rules, axiom and cut. We interpret the axiom $\link{x}{y}$ as channel
+forwarding: actions on channel $x$ are mirrored on $y$, and vice versa. Thus, $x$ and $y$ must have
+dual type. Cut $\cut{x}{A}{P}{Q}$ is interpreted as commuication between processes $P$ and $Q$ on
 channel $x$; the duality of the typing of $x$ assures that the uses of the $x$ in $P$ and $Q$ are
 compatible. As usual, we identify \mucp up to structural equivalence:
 \begin{equations}
@@ -1181,10 +1183,10 @@ received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$. As messa
   \map{X.C_1 \otimes C_2}{x,w}{Q} &=& w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
   \map{X.C_1 \oplus C_2}{x,w}{Q} &=&
     \case{w}{\sel{x}{in_1}.\map{X.C_1}{x,w}{Q}; \sel{x}{in_2}.\map{X.C_2}{x,w}{Q}} \\
-  \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\ \shaderow
+  \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
   \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
 \end{equations}
-\caption{Definition of $\mapname$ for positive combinators.}\label{fig:map}
+\caption{Definition of $\mapname$ for Positive Combinators}\label{fig:map}
 \end{figure}
 
 Cut elimination corresponds to process reduction.  The principal cut reductions are given in
@@ -1446,8 +1448,8 @@ yields a semantics for \mugv. The translation on session types is as follows:
 &
 \begin{eqs}
 \tocp{\outterm}            &=& 1 \\
-\tocp{\interm}             &=& \bot \\
-\tocp{X}                   &=& X \\
+\tocp{\interm}             &=& \bot \\ \shaderow
+\tocp{X}                   &=& X \\ \shaderow
 \tocp{\gvdual{X}}          &=& \cpdual{X} \\
 \end{eqs}\\
 \ea
@@ -1567,9 +1569,9 @@ We now present the translation $\togv{-}$ from CP to \gvpi. The translation on t
 &
 \begin{eqs}
 \togv{1}           &=& \outterm \\
-\togv{\bot}              &=& \interm \\
-\togv{X}            &=& X \\
-\togv{\cpdual{X}}   &=& \gvdual{X} \\
+\togv{\bot}        &=& \interm \\ \shaderow
+\togv{X}           &=& X \\ \shaderow
+\togv{\cpdual{X}}  &=& \gvdual{X} \\
 \end{eqs}
 \ea
 \]
@@ -1695,18 +1697,18 @@ $\outterm$ and $\interm$.
   {\inferrule*
      {\cptyp{P}{y:A,\Gamma} \\
       \cptyp{Q}{x:B,\Gamma'}}
-     {\cptyp{x[y].(P \mid Q)}{x: A \otimes B,\Gamma,\Gamma'}} \\
+     {\cptyp{x[y].(P \mid Q)}{\Gamma,\Gamma',x: A \otimes B}} \\
    \inferrule*
-     {\cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
-     {\cptyp{x(y).R}{x:\cpdual{A} \parr \cpdual{B},\Delta}}}
+     {\cptyp{R}{\Delta,x:\cpdual{B},y:\cpdual{A}}}
+     {\cptyp{x(y).R}{\Delta,x:\cpdual{A} \parr \cpdual{B}}}}
   {\cptyp{\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}}{\Gamma,\Gamma',\Delta}}
 \Longrightarrow \\
 \inferrule
-  {\cptyp{Q}{y:A,\Gamma} \\
+  {\cptyp{Q}{\Gamma,y:A} \\
    \inferrule*
-     {\cptyp{P}{x:B,\Gamma'} \\
-      \cptyp{R}{x:\cpdual{B},y:\cpdual{A},\Delta}}
-     {{\cptyp{\cut{x}{B}{P}{R}}{y:\cpdual{A},\Gamma',\Delta}}}}
+     {\cptyp{P}{\Gamma',x:B} \\
+      \cptyp{R}{\Delta,x:\cpdual{B},y:\cpdual{A}}}
+     {{\cptyp{\cut{x}{B}{P}{R}}{\Gamma',\Delta,y:\cpdual{A}}}}}
   {\cptyp{\cut{y}{A}{Q}{\cut{x}{B}{P}{R}}}{\Gamma,\Gamma',\Delta}}
 \end{multline*}
 \[
@@ -1715,7 +1717,7 @@ $\outterm$ and $\interm$.
      { }{\cptyp{x[].0}{x:1}} \\
    \inferrule*
      {\cptyp{P}{\Gamma}}
-     {\cptyp{x().P}{x:\bot,\Gamma}}}
+     {\cptyp{x().P}{\Gamma,x:\bot}}}
   {\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}}
 \Longrightarrow
 \cptyp{P}{\Gamma}
@@ -1724,38 +1726,38 @@ $\outterm$ and $\interm$.
 \inferrule
   {\inferrule*
      {\cptyp{P}{x:A,\Gamma}}
-     {\cptyp{\sel{x}{inl}.P}{x:A \oplus B, \Gamma}} \\
+     {\cptyp{\sel{x}{inl}.P}{ \Gamma,x:A \oplus B}} \\
    \inferrule*
-     {\cptyp{Q}{x:\cpdual{A},\Delta} \\
-      \cptyp{R}{x:\cpdual{B},\Delta}}
-     {\cptyp{\case{x}{Q;R}}{x:\cpdual{A} \with \cpdual{B},\Delta}}}
+     {\cptyp{Q}{\Delta,x:\cpdual{A}} \\
+      \cptyp{R}{\Delta,x:\cpdual{B}}}
+     {\cptyp{\case{x}{Q;R}}{\Delta,x:\cpdual{A} \with \cpdual{B}}}}
   {\cptyp{\cut{x}{A \oplus B}{\sel{x}{inl}.P}{\case{x}{Q;R}}}{\Gamma,\Delta}}
 \Longrightarrow \\
 \inferrule
-  {\cptyp{P}{x:A,\Gamma} \\
-   \cptyp{Q}{x:\cpdual{A},\Delta}}
+  {\cptyp{P}{\Gamma,x:A} \\
+   \cptyp{Q}{\Delta,x:\cpdual{A}}}
   {\cptyp{\cut{x}{A}{P}{Q}}{\Gamma,\Delta}}
 \end{multline*}
 \[
 \inferrule
   {\inferrule*
-     {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+     {\cptyp{P}{\cpquery{\Gamma},y:A}}
+     {\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}} \\
    \inferrule*
-     {\cptyp{Q}{y:\cpdual{A},\Delta}}
-     {\cptyp{\derelict{x}{y}.Q}{x:\cpquery{\cpdual{A}},\Delta}}}
+     {\cptyp{Q}{\Delta,y:\cpdual{A}}}
+     {\cptyp{\derelict{x}{y}.Q}{\Delta,x:\cpquery{\cpdual{A}}}}}
   {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}}{\Gamma,\Delta}}
 \Longrightarrow
 \inferrule
-  {\cptyp{P}{x:A,\Gamma} \\
-   \cptyp{Q}{y:\cpdual{A},\Delta}}
+  {\cptyp{P}{\Gamma,x:A} \\
+   \cptyp{Q}{\Delta,y:\cpdual{A}}}
   {\cptyp{\cut{y}{A}{P}{Q}}{\Gamma,\Delta}}
 \]
 \[
 \inferrule
   {\inferrule*
-     {\cptyp{P}{y:A,?\Gamma}}
-     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+     {\cptyp{P}{\cpquery{\Gamma},y:A}}
+     {\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}} \\
    \inferrule*
      {\cptyp{Q}{\Delta} \\ un(\cpquery{\cpdual{A}})}
      {\cptyp{Q}{y:\cpquery{\cpdual{A}}}}}
@@ -1768,22 +1770,22 @@ $\outterm$ and $\interm$.
 \begin{multline*}
 \inferrule
   {\inferrule*
-     {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+     {\cptyp{P}{\cpquery{\Gamma},y:A}}
+     {\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}} \\
    \inferrule*
-     {\cptyp{Q}{x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}},\Delta}}
-     {\cptyp{Q[x/x']}{x:\cpquery{\cpdual{A}},\Delta}}}
+     {\cptyp{Q}{x:\cpquery{\Delta,\cpdual{A}},x':\cpquery{\cpdual{A}}}}
+     {\cptyp{Q[x/x']}{\Delta,x:\cpquery{\cpdual{A}}}}}
   {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}}{\Gamma,\Delta}}
 \Longrightarrow \\
 \inferrule
   {\inferrule*
-     {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-     {\cptyp{\replicate{x}{y}.P}{x:\cpbang{A},\Gamma}} \\
+     {\cptyp{P}{\cpquery{\Gamma},y:A}}
+     {\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}} \\
    \inferrule*
      {\inferrule*
-         {\cptyp{P}{y:A,\cpquery{\Gamma}}}
-         {\cptyp{\replicate{x'}{y}.P}{x':\cpbang{A},\Gamma}} \\
-      \cptyp{Q}{x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}},\Delta}}
+         {\cptyp{P}{\cpquery{\Gamma},y:A}}
+         {\cptyp{\replicate{x'}{y}.P}{\Gamma,x':\cpbang{A}}} \\
+      \cptyp{Q}{\Delta,x:\cpquery{\cpdual{A}},x':\cpquery{\cpdual{A}}}}
      {\cptyp{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}}{\Gamma,\Delta}}}
   {\cptyp{\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}}}{\Gamma,\Delta}}
 \end{multline*}
@@ -1791,23 +1793,23 @@ $\outterm$ and $\interm$.
 \bl
 \inferrule
   {\inferrule*
-     {\cptyp{P}{y:B,\Gamma} \\
+     {\cptyp{P}{\Gamma,y:B} \\
       \cptyp{Q}{y:\cpdual{B},x:F(B)}}
-     {\cptyp{\corec{x}{y}{B}{P}{Q}}{x:\nu F,\Gamma}} \\
+     {\cptyp{\corec{x}{y}{B}{P}{Q}}{\Gamma,x:\nu F}} \\
    \inferrule*
-     {\cptyp{R}{x:\cpdual{F}(\mu (\cpdual{F})),\Delta}}
-     {\cptyp{\rec{x}.R}{x:\mu (\cpdual{F}),\Delta}}}
+     {\cptyp{R}{\Delta,x:\cpdual{F}(\mu (\cpdual{F}))}}
+     {\cptyp{\rec{x}.R}{\Delta,x:\mu (\cpdual{F})}}}
   {\cptyp{\cut{x}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}}{\Gamma,\Delta}}
 \Longrightarrow \\
 \inferrule
-  {\cptyp{P}{y:B,\Gamma} \\
+  {\cptyp{P}{\Gamma,y:B} \\
    \inferrule*
      {\cptyp{Q}{y:\cpdual{B},x:F(B)} \\
       \inferrule*
           {\cptyp{E}{x:\cpdual{F}(\cpdual{B}),z:F(\nu F)} \\\\
-         \cptyp{R[z/x]}{z:\cpdual{F}(\mu \cpdual{F}),\Delta}}
-        {\cptyp{\cut{z}{F(\nu F)}{E}{R[z/x]}}{x:\cpdual{F}(\cpdual{B}),\Delta}}}
-     {\cptyp{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}{y:\cpdual{B},\Delta}}}
+         \cptyp{R[z/x]}{\Delta,z:\cpdual{F}(\mu \cpdual{F})}}
+        {\cptyp{\cut{z}{F(\nu F)}{E}{R[z/x]}}{\Delta,x:\cpdual{F}(\cpdual{B})}}}
+     {\cptyp{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}{\Delta,y:\cpdual{B}}}}
   {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
 \el
 \]
@@ -1822,6 +1824,8 @@ TODO:
 * Mention polymorphism
 
 * Highlight Xs
+
+* do we need commutativity of link in structural equivalence relation?
 
 * Consistent way of saying: race-free, deadlock-free, livelock-free.
 
