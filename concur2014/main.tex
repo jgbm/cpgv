@@ -19,6 +19,15 @@
 \floatstyle{boxed}
 \restylefloat{figure}
 
+%% evil space hacks
+%% see: http://www-h.eng.cam.ac.uk/help/tpl/textprocessing/squeeze.html
+%
+\setlength{\textfloatsep}{2ex}
+%\setlength{\floatsep}{0ex}
+%\setlength{\intextsep}{0ex}
+%\setlength{\abovecaptionskip}{0ex}
+%\setlength{\belowcaptionskip}{0ex}
+
 \newcommand{\with}{\mathbin\binampersand}
 \newcommand{\parr}{\mathbin\bindnasrepma}
 \newcommand{\cpdual}[1]{#1^\perp}
@@ -1544,6 +1553,15 @@ type environment?
 
 * observe that cofix p can be implemented using cofix f?
 
+  cofix f c x = let p = fork p.let (c, p) = receive p in
+                               let (x, p) = receive p in
+                               f c x
+                in M
+
 * remark that corecursion (and in particular making a careful distinction between programs over data
-and programs over codata) is an active research area in programming languages research (e.g. Atkey
-and McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
+and programs over codata) is an active area in programming languages research (e.g. Atkey and
+McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
+
+* mention that we've implemented everything in the paper and more and the code is on github
+
+* mention that we've reimplemented all of Toninho et al's examples in mucp and mugv
