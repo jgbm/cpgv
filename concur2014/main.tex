@@ -1177,18 +1177,29 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 %%              {\link{y}{x}}
 %%              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
 %%   \el \\[-1ex]
+%
 \end{equations}%
+\vspace{-2ex}
 \[
 \shade{
 \bl
-\left\llbracket
-\inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
-          {\gvtyp{}{\gvfix{p}{c\:x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
-\right\rrbracket\!\!z = \\
+\tocp{\gvfix{p}{c\:x}{M}}z =
 \replicate{z}{y}.y(c).y(x).y(). \\
 \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
-\el}
+\el
+}
 \]
+%% \[
+%% \shade{
+%% \bl
+%% \left\llbracket
+%% \inferrule{\gvtyp{p:\gvservice{(\gvout{T}{\gvout{X}{\outterm}})},c:G(X),x:T}{M}{\outterm}}
+%%           {\gvtyp{}{\gvfix{p}{c\:x}{M}}{\gvservice{(\gvout{\nu G}{\gvout{T}{\outterm}})}}}
+%% \right\rrbracket\!\!z = \\
+%% \replicate{z}{y}.y(c).y(x).y(). \\
+%% \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
+%% \el}
+%% \]
 \caption{Translation of \gvpi Terms into \mucp}\label{fig:tomucp}
 \end{figure}
 
