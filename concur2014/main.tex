@@ -154,7 +154,7 @@ Pfenning) and a linear functional language GV (inspired by Gay and Vasconcelos),
 type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} extended GV to support
 translation in the other direction, giving type-preserving translations not only from GV to CP but
 also from CP to GV. A hallmark of the process-as-types approach is that it yields systems guaranteed
-free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
+free of races and deadlock and both CP and GV benefit from these properties.
 \citet{Toninho13,Toninho14} also treat recursion in systems inspired by a propositions-as-types
 correspondence, but they have no notion of duality for least and greatest fixed points.
 
@@ -179,8 +179,8 @@ This paper makes the following contributions.
   In \mugv, unlike in previous session type systems, least fixpoints are dual to greatest fixpoints
   and duality is preserved in all cases.
 \item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and present a
-  translation of some of the same examples. We show \mucp, like previous systems based on
-  propositions as types, is guaranteed free of races, deadlock, and livelock.
+  translation of some of the same examples. We show \mucp is guaranteed free of races, deadlock, and
+  livelock.
 \item Section~\ref{sec:translation} presents type-preserving translations from \mugv into \mucp and
   inversely. The translation guarantees that GV also is free of races, deadlock, and livelock.
   As a technical aid, we also present a type-preserving translation from \mugv into a
@@ -1318,56 +1318,6 @@ from derivations to terms. The interesting case, which is the only one to use th
 is $\key{corec}$. The translation must simulate the expansion of the term $Q$, using $p$ to
 re-establish the coinvariant after each expansion, and thus depends on the translation of
 functoriality from \mucp to \mugv.
-
-
-%% % \[
-%% %   Q^\dagger =
-%% %     \gvlet{c}
-%% %           {\gvfork{x}{\togv{Q}}}
-%% %           {\gvmap{\togv{F}}{x,c}{(\gvsend{c}{(\gvsend{x}{p})})}}
-%% % \]%
-%% % \[
-%% %   Q^\dagger =
-%% %     \gvlet{y'}
-%% %           {\gvfork{y}{\togv{Q}}}
-%% %           {\togv{\map{F}{x,c}{p[x].p[c].p[].0}}}
-%% % \]%
-
-%% The translation is the same as in our previous work~\cite{LindleyM14} except for recursion and
-%% corecursion. Formally, it is a translation from judgements to terms (as we need to know the type
-%% operator in the case of $\key{corec}$).
-
-%
-%% \[
-%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-%% \]
-
-
-%% We can transfer the functoriality result from \mucp to \mugv:
-
-%% \begin{lemma}
-%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
-%%   \[
-%%     \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
-%%   \]
-%% \end{lemma}
-
-%% Since $\mapname$ is defined in \mucp by cases, we can get $\mapname$ in \mugv by applying our
-%% existing translation to each case.  Define
-%% \[
-%%   Q^\dagger = \gvlet{d}{\gvfork{x}{\togv{Q}}}{\gvmap{\togv{F}}{c,d}{(\gvsend{c}{(\gvsend{d}{p})})}}.
-%% \]
-
-%% \begin{lemma}
-%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then
-%%   \[
-%%     \gvtyp{x:\gvdual{\togv{A}},p:\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{X}{\outterm}})},c:\togv{F}(X)}{Q^\dagger}{\outterm}
-%%   \]
-%% \end{lemma}
-
-%% \begin{theorem}
-%%   If $\cptyp{Q}{y:\cpdual{A},x:F(A)}$, then $\gvtyp{}{\gvfix{p}{y\,c}{Q^\dagger}}{\gvservice{(\gvout{\gvdual{\togv{A}}}{\gvout{\nu \togv{F}}{\outterm}})}}$.
-%% \end{theorem}
 
 \begin{theorem}
   If $\cptyp{P}{\Gamma}$, then $\gvtyp{\togv{\Gamma}}{\togv{P}}{\outterm}$.
