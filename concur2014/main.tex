@@ -208,10 +208,10 @@ Types in \mugv are given by the following grammar:
   \text{Types}         & T,U,V & ::= & S \mid T \otimes U \mid T \lto U \mid T \uto U \\
   \text{Session Types} & S     & ::= & \gvout{T}{S} \mid \gvin{T}{S}
                                 \mid   \oplus \{ l_i : S_i \} \mid \with \{ l_i : S_i \}
-                                \mid   \outterm \mid \interm \\
-                            & & \mid & \gvservice{S} \mid \gvserver{S}
-                                \mid   \shade{X} \mid \shade{\gvdual{X}}
-                                \mid   \shade{\mu G} \mid \shade{\nu G} \\  \shaderow
+                                \mid   \outterm \mid \interm 
+                                \mid   \gvservice{S} \mid \gvserver{S} \\ \shaderow
+                            & & \mid & X \mid \gvdual{X}
+                                \mid   {\mu G} \mid {\nu G} \\  \shaderow
   \text{Type Operators} & G    & ::= & X.S \\
 \end{array}
 \]\normalsize%
@@ -576,11 +576,14 @@ We allow recursive sessions to maintain internal state (a \emph{coinvariant}). I
 typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
 stream of consecutive naturals:
 \small\[
-\begin{array}{ll}
-  \mcl{2}{MakeNats : Source \uto \outterm} \\
-  MakeNats = \gvfix{nats}{c\:x}{\mkwd{case}\:c\:\{ &\clabel{next}\,c.\gvlet{c}{\gvsend{x}{c}}{nats\:c\:(x+1)}; \\
-                                &\clabel{stop}\,c.c\}}
-\end{array}
+\bl
+  MakeNats : Source \uto \outterm \\
+  MakeNats = \cofix\:nats\:c\:x = \mkwd{case}\:c\:\{
+    \ba[t]{@{}l@{}l@{}}
+    \clabel{next}\,c.&\gvlet{c}{\gvsend{x}{c}}{nats\:c\:(x+1)} \\
+    \clabel{stop}\,c.&c\} \\
+    \ea
+\el
 \]\normalsize
 The variable $x$ tracks the next value to send to the stream, and is accordingly incremented in the
 recursive call. Now, the following:
@@ -598,11 +601,14 @@ returns $(0, (1, 2))$.
 We can maintain coinvariants of arbitrary complexity; for example, we can define a
 stream of the Fibonacci numbers as follows:
 \small\[
-\begin{array}{ll}
-  \mcl{2}{MakeFibs : Source \uto \outterm} \\
-  MakeFibs = \gvfix{fibs}{c\:m\:n}{\mkwd{case}\:c\:\{ &\clabel{next}\,c.\gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m+n)}; \\
-    &\clabel{stop}\,c.c\}}
-\end{array}
+\bl
+  MakeFibs : Source \uto \outterm \\
+  MakeFibs = \cofix\:fibs\;c\:m\:n = \mkwd{case}\:c\:\{
+    \ba[t]{@{}l@{}l@{}}
+    \clabel{next}\,c.& \gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m+n)} \\
+    \clabel{stop}\,c.& c\} \\
+    \ea
+\el
 \]\normalsize
 
 \subsection{Multi-function calculator}
@@ -618,24 +624,18 @@ MakeCalc = \lrkwd\:calc\:c\:accum = \\
 \quad
   \bl
   \mkwd{case}\:c\;\mkwd{of}\:\{
-    \bl
+    \ba[t]{@{}l@{}l@{}}
     \clabel{add}\:c.
-      \bl
-      \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in}\:
+      & \mkwd{let}\:(x,c) = \gvreceive{c} \: \mkwd{in}\:
       calc\:c\:(accum + x) \\
-      \el \\
     \clabel{mul}\:c.
-      \bl
-      \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in}\:
+      & \mkwd{let}\:(x,c) = \gvreceive{c}\:\mkwd{in}\:
       calc\:c\:(accum \times x) \\
-      \el \\
     \clabel{result}\:c.
-      \bl
-      \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in}\:
-      calc\:c\:accum \\
-      \el \\
-    \clabel{stop}\:c.c \; \}
-    \el \\
+      & \mkwd{let}\:c = \gvsend{accum}{c}\:\mkwd{in}\:
+        calc\:c\:accum \\
+    \clabel{stop}\:c.& c \}
+    \ea \\
   \el \\
 \el
 \]\normalsize
@@ -672,10 +672,10 @@ obtain the result (42) and close the channel.
 The types of \mucp are the propositions of CLL, extended with type operators $F$ and fixed points
 $\mu F,\nu F$.
 \small\[\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
-  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
-   & & \mid & \cpbang{A} \mid \cpquery{A}
-       \mid   \shade{X} \mid \shade{\cpdual{X}}
-       \mid   \shade{\mu F} \mid \shade{\nu F} \\ \shaderow
+  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid \bot \mid 1 \mid A \oplus B \mid A \with B \mid 0 \mid \top
+       \mid   \cpbang{A} \mid \cpquery{A} \\ \shaderow
+   & & \mid & {X} \mid {\cpdual{X}}
+       \mid   {\mu F} \mid {\nu F} \\ \shaderow
    \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]\normalsize
 (As with \mugv, we have omitted polymorphism as it is orthogonal to the rest of the development.)
@@ -1505,9 +1505,9 @@ where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
 
 TODO:
 
-* Make last part of conclusion a little more interesting.
-
 * Example of using Nats paralleling corresponding mugv example.
+
+* Make last part of conclusion a little more interesting.
 
 * Crisper characterisation of difference between corec and cofix, if possible.
 
