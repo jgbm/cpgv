@@ -911,11 +911,11 @@ corresponding duality appears the typing rule for $\lrkwd$.
 \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}
   &\Longrightarrow&
     \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\ \shaderow
-\key{new}\:x^{\nu F} %{\nu F}
-  (\corec{x}{y}{B}{P}{Q} \mid \rec{x}.R)
+\key{new}\:x\: %{\nu F}
+  (\key{corec}^F x\langle y \rangle(P, Q) \mid \rec{x}.R)
   &\Longrightarrow&
-    \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}} \\ \shaderow
-&& \text{where }E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}
+    \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{x'}{F(\nu F)}{Q'}{R[x'/x]}}} \\ \shaderow
+&& \hspace{-1em}\text{where }Q'\!= \map{F}{x',x}{\key{corec}^F x'\!\langle y \rangle(\link{x}{y}, Q[x'/x])} \\
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
 \vspace{-2mm}
@@ -926,14 +926,24 @@ corresponding duality appears the typing rule for $\lrkwd$.
 \begin{figure}[float]
 \small
 \begin{equations}
-  \map{X.C}{x,w}{Q} &=& \link{x}{w} \\
-  \map{X.X}{x,w}{Q} &=& Q \\
-  \map{X.C_1 \otimes C_2}{x,w}{Q} &=& w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
-  \map{X.C_1 \oplus C_2}{x,w}{Q} &=&
-    \case{w}{\sel{x}{in_1}.\map{X.C_1}{x,w}{Q}; \sel{x}{in_2}.\map{X.C_2}{x,w}{Q}} \\
-  \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/x] \\
-  \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
+  \map{X.C}{x,y}{P} &=& \link{x}{y}, \hfill\text{if $X$ is not free in $C$} \\[1ex]
+  \map{X.X}{x,y}{P} &=& P \\[1ex]
+  \map{X.C_1 \otimes C_2}{x,y}{P} &=& y(y').x[x'].(\map{X.C_1}{x',y'}{P[x'/x,y'/y]} \mid \map{X.C_2}{x,y}{P}) \\[1ex]
+  \map{X.C_1 \oplus C_2}{x,y}{P} &=&
+    \case{y}{\sel{x}{in_1}.\map{X.C_1}{x,y}{P}; \sel{x}{in_2}.\map{X.C_2}{x,y}{P}} \\[1ex]
+  \map{X.\cpquery{C}}{x,y}{P} &=& \replicate{y}{y'}.\derelict{x}{x'}.P[x'/x,y'/y] \\[1ex]
+  \map{X.\mu F}{x,y}{P} &=&
+    \key{corec}^F y\langle x' \rangle(\link{x}{x'}, \rec{x'}.\map{X.F (\mu F)}{x',y}{P[x'/x]}) \\
 \end{equations}%
+%% \begin{equations}
+%%   \map{X.C}{x,w}{Q} &=& \link{x}{w} \\
+%%   \map{X.X}{x,w}{Q} &=& Q \\
+%%   \map{X.C_1 \otimes C_2}{x,w}{Q} &=& w(z).x[y].(\map{X.C_1}{y,z}{Q[y/x,z/w]} \mid \map{X.C_2}{x,w}{Q}) \\
+%%   \map{X.C_1 \oplus C_2}{x,w}{Q} &=&
+%%     \case{w}{\sel{x}{in_1}.\map{X.C_1}{x,w}{Q}; \sel{x}{in_2}.\map{X.C_2}{x,w}{Q}} \\
+%%   \map{X.\cpquery{C}}{x,w}{Q} &=& \replicate{w}{w'}.\derelict{x}{x'}.Q[x'/x,w'/w] \\
+%%   \map{X.\mu F'}{x,w}{Q} &=& \corec{w}{y}{\nu(\cpdual{C}(A))}{\link{x}{y}}{\rec{y}.\map{X.F' (\mu F')}{y,w}{Q[y/x]}}
+%% \end{equations}%
 \vspace{-1mm}
 \caption{Definition of $\mapname$ for Positive Combinators}\label{fig:map}
 \end{figure}
@@ -953,11 +963,11 @@ functional programming.
 %% : taking $C = \cpdual{B}$, the above proof rule gives a transformation from a
 %% proof of $C \lto A$ to one of $F(C) \lto F(A)$.
 %
-The positive cases of $\mapname$ are given in
-Fig.~\ref{fig:map}; the remaining cases are obtained by exchanging channels $x$ and $w$.
+The positive cases of $\mapname$ are given in Fig.~\ref{fig:map}; the remaining cases are obtained
+by exchanging channels $x$ and $y$.
 
 \begin{lemma}
-  If $\cptyp{Q}{x:A,w:B}$ then \(\cptyp{\map{F}{x,w}{Q}}{x:F(A), w:\cpdual{F}(B)}.\)
+  If $\cptyp{P}{x:A,y:B}$ then \(\cptyp{\map{F}{x,y}{P}}{x:F(A),y:\cpdual{F}(B)}.\)
 \end{lemma}
 
 \begin{figure}[float]
@@ -1595,9 +1605,13 @@ translations to be completely syntax-directed:
   muGV:
     relax L               (T -> U)
     restrict L            (T -o U)
-    weaken M with x
-    contract M with x/x'
+    weaken? M with x      (end?)
+    contract? M with x/x' (end?)
     unroll M              (G(mu G))
 
   muCP:
    corec^F c<x>(P, Q)
+
+* consider switching the order of the arguments to map to make it's definition nicer
+
+ 
