@@ -154,7 +154,7 @@ Pfenning) and a linear functional language GV (inspired by Gay and Vasconcelos),
 type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} extended GV to support
 translation in the other direction, giving type-preserving translations not only from GV to CP but
 also from CP to GV. A hallmark of the process-as-types approach is that it yields systems guaranteed
-free of races and deadlock and both CP and GV benefit from these properties.
+free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
 \citet{Toninho13,Toninho14} also treat recursion in systems inspired by a propositions-as-types
 correspondence, but they have no notion of duality for least and greatest fixed points.
 
@@ -1102,6 +1102,8 @@ annotations to indicate $\to$ introduction and elimination.
 %
 The only new case is that for $\key{corec}$. We collect the arguments into a tuple, and simulate the
 interface to the arrows using session operations as in the rest of the $\topi{-}$ translation.
+%
+We use obvious encodings for $n$-ary let binding, lambdas, and send.
 
 Let $\topi{\Phi}$ be the pointwise extension of $\topi{T}$. It is straightforward to verify that our
 translation preserves typing.
@@ -1338,7 +1340,7 @@ consequences of these different approaches in future work.
 intuitionistic linear logic (ILL) and session types. Their work shows both an interpretation of
 session types as ILL propositions, and a computational interpretation of ILL proofs as
 $\pi$-calculus processes. As a result, they are able to show that well-typed processes are free of
-races, dealock and livelock, by analogy with corresponding cut-elimination results for
+races, dealock, and livelock, by analogy with corresponding cut-elimination results for
 ILL. \citet{Toninho13} demonstrate an embedding of their calculus within a functional language; the
 resulting system admits unrestricted recursion in the functional setting, and can thus provide
 recursive communication behavior, but does not guarantee that the evaluation of function terms
@@ -1503,11 +1505,6 @@ where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
 
 TODO:
 
-* do we need commutativity of link in structural equivalence relation?
-  Maybe
-
-* Consistent way of saying: race-free, deadlock-free, livelock-free.
-
 * Make last part of conclusion a little more interesting.
 
 * Example of using Nats paralleling corresponding mugv example.
@@ -1516,9 +1513,11 @@ TODO:
 
 * Better title?
 
-* explain send \vec{x}, \x y, \x \vec{x} sugar?
-
 * should we mention the slightly more general version of cofix which allows an additional unlimited
 type environment?
 
 * observe that cofix p can be implemented using cofix f?
+
+* remark that corecursion (and in particular making a careful distinction between programs over data
+and programs over codata) is an active research area in programming languages research (e.g. Atkey
+and McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
