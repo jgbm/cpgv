@@ -721,8 +721,8 @@ points in the expected fashion:
 where $X^{\perp\perp} = X$, and we define the dual of a type operator by $\cpdual{F} =
 X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{F(A)} =
 \cpdual{F}(\cpdual{A})$.  Typing rules for \mucp terms are given in Fig.~\ref{fig:cp-typing}.  We
-write $fn(P)$ for the free names used in process $P$; in the typing rules, new bound variables are
-designated $y$.
+write $fv(P)$ for the free variables used in process $P$; in the typing rules, new bound variables
+are designated $y$.
 
 \begin{figure}[float]
 \small
@@ -782,7 +782,7 @@ compatible. As usual, we identify \mucp up to structural equivalence:
 \small\begin{equations}
   \link{x}{y} &\equiv& \link{y}{x} \\
   \cut{x}{A}{P}{Q} &\equiv& \cut{x}{\cpdual{A}}{Q}{P} \\
-  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in fn(R)$} \\
+  \cut{x}{A}{P}{\cut{y}{B}{Q}{R}} &\equiv& \cut{y}{B}{\cut{x}{A}{P}{Q}}{R}, \quad \text{if $x \not\in fv(R)$} \\
 \end{equations}\normalsize%
 %% Figure~\ref{fig:equivalences} gives the structural equivalences of \mucp terms.
 %% The first two capture that cut is commutative and associative, while the last captures that a cut
@@ -803,7 +803,7 @@ compatible. As usual, we identify \mucp up to structural equivalence:
 
 The multiplicative connectives $\parr$ and $\otimes$ are interpreted as input and output. The
 process $x(y).P$ inputs channel $y$ on channel $x$, and continues as $P$. The process $x[y].(P \mid
-Q)$ is interpreted as bound output: it sends a fresh name $y$ along $x$, spawns a process $P$ in
+Q)$ is interpreted as bound output: it sends a fresh variable $y$ along $x$, spawns a process $P$ in
 which $y$ is used, and continues as process $Q$ in which $x$ is used.  It amounts to the
 $\pi$-calculus term $(\nu y) \overline{x}(y).(P \mid Q)$. We write $x[y].P$ as syntactic sugar for
 $x[y'].(\link{y}{y'} \mid P)$. The units of $\parr$ and $\otimes$, $\bot$ and $1$ are interpreted as
@@ -890,7 +890,7 @@ received on $y$ and sent on $x$; thus, its type is dual in $y$ and $x$. As messa
     \cut{y}{A}{P}{Q} \\
 \cut{y}{\cpbang{A}}{\replicate{x}{y}.P}{Q}
   &\Longrightarrow&
-     Q, \qquad x \notin fn(Q) \\
+     Q, \qquad x \notin fv(Q) \\
 \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}
   &\Longrightarrow&
     \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\ \shaderow
@@ -945,8 +945,8 @@ Fig.~\ref{fig:map}; the remaining cases are obtained by exchanging channels $x$ 
 \small
 \begin{equations}
   \cut{x}{A}{z(y).P}{Q} &\Longrightarrow& z(y).\cut{x}{A}{P}{Q} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fn(Q)$} \\
-  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fn(P)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(\cut{x}{A}{P}{R} \mid Q) \text{\quad \quad if $x \not\in fv(Q)$} \\
+  \cut{x}{A}{z[y].(P \mid Q)}{R} &\Longrightarrow& z[y].(P \mid \cut{x}{A}{Q}{R}) \text{\quad \quad if $x \not\in fv(P)$} \\
   \cut{x}{A}{\sel{z}{in_i}.P}{Q} &\Longrightarrow& \sel{z}{in_i}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\ \shaderow
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\ \shaderow
