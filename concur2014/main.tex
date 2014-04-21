@@ -1511,20 +1511,25 @@ We have demonstrated a propositions-as-types correspondence linking recursive se
 fixed points in linear logic. Unlike previous work on recursive session types, our presentation
 distinguishes between (bounded) recursive processes and (unbounded) corecursive processes. As a
 consequence of cut elimination in linear logic, all well-typed processes are free of races,
-deadlock, and livelock. We conclude by identifying several areas of future work. First, we would
-like to give an asynchronous semantics to \mugv, following the original presentation of LAST by
-\citet{GayVasconcelos10}, and show that it is equivalent to the synchronous semantics provided by
-cut elimination in \mucp. Second, we would like to extend our treatment of recursive sessions to
-encode arbitrary recursive types in \mugv, similarly to our encoding of function and pair types in
-terms of input and output on channels. Finally, we would like to explore further extensions of \mucp
-and their consequences for \mugv, including: the addition of second-order polymorphism, as explored
-by \citet{Wadler12} for CP; the addition of the MIX$_0$ and MIX$_2$ rules, providing additional
-notions of parallel composition and unifying the types $\outterm$ and $\interm$; and, finally,
-further exploration of concurrency and non-determinism in a logically-founded setting.
+deadlock, and livelock. We identify several areas of future work.
+%
+We would like to give an asynchronous semantics to \mugv, following the original presentation of
+LAST by \citet{GayVasconcelos10}, and show that it is equivalent to the synchronous semantics
+provided by cut elimination in \mucp.
+%
+We would like to extend \mugv with recursive and corecursive types in general, and investigate
+whether we can extend the $\topi{-}$ translation to simulate these types as recursive and
+corecursive session types.
+%
+We would like to explore further extensions of \mucp and their consequences for \mugv, including:
+the addition of second-order polymorphism, as studied by \citet{Wadler12} for CP; the addition of
+the MIX$_0$ and MIX$_2$ rules, providing additional notions of parallel composition and unifying the
+types $\outterm$ and $\interm$; and identify natural extensions of CP that give rise to
+non-determinism, and thus allow programs to exhibit more interesting concurrent behavior, while
+preserving the underlying connection to linear logic.
 
 \label{sect:bib}
-\bibliographystyle{abbrvnat}
-\bibliography{main}
+\bibliographystyle{abbrvnat} \bibliography{main}
 
 \end{document}
 \newpage
