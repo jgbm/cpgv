@@ -57,7 +57,7 @@
 \newcommand{\replicate}[2]{{!#1(#2)}}
 \newcommand{\derelict}[2]{{?#1[#2]}}
 \newcommand{\rec}[1]{\mkwd{rec}\:#1}
-\newcommand{\corec}[5]{\mkwd{corec}\:#1 \langle #2 \rangle (#4,#5)}
+\newcommand{\corec}[5]{\mkwd{corec}^{#3}\:#1 \langle #2 \rangle (#4,#5)}
 \newcommand{\clabel}[1]{\mathit{#1}}
 \renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\sel}[2]{#1[\clabel{#2}]}
@@ -792,7 +792,7 @@ are designated $y$.
 
 \shade{\inferrule{\cptyp{P}{\Gamma,y:A} \\
                   \cptyp{Q}{y:\cpdual{A},x:F(A)}}
-                 {\cptyp{\corec{x}{y}{A}{P}{Q}}{\Gamma,x:\nu F}}}
+                 {\cptyp{\corec{x}{y}{}{P}{Q}}{\Gamma,x:\nu F}}}
 \end{mathpar}
 \vspace{-1mm}
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
@@ -992,7 +992,7 @@ by exchanging channels $x$ and $y$.
   \cut{x}{A}{\sel{z}{in_i}.P}{Q} &\Longrightarrow& \sel{z}{in_i}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\ \shaderow
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\ \shaderow
-  \cut{x}{A}{\corec{z}{y}{B}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{B}{\cut{x}{A}{P}{R}}{Q} \\
+  \cut{x}{A}{\corec{z}{y}{}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{}{\cut{x}{A}{P}{R}}{Q} \\
 \end{equations}
 \caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
@@ -1039,8 +1039,8 @@ providing zero and successor.
 We can define a process which generates a stream of zeros. In this example, we make no use of the
 coinvariant, and so assign it the type $1$:
 \small\[\begin{eqs}
-  Zeros_y &\vdash& y:Stream(\cpquery{Nat}) \\
-  Zeros_y &=& \corec{y}{z}{1}{z[].0}{z().\case{y}{\clabel{next}: y[x].(Zero_x | y[].0); \clabel{stop}: y[].0}}.
+  Zeros_y &\vdash& y:Source(\cpquery{Nat}) \\
+  Zeros_y &=& \corec{y}{z}{}{z[].0}{z().\case{y}{\clabel{next}: y[x].(Zero_x | y[].0); \clabel{stop}: y[].0}}.
 \end{eqs}\]\normalsize
 Now we define a process which generates a stream of naturals. As in the corresponding \mugv example,
 we use the coinvariant represent the next number in the stream.
@@ -1217,7 +1217,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
   \bl
   (
        \tocp{M}y \\
-  \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+  \mid \corec{z}{x}{}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
   \el \\ \shaderow
@@ -1226,7 +1226,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
   \bl
   (
        \tocp{M}y \\
-  \mid \corec{y}{x}{\tocp{\nu G}}
+  \mid \corec{y}{x}{}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
   \el \\ \shaderow
@@ -1613,11 +1613,11 @@ further exploration of concurrency and non-determinism in a logically-founded se
   {\inferrule*
      {\cptyp{P}{\Gamma,y:B} \\
       \cptyp{Q}{y:\cpdual{B},x:F(B)}}
-     {\cptyp{\corec{x}{y}{B}{P}{Q}}{\Gamma,x:\nu F}} \\
+     {\cptyp{\corec{x}{y}{}{P}{Q}}{\Gamma,x:\nu F}} \\
    \inferrule*
      {\cptyp{R}{\Delta,x:\cpdual{F}(\mu (\cpdual{F}))}}
      {\cptyp{\rec{x}.R}{\Delta,x:\mu (\cpdual{F})}}}
-  {\cptyp{\cut{x}{\nu F}{\corec{x}{y}{B}{P}{Q}}{\rec{x}.R}}{\Gamma,\Delta}}
+  {\cptyp{\cut{x}{\nu F}{}{\rec{x}.R}}{\Gamma,\Delta}}
 \Longrightarrow \\
 \inferrule
   {\cptyp{P}{\Gamma,y:B} \\
@@ -1631,7 +1631,7 @@ further exploration of concurrency and non-determinism in a logically-founded se
   {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
 \el
 \]
-where $E = \map{F}{z,x}{\corec{z}{y}{B}{\link{x}{y}}{Q[z/x]}}$.
+where $E = \map{F}{z,x}{\corec{z}{y}{}{\link{x}{y}}{Q[z/x]}}$.
 
 
 TODO:
