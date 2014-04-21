@@ -133,7 +133,7 @@
 
 \begin{abstract}
   We extend a propositions-as-types correspondence between linear logic and session types to include
-  recursive sessions.  Our extension takes least and greatest fixpoints as dual, an idea well-known
+  recursive sessions.  Our extension takes least and greatest fixed points as dual, an idea well-known
   to theorists, but which has not previously appeared in the treatment of recursive sessions. We
   preserve the freedom from races, deadlock, and livelock that is a hallmark of the
   propositions-as-types approach, and avoid a problem with preservation of duality that appears in
@@ -151,10 +151,11 @@ protocols. The two ends of a channel must be \emph{dual}, which ensures that whe
 channel performs output the other performs input, and when one end offers a choice of actions the
 other selects from these alternatives. Session types are of limited use without \emph{recursion},
 which permits defining sessions of arbitrary size. Recursion traditionally comes in two dual forms,
-least fixpoint and greatest fixpoint. However, in previous work on session types recursion is
-introduced in such a way that both ends of a channel are treated as least fixpoints, a mismatch with
-the treatment of the other connectives. Here, we introduce a notion of recursion for session types
-that restores the traditional notion that least fixpoints are dual to greatest fixpoints.
+least fixed point and greatest fixed point. However, in previous work on session types recursion is
+introduced in such a way that both ends of a channel are treated as least fixed points, a mismatch
+with the treatment of the other connectives. Here, we introduce a notion of recursion for session
+types that restores the traditional notion that least fixed points are dual to greatest fixed
+points.
 
 \citet{Honda93} introduced session types as a type system for process calculi, and
 \citet{GayVasconcelos10} reformulated session types in the context of a functional language with
@@ -172,7 +173,7 @@ correspondence, but they have no notion of duality for least and greatest fixed 
 There is much previous work that supports recursive session types, starting with \citet{Honda98},
 and including \citet{Yoshida07} and \citet{DemangeonH11}, all of which suffer from the mismatch
 mentioned above. Here, drawing on work of \citet{Baelde12}, we extend both CP and GV with recursive
-session types, taking least and greatest fixpoints as duals. We show that the type-preserving
+session types, taking least and greatest fixed points as duals. We show that the type-preserving
 translations extend to the new systems, and that the new systems are still guaranteed free of races,
 deadlock, and livelock.
 
@@ -186,9 +187,9 @@ This paper makes the following contributions.
 \begin{itemize}
 \item Section~\ref{sec:mugv} extends GV to support recursion, yielding \mugv; and demonstrates its
   power with a series of examples of streams and a calculator.
-  %, and a translation of a bit stream example due to \citet{Toninho13}.
-  In \mugv, unlike in previous session type systems, least fixpoints are dual to greatest fixpoints
-  and duality is preserved in all cases.
+  %, and a translation of a bit stream example due to \citet{Toninho13}.  In \mugv, unlike in
+  previous session type systems, least fixed points are dual to greatest fixed points and duality is
+  preserved in all cases.
 \item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and present a
   translation of some of the same examples. We show \mucp is guaranteed free of races, deadlock, and
   livelock.
@@ -1671,10 +1672,6 @@ McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
 * mention that we've implemented everything in the paper and more and the code is on github
 
 * mention that we've reimplemented all of Toninho et al's examples in mucp and mugv
-
-* try to be consistent with order of presenting types everywhere
-
-* consider switching the order of the arguments to map to make it's definition nicer
 
 * fill in Troelstra reference
 
