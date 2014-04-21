@@ -1712,11 +1712,6 @@ where $E = \map{F}{x,z}{\corec{z}{y}{\link{x}{y}}{Q[z/x]}}$.
 
 TODO:
 
-* Example of using Nats paralleling corresponding mugv example.
-
-* Make last part of conclusion a little more interesting.
-
-* Crisper characterisation of difference between corec and cofix, if possible.
 
 * Better title?
 
@@ -1737,22 +1732,3 @@ McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
 * mention that we've implemented everything in the paper and more and the code is on github
 
 * mention that we've reimplemented all of Toninho et al's examples in mucp and mugv
-
-* fill in Troelstra reference
-
-
-NOT TODO
-
-(adjusted the translation to mucp to use judgements)
-* consider adding explicit syntax for all typing rules in order to allow all of the term
-translations to be completely syntax-directed:
-
-  muGV:
-    relax L               (T -> U)
-    restrict L            (T -o U)
-    weaken? M with x      (end?)
-    contract? M with x/x' (end?)
-    unroll M              (G(mu G))
-
-  muCP:
-   corec^F c<x>(P, Q)
