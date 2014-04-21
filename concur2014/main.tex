@@ -474,8 +474,8 @@ The novelty of \mugv is in its recursive and corecursive channels; we attempt to
 existing presentations of recursive session types~\citep{Honda98}.  The construct
 $\gvfix{f}{c\:\vec{x}}{M}$ is used to define corecursive sessions.  We provide for the rolling and
 unrolling of fixed points $\mu G$ and $\nu G$, implementing the equivalences among equirecursive
-types. As we will show in \secref{cptogvpi}, only the first of these coercion rules is necessary.
-The remaining rules are admissible, albeit at the cost of introducing additional computation.
+types. As we observe in \secref{cptogvpi}, only the first of these coercion rules is essential. The
+remaining rules are admissible, albeit at the cost of introducing additional computation.
 
 
 % The novelty of \mugv is in its recursive and corecursive channels. The first rule allows us to
@@ -1512,9 +1512,9 @@ are expanded to \gvpi as follows:
   \topi{(\lambda x.N) M} =
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]\normalsize%
-It is given in Fig.~\ref{fig:fromcp}. The interesting cases are for \tkwd{rec} and \tkwd{corec}. The
-translation $\rec{x}.P$ relies on exactly one use of the rule that unrolls $\mu F$ to $F (\mu F)$
-applied to the variable $x$.
+The translation is given in Fig.~\ref{fig:fromcp}. The interesting cases are for \tkwd{rec} and
+\tkwd{corec}. The translation $\rec{x}.P$ relies on exactly one use of the rule that unrolls $\mu F$
+to $F (\mu F)$ applied to the variable $x$.
 %; none of the remaining unfolding are used in the typing derivation of $\togv{P}$.
 The translation of \tkwd{corec} simulates the expansion of $Q$, using $p$ to re-establish the
 coinvariant after each expansion, and thus depends on the translation of functoriality from \mucp to
@@ -1536,9 +1536,9 @@ If $\cptyp{P}{\Gamma}$ then $\cut{z}{}{z[].0}{\tocp{\togv{P}}z} \Longrightarrow^
 \end{theorem}
 %
 
-%% \paragraph{Remark.}
-%% The admissibility of the final three rules of Fig.~\ref{fig:gv-typing} follows from
-%% Theorem~\ref{th:soundness}, as neither $\tocp{-}$ nor $\togv{-}$ uses any of these rules.
+\paragraph{Remark.}
+The admissibility of the final three rules of Fig.~\ref{fig:gv-typing} follows from
+Theorem~\ref{th:soundness}, as neither $\tocp{-}$ nor $\togv{-}$ uses any of these rules.
 %% %
 %% %% Finally, we return to the rules for recursive session types.
 %% %% \begin{lemma}\label{lem:admissible}
