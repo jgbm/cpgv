@@ -1165,20 +1165,23 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \subsection{Translation from \gvpi to \mucp}\label{sec:gvpitocp}
 
 \begin{figure}[float]
-\vspace{-2mm}
 \small
 \begin{equations}
-\left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
-  \inferrule
-    {\cptyp{\tocp{N}z}{\tocp{\Phi},z:\cpdual{\tocp{S}}}}
-    {\cptyp{x().\tocp{N}z}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
-\\[3ex]
-\left\llbracket \inferrule{\gvtyp{\Phi,x:\interm,x':\interm}{N}{S}}
-                          {\gvtyp{\Phi,x:\interm}{N[x/x']}{S}} \right\rrbracket \!\!z &=&
-  \inferrule
-    {\cptyp{\tocp{N}z}{\tocp{\Phi},x:\bot,x':\bot,z:\cpdual{\tocp{S}}}}
-    {\cptyp{\cut{x'}{}{\tocp{N}z}{x'[].0}}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
-\\[3ex]
+%% \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
+%%   \inferrule
+%%     {\cptyp{\tocp{N}z}{\tocp{\Phi},z:\cpdual{\tocp{S}}}}
+%%     {\cptyp{x().\tocp{N}z}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
+%% \\[3ex]
+%% \left\llbracket \inferrule{\gvtyp{\Phi,x:\interm,x':\interm}{N}{S}}
+%%                           {\gvtyp{\Phi,x:\interm}{N[x/x']}{S}} \right\rrbracket \!\!z &=&
+%%   \inferrule
+%%     {\cptyp{\tocp{N}z}{\tocp{\Phi},x:\bot,x':\bot,z:\cpdual{\tocp{S}}}}
+%%     {\cptyp{\cut{x'}{}{\tocp{N}z}{x'[].0}}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
+%% \\[3ex]
+\tocp{\gvtyp{\Phi,x:\interm}{N}{S}}z &=& x().\tocp{N}z
+  \quad \hspace{17mm} \text{($\interm$ weakening)} \\
+\tocp{\gvtyp{\Phi,x:\interm}{N[x/x']}{S}}z &=& \cut{x'}{}{\tocp{N}z}{x'[].0}
+  \quad \text{($\interm$ contraction)} \\
 \tocp{x}z &=& \link{x}{z} \\
 \tocp{\gvsend{M}{N}}z &=& \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
 \tocp{\gvlet{(x,y)}{\gvreceive{M}}{M}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
@@ -1187,15 +1190,17 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
-\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\
+\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[1ex] \shaderow
+\tocp{\gvtyp{\Phi}{M}{G(\mu G)}}z &=&
+  \cut{y}{\nu \tocp{G}}{\tocp{M}y}{\rec{y}.\link{y}{z}} \\
 \end{equations}%
-\vspace{-2ex}
-\[
-\shade{
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z =
-  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}}
-}
-\]
+\vspace{-1ex}
+%% \[
+%% \shade{
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z =
+%%   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}}
+%% }
+%% \]
 \[
 \shade{
 \bl
@@ -1205,36 +1210,59 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \el
 }
 \]
-\[
-\shade{
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z =
+\begin{equations}
+\shaderow
+\tocp{\gvtyp{\Phi}{M}{\mu G}}z &=&
 \key{new}\:y\:
   \bl
-  (    %{\tocp{G}(\mu \tocp{G})}
-       {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
+  (
+       \tocp{M}y \\
   \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
-  \el \\[-1ex]}
-\]
-\[
-\shade{
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\nu G}}{\gvtyp{\Phi}{M}{G(\nu G)}}}\!\!z =
+  \el \\ \shaderow
+\tocp{\gvtyp{\Phi}{M}{G(\nu G)}}z &=&
 \key{new}\:y\:
   \bl
-  (    %{\tocp{G}(\mu \tocp{G})}
-       {\tocp{\gvtyp{\Phi}{M}{\nu G}}}y \\
+  (
+       \tocp{M}y \\
   \mid \corec{y}{x}{\tocp{\nu G}}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
-  \el \\[-1ex]}
-\]
-\[
-\shade{
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G (\nu G)}}{\gvtyp{\Phi}{M}{\nu G}}}\!\!z =
-  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G (\nu G)}}y}{\rec{z}.\link{y}{z}}
-}
-\]
+  \el \\ \shaderow
+\tocp{\gvtyp{\Phi}{M}{\nu G}} &=&
+  \cut{y}{\nu \tocp{G}}{\tocp{M}y}{\rec{z}.\link{y}{z}} \\
+\end{equations}%
+%% \[
+%% \shade{
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z =
+%% \key{new}\:y\:
+%%   \bl
+%%   (    %{\tocp{G}(\mu \tocp{G})}
+%%        {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
+%%   \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+%%              {\link{y}{x}}
+%%              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+%%   \el \\[-1ex]}
+%% \]
+%% \[
+%% \shade{
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\nu G}}{\gvtyp{\Phi}{M}{G(\nu G)}}}\!\!z =
+%% \key{new}\:y\:
+%%   \bl
+%%   (    %{\tocp{G}(\mu \tocp{G})}
+%%        {\tocp{\gvtyp{\Phi}{M}{\nu G}}}y \\
+%%   \mid \corec{y}{x}{\tocp{\nu G}}
+%%              {\link{y}{x}}
+%%              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+%%   \el \\[-1ex]}
+%% \]
+%% \[
+%% \shade{
+%% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{G (\nu G)}}{\gvtyp{\Phi}{M}{\nu G}}}\!\!z =
+%%   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G (\nu G)}}y}{\rec{z}.\link{y}{z}}
+%% }
+%% \]
 %% \[
 %% \shade{
 %% \bl
