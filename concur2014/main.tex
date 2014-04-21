@@ -1005,7 +1005,7 @@ by exchanging channels $x$ and $y$.
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\Longrightarrow& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\Longrightarrow& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
   \cut{z}{} {\derelict{x}{y}.P}{Q} &\Longrightarrow& \derelict{x}{y}.\cut{z}{}{P}{Q} \\
-  \cut{z}{} {\replicate{x}{y}.P}{Q} &\Longrightarrow& \replicate{x}{y}.\cut{z}{}{P}{Q} \\
+  \cut{z}{} {\replicate{x}{y}.P}{Q} &\Longrightarrow& \replicate{x}{y}.\cut{z}{}{P}{Q} \\ \shaderow
   \cut{z}{A}{\rec{x}.P}{Q} &\Longrightarrow& \rec{x}.\cut{z}{A}{P}{Q} \\ \shaderow
   \cut{z}{A}{\corec{x}{y}{P}{Q}}{R} &\Longrightarrow& \corec{x}{y}{\cut{z}{A}{P}{R}}{Q} \\
 \end{equations}
