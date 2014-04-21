@@ -57,7 +57,8 @@
 \newcommand{\replicate}[2]{{!#1(#2)}}
 \newcommand{\derelict}[2]{{?#1[#2]}}
 \newcommand{\rec}[1]{\mkwd{rec}\:#1}
-\newcommand{\corec}[5]{\mkwd{corec}^{#3}\:#1 \langle #2 \rangle (#4,#5)}
+\newcommand{\corec}[4]{\mkwd{corec}\:{#1} \langle #2 \rangle (#3,#4)}
+\newcommand{\corecf}[5]{\mkwd{corec}^{#1} #2 \langle #3 \rangle (#4,#5)}
 \newcommand{\clabel}[1]{\mathit{#1}}
 \renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\sel}[2]{#1[\clabel{#2}]}
@@ -792,7 +793,7 @@ are designated $y$.
 
 \shade{\inferrule{\cptyp{P}{\Gamma,y:A} \\
                   \cptyp{Q}{y:\cpdual{A},x:F(A)}}
-                 {\cptyp{\corec{x}{y}{}{P}{Q}}{\Gamma,x:\nu F}}}
+                 {\cptyp{\corec{x}{y}{P}{Q}}{\Gamma,x:\nu F}}}
 \end{mathpar}
 \vspace{-1mm}
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
@@ -893,7 +894,7 @@ type operator, and so the four rules above are just two instances each of the tw
 
 \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 \end{mathpar}\normalsize%
-These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{}{P}{Q}$. As in \mugv,
+These are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{P}{Q}$. As in \mugv,
 \tkwd{corec} terms maintain a coinvariant $y$, of type $A$. The coinvariant can be seen as being
 sent from $P$ to $Q$; thus, its type is dual in $P$ and $Q$. As messages are not dual in \mugv, no
 corresponding duality appears the typing rule for $\lrkwd$.
@@ -992,7 +993,7 @@ by exchanging channels $x$ and $y$.
   \cut{x}{A}{\sel{z}{in_i}.P}{Q} &\Longrightarrow& \sel{z}{in_i}.\cut{x}{A}{P}{Q} \\
   \cut{x}{A}{\case{z}{P;Q}}{R} &\Longrightarrow& \case{z}{\cut{x}{A}{P}{R}; \cut{x}{A}{Q}{R}} \\ \shaderow
   \cut{x}{A}{\rec{z}.P}{Q} &\Longrightarrow& \rec{z}.\cut{x}{A}{P}{Q} \\ \shaderow
-  \cut{x}{A}{\corec{z}{y}{}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{}{\cut{x}{A}{P}{R}}{Q} \\
+  \cut{x}{A}{\corec{z}{y}{P}{Q}}{R} &\Longrightarrow& \corec{z}{y}{\cut{x}{A}{P}{R}}{Q} \\
 \end{equations}
 \caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
@@ -1040,7 +1041,7 @@ We can define a process which generates a stream of zeros. In this example, we m
 coinvariant, and so assign it the type $1$:
 \small\[\begin{eqs}
   Zeros_y &\vdash& y:Source(\cpquery{Nat}) \\
-  Zeros_y &=& \corec{y}{z}{}{z[].0}{z().\case{y}{\clabel{next}: y[x].(Zero_x | y[].0); \clabel{stop}: y[].0}}.
+  Zeros_y &=& \corec{y}{z}{z[].0}{z().\case{y}{\clabel{next}: y[x].(Zero_x | y[].0); \clabel{stop}: y[].0}}.
 \end{eqs}\]\normalsize
 Now we define a process which generates a stream of naturals. As in the corresponding \mugv example,
 we use the coinvariant represent the next number in the stream.
@@ -1165,6 +1166,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \subsection{Translation from \gvpi to \mucp}\label{sec:gvpitocp}
 
 \begin{figure}[float]
+\vspace{-2ex}
 \small
 \begin{equations}
 %% \left\llbracket \inferrule{\gvtyp{\Phi}{N}{S}}{\gvtyp{\Phi,x:\interm}{N}{S}} \right\rrbracket\!\!z &=&
@@ -1178,10 +1180,13 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 %%     {\cptyp{\tocp{N}z}{\tocp{\Phi},x:\bot,x':\bot,z:\cpdual{\tocp{S}}}}
 %%     {\cptyp{\cut{x'}{}{\tocp{N}z}{x'[].0}}{\tocp{\Phi},x:\bot,z:\cpdual{\tocp{S}}}}
 %% \\[3ex]
-\tocp{\gvtyp{\Phi,x:\interm}{N}{S}}z &=& x().\tocp{N}z
-  \quad \hspace{17mm} \text{($\interm$ weakening)} \\
-\tocp{\gvtyp{\Phi,x:\interm}{N[x/x']}{S}}z &=& \cut{x'}{}{\tocp{N}z}{x'[].0}
-  \quad \text{($\interm$ contraction)} \\
+%% \tocp{\gvtyp{\Phi,x:\interm}{N}{S}}z &=& x().\tocp{N}z
+%%   \quad \hspace{17mm} \text{($\interm$ weakening)} \\
+%% \tocp{\gvtyp{\Phi,x:\interm}{N[x/x']}{S}}z &=& \cut{x'}{}{\tocp{N}z}{x'[].0}
+%%   \quad \text{($\interm$ contraction)} \\
+\tocp{\gvtyp{\Phi,x:\interm}{N}{S}}z &=& x().\tocp{\gvtyp{\Phi}{N}{S}}z \\
+\tocp{\gvtyp{\Phi,x:\interm}{N[x/x']}{S}}z &=& 
+  \cut{x'}{}{\tocp{\gvtyp{\Phi,x:\interm,x':\interm}{N}{S}}z}{x'[].0} \\
 \tocp{x}z &=& \link{x}{z} \\
 \tocp{\gvsend{M}{N}}z &=& \cut{x}{}{x[y].(\tocp{M}y \mid \link{x}{z})}{\tocp{N}x} \\
 \tocp{\gvlet{(x,y)}{\gvreceive{M}}{M}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
@@ -1192,32 +1197,36 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
 \tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[1ex] \shaderow
 \tocp{\gvtyp{\Phi}{M}{G(\mu G)}}z &=&
-  \cut{y}{\nu \tocp{G}}{\tocp{M}y}{\rec{y}.\link{y}{z}} \\
-\end{equations}%
-\vspace{-1ex}
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\ \shaderow
+\tocp{\gvfix{p}{c\:x}{M}}z &=&
+\replicate{z}{y}.y(c).y(x).y().
+ \corec{c}{w}{w[x].w[].0}{\\ \shaderow
+&& \quad \cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\[1ex]
+%%\end{equations}%
+%%\vspace{-2ex}
 %% \[
 %% \shade{
 %% \tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z =
 %%   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}}
 %% }
 %% \]
-\[
-\shade{
-\bl
-\tocp{\gvfix{p}{c\:x}{M}}z =
-\replicate{z}{y}.y(c).y(x).y(). \\
-\quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
-\el
-}
-\]
-\begin{equations}
+%% \[
+%% \shade{
+%% \bl
+%% \tocp{\gvfix{p}{c\:x}{M}}z =
+%% \replicate{z}{y}.y(c).y(x).y(). \\
+%% \quad \corec{c}{w}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
+%% \el
+%% }
+%% \]
+%%\begin{equations}
 \shaderow
 \tocp{\gvtyp{\Phi}{M}{\mu G}}z &=&
 \key{new}\:y\:
   \bl
   (
-       \tocp{M}y \\
-  \mid \corec{z}{x}{}
+       \tocp{\gvtyp{\Phi}{M}{G(\mu G)}}y \\
+  \mid \corec{z}{x}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
   \el \\ \shaderow
@@ -1225,13 +1234,13 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \key{new}\:y\:
   \bl
   (
-       \tocp{M}y \\
-  \mid \corec{y}{x}{}
+       \tocp{\gvtyp{\Phi}{M}{\nu G}}y \\
+  \mid \corec{y}{x}
              {\link{y}{x}}
              {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
   \el \\ \shaderow
 \tocp{\gvtyp{\Phi}{M}{\nu G}} &=&
-  \cut{y}{\nu \tocp{G}}{\tocp{M}y}{\rec{z}.\link{y}{z}} \\
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G(\nu G)}}y}{\rec{z}.\link{y}{z}} \\
 \end{equations}%
 %% \[
 %% \shade{
@@ -1274,6 +1283,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 %% \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
 %% \el}
 %% \]
+\vspace{-2ex}
 \caption{Translation of \gvpi Terms into \mucp}\label{fig:tomucp}
 \end{figure}
 
@@ -1309,16 +1319,16 @@ for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $
   B)} = \cpdual{A} \parr \cpdual{B}.$
 %
 The translation on terms (Fig.~\ref{fig:tomucp}) is formally specified as a CPS translation on
-derivations as in Wadler's work. We provide the full translations of weakening and contraction for
-$\interm$, and for rolling and unrolling of recursive session types $\nu G$ and $\mu G$, as these
-steps are implicit in the syntax of \mugv terms. The other constructs depend only on the immediate
-syntactic structure, so we abbreviate their translations as mappings on plain terms. The majority of
-translations are as in our previous work.  The folding and unfolding of least fixed points in GV can
-be translated to cuts against the CP proofs of the corresponding equivalences. The translation of
-$\cofix$ is a corecursive process in which the \mugv coinvariant of type $T$ is represented as a
-\mucp coinvariant of type $\tocp{T} \otimes 1$.  We initially read the coinvariant $x$ from a
-channel $w$, and provide a channel $p$ which abstracts re-establishing the coinvariant at the end of
-each iteration.
+derivations as in Wadler's work. We abbreviate the derviation by its final judgement in the
+translations of weakening and contraction for $\interm$, and for rolling and unrolling of recursive
+session types $\nu G$ and $\mu G$, as these steps are implicit in the syntax of \mugv terms, but
+explcit in \mucp. The other constructs depend only on the immediate syntactic structure, so we
+abbreviate their translations as mappings on plain terms. The majority of translations are as in our
+previous work. The folding and unfolding of least fixed points in GV can be translated to cuts
+against the CP proofs of the corresponding equivalences. The translation of $\cofix$ is a
+corecursive process in which the \mugv coinvariant of type $T$ is represented as a \mucp coinvariant
+of type $\tocp{T} \otimes 1$.  We initially read the coinvariant $x$ from a channel $w$, and provide
+a channel $p$ which abstracts re-establishing the coinvariant at the end of each iteration.
 
 %% SL: now mention this earlier
 %%
@@ -1384,7 +1394,7 @@ output.
   \togv{\derelict{s}{x}.P} &=&
     \gvlet{x}{\gvrequest{s}}{\togv{P}} \\ \shaderow
   \togv{\rec{x}.P} &=& \togv{P} \\ \shaderow
-  \togv{\cptyp{\corec{c}{x}{}{P}{Q}}{\Gamma, c:\nu F}} &=&
+  \togv{\corecf{F}{c}{x}{P}{Q}} &=&
     \key{send}\:c\:(
       \key{send}\:
          \bl
@@ -1434,9 +1444,8 @@ are expanded to \gvpi as follows:
   \topi{(\lambda x.N) M} =
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]\normalsize%
-The translation on terms is given in Fig.~\ref{fig:fromcp}. Formally, the translation is actually
-from derivations to terms. The interesting case, which is the only one to use the type environment,
-is $\key{corec}$. The translation must simulate the expansion of the term $Q$, using $p$ to
+The translation on terms is given in Fig.~\ref{fig:fromcp}. The interesting case is
+$\key{corec}$. Its translation must simulate the expansion of the term $Q$, using $p$ to
 re-establish the coinvariant after each expansion, and thus depends on the translation of
 functoriality from \mucp to \mugv.
 
@@ -1613,7 +1622,7 @@ further exploration of concurrency and non-determinism in a logically-founded se
   {\inferrule*
      {\cptyp{P}{\Gamma,y:B} \\
       \cptyp{Q}{y:\cpdual{B},x:F(B)}}
-     {\cptyp{\corec{x}{y}{}{P}{Q}}{\Gamma,x:\nu F}} \\
+     {\cptyp{\corec{x}{y}{P}{Q}}{\Gamma,x:\nu F}} \\
    \inferrule*
      {\cptyp{R}{\Delta,x:\cpdual{F}(\mu (\cpdual{F}))}}
      {\cptyp{\rec{x}.R}{\Delta,x:\mu (\cpdual{F})}}}
@@ -1631,7 +1640,7 @@ further exploration of concurrency and non-determinism in a logically-founded se
   {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
 \el
 \]
-where $E = \map{F}{z,x}{\corec{z}{y}{}{\link{x}{y}}{Q[z/x]}}$.
+where $E = \map{F}{z,x}{\corec{z}{y}{\link{x}{y}}{Q[z/x]}}$.
 
 
 TODO:
