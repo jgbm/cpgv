@@ -190,10 +190,10 @@ of substitution.
 This paper makes the following contributions.
 \begin{itemize}
 \item Section~\ref{sec:mugv} extends GV to support recursion, yielding \mugv; and demonstrates its
-  power with a series of examples of streams and a calculator.  In \mugv, unlike in previous session
+  power with a series of examples of streams and a calculator. In \mugv, unlike in previous session
   type systems, least fixed points are dual to greatest fixed points and duality is preserved in all
   cases.
-\item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and present a
+\item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and presents a
   translation of some of the same examples. We show \mucp is guaranteed free of races, deadlock, and
   livelock.
 \item Section~\ref{sec:translation} presents type-preserving translations from \mugv into \mucp and
@@ -619,15 +619,16 @@ typing assumptions, the following would also be well-typed:
 %
 We restrict the typing rule for $\cofix$ in order to guarantee productivity. We use a fresh type
 variable $X$ to abstract the recursive behavior, so the channel $c$ has type $G(X)$ (in our example
-$\with \{\clabel{next}: \gvout{Nat}{X}, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$ has type
-$X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\cofix$ is thus required to provide
-precisely one iteration of the recursive behavior.
+$\with \{\clabel{next}: \gvout{Nat}{X}, \clabel{stop}: \outterm \}$) instead of $G(\nu G)$, and $f$
+has type $X \uto \outterm$ instead of $\nu G \uto \outterm$. The body of $\cofix$ is thus required
+to provide exactly one step of the corecursive behavior.
 
 \paragraph{Coinvariants.}
 
 We allow recursive sessions to maintain internal state (a \emph{coinvariant}). In the $\cofix$
-typing rule, this is captured by the additional arguments $\vec{x}$. For example, we can construct a
+typing rule this is captured by the additional arguments $\vec{x}$. For example, we can construct a
 stream of consecutive naturals:
+%
 \small\[
 \bl
   Nats : Source \uto \outterm \\
@@ -666,10 +667,18 @@ stream of the Fibonacci numbers as follows:
 
 \subsection{Multi-function Calculator}
 
-We now define a basic multi-function calculator. Our goal is a session that accepts a stream of
-addition and multiplication requests, and can at any time provide the accumulated result. We
-implement the provider of this session as follows:
-
+We now define a basic multi-function calculator. We aim to implement a process that accepts a stream
+of addition and multiplication requests, and can at any time provide the accumulated result:
+%
+\small\[
+ Calc = \nu X. \with \{ \clabel{add}: \gvin{Nat}{X},
+                        \clabel{mul}: \gvin{Nat}{X},
+                        \clabel{result}: \gvout{Nat}{X},
+                        \clabel{stop}: \outterm \}.
+\]\normalsize%
+%
+We implement a provider of calculator functionality as follows:
+%
 \small\[
 \bl
 MakeCalc : Calc \uto Nat \lto \outterm \\
@@ -692,14 +701,9 @@ MakeCalc = \lrkwd\:calc\:c\:accum = \\
   \el \\
 \el
 \]\normalsize
-The type of the recursive channel is:
-\small\[
- Calc = \nu X. \with \{ \clabel{add}: \gvin{Nat}{X},
-                        \clabel{mul}: \gvin{Nat}{X},
-                        \clabel{result}: \gvout{Nat}{X},
-                        \clabel{stop}: \outterm \}.
-\]\normalsize%
-Here is a consumer of the service:
+%The type of the recursive channel is:
+Here is an example of using a calculator:
+%
 \small\[
 \bl
   \gvlet{c}{\gvfork{c}{MakeCalc\:c\:0}}{} \\
@@ -1073,8 +1077,9 @@ freedom follows directly from confluence.
 \subsection{Streams}
 
 As we did for \mugv, we assume that our language is extended with constants implementing unlimited
-natural numbers. In particular, we will assume there is some proposition $Nat$, such that
-$\cpdual{Nat}$ is subject to contraction and weakening, and terms:
+natural numbers (we could implement $Nat$ within \mucp, but choose not to due to lack of space). In
+particular, assume there exists a proposition $Nat$, such that $\cpdual{Nat}$ is subject to
+contraction and weakening, and terms:
 %
 \small\[
 \begin{eqs}
@@ -1082,13 +1087,13 @@ Zero_x &\vdash& x:Nat \\
 Inc_{y,x} &\vdash& y:\cpdual{Nat},x:Nat \\
 \end{eqs}
 \]\normalsize
-providing zero and successor.
+%providing zero and successor.
 
-We can use fixed points in \mucp to encode streams of naturals.
+We can now use fixed points in \mucp to encode streams of naturals.
 %
 \small\begin{equations}
-  Sink &=& \mu X. \oplus \{ \clabel{next}: \cpdual{Nat} \parr X, \clabel{stop}: \bot \} \\
   Source &=& \nu X. \with \{ \clabel{next}: Nat \otimes X, \clabel{stop}: 1 \} \\
+  Sink &=& \mu X. \oplus \{ \clabel{next}: \cpdual{Nat} \parr X, \clabel{stop}: \bot \} \\
 \end{equations}\normalsize%
 
 %% Note that, following the typical treatment of duality in linear logic, we have that
