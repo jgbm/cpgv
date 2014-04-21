@@ -181,7 +181,7 @@ session types, taking least and greatest fixed points as duals. We show that the
 translations extend to the new systems, and that the new systems are still guaranteed free of races,
 deadlock, and livelock.
 
-\citet{Bono12} and \citet{Bernardi13} indepenently observed that the standard treatment of recursive
+\citet{Bono12} and \citet{Bernardi13} independently observed that the standard treatment of recursive
 session types fails to preserve duality in the case that the recursive variable appears within a
 carried type.  Their solution relies on an unusual form of substitution that applies only to the
 carried types within a session type, while ours avoids the problem while using only standard forms
@@ -429,7 +429,7 @@ Session Rules
           {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
 }
 \end{mathpar}
-Admissable Session Rules
+Admissible Session Rules
 \begin{mathpar}
 \shade{
 \inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
@@ -475,7 +475,7 @@ existing presentations of recursive session types~\citep{Honda98}.  The construc
 $\gvfix{f}{c\:\vec{x}}{M}$ is used to define corecursive sessions.  We provide for the rolling and
 unrolling of fixed points $\mu G$ and $\nu G$, implementing the equivalences among equirecursive
 types. As we will show in \secref{cptogvpi}, only the first of these coercion rules is necessary.
-The remaining rules are admissable, albeit at the cost of introducing additional computation.
+The remaining rules are admissible, albeit at the cost of introducing additional computation.
 
 
 % The novelty of \mugv is in its recursive and corecursive channels. The first rule allows us to
@@ -490,7 +490,7 @@ The remaining rules are admissable, albeit at the cost of introducing additional
 %  We illustrate its
 % use in the remainder of this section through a series of examples.
 % %
-% The remaining rules are admissable (though not all depth-preserving admissable~\cite{TroelstraBook},
+% The remaining rules are admissible (though not all depth-preserving admissible~\cite{TroelstraBook},
 % because two of them can only be defined in terms of functoriality---see \secref{mucp}---which is
 % type-directed). We include them as explicit rules in an effort to remain as close as possible to the
 % standard notion of equirecursive session type.
@@ -829,7 +829,7 @@ are designated $y$.
 
 \mucp has two structural rules, axiom and cut. We interpret the axiom $\link{x}{y}$ as channel
 forwarding: actions on channel $x$ are mirrored on $y$, and vice versa. Thus, $x$ and $y$ must have
-dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as commuication between processes $P$ and $Q$ on
+dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between processes $P$ and $Q$ on
 channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
 compatible. We identify \mucp up to structural equivalence:
 %
@@ -1374,7 +1374,7 @@ $\with$, and $\key{case}$ in CP. The translation on session types is as follows:
 \end{eqs}\\
 \ea
 \]\normalsize
-The translation is homomorphic except for output, where the argument type is dualised. This accounts
+The translation is homomorphic except for output, where the argument type is dualized. This accounts
 for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $\cpdual{(A \otimes
   B)} = \cpdual{A} \parr \cpdual{B}.$
 %
@@ -1569,7 +1569,7 @@ consequences of these different approaches in future work.
 intuitionistic linear logic (ILL) and session types. Their work shows both an interpretation of
 session types as ILL propositions, and a computational interpretation of ILL proofs as
 $\pi$-calculus processes. As a result, they are able to show that well-typed processes are free of
-races, dealock, and livelock, by analogy with corresponding cut-elimination results for
+races, deadlock, and livelock, by analogy with corresponding cut-elimination results for
 ILL. \citet{Toninho13} demonstrate an embedding of their calculus within a functional language; the
 resulting system admits unrestricted recursion in the functional setting, and can thus provide
 recursive communication behavior, but does not guarantee that the evaluation of function terms
@@ -1759,3 +1759,10 @@ McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
 * mention that we've implemented everything in the paper and more and the code is on github
 
 * mention that we've reimplemented all of Toninho et al's examples in mucp and mugv
+
+%%  LocalWords:  livelock Caires Pfenning Wadler Vasconcelos Baelde GayVasconcelos CairesPfenning
+%%  LocalWords:  intuitionistic CP GV LindleyM Toninho Yoshida DemangeonH duals Bernardi Wadler's
+%%  LocalWords:  gray exponentials polymorphism corecursion corecursive subformulas iff pos un fv
+%%  LocalWords:  homomorphic equirecursive cptogvpi versa dually th behavior replicable Baelde's et
+%%  LocalWords:  recognize corec coinvariant Nats HGV dualization tuple encodings ary pointwise al
+%%  LocalWords:  dualized functoriality Takeuchi Girard Abramsky BellinScott Kobayashi Dardha inl
