@@ -271,8 +271,8 @@ We extend the standard duality for non-recursive session types to include recurs
 \end{eqs}
 &
 \begin{eqs}
-  \gvdual{\gvserver{S}} &=& \gvservice{\gvdual{S}} \\
   \gvdual{\gvservice{S}} &=& \gvserver{\gvdual{S}} \\
+  \gvdual{\gvserver{S}} &=& \gvservice{\gvdual{S}} \\
 \end{eqs}
 %&
 %\begin{eqs}
@@ -698,7 +698,7 @@ The types of \mucp are the propositions of CLL, extended with type operators $F$
 $\mu F,\nu F$.
 \small\[\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top
-       \mid   \cpbang{A} \mid \cpquery{A} \\ \shaderow
+       \mid   \cpquery{A} \mid \cpbang{A} \\ \shaderow
    & & \mid & {X} \mid {\cpdual{X}}
        \mid   {\mu F} \mid {\nu F} \\ \shaderow
    \text{Type Operators} & F & ::= & X.A \\
@@ -1425,8 +1425,8 @@ We now present the translation $\togv{-}$ from CP to \gvpi. On types:
 \begin{eqs}
 \togv{+\{l_i:A_i\}_i}     &=& +\{l_i:\togv{A_i}\}_i  \\
 \togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\
-\togv{\cpbang{A}}   &=& \gvservice{\togv{A}} \\
-\togv{\cpquery{A}}  &=& \gvserver{\togv{A}} \\
+\togv{\cpquery{A}}  &=& \gvservice{\togv{A}} \\
+\togv{\cpbang{A}}   &=& \gvserver{\togv{A}} \\
 \end{eqs}
 &
 \begin{eqs}\shaderow
