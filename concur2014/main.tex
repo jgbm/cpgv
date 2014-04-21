@@ -169,8 +169,8 @@ classical linear logic. Wadler defines two systems, a process calculus CP (inspi
 Pfenning) and a linear functional language GV (inspired by Gay and Vasconcelos), and presents a
 type-preserving translation from GV to CP. Subsequently, \citet{LindleyM14} extended GV to support
 translation in the other direction, giving type-preserving translations not only from GV to CP but
-also from CP to GV. A hallmark of the process-as-types approach is that it yields systems guaranteed
-free of races, deadlock, and livelock, and both CP and GV benefit from these properties.
+also from CP to GV. A hallmark of the propositions-as-types approach is that it yields systems
+guaranteed free of races and deadlock; both CP and GV benefit from these properties.
 \citet{Toninho13,Toninho14} also treat recursion in systems inspired by a propositions-as-types
 correspondence, but they have no notion of duality for least and greatest fixed points.
 
@@ -190,10 +190,9 @@ of substitution.
 This paper makes the following contributions.
 \begin{itemize}
 \item Section~\ref{sec:mugv} extends GV to support recursion, yielding \mugv; and demonstrates its
-  power with a series of examples of streams and a calculator.
-  %, and a translation of a bit stream example due to \citet{Toninho13}.  In \mugv, unlike in
-  previous session type systems, least fixed points are dual to greatest fixed points and duality is
-  preserved in all cases.
+  power with a series of examples of streams and a calculator.  In \mugv, unlike in previous session
+  type systems, least fixed points are dual to greatest fixed points and duality is preserved in all
+  cases.
 \item Section~\ref{sec:mucp} extends CP to support recursion, yielding \mucp, and present a
   translation of some of the same examples. We show \mucp is guaranteed free of races, deadlock, and
   livelock.
@@ -459,7 +458,7 @@ are standard; note that, to account for linearity, the context is split in the r
 and pair introduction and elimination, and is restricted to unlimited types in the introduction of
 unlimited arrows.
 
-The rules for input, output, choice and selection are those of \citet{GayVasconcelos10}.  Following
+The typing of input, output, choice and selection are those of \citet{GayVasconcelos10}.  Following
 our earlier work~\citep{LindleyM14}, the term $\gvlink{M}{N}$ implements channel forwarding.
 %% ; while a version of \tkwd{link} exists for any session type $S$, it has no generic
 %% implementation in terms of other constructs of \mugv.
@@ -609,8 +608,8 @@ returning $(0, (0, 0))$.
 \paragraph{Productivity.}
 We might expect to assign $c$ the type $\with \{\clabel{next}:\:\gvout{Nat}{Source},
 \clabel{stop}:\:\outterm \}$ and $f$ the type $Source \uto \outterm$ in the body of $MakeZeros$, but
-then productivity would not be assured. For example, under those typing assumptions, the following
-would also be well-typed:
+then productivity would not be assured and deadlock would be possible. For example, under those
+typing assumptions, the following would also be well-typed:
 %
 \small\[
   \cofix\:f\:c = f\:c
@@ -773,7 +772,7 @@ fixed points in the expected fashion:
 \ea
 \]
 where $X^{\perp\perp} = X$, and we define the dual of a type operator by $\cpdual{F} =
-X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{F(A)} =
+X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{(F(A))} =
 \cpdual{F}(\cpdual{A})$.  Typing rules for \mucp terms are given in Fig.~\ref{fig:cp-typing}.  We
 write $fv(P)$ for the free variables used in process $P$; in the typing rules, new bound variables
 are designated $y$.
@@ -830,8 +829,8 @@ are designated $y$.
 
 \paragraph{Structural Rules.}
 
-\mucp has two structural rules, axiom and cut. We interpret the axiom $\link{x}{y}$ as channel
-forwarding: actions on channel $x$ are mirrored on $y$, and vice versa. Thus, $x$ and $y$ must have
+\mucp has two structural rules, axiom and cut. We interpret the axiom $\link{x}{w}$ as channel
+forwarding: actions on channel $x$ are mirrored on $w$, and vice versa. Thus, $x$ and $w$ must have
 dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between processes $P$ and $Q$ on
 channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
 compatible. We identify \mucp up to structural equivalence:
@@ -1120,10 +1119,10 @@ thus, $z$ has type $\cpdual{Nat} \otimes (\cpdual{Nat} \otimes \cpdual{Nat})$.
 \small\[
 \bl
   \mkwd{new}\:y\:(Nats_y \mid \bl
-    \rec{y}.\sel{y}{next}.y(a). 
-    \rec{y}.\sel{y}{next}.y(b). 
+    \rec{y}.\sel{y}{next}.y(a).
+    \rec{y}.\sel{y}{next}.y(b).
     \rec{y}.\sel{y}{next}.y(c). \\
-    \rec{y}.\sel{y}{stop}.y(). 
+    \rec{y}.\sel{y}{stop}.y().
     z[a].z[b].\link{z}{c}) \el
 \el\]\normalsize %
 
@@ -1393,7 +1392,7 @@ The rolling and unrolling of fixed points in \mugv can be translated to cuts aga
 proofs of the corresponding equivalences.
 %%
 %% SL: decided to comment the following out because I think it's too confusing here as is.
-%% 
+%%
 %%  Only one of these rules (unrolling $\mu G$ to $G (\mu G)$)
 %% corresponds directly to a term of \mucp; the remainder correspond to derivations in \mucp.
 %% , an observation that motivates our argument (in \secref{cptogvpi}) that they
@@ -1482,7 +1481,7 @@ that performs output.
 \caption{Translation of \mucp Terms into \gvpi}\label{fig:fromcp}
 \end{figure}
 
-We now present the translation $\togv{-}$ from CP to \gvpi. On types:
+We now present the translation $\togv{-}$ from \mucp to \gvpi. On types:
 \small\[
 \ba{@{}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
@@ -1516,8 +1515,8 @@ are expanded to \gvpi as follows:
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]\normalsize%
 The translation is given in Fig.~\ref{fig:fromcp}. The interesting cases are for \tkwd{rec} and
-\tkwd{corec}. The translation $\rec{x}.P$ relies on exactly one use of the rule that unrolls $\mu F$
-to $F (\mu F)$ applied to the variable $x$.
+\tkwd{corec}. The translation of $\rec{x}.P$ relies on exactly one use of the rule that unrolls $\mu
+F$ to $F (\mu F)$ applied to the variable $x$.
 %; none of the remaining unfolding are used in the typing derivation of $\togv{P}$.
 The translation of \tkwd{corec} simulates the expansion of $Q$, using $p$ to re-establish the
 coinvariant after each expansion, and thus depends on the translation of functoriality from \mucp to
