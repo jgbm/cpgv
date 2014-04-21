@@ -929,7 +929,7 @@ corresponding duality appears the typing rule for $\lrkwd$.
   (\key{corec}^F x\langle y \rangle(P, Q) \mid \rec{x}.R)
   &\Longrightarrow&
     \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{x'}{F(\nu F)}{Q'}{R[x'/x]}}} \\ \shaderow
-&& \hspace{-1em}\text{where }Q'\!= \map{F}{x',x}{\key{corec}^F x'\!\langle y \rangle(\link{x}{y}, Q[x'/x])} \\
+&& \hspace{-1em}\text{where }Q'\!= \map{F}{x,x'}{\key{corec}^F x'\!\langle y \rangle(\link{x}{y}, Q[x'/x])} \\
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
 \vspace{-2mm}
@@ -942,12 +942,12 @@ corresponding duality appears the typing rule for $\lrkwd$.
 \begin{equations}
   \map{X.C}{x,y}{P} &=& \link{x}{y}, \hfill\text{if $X$ is not free in $C$} \\[1ex]
   \map{X.X}{x,y}{P} &=& P \\[1ex]
-  \map{X.C_1 \otimes C_2}{x,y}{P} &=& y(y').x[x'].(\map{X.C_1}{x',y'}{P[x'/x,y'/y]} \mid \map{X.C_2}{x,y}{P}) \\[1ex]
+  \map{X.C_1 \otimes C_2}{x,y}{P} &=& x(x').y[y'].(\map{X.C_1}{x',y'}{P[x'/x,y'/y]} \mid \map{X.C_2}{x,y}{P}) \\[1ex]
   \map{X.C_1 \oplus C_2}{x,y}{P} &=&
-    \case{y}{\sel{x}{in_1}.\map{X.C_1}{x,y}{P}; \sel{x}{in_2}.\map{X.C_2}{x,y}{P}} \\[1ex]
-  \map{X.\cpquery{C}}{x,y}{P} &=& \replicate{y}{y'}.\derelict{x}{x'}.P[x'/x,y'/y] \\[1ex]
+    \case{x}{\sel{y}{in_1}.\map{X.C_1}{x,y}{P}; \sel{y}{in_2}.\map{X.C_2}{x,y}{P}} \\[1ex]
+  \map{X.\cpquery{C}}{x,y}{P} &=& \replicate{x}{x'}.\derelict{y}{y'}.P[x'/x,y'/y] \\[1ex]
   \map{X.\mu F}{x,y}{P} &=&
-    \key{corec}^F y\langle x' \rangle(\link{x}{x'}, \rec{x'}.\map{X.F (\mu F)}{x',y}{P[x'/x]}) \\
+    \key{corec}^F x\langle y' \rangle(\link{y}{y'}, \rec{y'}.\map{X.F (\mu F)}{x,y'}{P[y'/y]}) \\
 \end{equations}%
 %% \begin{equations}
 %%   \map{X.C}{x,w}{Q} &=& \link{x}{w} \\
@@ -969,7 +969,7 @@ fixed points corresponds to unrolling one iteration from the \tkwd{corec} term, 
 of the fixed point operator $F$.  It depends on a proof construction known as functoriality, which
 derives the following proof rule for any type operator $F$:
 \small\[
-\inferrule{\vdash A,B}{\vdash F(A),\cpdual{F}(B)}
+\inferrule{\vdash A,B}{\vdash \cpdual{F}(A),F(B)}
 \]\normalsize
 We call the term implementing this construction $\mapname$ by analogy with a similar construct in
 functional programming.
@@ -981,7 +981,7 @@ The positive cases of $\mapname$ are given in Fig.~\ref{fig:map}; the remaining 
 by exchanging channels $x$ and $y$.
 
 \begin{lemma}
-  If $\cptyp{P}{x:A,y:B}$ then \(\cptyp{\map{F}{x,y}{P}}{x:F(A),y:\cpdual{F}(B)}.\)
+  If $\cptyp{P}{x:A,y:B}$ then \(\cptyp{\map{F}{x,y}{P}}{x:\cpdual{F}(A),y:F(B)}.\)
 \end{lemma}
 
 \begin{figure}[float]
@@ -1230,7 +1230,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
        \tocp{\gvtyp{\Phi}{M}{G(\mu G)}}y \\
   \mid \corec{z}{x}
              {\link{y}{x}}
-             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+             {\map{G}{z,x}{\rec{x}.\link{x}{z}}}) \\
   \el \\ \shaderow
 \tocp{\gvtyp{\Phi}{M}{G(\nu G)}}z &=&
 \key{new}\:y\:
@@ -1239,7 +1239,7 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
        \tocp{\gvtyp{\Phi}{M}{\nu G}}y \\
   \mid \corec{y}{x}
              {\link{y}{x}}
-             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+             {\map{G}{z,x}{\rec{x}.\link{x}{z}}}) \\
   \el \\ \shaderow
 \tocp{\gvtyp{\Phi}{M}{\nu G}} &=&
   \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G(\nu G)}}y}{\rec{z}.\link{y}{z}} \\
@@ -1407,7 +1407,7 @@ output.
 {\qquad\text{where }
   Q_{F,p,c,x} =
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
-          {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
+          {\togv{\map{F}{c',c}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
 \end{equations}%
 \caption{Translation of \mucp Terms into \gvpi}\label{fig:fromcp}
 \end{figure}
@@ -1641,7 +1641,7 @@ further exploration of concurrency and non-determinism in a logically-founded se
   {\cptyp{\cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{z}{F(\nu F)}{E}{R[z/x]}}}}{\Gamma,\Delta}}
 \el
 \]
-where $E = \map{F}{z,x}{\corec{z}{y}{\link{x}{y}}{Q[z/x]}}$.
+where $E = \map{F}{x,z}{\corec{z}{y}{\link{x}{y}}{Q[z/x]}}$.
 
 
 TODO:
