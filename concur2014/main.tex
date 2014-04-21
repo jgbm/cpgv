@@ -2,13 +2,14 @@
 
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xspace}
+\usepackage{amsmath,amssymb,mathwidth,stmaryrd,xspace,url,hyperref}
 \usepackage[table]{xcolor}
 \usepackage{colortbl}
 \addtolength{\jot}{-3px}
 
 % Attempt to duplicate Springer's style of references
 \usepackage[authoryear,compress,round]{natbib}
+%\usepackage[numbers,sort&compress]{natbib}
 \renewcommand{\bibsection}{\section*{References}}
 \renewcommand{\bibpreamble}{\scriptsize}
 
@@ -510,9 +511,11 @@ The remaining rules are admissable, albeit at the cost of introducing additional
 
 %\paragraph{Naturals.}
 
-The remainder of the section illustrates the use of $\lrkwd$.  We will write
-$\key{let}\:x=M\:\key{in}\:N$ for $(\lambda x.M)\:N$ and assume an extension of \mugv with a type of
-naturals ($Nat$), literals ($0,1,\dots$), addition ($+$), and multiplication ($\times$).
+The remainder of the section presents several examples illustrating the use of $\lrkwd$. In
+addition, we have implemented a prototype of \mugv plus various extensions, and we have implemented
+many examples, including all of those of \citet{Toninho13}. All of the code is available online:
+\url{https://github.com/jgbm/cpgv}.
+
 
 % natural number ($Nat$) and Boolean ($Bool$) base types along with constants ($0,1,\dots$),
 % addition ($+$) and multiplication ($\times$), boolean constants ($True, False$), and conditionals
@@ -523,6 +526,10 @@ naturals ($Nat$), literals ($0,1,\dots$), addition ($+$), and multiplication ($\
 %% streamline the presentation.
 
 \subsection{Streams}
+
+We will write $\key{let}\:x=M\:\key{in}\:N$ for $(\lambda x.M)\:N$ and assume an extension of \mugv
+with a type of naturals ($Nat$), literals ($0,1,\dots$), addition ($+$), and multiplication
+($\times$).
 
 A canonical example of a corecursive data type is a stream. Let us consider a session type for
 producing a stream of naturals.
