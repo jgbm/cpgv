@@ -402,33 +402,40 @@ Session Rules
 %% \end{mathpar}
 %% Replicated session rules
 %% \begin{mathpar}
+\inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
+          {\gvtyp{\Phi}{\gvrequest{M}}{S}}
+
 \inferrule{\gvtyp{\Phi,x:\gvdual{S}}{M}{\outterm} \\
            un(\Phi)}
           {\gvtyp{\Phi}{\gvserve{x}{M}}{\gvservice{S}}}
-
-\inferrule{\gvtyp{\Phi}{M}{\gvservice{S}}}
-          {\gvtyp{\Phi}{\gvrequest{M}}{S}}
 \\
+\shade{
+\inferrule{\gvtyp{\Phi}{M}{\mu G}}
+          {\gvtyp{\Phi}{M}{G (\mu G)}}
+}
+
+\shade{
+\inferrule{\gvtyp{f:X \uto \vec{T} \lto \outterm, c:G(X), \vec{x}:\vec{T}}{M}{\outterm}}
+          {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
+}
+\end{mathpar}
+Admissable Session Rules
+\begin{mathpar}
 \shade{
 \inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}
           {\gvtyp{\Phi}{M}{\mu G}}
 }
 
 \shade{
-\inferrule{\gvtyp{\Phi}{M}{\mu G}}
-          {\gvtyp{\Phi}{M}{G (\mu G)}}
+\inferrule{\gvtyp{\Phi}{M}{\nu G}}
+          {\gvtyp{\Phi}{M}{G(\nu G)}}
 }
 
-%% \inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}
-%%           {\gvtyp{\Phi}{M}{\nu G}}
-%%
-%% \inferrule{\gvtyp{\Phi}{M}{\nu G}}
-%%           {\gvtyp{\Phi}{M}{G(\nu G)}}
-%%
 \shade{
-\inferrule{\gvtyp{f:X \uto \vec{T} \lto \outterm, c:G(X), \vec{x}:\vec{T}}{M}{\outterm}}
-          {\gvtyp{}{\gvfix{f}{c\:\vec{x}}{M}}{\nu G \uto \vec{T} \lto \outterm}}
+\inferrule{\gvtyp{\Phi}{M}{G(\nu G)}}
+          {\gvtyp{\Phi}{M}{\nu G}}
 }
+
 \end{mathpar}
 
 %% \todo{add definition of $un$ to this figure?}
@@ -454,8 +461,10 @@ The rule for $\gvserve{x}{M}$ parallels that
 for $\tkwd{fork}$: it defines a server which replicates $M$, and returns the channel by which it may
 be used (of type $\gvdual{\gvserver{S}} = \gvservice{\gvdual{S}}$).
 
-The novelty of \mugv is in its recursive and corecursive channels. The first two typing rules allow
-recursive session types to be used as their unfoldings.
+The novelty of \mugv is in its recursive and corecursive channels. The first rule allows us to
+unroll a recursive session type.
+%% The first two typing rules allow
+%% recursive session types to be used as their unfoldings.
 % SL: possibly restore this?
 %% Previous work on recursive sessions has defined typing rules up to unfolding of recursive types. We
 %% present explicit rules in order to simplify the translation into \mucp, in which these rules will
@@ -463,6 +472,11 @@ recursive session types to be used as their unfoldings.
 %
 The construct $\gvfix{f}{c\:\vec{x}}{M}$ is used to define corecursive sessions. We illustrate its
 use in the remainder of this section through a series of examples.
+%
+The remaining rules are admissable (though not all depth-preserving admissable~\cite{TroelstraBook},
+because two of them can only be defined in terms of functoriality---see \secref{sec:mucp}---which is
+type-directed). We include them as explicit rules in an effort to remain as close as possible to the
+standard notion of equirecursive session type.
 
 %\paragraph{Syntactic Sugar.}
 %
@@ -1173,20 +1187,15 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 \tocp{\gvserve{y}{M}}z &=& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
-\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\[1ex] \shaderow
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z &=&
-  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}} \\[3ex] \shaderow
-\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z &=&
-\key{new}\:y\:
-  \bl
-  (    %{\tocp{G}(\mu \tocp{G})}
-       {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
-  \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
-             {\link{y}{x}}
-             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
-  \el \\[-1ex]
+\tocp{\gvrequest{M}}z &=& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\
 \end{equations}%
 \vspace{-2ex}
+\[
+\shade{
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\mu G}}{\gvtyp{\Phi}{M}{G (\mu G)}}}\!\!z =
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{\mu G}}y}{\rec{y}.\link{y}{z}}
+}
+\]
 \[
 \shade{
 \bl
@@ -1194,6 +1203,36 @@ If $\gvtyp{\Phi}{M}{T}$ then $\gvtyp{\topi{\Phi}}{\topi{M}}{\topi{T}}$.
 \replicate{z}{y}.y(c).y(x).y(). \\
 \quad \corec{c}{w}{}{w[x].w[].0}{\cut{p}{}{\replicate{p}{y}.y(c).y(x).y().c[x].c[].0}{w(x).\tocp{M}w}} \\
 \el
+}
+\]
+\[
+\shade{
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G(\mu G)}}{\gvtyp{\Phi}{M}{\mu G}}}\!\!z =
+\key{new}\:y\:
+  \bl
+  (    %{\tocp{G}(\mu \tocp{G})}
+       {\tocp{\gvtyp{\Phi}{M}{G (\mu G)}}}y \\
+  \mid \corec{z}{x}{\tocp{G}(\mu \tocp{G})}
+             {\link{y}{x}}
+             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+  \el \\[-1ex]}
+\]
+\[
+\shade{
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{\nu G}}{\gvtyp{\Phi}{M}{G(\nu G)}}}\!\!z =
+\key{new}\:y\:
+  \bl
+  (    %{\tocp{G}(\mu \tocp{G})}
+       {\tocp{\gvtyp{\Phi}{M}{\nu G}}}y \\
+  \mid \corec{y}{x}{\tocp{\nu G}}
+             {\link{y}{x}}
+             {\map{G}{x,z}{\rec{x}.\link{x}{z}}}) \\
+  \el \\[-1ex]}
+\]
+\[
+\shade{
+\tocpbig{\inferrule{\gvtyp{\Phi}{M}{G (\nu G)}}{\gvtyp{\Phi}{M}{\nu G}}}\!\!z =
+  \cut{y}{\nu \tocp{G}}{\tocp{\gvtyp{\Phi}{M}{G (\nu G)}}y}{\rec{z}.\link{y}{z}}
 }
 \]
 %% \[
@@ -1612,4 +1651,4 @@ translations to be completely syntax-directed:
 
 * consider switching the order of the arguments to map to make it's definition nicer
 
- 
+* fill in Troelstra reference
