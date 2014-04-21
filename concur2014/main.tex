@@ -123,7 +123,7 @@
 \newcommand\shaderow{\noalign{\vskip-0.4pt}\rowcolor{shade}[0.6mm]}
 %%%
 
-\title{The least must speak with the greatest\vspace{-3mm}}
+\title{The Least Must Speak with the Greatest\vspace{-3mm}}
 \author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
 \institute{The University of Edinburgh \\
            \email{\{Garrett.Morris,Sam.Lindley,Philip.Wadler\}@ed.ac.uk} \vspace{-5mm}}
@@ -137,9 +137,9 @@
 
 \begin{abstract}
   We extend a propositions-as-types correspondence between linear logic and session types to include
-  recursive sessions.  Our extension takes least and greatest fixed points as dual, an idea well-known
-  to theorists, but which has not previously appeared in the treatment of recursive sessions. We
-  preserve the freedom from races, deadlock, and livelock that is a hallmark of the
+  recursive sessions.  Our extension takes least and greatest fixed points as dual, an idea
+  well-known to theorists, but which has not previously appeared in the treatment of recursive
+  sessions. We preserve the freedom from races, deadlock, and livelock that is a hallmark of the
   propositions-as-types approach, and avoid a problem with preservation of duality that appears in
   the standard treatment of recursive session types. We treat two systems, one based on classical
   linear logic, derived from work of Caires and Pfenning and of Wadler, and one based on a linear
@@ -241,8 +241,10 @@ variations on the closed channel ($\interm$) and ($\outterm$); these arise from 
 of session types in classical linear logic, where there is no self-dual proposition corresponding to
 closed channels.  We include a notion of replicated sessions, corresponding to exponentials in
 linear logic: a channel of type $\gvservice{S}$ is a service, offering any number of channels of
-type $S$; a channel of type $\gvserver{S}$ is the server providing such channels. (We have chosen
-the syntax $\gvserver{S}$ and $\gvservice{S}$ as $!$ and $?$ are already used for input and output.)
+type $S$; a channel of type $\gvserver{S}$ is the server providing such channels.
+%
+%% (We have chosen
+%% the syntax $\gvserver{S}$ and $\gvservice{S}$ as $!$ and $?$ are already used for input and output.)
 %
 For simplicity, we omit polymorphism as it is an orthogonal concern.
 %
@@ -255,11 +257,11 @@ Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$).
 % The linearity of $T$ is determined by its top level type constructor.
 All types are linear except unlimited functions $T \uto U$, replicated channels $\gvservice{S}$, and
 closed input channels $\interm$.
-
-We extend the standard duality for non-recursive session types to include recursive session types:
+%
+We extend the standard notion of duality to recursive and corecursive session types:
+%
 \small\[
-%\ba{@{}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{\quad}c@{}}
-\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
+\ba{@{}c@{\quad~}c@{\quad~}c@{\quad~}c@{\quad~}c@{}}
 \begin{eqs}
 \gvdual{\gvout{T}{S}} &=& \gvin{T}{\gvdual{S}} \\
 \gvdual{\gvin{T}{S}} &=& \gvout{T}{\gvdual{S}} \\
@@ -294,10 +296,10 @@ We extend the standard duality for non-recursive session types to include recurs
 where $\gvdual{\gvdual{X}} = X$ and we define the dual of an operator $G = X.S$ as $\gvdual{G} =
 X.\gvdual{G(\gvdual{X})}.$ Observe that $\gvdual{G(S)} = \gvdual{G}(\gvdual{S})$.  Unlike many
 notions of duality for session types, our definition preserves duality when recursive session types
-are unfolded, even when the recursion occurs in the carried types.  For example, consider the
+are unrolled, even when the recursion occurs in the carried types. For example, consider the
 operator $G = X.\gvin{X}{\interm}$, its dual $\gvdual{G} = X.\gvout{\gvdual{X}}{\outterm}$, and the
-dual session types $\mu G$ and $\nu \gvdual{G}$. Unfolding $\mu G$ yields $G(\mu G) =
-\gvin{\mu G}{\interm}$; unfolding $\nu \gvdual{G}$ yields
+dual session types $\mu G$ and $\nu \gvdual{G}$. Unrolling $\mu G$ yields $G(\mu G) = \gvin{\mu
+  G}{\interm}$; unrolling $\nu \gvdual{G}$ yields
 %\small\[
   $\gvdual{G}(\nu \gvdual{G}) = \gvout{\gvdual{\nu \gvdual{G}}}{\outterm} = \gvout{\mu G}{\outterm}$,
 %\]\normalsize
@@ -458,21 +460,20 @@ and pair introduction and elimination, and is restricted to unlimited types in t
 unlimited arrows.
 
 The rules for input, output, choice and selection are those of \citet{GayVasconcelos10}.  Following
-our earlier work~\citep{LindleyM14}, we provide a term $\gvlink{M}{N}$ to implement channel
-forwarding.
+our earlier work~\citep{LindleyM14}, the term $\gvlink{M}{N}$ implements channel forwarding.
 %% ; while a version of \tkwd{link} exists for any session type $S$, it has no generic
 %% implementation in terms of other constructs of \mugv.
 The \tkwd{fork} construct provides session initiation.
 % ; like Wadler's GV, but unlike LAST (and much
 % other work on process calculi), \mugv is deterministic.
-The rule for $\gvserve{x}{M}$ parallels that
-for $\tkwd{fork}$: it defines a server which replicates $M$, and returns the channel by which it may
-be used (of type $\gvdual{\gvserver{S}} = \gvservice{\gvdual{S}}$).
+The rule for $\gvserve{x}{M}$ parallels that for $\tkwd{fork}$: it defines a server which replicates
+$M$, and returns the channel by which it may be used (of type $\gvdual{\gvserver{S}} =
+\gvservice{\gvdual{S}}$).
 
 The novelty of \mugv is in its recursive and corecursive channels; we attempt to remain close to
 existing presentations of recursive session types~\citep{Honda98}.  The construct
-$\gvfix{f}{c\:\vec{x}}{M}$ is used to define corecursive sessions.  We provide for the folding and
-unfolding of fixed points $\mu G$ and $\nu G$, implementing the equivalences among equirecursive
+$\gvfix{f}{c\:\vec{x}}{M}$ is used to define corecursive sessions.  We provide for the rolling and
+unrolling of fixed points $\mu G$ and $\nu G$, implementing the equivalences among equirecursive
 types. As we will show in \secref{cptogvpi}, only the first of these coercion rules is necessary.
 The remaining rules are admissable, albeit at the cost of introducing additional computation.
 
@@ -661,8 +662,8 @@ stream of the Fibonacci numbers as follows:
 
 \subsection{Multi-function Calculator}
 
-Our next example is a simple multi-function calculator. Our goal is a session that accepts a stream
-of addition and multiplication requests, and can at any time provide the accumulated result.  We can
+We now define a basic multi-function calculator. Our goal is a session that accepts a stream of
+addition and multiplication requests, and can at any time provide the accumulated result. We
 implement the provider of this session as follows:
 
 \small\[
@@ -728,9 +729,9 @@ and fixed points $\mu F,\nu F$.
    \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]\normalsize
 %
-(As with \mugv, we have omitted polymorphism as it is orthogonal to the rest of the development.)
-If $F = X.A$, define $F(B) = A[B/X]$. The standard notion of classical linear logic duality is
-extended to fixed points in the expected fashion:
+(As with \mugv, we omit polymorphism as it is orthogonal to the rest of the development.)  If $F =
+X.A$, define $F(B) = A[B/X]$. The standard notion of classical linear logic duality is extended to
+fixed points in the expected fashion:
 \[
 \ba{c}
 \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
@@ -818,7 +819,7 @@ are designated $y$.
 
 \shade{\inferrule{\cptyp{P}{\Gamma,y:A} \\
                   \cptyp{Q}{y:\cpdual{A},x:F(A)}}
-                 {\cptyp{\corec{x}{y}{P}{Q}}{\Gamma,x:\nu F}}}
+                 {\cptyp{\corecf{F}{x}{y}{P}{Q}}{\Gamma,x:\nu F}}}
 \end{mathpar}
 \vspace{-1mm}
 \caption{Typing Rules for \mucp}\label{fig:cp-typing}
@@ -830,7 +831,7 @@ are designated $y$.
 forwarding: actions on channel $x$ are mirrored on $y$, and vice versa. Thus, $x$ and $y$ must have
 dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as commuication between processes $P$ and $Q$ on
 channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
-compatible. As usual, we identify \mucp up to structural equivalence:
+compatible. We identify \mucp up to structural equivalence:
 %
 \small\begin{equations}
   \link{x}{w} &\equiv& \link{w}{x} \\
@@ -899,8 +900,8 @@ combined with the duality between the fixed points. We begin with a two-sided pr
 
 \inferrule{A \vdash F(A) \\ \Gamma \vdash A}{\Gamma \vdash \nu F}
 \end{mathpar}\normalsize%
-Functional programmers may recognize the first as the typing rule of a fold, and the fourth as the
-typing rule of an unfold. We adapt the above rules to a one sided presentation as follows.
+Functional programmers may recognize the first as the rule for a fold, and the fourth as the rule
+for an unfold. We adapt the above rules to a one sided presentation as follows.
 %
 (As $\Gamma$ denotes any context, we write $\Gamma$ instead of $\cpdual{\Gamma}$).
 %
@@ -924,10 +925,11 @@ top-left rule is just an instance of the bottom-right rule.
 %%
 %% \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 %% \end{mathpar}\normalsize%
-The bottom rules are the typing rules for the \mucp terms $\rec{x}.P$ and $\corec{x}{y}{P}{Q}$. As
-in \mugv, \tkwd{corec} terms maintain a coinvariant $y$, of type $A$. The coinvariant can be seen as
-being sent from $P$ to $Q$; thus, its type is dual in $P$ and $Q$. As carried types are not dual in
-\mugv, no corresponding duality appears in the typing rule for $\lrkwd$.
+The bottom rules are the typing rules for the \mucp terms $\rec{x}.P$ and
+$\corecf{F}{x}{y}{P}{Q}$. We will often omit the $F$ annotation. As in \mugv, \tkwd{corec} terms
+maintain a coinvariant $y$, of type $A$. The coinvariant can be seen as being sent from $P$ to $Q$;
+thus, its type is dual in $P$ and $Q$. As carried types are not dual in \mugv, no corresponding
+duality appears in the typing rule for $\lrkwd$.
 
 \subsection{Cut Elimination}
 
@@ -956,10 +958,10 @@ being sent from $P$ to $Q$; thus, its type is dual in $P$ and $Q$. As carried ty
   &\Longrightarrow&
     \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\ \shaderow
 \key{new}\:x\: %{\nu F}
-  (\key{corec}^F x\langle y \rangle(P, Q) \mid \rec{x}.R)
+  (\corecf{F}{x}{y}{P}{Q} \mid \rec{x}.R)
   &\Longrightarrow&
     \cut{y}{B}{P}{\cut{x}{F(B)}{Q}{\cut{x'}{F(\nu F)}{Q'}{R[x'/x]}}} \\ \shaderow
-&& \hspace{-1em}\text{where }Q'\!= \map{F}{x,x'}{\key{corec}^F x'\!\langle y \rangle(\link{x}{y}, Q[x'/x])} \\
+&& \hspace{-1em}\text{where }Q'\!= \map{F}{x,x'}{\corecf{F}{x}{y}{\link{x}{y}}{Q[x'/x]}} \\
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
 \vspace{-2mm}
@@ -977,7 +979,7 @@ being sent from $P$ to $Q$; thus, its type is dual in $P$ and $Q$. As carried ty
     \case{x}{\sel{y}{in_1}.\map{X.C_1}{x,y}{P}; \sel{y}{in_2}.\map{X.C_2}{x,y}{P}} \\[1ex]
   \map{X.\cpquery{C}}{x,y}{P} &=& \replicate{x}{x'}.\derelict{y}{y'}.P[x'/x,y'/y] \\[1ex]
   \map{X.\mu F}{x,y}{P} &=&
-    \key{corec}^F x\langle y' \rangle(\link{y}{y'}, \rec{y'}.\map{X.F (\mu F)}{x,y'}{P[y'/y]}) \\
+    \corecf{F}{x}{y'}{\link{y}{y'}}{\rec{y'}.\map{X.F (\mu F)}{x,y'}{P[y'/y]}} \\
 \end{equations}%
 %% \begin{equations}
 %%   \map{X.C}{x,w}{Q} &=& \link{x}{w} \\
@@ -994,7 +996,7 @@ being sent from $P$ to $Q$; thus, its type is dual in $P$ and $Q$. As carried ty
 
 Cut elimination corresponds to synchronous process reduction.  The principal cut reductions are
 given in Fig.~\ref{fig:beta-reduction}. The majority of these are standard; for instance, cut
-reduction of $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.  Cut
+reduction of $\with$ against $\oplus$ corresponds to picking one of the offered alternatives. Cut
 reduction for fixed points corresponds to unrolling one iteration from the \tkwd{corec} term,
 directed by the type of the fixed point operator $F$.  It depends on a proof construction known as
 functoriality, which derives the following proof rule for any type operator $F$: \small\[
@@ -1073,9 +1075,10 @@ Inc_{y,x} &\vdash& y:\cpdual{Nat},x:Nat \\
 \]\normalsize
 providing zero and successor.
 
-We can use \mucp fixed points to encode streams of naturals.
+We can use fixed points in \mucp to encode streams of naturals.
+%
 \small\begin{equations}
-  Sink &=& \mu X. \oplus \{ \clabel{next}: \cpdual{Nat} \parr X, \clabel{stop}: \bot \}, \\
+  Sink &=& \mu X. \oplus \{ \clabel{next}: \cpdual{Nat} \parr X, \clabel{stop}: \bot \} \\
   Source &=& \nu X. \with \{ \clabel{next}: Nat \otimes X, \clabel{stop}: 1 \} \\
 \end{equations}\normalsize%
 
@@ -1133,8 +1136,8 @@ Following our previous work, we factor the translation of \mugv into \mucp throu
 translation. The language \gvpi is the restriction of \mugv to session types; that is, \mugv without
 $\lto$, $\uto$, or $\otimes$. In order to avoid $\otimes$, we permit $\gvreceive{M}$, only fused
 with a pair elimination $\gvlet{(x, y)}{\gvreceive{M}}{N}$. We can simulate all non-session types as
-session types via a translation from \mugv to \gvpi.  The translation on types is exactly as in our
-previous work. It is given by the homomorphic extension of the following equations:
+session types via a translation from \mugv to \gvpi. The translation on types is given by the
+homomorphic extension of the following equations:
 %\[
 %\ba{@{}rclcl@{}}
 %\topi{T \lto U}    &=& \gvdual{\gvin{\gvdual{\topi{T}}}{\topi{U}}}
@@ -1152,17 +1155,15 @@ previous work. It is given by the homomorphic extension of the following equatio
 \topi{T \otimes U} = \gvin{\topi{T}}{\topi{U}} \\
 \ea
 \]\normalsize
-Each target type is the interface to the simulated source type. A
-linear function is simulated by input on a channel; its interface is
-output on the other end of the channel. An unlimited function is
-simulated by a server; its interface is the service on the other end
-of that channel. A tensor is simulated by output on a channel; its
-interface is input on the other end of that channel. This duality
-between implementation and interface explains the dualization of types in
-Wadler's original CPS translation from GV to CP.
+Each target type is the interface to the simulated source type. A linear function is simulated by
+input on a channel; its interface is output on the other end of the channel. An unlimited function
+is simulated by a server; its interface is the service on the other end of that channel. A tensor is
+simulated by output on a channel; its interface is input on the other end of that channel. This
+duality between implementation and interface explains the dualization of types in Wadler's original
+CPS translation from GV to CP.
 %
 To translate away the arrows in the $\lrkwd$ rule, we adopt a simplified session-oriented variant of
-$\lrkwd$ for \gvpi.
+$\lrkwd$ for \gvpi:
 %
 \small\begin{mathpar}
 \inferrule{\gvtyp{p:\gvservice{(\gvout{X}{\gvout{T}{\outterm}})}, c:G(X), x:T}{M}{\outterm}}
@@ -1203,7 +1204,7 @@ multiple arguments using $\otimes$.
 \end{figure}
 
 The translation on terms is given by the homomorphic extension of the equations in
-Fig.~\ref{fig:togvpi}.  Formally, this is a translation from derivations to terms. We write type
+Fig.~\ref{fig:togvpi}. Formally, this is a translation from derivations to terms. We write type
 annotations to indicate $\to$ introduction and elimination.
 % For all other cases, it is unambiguous to give the translation
 % on plain term syntax. Each introduction form translates to an interface $\gvfork{z}{M}$ of type
@@ -1378,17 +1379,25 @@ for the discrepancy between $\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual{S}}$ and $
   B)} = \cpdual{A} \parr \cpdual{B}.$
 %
 The translation on terms (Fig.~\ref{fig:tomucp}) is formally specified as a CPS translation on
-derivations as in Wadler's work. We abbreviate the derviation by its final judgement in the
+derivations as in Wadler's work. We abbreviate the derivation by its final judgement in the
 translations of weakening and contraction for $\interm$, and for rolling and unrolling of recursive
 session types $\nu G$ and $\mu G$, as these steps are implicit in the syntax of \mugv terms, but
 explicit in \mucp. The other constructs depend only on the immediate syntactic structure, so we
 abbreviate their translations as mappings on plain terms. The majority of translations are as in our
-previous work. The folding and unfolding of least fixed points in GV can be translated to cuts
-against the CP proofs of the corresponding equivalences.  Note that only one of the unfoldings (that
-from $\mu G$ to $G (\mu G)$) corresponds directly to a term of \mucp; the remainder correspond to
-derivations in \mucp, an observation that motivates our argument (in \secref{cptogvpi}) that they
-are also derivable in \mugv. The translation of $\cofix$ is a corecursive process with coinvariant
-$x$ in which $p$ abstracts re-esatablishing the coinvariant at the end of each step.
+previous work.
+%
+The rolling and unrolling of fixed points in \mugv can be translated to cuts against the \mucp
+proofs of the corresponding equivalences.
+%%
+%% SL: decided to comment the following out because I think it's too confusing here as is.
+%% 
+%%  Only one of these rules (unrolling $\mu G$ to $G (\mu G)$)
+%% corresponds directly to a term of \mucp; the remainder correspond to derivations in \mucp.
+%% , an observation that motivates our argument (in \secref{cptogvpi}) that they
+%% are also derivable in \mugv.
+%
+The translation of $\cofix$ is a corecursive process with coinvariant $x$ in which $p$ abstracts
+re-establishing the coinvariant at the end of each step.
 
 %% SL: now mention this earlier
 %%
@@ -1503,12 +1512,13 @@ are expanded to \gvpi as follows:
   \topi{(\lambda x.N) M} =
   \gvsend{M}{(\gvfork{z}{\gvreceivek{x}{z}{z}{\gvlink{N}{z}}})}
 \]\normalsize%
-The translation on terms is given in Fig.~\ref{fig:fromcp}. The interesting cases are for \tkwd{rec}
-and \tkwd{corec}. The translation $\rec{x}.P$ relies on exactly one use of the rule that unfolds
-$\mu F$ to $F (\mu F)$ applied to the variable $x$; none of the remaining unfoldings are used in the
-typing derivation of $\togv{P}$. The translation of \tkwd{corec} must simulate the expansion of the
-term $Q$, using $p$ to re-establish the coinvariant after each expansion, and thus depends on the
-translation of functoriality from \mucp to \mugv.
+It is given in Fig.~\ref{fig:fromcp}. The interesting cases are for \tkwd{rec} and \tkwd{corec}. The
+translation $\rec{x}.P$ relies on exactly one use of the rule that unrolls $\mu F$ to $F (\mu F)$
+applied to the variable $x$.
+%; none of the remaining unfolding are used in the typing derivation of $\togv{P}$.
+The translation of \tkwd{corec} simulates the expansion of $Q$, using $p$ to re-establish the
+coinvariant after each expansion, and thus depends on the translation of functoriality from \mucp to
+\mugv.
 
 \begin{theorem}
   If $\cptyp{P}{\Gamma}$, then $\gvtyp{\togv{\Gamma}}{\togv{P}}{\outterm}$.
@@ -1525,14 +1535,24 @@ us that \mugv and \mucp are equally expressive.
 If $\cptyp{P}{\Gamma}$ then $\cut{z}{}{z[].0}{\tocp{\togv{P}}z} \Longrightarrow^* P$.
 \end{theorem}
 %
-Finally, we return to the rules for recursive session types.
-\begin{theorem}\label{th:admissible}
-  The final 3 rules in Fig.~\ref{fig:gv-typing} are admissible.
-\end{theorem}
-We can see this from the composition of the $\tocp{-}$ and $\togv{-}$ translations, as the result
-does not use any of the rules in question.  Note, however, that the translation of the unfolding of
-$\nu G$ into $G (\nu G)$ and the folding of $G (\mu G)$ into $\mu G$ introduces additional term
-structure (with depth bounded by the depth of $G$).
+
+%% \paragraph{Remark.}
+%% The admissibility of the final three rules of Fig.~\ref{fig:gv-typing} follows from
+%% Theorem~\ref{th:soundness}, as neither $\tocp{-}$ nor $\togv{-}$ uses any of these rules.
+%% %
+%% %% Finally, we return to the rules for recursive session types.
+%% %% \begin{lemma}\label{lem:admissible}
+%% %%   The final three rules of Fig.~\ref{fig:gv-typing} are admissible.
+%% %% \end{lemma}
+%% %% This lemma follows from the composition of the $\tocp{-}$ and $\togv{-}$ translations, as the result
+%% %% does not use any of the rules in question.
+%% %
+%% Note, however, that two of the rules do introduce additional term structure, as they rely on
+%% functoriality.
+
+%% the translations of the unrolling of $\nu G$ into $G (\nu G)$ and the rolling of
+%% $G (\mu G)$ into $\mu G$ introduces additional term structure (with depth bounded by the size of
+%% $G$).
 
 \section{Related Work}\label{sec:related}
 
@@ -1540,7 +1560,7 @@ Session types were originally introduced by \citet{Honda93}, and were further ex
 \citet{Takeuchi94}, \citet{Honda98}, and \citet{Yoshida07}. The systems of \citet{Honda98} and
 \citet{Yoshida07} include recursive session types. They do not distinguish between recursion and
 corecursion, and do not exhibit deadlock freedom. \citet{Bono12} and \citet{Bernardi13}
-independently observed that duality in those systems was not preserved under unfolding of recursive
+independently observed that duality in those systems was not preserved under unrolling of recursive
 types; \citet{Bernardi14} studies the role of duality in session types, including those with
 recursion.  This work adopts a different solution from ours, however, and we hope to investigate the
 consequences of these different approaches in future work.
@@ -1565,9 +1585,9 @@ al.'s~\citeyearpar{Dardha12} extensions to this work include full session types.
 
 We have demonstrated a propositions-as-types correspondence linking recursive session types and
 fixed points in linear logic. Unlike previous work on recursive session types, our presentation
-distinguishes between (bounded) recursive processes and (unbounded) corecursive processes. As a
-consequence of cut elimination in linear logic, all well-typed processes are free of races,
-deadlock, and livelock. We identify several areas of future work.
+distinguishes between recursive and corecursive processes. As a consequence of cut elimination in
+linear logic, all well-typed processes are free of races, deadlock, and livelock. We identify
+several areas of future work.
 %
 We would like to give an asynchronous semantics to \mugv, following the original presentation of
 LAST by \citet{GayVasconcelos10}, and show that it is equivalent to the synchronous semantics
