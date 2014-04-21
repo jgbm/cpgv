@@ -566,8 +566,8 @@ Using $\cofix$ we can define a function that sends a stream of zeros along a cor
 \small
 \[
   \bl
-  MakeZeros : Source \uto \outterm \\
-  MakeZeros = \cofix\:f\:c = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{0}{c}}{f\:c};
+  Zeros : Source \uto \outterm \\
+  Zeros = \cofix\:f\:c = \gvcase{c}{\clabel{next}\,c.\gvlet{c}{\gvsend{0}{c}}{f\:c};
                                         \clabel{stop}\,c.c}
   \el
 \]
@@ -577,7 +577,7 @@ stop.
 %
 %To read from a source, we can use $\key{fork}$ to create a sink:
 %\[\small
-%\gvfork{c}{MakeZeros\:c}
+%\gvfork{c}{Zeros\:c}
 %\]
 %
 We define a helper macro to read the next value from a stream:
@@ -590,7 +590,7 @@ GetNext\:c = \gvreceive{(\gvselect{\clabel{next}}{c})} \\
 and now:
 \small\[
 \bl
-\key{let}\:c = \gvfork{c}{MakeZeros\:c}\:\key{in} \\
+\key{let}\:c = \gvfork{c}{Zeros\:c}\:\key{in} \\
 \key{let}\:(x, c) = GetNext\:c\:\key{in}\:
 \key{let}\:(y, c) = GetNext\:c\:\key{in}\:
 \key{let}\:(z, c) = GetNext\:c\:\key{in} \\
@@ -609,7 +609,7 @@ returning $(0, (0, 0))$.
 
 \paragraph{Productivity.}
 We might expect to assign $c$ the type $\with \{\clabel{next}:\:\gvout{Nat}{Source},
-\clabel{stop}:\:\outterm \}$ and $f$ the type $Source \uto \outterm$ in the body of $MakeZeros$, but
+\clabel{stop}:\:\outterm \}$ and $f$ the type $Source \uto \outterm$ in the body of $Zeros$, but
 then productivity would not be assured and deadlock would be possible. For example, under those
 typing assumptions, the following would also be well-typed:
 %
@@ -630,8 +630,8 @@ typing rule, this is captured by the additional arguments $\vec{x}$. For example
 stream of consecutive naturals:
 \small\[
 \bl
-  MakeNats : Source \uto \outterm \\
-  MakeNats = \cofix\:nats\:c\:x = \mkwd{case}\:c\:\{
+  Nats : Source \uto \outterm \\
+  Nats = \cofix\:nats\:c\:x = \mkwd{case}\:c\:\{
     \ba[t]{@{}l@{}l@{}}
     \clabel{next}\,c.&\,\gvlet{c}{\gvsend{x}{c}}{nats\:c\:(x+1)} \\
     \clabel{stop}\,c.&\,c\} \\
@@ -642,7 +642,7 @@ The variable $x$ tracks the next value to send to the stream, and is accordingly
 recursive call. Now, the following:
 \small\[
 \bl
-\key{let}\:c = \gvfork{c}{MakeNats\:c\:0\:1}\:\key{in} \\
+\key{let}\:c = \gvfork{c}{Nats\:c\:0\:1}\:\key{in} \\
 \key{let}\:(x, c) = GetNext\:c\:\key{in}\:
 \key{let}\:(y, c) = GetNext\:c\:\key{in}\:
 \key{let}\:(z, c) = GetNext\:c\:\key{in} \\
@@ -655,8 +655,8 @@ We can maintain coinvariants of arbitrary complexity; for example, we can define
 stream of the Fibonacci numbers as follows:
 \small\[
 \bl
-  MakeFibs : Source \uto \outterm \\
-  MakeFibs = \cofix\:fibs\;c\:m\:n = \mkwd{case}\:c\:\{
+  Fibs : Source \uto \outterm \\
+  Fibs = \cofix\:fibs\;c\:m\:n = \mkwd{case}\:c\:\{
     \ba[t]{@{}l@{}l@{}}
     \clabel{next}\,c.& \gvlet{c}{\gvsend{m}{c}}{fibs\:c\:n\:(m+n)} \\
     \clabel{stop}\,c.& c\} \\
