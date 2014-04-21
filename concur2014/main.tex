@@ -340,6 +340,8 @@ neg_{X,T \uto U}    &=& pos_{X,T} \wedge neg_{X,U} \\
 \label{sec:mugv-typing}
 
 \begin{figure}[float]
+
+
 \scriptsize
 \[
 un(T \uto U)
@@ -348,8 +350,7 @@ un(\gvservice{S})
 \qquad
 un(\interm)
 \]
-
-Structural rules
+Structural Rules
 \begin{mathpar}
 \inferrule{ }{\gvtyp{x:T}{x}{T}}
 
@@ -452,11 +453,12 @@ Admissible Session Rules
 \caption{Typing Rules for \mugv}\label{fig:gv-typing}
 \end{figure}
 
-Figure~\ref{fig:gv-typing} gives the typing rules of \mugv. The structural rules account for
-variables, and for weakening and contraction of unlimited types. The rules for the functional terms
-are standard; note that, to account for linearity, the context is split in the rules for application
-and pair introduction and elimination, and is restricted to unlimited types in the introduction of
-unlimited arrows.
+We let $\Phi$ range over type environments. The judgement $\gvtyp{\Phi}{M}{T}$ states that term $M$
+has type $T$ in type environment $\Phi$.  Figure~\ref{fig:gv-typing} gives the typing rules of
+\mugv. The structural rules account for variables, and for weakening and contraction of unlimited
+types. The rules for the functional terms are standard; note that, to account for linearity, the
+context is split in the rules for application and pair introduction and elimination, and is
+restricted to unlimited types in the introduction of unlimited arrows.
 
 The typing of input, output, choice and selection are those of \citet{GayVasconcelos10}.  Following
 our earlier work~\citep{LindleyM14}, the term $\gvlink{M}{N}$ implements channel forwarding.
@@ -731,9 +733,11 @@ and fixed points $\mu F,\nu F$.
    \text{Type Operators} & F & ::= & X.A \\
 \end{array}\]\normalsize
 %
-(As with \mugv, we omit polymorphism as it is orthogonal to the rest of the development.)  If $F =
-X.A$, define $F(B) = A[B/X]$. The standard notion of classical linear logic duality is extended to
-fixed points in the expected fashion:
+% SL: space stealing
+%
+% (As with \mugv, we omit polymorphism as it is orthogonal to the rest of the development.)
+If $F = X.A$, define $F(B) = A[B/X]$. The standard notion of classical linear logic duality is
+extended to fixed points in the expected fashion:
 \[
 \ba{c}
 \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
@@ -772,10 +776,13 @@ fixed points in the expected fashion:
 \ea
 \]
 where $X^{\perp\perp} = X$, and we define the dual of a type operator by $\cpdual{F} =
-X.\cpdual{(F(\cpdual{X}))}.$ Note that, as for type operators in \mugv, $\cpdual{(F(A))} =
-\cpdual{F}(\cpdual{A})$.  Typing rules for \mucp terms are given in Fig.~\ref{fig:cp-typing}.  We
-write $fv(P)$ for the free variables used in process $P$; in the typing rules, new bound variables
-are designated $y$.
+X.\cpdual{(F(\cpdual{X}))}.$ Similarly to \mugv, $\cpdual{(F(A))} = \cpdual{F}(\cpdual{A})$.
+%
+We let $\Gamma, \Delta$ range over type environments. The judgement $\cptyp{P}{\Gamma}$ states that
+process $P$ uses channels $\Gamma$.
+%
+Typing rules for \mucp terms are given in Fig.~\ref{fig:cp-typing}.  We write $fv(P)$ for the free
+variables used in process $P$; in the typing rules, new bound variables are designated $y$.
 
 \begin{figure}[float]
 \small
@@ -927,7 +934,7 @@ top-left rule is just an instance of the bottom-right rule.
 %%
 %% \inferrule{\vdash \cpdual{A}, F(A) \\ \vdash \Gamma, A}{\vdash \Gamma, \nu F}
 %% \end{mathpar}\normalsize%
-The bottom rules are the typing rules for the \mucp terms $\rec{x}.P$ and
+The bottom two rules are the typing rules for the \mucp terms $\rec{x}.P$ and
 $\corecf{F}{x}{y}{P}{Q}$. We will often omit the $F$ annotation. As in \mugv, \tkwd{corec} terms
 maintain a coinvariant $y$, of type $A$. The coinvariant can be seen as being sent from $P$ to $Q$;
 thus, its type is dual in $P$ and $Q$. As carried types are not dual in \mugv, no corresponding
