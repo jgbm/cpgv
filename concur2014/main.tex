@@ -1373,7 +1373,6 @@ output.
 \subsection{Translating from \mucp to \gvpi}\label{sec:cptogvpi}
 
 \begin{figure}[float]
-\vspace{-2mm}
 \small
 \begin{equations}
   \togv{x[y].(P \mid Q)} &=&
@@ -1407,7 +1406,6 @@ output.
     \gvlet{c'}{\gvfork{c}{\togv{Q}}}
           {\togv{\map{F}{c,c'}{\derelict{p}{z}.z[c].z[c'].z[].0}}}}
 \end{equations}%
-\vspace{-2mm}
 \caption{Translation of \mucp Terms into \gvpi}\label{fig:fromcp}
 \end{figure}
 
@@ -1673,6 +1671,14 @@ McBride, Abel and Pientka, both ICFP 2013, Kozen et al ESOP 2013)
 
 * try to be consistent with order of presenting types everywhere
 
+* consider switching the order of the arguments to map to make it's definition nicer
+
+* fill in Troelstra reference
+
+
+NOT TODO
+
+(adjusted the translation to mucp to use judgements)
 * consider adding explicit syntax for all typing rules in order to allow all of the term
 translations to be completely syntax-directed:
 
@@ -1686,6 +1692,3 @@ translations to be completely syntax-directed:
   muCP:
    corec^F c<x>(P, Q)
 
-* consider switching the order of the arguments to map to make it's definition nicer
-
-* fill in Troelstra reference
