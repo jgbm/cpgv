@@ -79,6 +79,9 @@
 \newcommand{\gvreceivek}[4]{\gvlet{({#1}, {#2})}{\gvreceive{#3}}{#4}}
 
 
+\newcommand{\true}{\mathrm{true}}
+\newcommand{\false}{\mathrm{false}}
+
 \newcommand{\key}{\mkwd}
 \newcommand{\cofix}{\lrkwd}
 
@@ -240,12 +243,12 @@ linear logic: a channel of type $\gvservice{S}$ is a service, offering any numbe
 type $S$; a channel of type $\gvserver{S}$ is the server providing such channels. (We have chosen
 the syntax $\gvserver{S}$ and $\gvservice{S}$ as $!$ and $?$ are already used for input and output.)
 %
-For simplicity, we omit polymorphism~\citep{LindleyM14} as it is an orthogonal concern.
+For simplicity, we omit polymorphism as it is an orthogonal concern.
 %
-We include session variables and their duals ($X$) and ($\gvdual{X}$), and types corresponding to
-bounded ($\mu X.S$) and unbounded ($\nu X.S$) recursion. If $G$ is an operator $X.S$, we then
-$G(S')$ denotes the standard capture-avoiding substitution of $S'$ for $X$ in $S$, which we write as
-$S[S'/X]$.
+We include session variables ($X$) and their duals ($\gvdual{X}$), and types corresponding to
+bounded recursion ($\mu X.S$) and unbounded corecursion ($\nu X.S$). If $G$ is an operator $X.S$,
+then $G(S')$ denotes the standard capture-avoiding substitution of $S'$ for $X$ in $S$, which we
+write as $S[S'/X]$.
 
 Each type $T$ is either linear ($\lin(T)$) or unlimited ($\un(T)$).
 % The linearity of $T$ is determined by its top level type constructor.
@@ -299,32 +302,34 @@ dual session types $\mu G$ and $\nu \gvdual{G}$. Unfolding $\mu G$ yields $G(\mu
 %\]\normalsize
 which is the dual of $\gvin{\mu G}{\interm}$.
 
-To ensure that fixed points exist, we require that all operators $X.S$ be monotonic.
-%; that is,
-%variables may appear only as positive subformulas of $S$, and negated variables only as negative
-%subformulas.
-The subformula $T$ is negative in types $T \lto U$ and $T \uto U$ and in the session type
-$\gvout{T}{S}$; all other subformulae are positive.  Thus, the operator $X.\gvout{X}{\outterm}$ is
-not monotonic, but the operator $X.\gvout{(X \uto \outterm)}{\outterm}$ is.
+To ensure that fixed points exist, we require that all operators $X.S$ be \emph{monotonic}, that is,
+$X$ may appear only in positive subformulas of $S$.
+%%
+%% The subformula $T$ is negative in types $T
+%% \lto U$ and $T \uto U$ and in the session type $\gvout{T}{S}$; every other other form of subformula
+%% is positive.
+%%
+Thus, the operator $X.\gvout{X}{\outterm}$ is not monotonic, but the operator $X.\gvout{(X \uto
+  \outterm)}{\outterm}$ is.
 %
 Formally, $X.S$ is monotonic iff the predicate $pos_{X,S}$ holds, where $pos$ and $neg$ are defined
-by the homomorphic extensions of the following implications:
+by the homomorphic extensions of the following equations:
 \small\[
 \ba{@{}c@{\qquad}c@{}}
 \begin{eqs}
-pos_{X,X} \\
-\neg pos_{X,\gvdual{X}} \\
-pos_{X,\gvout{T}{S}} &\iff& neg_{X,T} \wedge pos_{X,S} \\
-pos_{X,T \lto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
-pos_{X,T \uto U} &\iff& neg_{X,T} \wedge pos_{X,U} \\
+pos_{X,X}         &=& \true \\
+pos_{X,\gvdual{X}}  &=& \false \\
+pos_{X,\gvout{T}{S}} &=& neg_{X,T} \wedge pos_{X,S} \\
+pos_{X,T \lto U}    &=& neg_{X,T} \wedge pos_{X,U} \\
+pos_{X,T \uto U}    &=& neg_{X,T} \wedge pos_{X,U} \\
 \end{eqs}
 &
 \begin{eqs}
-\neg neg_{X,X} \\
-neg_{X,\gvdual{X}} \\
-neg_{X,\gvout{T}{S}} &\iff& pos_{X,T} \wedge neg_{X,S} \\
-neg_{X,T \lto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
-neg_{X,T \uto U} &\iff& pos_{X,T} \wedge neg_{X,U} \\
+neg_{X,X}          &=& \false \\
+neg_{X,\gvdual{X}}   &=& \true \\
+neg_{X,\gvout{T}{S}} &=& pos_{X,T} \wedge neg_{X,S} \\
+neg_{X,T \lto U}    &=& pos_{X,T} \wedge neg_{X,U} \\
+neg_{X,T \uto U}    &=& pos_{X,T} \wedge neg_{X,U} \\
 \end{eqs}
 \ea
 \]\normalsize
