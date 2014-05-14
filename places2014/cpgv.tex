@@ -1,29 +1,23 @@
 % -*- fill-column: 100 -*-
 
-% easychair.tex,v 3.2 2012/05/15
-%
-% Select appropriate paper format in your document class as
-% instructed by your conference organizers. Only withtimes
-% and notimes can be used in proceedings created by EasyChair
-%
-% The available formats are 'letterpaper' and 'a4paper' with
-% the former being the default if omitted as in the example
-% below.
-%
-\documentclass{easychair}
-%\documentclass[debug]{easychair}
-%\documentclass[verbose]{easychair}
-%\documentclass[notimes]{easychair}
-%\documentclass[withtimes]{easychair}
-%\documentclass[a4paper]{easychair}
-%\documentclass[letterpaper]{easychair}
+\documentclass[submission]{eptcs}
 
-% This provides the \BibTeX macro
+\title{Sessions as Propositions}
+\def\titlerunning{Sessions as Propositions}
+\def\authorrunning{Lindley \& Morris}
+
+\author{
+  Sam Lindley
+  \qquad \qquad
+  J. Garrett Morris
+\institute{The University of Edinburgh \\
+  \email{\{Sam.Lindley,Garrett.Morris\}@ed.ac.uk}}}
+
+\def\event{PLACES 2014}
+
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{color}
-\usepackage{doc}
-\usepackage{makeidx}
 \usepackage{stmaryrd}
 \usepackage{mathpartir}
 \usepackage{xspace}
@@ -58,8 +52,6 @@
 
 \newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
 \newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
-
-
 
 \newcommand{\key}{\mathsf}
 
@@ -187,31 +179,11 @@
 
 \newcommand{\todo}[1]{\textbf{\color{red}TODO: #1}}
 
-%\makeindex
-
 %% Document
 %%
 \begin{document}
 
-\title{Sessions as Propositions}
-\titlerunning{Sessions as Propositions}
-
-\author{
-  Sam Lindley
-  \and
-  J. Garrett Morris
-}
-
-\institute{The University of Edinburgh \\
-  \email{\{Sam.Lindley,Garrett.Morris\}@ed.ac.uk}
-}
-
-\authorrunning{Lindley and Morris}
-
-\clearpage
-
 \maketitle
-
 
 \begin{abstract}
   Recently, Wadler presented a continuation-passing translation from a session-typed functional
@@ -227,15 +199,14 @@
 Linear logic has long been regarded as a potential typing discipline for concurrency.
 Girard~\cite{Girard87} observes that the connectives of linear logic can be interpreted as parallel
 computation. Abramsky~\cite{Abramsky92} and Bellin and Scott~\cite{BellinScott94} interpret linear
-logic proofs as $\pi$-calculus processes.
-%
-%% While they provide $\pi$-calculus interpretations of all
-%% linear logic proofs, they do not provide a proof-theoretic interpretation for arbitrary
-%% $\pi$-calculus terms.
+logic proofs as $\pi$-calculus processes.  While they provide $\pi$-calculus interpretations of all
+linear logic proofs, they do not provide a proof-theoretic interpretation for arbitrary
+$\pi$-calculus terms.
 %
 Caires and Pfenning~\cite{CairesPfenning10} give a propositions-as-types correspondence between
-intuitionistic linear logic and session types, interpreting proofs as processes in a restricted
-$\pi$-calculus, $\pi$DILL.
+intuitionistic linear logic and session types, interpreting linear logic prepositions as session
+types for a restricted $\pi$-calculus, $\pi$DILL.  Of particular importance to this work, they
+interpret the multiplicative connectives as prefixing, and the exponentials as replicated processes.
 %
 %% Caires and Pfenning~\cite{CairesPfenning10} observe that the multiplicative
 %% connectives can be interpreted as session types. Their process calculus, based on intuitionistic
@@ -245,7 +216,7 @@ $\pi$-calculus, $\pi$DILL.
 Wadler~\cite{Wadler12} adapts Caires and Pfenning's work to classical linear logic, interpreting
 proofs as processes in a restricted $\pi$-calculus, CP.
 %
-Furthermore, Wadler shows that a core session-typed linear functional language, GV, patterned after
+Additionally, Wadler shows that a core session-typed linear functional language, GV, patterned after
 a similar language due to Gay and Vasconcelos~\cite{GayVasconcelos10}, may be translated into
 CP. However, GV is less expressive than CP: there are proofs which do not correspond to any GV
 program.
@@ -608,15 +579,10 @@ If $\gvj{\Phi}{M}{T}$ then $\gvj{\lampi{\Phi}}{\lampi{M}}{\lampi{T}}$.
 \caption{Typing rules for CP}\label{fig:cp-typing}
 \end{figure}
 
-We present the typing rules of CP in Figure~\ref{fig:cp-typing}. The cut relation $\redto$ for CP is
-given in Appendix~\ref{sect:cp-cut}.
-%Due to lack of space we omit the definition of the cut relation $\redto$.
-A detailed description of CP
-%, including the cut rules,
-can be found in Wadler's work~\cite{Wadler12}. Note that the propositions of CP are exactly those of
-classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP enjoys all of the
-standard meta theoretic properties of classical linear logic, including confluence and weak
-normalisation.
+We present the typing rules of CP in Figure~\ref{fig:cp-typing}.  Note that the propositions of CP
+are exactly those of classical linear logic, as are the cut rules (if we ignore the terms). Thus, CP
+enjoys all of the standard meta theoretic properties of classical linear logic, including confluence
+and weak normalisation.
 %
 A minor syntactic difference between our presentation and Wadler's is that our sum ($\oplus$) and
 choice ($\binampersand$) types are $n$-ary, matching the corresponding session types in \hgv,
@@ -647,6 +613,57 @@ Duality on CP types ($\cpDual{(-)}$) is standard:
 \\
 \el
 \]
+
+The semantics of CP terms follows the cut elimination rules in classical linear logic.  We interpret
+the cut relation $\redto$ modulo $\alpha$-equivalence and structural cut equivalence:
+\begin{equations}
+\cpLink{x}{y} &\eqto& \cpLink{y}{x} \\
+\cpCut{x}{P}{Q} &\eqto& \cpCut{x}{Q}{P} \\
+\cpCut{y}{\cpCut{x}{P}{Q}}{R} &\eqto& \cpCut{x}{P}{\cpCut{y}{Q}{R}} \\
+\end{equations}
+The principal cut elimination rules correspond to communication between processes.
+\begin{equations}
+\cpCut{x}{\cpLink{w}{x}}{P}
+  &\redto& \subst{P}{w}{x} \\
+\cpCut{x}{\cpOutput{x}{y}{P}{Q}}{\cpInput{x}{y}{R}}
+  &\redto& \cpCut{y}{P}{\cpCut{x}{Q}{R}} \\
+\cpCut{x}{\cpInject{x}{\la_j}{P}}{\cpCase{x}{\row{\la_i.Q_i}{i}}}
+  &\redto& \cpCut{x}{P}{Q_j} \\
+\cpCut{x}{\cpServe{x}{y}{P}}{\cpRequest{x}{y}{Q}}
+  &\redto& \cpCut{y}{P}{Q} \\
+\cpCut{x}{\cpServe{x}{y}{P}}{Q}
+  &\redto& Q, \quad x \notin \FV{Q} \\
+\cpCut{x}{\cpServe{x}{y}{P}}{\subst{Q}{x}{x'}}
+  &\redto& \cpCut{x}{\cpServe{x}{y}{P}}{\cpCut{x'}{\cpServe{x'}{y}{P}}{Q}} \\
+\cpCut{x}{\cpSendType{x}{A}{P}}{\cpReceiveType{x}{X}{Q}}
+  &\redto& \cpCut{x}{P}{\subst{Q}{A}{X}} \\
+\cpCut{x}{\cpEmptyOut{x}}{\cpEmptyIn{x}{P}}
+  &\redto& P \\
+\end{equations}
+Finally, we provide commuting conversions, moving communication under unrelated prefixes.
+\begin{equations}
+\cpCut{z}{\cpOutput{x}{y}{P}{Q}}{R}
+  &\redto& \cpOutput{x}{y}{\cpCut{z}{P}{R}}{Q}, \quad z \in \FV{P} \\
+\cpCut{z}{\cpOutput{x}{y}{P}{Q}}{R}
+  &\redto& \cpOutput{x}{y}{P}{\cpCut{z}{Q}{R}}, \quad z \in \FV{Q} \\
+\cpCut{z}{\cpInput{x}{y}{P}}{Q}
+  &\redto& \cpInput{x}{y}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpInject{x}{\la}{P}}{Q}
+  &\redto& \cpInject{x}{\la}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpCase{x}{\row{\la_i.Q_i}{i}}}{R}
+  &\redto& \cpCase{x}{\row{\la_i.\cpCut{z}{Q_i}{R}}{i}} \\
+\cpCut{z}{\cpServe{x}{y}{P}}{Q}
+  &\redto& \cpServe{x}{y}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpRequest{x}{y}{P}}{Q}
+  &\redto& \cpRequest{x}{y}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpSendType{x}{A}{P}}{Q}
+  &\redto& \cpSendType{x}{A}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpReceiveType{x}{X}{P}}{Q}
+  &\redto& \cpReceiveType{x}{X}{\cpCut{z}{P}{Q}} \\
+\cpCut{z}{\cpEmptyIn{x}{P}}{Q}
+  &\redto& \cpEmptyIn{x}{\cpCut{z}{P}{Q}} \\
+\end{equations}
+A fuller account of CP can be found in Wadler's work~\cite{Wadler12}.
 
 We now give a translation from \hgvpi to CP. Post composing this with the embedding of \hgv in
 \hgvpi yields a semantics for \hgv.
@@ -849,7 +866,7 @@ If we extend $\hgvcp{-}$ to non-session types, as in Wadler's original presentat
 factors through $\lampi{-}$.
 \begin{theorem}
 \label{th:factor}
-$\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$ (where $\redto^*$ is the transitive reflexive closure of $\redto$).
+$\hgvcp{\lampi{M}}z \redto^* \hgvcp{M}z$ (where $\redto^*$ is the reflexive transitive closure of $\equiv\redto\equiv$).
 \end{theorem}
 \noindent
 The key soundness property of our translations is that if we translate a term from CP to \hgvpi and
@@ -962,8 +979,10 @@ We would like to thank Philip Wadler for his suggestions on the direction of thi
 helpful feedback on the results. This work was funded by EPSRC grant number EP/K034413/1.
 
 \label{sect:bib}
-\bibliographystyle{plain}
+\bibliographystyle{eptcs}
 \bibliography{cpgv}
+
+\end{document}
 
 \newpage
 \appendix
