@@ -204,7 +204,7 @@ linear logic proofs, they do not provide a proof-theoretic interpretation for ar
 $\pi$-calculus terms.
 %
 Caires and Pfenning~\cite{CairesPfenning10} give a propositions-as-types correspondence between
-intuitionistic linear logic and session types, interpreting linear logic prepositions as session
+intuitionistic linear logic and session types, interpreting linear logic propositions as session
 types for a restricted $\pi$-calculus, $\pi$DILL.  Of particular importance to this work, they
 interpret the multiplicative connectives as prefixing, and the exponentials as replicated processes.
 %
@@ -228,7 +228,7 @@ program.
 
 Our primary contribution is \hgv (Harmonious GV), a version of GV extended with constructs for
 session forwarding, replication, and polymorphism. We identify \hgvpi, the session-typed fragment of
-\hgv, and give a type-preserving translations from \hgv to \hgvpi ($\lampi{-}$); this translation
+\hgv, and give a type-preserving translation from \hgv to \hgvpi ($\lampi{-}$); this translation
 depends crucially on the new constructs of \hgv.  We show that \hgv is sufficient to express all
 linear logic proofs by giving type-preserving translations from \hgvpi to CP ($\hgvcp{-}$), and from
 CP to \hgvpi ($\cptogv{-}$). Factoring the translation of \hgv into CP through $\lampi{-}$
@@ -1831,4 +1831,4 @@ G |- receiveType M : S'
 %%  LocalWords:  intuitionistic polymorphism Wadler's Vasconcelos's duals exponentials dualisation
 %%  LocalWords:  GV's SendType ReceiveType interdefinable homomorphic Ax ary nullary dualised et al
 %%  LocalWords:  pointwise expressivity Felleisen's Felleisen Dardha EPSRC EP cpgv defServer
-%%  LocalWords:  ServeDef
+%%  LocalWords:  ServeDef Pfenning's
