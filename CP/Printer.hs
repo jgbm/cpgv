@@ -1,10 +1,12 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings, TypeSynonymInstances #-}
-module CP.Printer (Pretty(..), renderPretty, displayS) where
+module CP.Printer (Pretty(..), renderPretty, displayS, includeIndex) where
 
 import CP.Syntax
 import Text.PrettyPrint.Leijen
 
+import Data.IORef
 import GHC.Exts (IsString(..))
+import System.IO.Unsafe
 
 instance IsString Doc
     where fromString = text
@@ -51,8 +53,14 @@ instance Pretty Arg
     where pretty (ProcArg p) = pretty p
           pretty (NameArg n) = text n
 
--- name = text
-name s = text (takeWhile ('\'' /=) s)
+
+{-# NOINLINE includeIndex #-}
+includeIndex :: IORef Bool
+includeIndex = unsafePerformIO (newIORef False)
+
+name s = if unsafePerformIO (readIORef includeIndex)
+         then text s
+         else text (takeWhile ('\'' /=) s)
 
 instance Pretty Proc
     where pretty (ProcVar v []) = name v

@@ -11,9 +11,13 @@ import CP.Printer
 import Text.PrettyPrint.Leijen
 
 import CP.Trace
+import Data.IORef
+import System.IO.Unsafe
 
---trace s x = x
 showCP c = displayS (renderPretty 0.8 120 (pretty c)) ""
+{-# NOINLINE doCheckSteps #-}
+doCheckSteps = unsafePerformIO (newIORef False)
+checkSteps   = unsafePerformIO (readIORef doCheckSteps)
 
 --------------------------------------------------------------------------------
 -- Operators (types with holes)
@@ -114,7 +118,7 @@ stepPrincipal (Fragment zs (Rec x p)) (Fragment zs' (CoRec x' y s q r))
           funct (t, c1 `Times` c2) x w q =
               do y <- fresh "y"
                  z <- fresh "z"
-                 q' <- replace x y =<< replace z w q
+                 q' <- replace x y =<< replace w z q
                  left <- funct (t, c1) y z q'
                  right <- funct (t, c2) x w q
                  return (In w z (Out x y left right))
@@ -271,15 +275,16 @@ commute fs f g = loop fs [] False
                      loop (pfs ++ rest) passed True
           loop' (f : rest) passed b = loop rest (f : passed) b
 
-normalize :: Proc -> M (Proc, Proc)
-normalize p = trace ("Normalizing " ++ showCP p) $
-              do fs <- fragment [] p
-                 let is = [1..length fs]
-                     wl = makeWorkList is []
-                 fs' <- loop wl (zip is fs) (length fs + 1)
-                 executed <- commute fs' (return . unFragment) (return . unFragment)
-                 simplified <- commute fs' recurse (return . unFragment)
-                 return (executed, simplified)
+normalize :: Proc -> Behavior -> M (Proc, Proc)
+normalize p b =
+    trace ("Normalizing " ++ showCP p) $
+    do fs <- fragment [] p
+       let is = [1..length fs]
+           wl = makeWorkList is []
+       fs' <- loop wl (zip is fs) (length fs + 1)
+       executed <- commute fs' (return . unFragment) (return . unFragment)
+       simplified <- commute fs' recurse (return . unFragment)
+       return (executed, simplified)
     where recurse fs = trace (unlines ("Recursing on" : map showCP fs)) $
                        do fs' <- loop (makeWorkList is []) (zip is fs) (length fs + 1)
                           commute fs' recurse (return . unFragment)
@@ -303,7 +308,9 @@ normalize p = trace ("Normalizing " ++ showCP p) $
                                         [(i',j') | (i',j') <- wl, notIorJ i', notIorJ j']
                              in  trace (replicate 120 '-' ++ '\n' :
                                         showCP (unFragment (map snd ifs'))) $
-                                 loop wl' ifs' k'
+                                 if checkSteps
+                                 then checkFragments b fi fj fs' $ loop wl' ifs' k'
+                                 else loop wl' ifs' k'
               | otherwise = error "Missing fragments in loop"
 
           step fi fj =
@@ -311,6 +318,20 @@ normalize p = trace ("Normalizing " ++ showCP p) $
                  case fs of
                    [] -> stepPrincipal fj fi
                    _  -> return fs
+
+checkFragments _ _ _ [] s = s
+checkFragments b fi fj (Fragment vs p : fs) s =
+    case r of
+      Left err -> error ("Normalization broke: given input fragments\n" ++
+                         unlines (map ("    " ++) (lines (showCP fi))) ++
+                         "and\n" ++
+                         unlines (map ("    " ++) (lines (showCP fj))) ++
+                         "produced fragment\n" ++
+                         unlines (map ("    " ++) (lines (showCP (Fragment vs p)))) ++
+                         "with error\n" ++
+                         err)
+      _ -> checkFragments b fi fj fs s
+    where (_, r) = runCheck (check' p) (vs ++ b, [])
 
 ----------------------------------------------------------------------------------------------------
 

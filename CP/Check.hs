@@ -130,141 +130,143 @@ addError p c = Check (\e -> case runCheck c e of
                                   | otherwise -> (t, Left err)
                               (t, Right x) -> (t, Right x))
 
+check' :: Proc -> Check ()
+check' (Link w x) =
+    addError (Link w x) $
+    do a <- consume w
+       b <- consume x
+       if dual a == b
+       then return ()
+       else fail ("In " ++ show (pretty (Link w x)) ++ ": types aren't dual:\n    " ++ show (pretty a) ++ "\n    " ++ show (pretty b))
+check' (Cut x a p q) =
+    addError (Cut x a p q) $
+    do provide x a (check' p)
+       provide x (dual a) (check' q)
+check' (Out x y p q) =
+    addError (Out x y p q) $
+    do c <- consume x
+       case c of
+         a `Times` b ->
+             do provide y a (check' p)
+                provide x b (check' q)
+         _ -> unexpectedType x c (Out x y p q)
+check' (In x y p) =
+    addError (In x y p) $
+    do c <- consume x
+       case c of
+         a `Par` b ->
+             provide y a (provide x b (check' p))
+         _ -> unexpectedType x c (In x y p)
+check' (Select x l p) =
+    addError (Select x l p) $
+    do c <- consume x
+       case c of
+         Plus lts
+             | Just a <- lookup l lts -> provide x a (check' p)
+             | otherwise -> fail ("Sum " ++ show (pretty (Plus lts)) ++ " does not contain label " ++ l)
+         _ -> unexpectedType x c (Select x l p)
+check' (Case x (b:bs)) =
+    addError (Case x (b:bs)) $
+    do c <- consume x
+       case c of
+         With lts ->
+             foldl andAlso (checkBranch lts b) (map (checkBranch lts) bs)
+         _ -> unexpectedType x c (Case x (b:bs))
+    where checkBranch lts (l, p)
+              | Just a <- lookup l lts = provide x a (check' p)
+              | otherwise = fail ("Choice " ++ show (pretty (With lts)) ++ " does not contain label " ++ l)
+check' (Rec x p) =
+    addError (Rec x p) $
+    do c <- consume x
+       case c of
+         Mu v a -> provide x (inst v (Mu v a) a) (check' p)
+         _      -> unexpectedType x c (Rec x p)
+check' (CoRec x z a p q) =
+    addError (CoRec x z a p q) $
+    do c <- consume x
+       case c of
+         Nu v b ->
+             do provide z a (check' p)
+                withOnly (const False) (provide z (dual a) (provide x (inst v a b) (check' q)))
+         _ -> unexpectedType x c (CoRec x z a p q)
+check' (Replicate x y p) =
+    addError (Replicate x y p) $
+    do c <- consume x
+       case c of
+         OfCourse a ->
+             withOnly isWhyNot (provide y a (check' p))
+         _ -> unexpectedType x c (Replicate x y p)
+check' (Derelict x y p) =
+    addError (Derelict x y p) $
+    do c <- consume x
+       case c of
+         WhyNot a ->
+             provide y a (check' p)
+         _ -> unexpectedType x c (Derelict x y p)
+check' (SendProp x a p) =
+    addError (SendProp x a p) $
+    do c <- consume x
+       case c of
+         Exist z b ->
+             provide x (inst z a b) (check' p)
+         _ -> unexpectedType x c (SendProp x a p)
+check' (ReceiveProp x a p) =
+    addError (ReceiveProp x a p) $
+    do c <- consume x
+       case c of
+         Univ a' b | a == a' -> withOnly ((a `notElem`) . fpv) (provide x b (check' p))
+         _ -> unexpectedType x c (ReceiveProp x a p)
+check' (SendTerm x m p) =
+    addError (SendTerm x m p) $
+    do c <- consume x
+       case c of
+         FOExist t a -> do t' <- focheck m
+                           when (t /= t') (fail ("Expected type " ++ show (pretty t) ++ " for " ++ show (pretty m)))
+                           provide x a (check' p)
+         _           -> unexpectedType x c (SendTerm x m p)
+check' (ReceiveTerm x i p) =
+    addError (ReceiveTerm x i p) $
+    do c <- consume x
+       case c of
+         FOUniv t a -> introduce i t (provide x a (check' p))
+         _          -> unexpectedType x c (ReceiveTerm x i p)
+check' (EmptyOut x) =
+    addError (EmptyOut x) $
+    do c <- consume x
+       case c of
+         One -> return ()
+         _   -> unexpectedType x c (EmptyOut x)
+check' (EmptyIn x p) =
+    addError (EmptyIn x p) $
+    do c <- consume x
+       case c of
+         Bottom -> check' p
+         _      -> unexpectedType x c (EmptyIn x p)
+check' (EmptyCase x ys) =
+    addError (EmptyCase x ys) $
+    do c <- consume x
+       case c of
+         With [] -> mapM_ consume ys
+         _       -> unexpectedType x c (EmptyCase x ys)
+check' (Quote m (Just ds)) =
+    do t <- focheck m
+       case t of
+         TQuote b -> mapM_ checkVar (runM (expandB ds b))
+         _ -> fail ("Quoted expression " ++ show (pretty m) ++ " does not have behavior type")
+    where runM c = case evalStateT (unM c) 0 of
+                     Left err -> error err
+                     Right t  -> t
+          checkVar (v, t) =
+              addError ("the binding " ++ v ++ ": " ++ show (pretty t)) $
+              do t' <- consume v
+                 when (t /= t') (fail ("Expected channel " ++ v ++ " to have type " ++ show (pretty t) ++ ", not " ++ show (pretty t')))
+check' (Unk []) =
+    Check (\(b, _) -> ([b], Right ((), filter (isWhyNot . snd) b)))
+check' (Unk ys) =
+    Check (\(b, _) -> ([filter ((`elem` ys) . fst) b], Right ((), [(x,t) | (x,t) <- b, x `notElem` ys || isWhyNot t])))
+
 check :: Proc -> Check ()
 check p = check' p >> empty
-    where check' (Link w x) =
-              addError (Link w x) $
-              do a <- consume w
-                 b <- consume x
-                 if dual a == b
-                 then return ()
-                 else fail ("In " ++ show (pretty (Link w x)) ++ ": types aren't dual:\n    " ++ show (pretty a) ++ "\n    " ++ show (pretty b))
-          check' (Cut x a p q) =
-              addError (Cut x a p q) $
-              do provide x a (check' p)
-                 provide x (dual a) (check' q)
-          check' (Out x y p q) =
-              addError (Out x y p q) $
-              do c <- consume x
-                 case c of
-                   a `Times` b ->
-                       do provide y a (check' p)
-                          provide x b (check' q)
-                   _ -> unexpectedType x c (Out x y p q)
-          check' (In x y p) =
-              addError (In x y p) $
-              do c <- consume x
-                 case c of
-                   a `Par` b ->
-                       provide y a (provide x b (check' p))
-                   _ -> unexpectedType x c (In x y p)
-          check' (Select x l p) =
-              addError (Select x l p) $
-              do c <- consume x
-                 case c of
-                   Plus lts
-                       | Just a <- lookup l lts -> provide x a (check' p)
-                       | otherwise -> fail ("Sum " ++ show (pretty (Plus lts)) ++ " does not contain label " ++ l)
-                   _ -> unexpectedType x c (Select x l p)
-          check' (Case x (b:bs)) =
-              addError (Case x (b:bs)) $
-              do c <- consume x
-                 case c of
-                   With lts ->
-                       foldl andAlso (checkBranch lts b) (map (checkBranch lts) bs)
-                   _ -> unexpectedType x c (Case x (b:bs))
-              where checkBranch lts (l, p)
-                        | Just a <- lookup l lts = provide x a (check' p)
-                        | otherwise = fail ("Choice " ++ show (pretty (With lts)) ++ " does not contain label " ++ l)
-          check' (Rec x p) =
-              addError (Rec x p) $
-              do c <- consume x
-                 case c of
-                   Mu v a -> provide x (inst v (Mu v a) a) (check' p)
-                   _      -> unexpectedType x c (Rec x p)
-          check' (CoRec x z a p q) =
-              addError (CoRec x z a p q) $
-              do c <- consume x
-                 case c of
-                   Nu v b ->
-                       do provide z a (check' p)
-                          withOnly (const False) (provide z (dual a) (provide x (inst v a b) (check' q)))
-                   _ -> unexpectedType x c (CoRec x z a p q)
-          check' (Replicate x y p) =
-              addError (Replicate x y p) $
-              do c <- consume x
-                 case c of
-                   OfCourse a ->
-                       withOnly isWhyNot (provide y a (check' p))
-                   _ -> unexpectedType x c (Replicate x y p)
-          check' (Derelict x y p) =
-              addError (Derelict x y p) $
-              do c <- consume x
-                 case c of
-                   WhyNot a ->
-                       provide y a (check' p)
-                   _ -> unexpectedType x c (Derelict x y p)
-          check' (SendProp x a p) =
-              addError (SendProp x a p) $
-              do c <- consume x
-                 case c of
-                   Exist z b ->
-                       provide x (inst z a b) (check' p)
-                   _ -> unexpectedType x c (SendProp x a p)
-          check' (ReceiveProp x a p) =
-              addError (ReceiveProp x a p) $
-              do c <- consume x
-                 case c of
-                   Univ a' b | a == a' -> withOnly ((a `notElem`) . fpv) (provide x b (check' p))
-                   _ -> unexpectedType x c (ReceiveProp x a p)
-          check' (SendTerm x m p) =
-              addError (SendTerm x m p) $
-              do c <- consume x
-                 case c of
-                   FOExist t a -> do t' <- focheck m
-                                     when (t /= t') (fail ("Expected type " ++ show (pretty t) ++ " for " ++ show (pretty m)))
-                                     provide x a (check' p)
-                   _           -> unexpectedType x c (SendTerm x m p)
-          check' (ReceiveTerm x i p) =
-              addError (ReceiveTerm x i p) $
-              do c <- consume x
-                 case c of
-                   FOUniv t a -> introduce i t (provide x a (check' p))
-                   _          -> unexpectedType x c (ReceiveTerm x i p)
-          check' (EmptyOut x) =
-              addError (EmptyOut x) $
-              do c <- consume x
-                 case c of
-                   One -> return ()
-                   _   -> unexpectedType x c (EmptyOut x)
-          check' (EmptyIn x p) =
-              addError (EmptyIn x p) $
-              do c <- consume x
-                 case c of
-                   Bottom -> check' p
-                   _      -> unexpectedType x c (EmptyIn x p)
-          check' (EmptyCase x ys) =
-              addError (EmptyCase x ys) $
-              do c <- consume x
-                 case c of
-                   With [] -> mapM_ consume ys
-                   _       -> unexpectedType x c (EmptyCase x ys)
-          check' (Quote m (Just ds)) =
-              do t <- focheck m
-                 case t of
-                   TQuote b -> mapM_ checkVar (runM (expandB ds b))
-                   _ -> fail ("Quoted expression " ++ show (pretty m) ++ " does not have behavior type")
-              where runM c = case evalStateT (unM c) 0 of
-                               Left err -> error err
-                               Right t  -> t
-                    checkVar (v, t) =
-                        addError ("the binding " ++ v ++ ": " ++ show (pretty t)) $
-                        do t' <- consume v
-                           when (t /= t') (fail ("Expected channel " ++ v ++ " to have type " ++ show (pretty t) ++ ", not " ++ show (pretty t')))
-          check' (Unk []) =
-              Check (\(b, _) -> ([b], Right ((), filter (isWhyNot . snd) b)))
-          check' (Unk ys) =
-              Check (\(b, _) -> ([filter ((`elem` ys) . fst) b], Right ((), [(x,t) | (x,t) <- b, x `notElem` ys || isWhyNot t])))
 
 focheck :: FOTerm -> Check FOType
 focheck (EVar s)

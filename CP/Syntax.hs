@@ -7,6 +7,8 @@ import Control.Monad.State
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 
+import CP.Trace
+
 data Prop = Univ String Prop
           | Exist String Prop
           | Mu String Prop
@@ -307,7 +309,7 @@ replace x y = replace'
           replace' (Case z bs) = liftM (Case (var z)) (sequence [liftM (l,) (replace' p) | (l, p) <- bs])
           replace' (Rec z p) = liftM (Rec (var z)) (replace' p)
           replace' (CoRec z w a p q)
-              | x == w || y == z =
+              | x == w || y == w =
                   do w' <- fresh w
                      p' <- replace w w' p
                      q' <- replace w w' q
@@ -338,7 +340,6 @@ replace x y = replace'
                     second f (x, y) = (x, f y)
                     replaceBindings ds = ds{ names = map (second exn) (names ds) }
           replace' (Unk vs) = return (Unk (map var vs))
-          replace' p = error ("Replace missing case for " ++ show p)
 
 --------------------------------------------------------------------------------
 -- Recursion

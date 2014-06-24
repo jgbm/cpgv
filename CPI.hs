@@ -37,7 +37,7 @@ interp ds (Right (Assert p b isCheck)) =
     case runM $ do (p', b') <- expandTop ds p b
                    t <- -- trace ("Expanded " ++ showCP (Assert p b isCheck) ++ "\nto:" ++ showCP (Assert p' b' isCheck)) $
                         into (runCheck (check p') (b', []))
-                   (executed, simplified) <- if isCheck then return (undefined, undefined) else normalize p'
+                   (executed, simplified) <- if isCheck then return (undefined, undefined) else normalize p' b'
                    return (p', t, b', executed, simplified) of
       Left err ->
           do if isCheck then putStrLn ("Check failed: " ++ show (pretty (Assert p b isCheck))) else return ()
@@ -88,7 +88,11 @@ parseFile ds fn =
 
 main = do args <- getArgs
           let (interactive, rest) = partition ("-i" ==) args
-          let (enableTracing, files) = partition ("-t" ==) rest
+          let (includeVariableIndexes, rest') = partition ("-v" ==) rest
+          let (checkNormalization, rest'') = partition ("-c" ==) rest'
+          let (enableTracing, files) = partition ("-t" ==) rest''
           when (not (null enableTracing)) (writeIORef doTrace True)
+          when (not (null includeVariableIndexes)) (writeIORef includeIndex True)
+          when (not (null checkNormalization)) (writeIORef doCheckSteps True)
           ds <- foldM parseFile emptyDefns files
           if not (null interactive) || null files then runInputT defaultSettings (repl ds) else return ()
