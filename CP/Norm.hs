@@ -52,19 +52,20 @@ instance Fragments (M [Fragment])
     where addVar v a mfs = addVar v a =<< mfs
 
 renameBoundVariable :: String -> Proc -> String -> Proc -> M (String, Proc, Proc)
-renameBoundVariable x p x' p'
-    | x == x' = return (x, p, p')
-    | x `notElem` fn p' = liftM (x, p,) (replace x' x p')
-    | x' `notElem` fn p = liftM (x',, p') (replace x x' p)
-    | otherwise = do n <- fresh x
-                     liftM2 (n,,) (replace x n p) (replace x' n p')
+renameBoundVariable x p x' p'=
+    do n <- fresh x
+       liftM2 (n,,) (replace x n p) (replace x' n p')
+
+traceCutReduction x a = trace ("Reducing cut on " ++ showCP x ++ " of type " ++ showCP a)
 
 stepPrincipal :: Fragment -> Fragment -> M [Fragment]
 stepPrincipal (Fragment zs (Link x y)) (Fragment zs' p)
     | x `elem` map fst zs', Just a <- lookup x zs, not (isWhyNot a) =
+        traceCutReduction x a $
         do p' <- replace x y p
            fragment (add y zs') p'
     | y `elem` map fst zs', Just a <- lookup y zs, not (isWhyNot a) =
+        traceCutReduction y a $
         do p' <- replace y x p
            fragment (add x zs') p'
     where isWhyNot WhyNot{} = True
@@ -74,27 +75,33 @@ stepPrincipal (Fragment zs (Link x y)) (Fragment zs' p)
                     Just a  -> ((z, a) :)
 stepPrincipal (Fragment zs (Out x y p q)) (Fragment zs' (In x' y' r))
     | x == x', Just (a `Times` b) <- lookup x zs =
+        traceCutReduction x (a `Times` b) $
         do (y'', p', r') <- renameBoundVariable y p y' r
            addVar y'' a (fragment zs p') <++>
                addVar y'' (dual a) (addVar x b (fragment zs q)) <++>
                addVar y'' (dual a) (addVar x (dual b) (fragment zs' r'))
 stepPrincipal (Fragment zs (Select x l p)) (Fragment zs' (Case x' bs))
     | x == x', Just (Plus bts) <- lookup x zs, Just q <- lookup l bs, Just a <- lookup l bts =
+        traceCutReduction x (Plus bts) $
         addVar x a (fragment zs p) <++>
         addVar x (dual a) (fragment zs' q)
 stepPrincipal (Fragment zs (SendProp x a p)) (Fragment zs' (ReceiveProp x' t' q))
     | x == x', Just (Exist t b) <- lookup x zs, t == t' =
+        traceCutReduction x (Exist t b) $
         addVar x (inst t a b) (fragment [(z,inst t a c) | (z,c) <- zs] p) <++>
         addVar x (dual (inst t a b)) (fragment [(z,inst t a c) | (z,c) <- zs'] (inst t a q))
 stepPrincipal (Fragment zs (SendTerm x m p)) (Fragment zs' (ReceiveTerm x' i q))
     | x == x', Just (FOExist t b) <- lookup x zs =
+        traceCutReduction x (FOExist t b) $
         addVar x b (fragment zs p) <++>
         addVar x (dual b) (fragment zs' (instProc i (reduce m) q))
 stepPrincipal (Fragment zs (EmptyOut x)) (Fragment zs' (EmptyIn x' p))
     | x == x', Just One <- lookup x zs =
+        traceCutReduction x (Just One) $
         fragment (filter ((x' /=) . fst) zs') p
 stepPrincipal (Fragment zs (Rec x p)) (Fragment zs' (CoRec x' y s q r))
     | x == x', Just (Mu t a) <- lookup x zs =
+        traceCutReduction x (Mu t a) $
         let b = (t, a)
             bbar = dualOp b
             nu (t, a) = Nu t a
@@ -140,6 +147,7 @@ stepPrincipal (Fragment zs (Rec x p)) (Fragment zs' (CoRec x' y s q r))
           funct (t, a) _ _ _ = error ("Unimplemented: functoriality for " ++ t ++ "." ++ show (pretty a))
 stepPrincipal (Fragment zs (Replicate x y p)) (Fragment zs' (Derelict x' y' q))
     | x == x', Just (OfCourse a) <- lookup x zs =
+        traceCutReduction x (OfCourse a) $
         do (y'', p', q') <- renameBoundVariable y p y' q
            return [Fragment zs (Replicate x y p)] <++>
                addVar y'' a (fragment zs p') <++>
@@ -153,18 +161,18 @@ fragment zs (Cut x a p q) = fragment ((x,a) : zs) p <++> fragment ((x, dual a) :
 fragment zs p             = return [Fragment (filter ((`elem` vs) . fst) zs) p]
     where vs = fn p
 
-unFragment :: [Fragment] -> Proc
-unFragment fs = loop (filter (not . weaken) fs) []
+unfragment :: [Fragment] -> Proc
+unfragment fs = loop (filter (not . weaken) fs) []
     where weaken (Fragment _ p@(Replicate x _ _)) = and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
           weaken _                              = False
 
           loop [Fragment [] p] [] = p
-          loop (Fragment [(x,a)] p : rest) passed = {- trace ("Introducing cut on " ++ x) $ -}
+          loop (Fragment [(x,a)] p : rest) passed = trace ("Introducing cut on " ++ x) $
                                                     Cut x a p (loop (map filterX (rest ++ passed)) [])
               where filterX (Fragment zs q) = let f = Fragment (filter ((x /=) . fst) zs) q
                                               in  {- trace (unlines ["Filtered " ++ x ++ " from fragment", showCP (Fragment zs q), "Giving", showCP f]) -} f
           loop (f : rest) passed = loop rest (f : passed)
-          loop [] passed = error (unlines ("Failed in unFragment! Remaining fragments were:" : map (showCP . pretty) passed))
+          loop [] passed = error (unlines ("Failed in unfragment! Remaining fragments were:" : map (showCP . pretty) passed))
 
 commute :: [Fragment] -> ([Fragment] -> M Proc) -> ([Fragment] -> M Proc) -> M Proc
 commute fs f g = loop fs [] False
@@ -282,12 +290,12 @@ normalize p b =
        let is = [1..length fs]
            wl = makeWorkList is []
        fs' <- loop wl (zip is fs) (length fs + 1)
-       executed <- commute fs' (return . unFragment) (return . unFragment)
-       simplified <- commute fs' recurse (return . unFragment)
+       executed <- commute fs' (return . unfragment) (return . unfragment)
+       simplified <- commute fs' recurse (return . unfragment)
        return (executed, simplified)
     where recurse fs = trace (unlines ("Recursing on" : map showCP fs)) $
                        do fs' <- loop (makeWorkList is []) (zip is fs) (length fs + 1)
-                          commute fs' recurse (return . unFragment)
+                          commute fs' recurse (return . unfragment)
               where is = [1..length fs]
 
           makeWorkList is js = [(i, i') | (i:is') <- tails is, i' <- is'] ++ [(i,j) | i <- is, j <- js]
@@ -306,8 +314,9 @@ normalize p b =
                                  ifs' = zip ks fs' ++ filter (notIorJ . fst) ifs
                                  wl'  = makeWorkList ks (filter notIorJ (map fst ifs)) ++
                                         [(i',j') | (i',j') <- wl, notIorJ i', notIorJ j']
-                             in  trace (replicate 120 '-' ++ '\n' :
-                                        showCP (unFragment (map snd ifs'))) $
+                             in  trace (unlines (["Reduced fragments"] ++ map showCP [fi, fj] ++ ["to"] ++ map showCP fs')) $
+                                 trace (replicate 120 '-' ++ '\n' :
+                                        showCP (unfragment (map snd ifs'))) $
                                  if checkSteps
                                  then checkFragments b fi fj fs' $ loop wl' ifs' k'
                                  else loop wl' ifs' k'
