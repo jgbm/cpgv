@@ -3,8 +3,8 @@
 \usepackage{amsmath,infer,mathwidth,stmaryrd}
 
 \newcommand{\cut}[4]{\mathbf{cut}\: [#1:#2] \: (#3 \mid #4)}
-\newcommand{\unroll}[2]{\mathbf{unr}\:#1.#2}
-\newcommand{\roll}[5]{\mathbf{roll}\:#1 [#2:#3] (#4,#5)}
+\newcommand{\unroll}[2]{\mathbf{rec}\:#1.#2}
+\newcommand{\roll}[5]{\mathbf{corec}\:#1 [#2:#3] (#4,#5)}
 \newcommand{\case}[2]{\mathbf{case}\:#1\:\{#2\}}
 \newcommand{\sel}[3]{#1/\mathrm{#2}.#3}
 
@@ -12,20 +12,81 @@
 
 \def\tensor{\otimes}
 \def\parr{\bindnasrepma}
-\def\with{\&}
+\def\with{\binampersand}
 \def\link{\leftrightarrow}
 \def\goesto{\Longmapsto}
 \def\F{\mathcal{F}}
 
 \def\Fr{\mathbf{Fr}}
-\def\unFr{\mathbf{unFr}}
+\def\Unfr{\mathbf{Unfr}}
+
+\newenvironment{syntax}%
+{\[\begin{array}{@{}lr@{\hspace{2px}}c@{\hspace{2px}}l}\ignorespaces}
+{\end{array}\]\ignorespacesafterend}
 
 \begin{document}
+
+\section{Syntax}
+
+We start with the base CP syntax:
+\begin{syntax}
+  \text{Types} & A, B & ::= & A \tensor B \mid A \parr B \mid A \oplus B \mid A \with B \\
+  & & \mid & 1 \mid \bot \mid 0 \mid \top \\
+  & & \mid & X \mid X^\perp \mid \mu G \mid \nu G \mid {!A} \mid {?A} \\
+  \text{Operators} & G & ::= & X.A \\
+  \text{Names} & x,y \\
+  \text{Terms} & P,Q,R & ::= & x[y].(P \mid Q) \mid x(y).P \mid x[].0 \mid x().P \\
+  & & \mid & \sel{x}{inl}{P} \mid \sel{x}{inr}{P} \mid \case{x}{P;Q} \mid \case{x}{} \\
+  & & \mid & \unroll{x}{P} \mid \roll{x}{y}{A}{P}{Q} \mid {!x(y).P} \mid {?x[y].P} \\
+  & & \mid & \cut{x}{A}{P}{Q} \\
+  \text{Contexts} & Z & ::= & x_1:A_1 \dots x_n:A_n
+\end{syntax}
+We have the usual typing judgment: $P \vdash Z$.  We extend this with a notion of
+\textit{fragments} of CP expressions, as follows:
+\begin{syntax}
+ \text{Fragments} & F & ::= & \fragment{Z}{P} \mid x[y].(\F \mid \F') \mid x(y).\F \mid x[].0 \mid x().\F \\
+ & & \mid & \sel{x}{inl}{\F} \mid \sel{x}{inr}{\F} \mid \case{x}{\F;\F'} \mid \case{x}{} \\
+ & & \mid & \unroll{x}{\F} \mid \roll{x}{y}{A}{\F}{Q} \mid {!x(y).\F} \mid {?x[y].\F} \\
+ \text{Fragment sets} & \F & ::= & \{ F_1, \dots, F_n \}
+\end{syntax}
+and use $\F$ to denote a set of fragments.  We write $\{F_1,F_2,\dots,\F\}$ to denote
+$\{F_1,\dots\}\cup\F$.  We extend the typing judgments by
+\[
+  \fragment{Z}{P} \vdash Z' \iff P \vdash Z,Z',
+\]
+and if $\F = \{F_1,\dots,F_n\}$, then
+\[
+  \F \vdash Z_1 \cup \cdots \cup Z_n \iff F_1 \vdash Z_1 \land \cdots \land F_n \vdash Z_n.
+\]
+
+\section{Fragment and Defragmentation}
+
+\begin{align*}
+  \Fr_Z(\cut{x}{A}{x \link y}{P}) &\mapsto \Fr_Z(P[y/x]) \\
+  \Fr_Z(\cut{x}{A}{P}{Q}) &\mapsto \Fr_{x:A,Z}(P) \cup \Fr_{x:A^\perp,Z}(Q) \\
+  \Fr_Z(P) &\mapsto \{ \fragment{Z}{P} \}
+\end{align*}
+
+\noindent
+If \(Z = x_1:A_1, x_2,A_2, \dots, x_n:A_n,\) then \(Z \setminus x_i = x_1:A_1,\dots,x_{i-1}:A_{i-1},x_{i+1}:A_{i+1},\dots,x_n:A_n.\)
+
+\begin{align*}
+  \Unfr(\{\fragment{}{P}\}) &\mapsto P \\
+  \Unfr(\{\fragment{x:A}{P},\F\}) &\mapsto \cut{x}{A}{P}{\Unfr(\{\fragment{Z \setminus x}{Q} \mid \fragment{Z}{Q} \in \F\})} \\
+  \Unfr(\{\fragment{x:{!A},Z}{P},\F\}) &\mapsto \Unfr(\F) \quad \text{if $x:{?A} \notin Z'$ for all $\fragment{Z'}{Q} \in \F$}
+\end{align*}
+
+We should have that if $P \vdash Z$ then $\Unfr(\Fr_Z(P)) \equiv P$ and $\Fr_Z(P) \vdash Z$.
 
 \section{Structural equivalence}
 
 If $x \not\in fn(P)$:
 \[ \{ \fragment{x:A,Z}{P}, \F \} \goesto \{ \fragment{Z}{P}, \F \}. \]
+
+I am somewhat suspicious of this rule in hindsight.  In particular, I would like a property that
+says something like $\F \vdash Z \land \F \goesto \F' \implies \F' \vdash Z$, but this rule violates
+that unless $A$ is of the form $?B$.  Alternatively, I may need a more refined notion of fragment
+typing that takes free names into account.
 
 \section{Principal cut reductions}
 
@@ -64,15 +125,15 @@ Fragment transformation:
 \noindent
 Cut rule:
 \begin{multline*}
- \cut{x}{\mu B}{\unroll{x}{P}}{\roll{x}{y}{S}{Q}{R}} \goesto \\
- \cut{y}{S}{Q}{\cut{x}{\overline{B}S}{R}{\cut{z}{\overline{B}(\nu \overline{B})}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}{P[z/x]}}}
+ \cut{x}{\mu G}{\unroll{x}{P}}{\roll{x}{y}{S}{Q}{R}} \goesto \\
+ \cut{y}{S}{Q}{\cut{x}{\overline{G}S}{R}{\cut{z}{\overline{G}(\nu \overline{G})}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}{P[z/x]}}}
 \end{multline*}
 Fragment transformation:
 \begin{multline*}
-  \{\fragment{x:\mu B,Z}{\unroll{x}{P}}, \fragment{x:\nu B,Z'}{\roll{x}{y}{S}{Q}{R}}, \F \} \goesto \\
-  \{\fragment{y:S,Z'}{Q}, \fragment{y:S^\perp,x:\overline{B}S,Z'}{R},\\
-    \fragment{y:S^\perp,x:(\overline{B}S)^\perp,z:\overline{B}(\nu \overline{B}),Z'}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}, \\
-    \fragment{y:S^\perp,x:(\overline{B}S)^\perp,z:(\overline{B}(\nu \overline{B}))^\perp,Z}{P[z/x]}, \F \}
+  \{\fragment{x:\mu G,Z}{\unroll{x}{P}}, \fragment{x:\nu G,Z'}{\roll{x}{y}{S}{Q}{R}}, \F \} \goesto \\
+  \{\fragment{y:S,Z'}{Q}, \fragment{y:S^\perp,x:\overline{G}S,Z'}{R},\\
+    \fragment{y:S^\perp,x:(\overline{G}S)^\perp,z:\overline{G}(\nu \overline{G}),Z'}{F_B((\roll{z}{y}{S}{y \link x}{R[z/x]})_{xz})}, \\
+    \fragment{y:S^\perp,x:(\overline{G}S)^\perp,z:(\overline{G}(\nu \overline{G}))^\perp,Z}{P[z/x]}, \F \}
 \end{multline*}
 
 \noindent
@@ -87,7 +148,10 @@ Fragment transformation:
   \{\fragment{x:{!A},Z}{!x(y).P}, \fragment{x:{?A},Z'}{?x[y].Q}, \F \} \goesto \\
   \{\fragment{x:{!A},Z}{!x(y).P}, \fragment{y:A,Z}{P}, \fragment{y:A^\perp,Z'}{Q}, \F \}
 \end{multline*}
-and see $\unFr$ for weakening.
+and see $\Unfr$ for weakening.
+
+Again, I would like to have the property that $\F \vdash Z \land \F \goesto \F' \implies \F' \vdash
+Z.$ This should follow from the corresponding property for cut reduction.
 
 
 \section{Commuting conversions}
@@ -109,23 +173,14 @@ of a CP expressions.  Each rule assumes the side condition $x \notin Z$.
   \{ \fragment{Z}{?x[y].P}, \F\} &\goesto ?x[y].\{\fragment{Z}{P}, \F\}
 \end{align*}
 
-\section{Fragment and Defragmentation}
+Finally, we can extend reduction to take place under prefixes:
+\[
+  \pi \F \goesto \pi \F' \quad \text{if $\F \goesto \F'$}
+\]
 
-\begin{align*}
-  \Fr_Z(\cut{x}{A}{x \link y}{P}) &\mapsto \Fr_Z(P[y/x]) \\
-  \Fr_Z(\cut{x}{A}{P}{Q}) &\mapsto \Fr_{x:A,Z}(P) \cup \Fr_{x:A^\perp,Z}(Q) \\
-  \Fr_Z(P) &\mapsto \{ \fragment{Z}{P} \}
-\end{align*}
+\section{Reduction}
 
-\noindent
-If \[Z = x_1:A_1, x_2,A_2, \dots, x_n:A_n,\] then \[Z \setminus x_i = x_1:A_1,\dots,x_{i-1}:A_{i-1},x_{i+1}:A_{i+1},\dots,x_n:A_n.\]
-
-\begin{align*}
-  \unFr(\{\fragment{}{P}\}) &\mapsto P \\
-  \unFr(\{\fragment{x:A}{P},\F\}) &\mapsto \cut{x}{A}{P}{\unFr(\{\fragment{Z \setminus x}{Q} \mid \fragment{Z}{Q} \in \F\})} \\
-  \unFr(\{\fragment{x:{!A},Z}{P},\F\}) &\mapsto \unFr(\F) \quad \text{if $x:{?A} \notin Z'$ for all $\fragment{Z'}{Q} \in \F$}
-\end{align*}
-
-
+If $P \vdash Z$, and applying cut elimination to $P$ produces $Q \vdash Z$, then we should have that
+$\Fr_Z(P) \goesto \F$, $\Unfr(\F) = Q'$, and both $Q \equiv Q'$ and $Q' \vdash Z$.
 
 \end{document}
