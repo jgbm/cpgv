@@ -11,6 +11,7 @@ import CP.Printer
 import Text.PrettyPrint.Leijen
 
 import CP.Trace
+import CP.Utilities
 import Data.IORef
 import System.IO.Unsafe
 
@@ -157,13 +158,19 @@ stepPrincipal _ _ = return []
 fragment :: [(String, Prop)] -> Proc -> M [Fragment]
 fragment zs (Quote m (Just ds)) = let EQuote p _ = reduce m
                                   in  fragment zs =<< expandP ds p
-fragment zs (Cut x a p q) = fragment ((x,a) : zs) p <++> fragment ((x, dual a) : zs) q
+fragment zs (Cut x a p q) = do x' <- fresh x
+                               (fragment ((x', a) : zs) =<< replace x x' p) <++>
+                                 (fragment ((x', dual a) : zs) =<< replace x x' q)
 fragment zs p             = return [Fragment (filter ((`elem` vs) . fst) zs) p]
     where vs = fn p
 
 unfragment :: [Fragment] -> Proc
-unfragment fs = loop (filter (not . weaken) fs) []
-    where weaken (Fragment _ p@(Replicate x _ _)) = and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
+unfragment fs = case binderClash p of
+                  Nothing -> p
+                  Just b  -> trace ("Binder " ++ b ++ " not fresh!") p
+    where p = loop (filter (not . weaken) fs) []
+
+          weaken (Fragment _ p@(Replicate x _ _)) = and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
           weaken _                              = False
 
           loop [Fragment [] p] [] = p
