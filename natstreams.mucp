@@ -40,7 +40,7 @@ check CLiftInc(x,y) |- x:Quest(~Church),y:Bang(Church).
 
 
 type Source(A) = nu X.&{end:1, more: A * X}.
-type Sink(A)   = mu X.+{end:1, more: ~A || X}.
+type Sink(A)   = mu X.+{end:bot, more: ~A || X}.
 
 def CZeros(y) = corec y [z:1]
                   (z[].0,
@@ -125,6 +125,36 @@ def PNats(x) =
 check PNats(x) |- x:Source(Peano).
 
 new [x:Source(Peano)] (PNats(x) |
+   rec x.x/more.x(a).
+   rec x.x/more.x(b).
+   rec x.x/more.x(c).
+   rec x.x/end.x().
+   new [ya:int*1] (PCount(a,ya) |
+     new [yb:int*1] (PCount(b,yb) |
+       new [yc: int*1] (PCount(c,yc) |
+         ya*(ia).ya().yb*(ib).yb().yc*(ic).yc().
+         y*[ia].y*[ib].y*[ic].y[].0))))
+ |- y: int * (int * (int * 1)).
+
+
+-- Add zeros between each element of a stream:
+
+type Bool = +{t: 1, f: 1}.
+
+def Pad(x,y) = corec y [z:Bool*Source(Peano)]
+                 (z[zz].(zz/f.zz[].0 | z <-> x),
+                  z(zz).case zz {
+                    t: zz().case y {
+                      end: rec z.z/end.z().y[].0;
+                      more: y[a].(PZero(a) | y[zz].(zz/f.zz[].0 | y<->z)) };
+                    f: zz().case y {
+                      end: rec z.z/end.z().y[].0;
+                      more: rec z.z/more.z(b).y[a].(b<->a | y[zz].(zz/t.zz[].0 | y<->z)) } }).
+check Pad(x,y) |- x:Sink(Peano),y:Source(Peano).
+
+new [x:Source(Peano)]
+  (new [y:Source(Peano)]
+     (PNats(y) | Pad(y, x)) |
    rec x.x/more.x(a).
    rec x.x/more.x(b).
    rec x.x/more.x(c).
