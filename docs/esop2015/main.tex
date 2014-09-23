@@ -1,0 +1,256 @@
+% -*- fill-column: 100 -*-
+
+\documentclass[orivec,envcountsame]{llncs}
+
+\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,stmaryrd,url,xspace}
+\usepackage[table]{xcolor}
+\usepackage{colortbl}
+\addtolength{\jot}{-3px}
+
+\usepackage{mathpartir}
+\mprset{sep=1em}
+
+\usepackage{float}
+\floatstyle{boxed}
+\restylefloat{figure}
+
+\input{preamble.tex}
+
+\title{Joke or Something}
+\author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
+\institute{The University of Edinburgh \\
+           \email{\{Garrett.Morris,Sam.Lindley,Philip.Wadler\}@ed.ac.uk} \vspace{-5mm}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{I'm Pickin' Up Good Vibrations}
+
+I'm intentionally ignoring replication for the time being.  I'm intentionally ignoring CP
+polymorphism forever.
+
+\subsection{Syntax}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\zero}{\mathbf{0}}
+\begin{syntax}
+  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid % \oplus \{ \overline{l:S} \} \mid \with \{ \overline{l:S} \} \mid
+                                   \interm \mid \outterm \\
+  \text{Types} & T,U & ::= & S \mid T \times U \mid \one \mid T + U \mid \zero \mid T \lto U \\ % \mid {!T} \\
+  \text{Terms} & M,N & ::= & x \mid K \mid \lambda x:T.M \mid M\,N \\
+  & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
+  & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
+  & & \mid & () \mid \gvlet{()}{M}{N} \mid \mathsf{absurd}\,x \\
+  \text{Constants} & K & ::= & \mkwd{send} \mid \mkwd{receive} \mid \mkwd{fork} \mid \mkwd{link}\\
+\end{syntax}
+
+\begin{mathpar}
+\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual S}
+
+\gvdual{\gvin{T}{S}} = \gvout{T}{\gvdual S}
+
+\gvdual{\interm} = \outterm
+
+\gvdual{\outterm} = \interm
+\end{mathpar}
+
+\subsection{Typing}
+
+\begin{mathpar}
+\inferrule
+  { }
+  {\{x:T\} \vdash x:T}
+
+\inferrule
+  {\Gamma, x:\interm, y:\interm \vdash M: T}
+  {\Gamma, x:\interm \vdash M\{x/y\}:T}
+
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma, x:\interm \vdash M:T}
+
+\inferrule
+  {\Gamma,x:T \vdash M:U}
+  {\Gamma \vdash \lambda x:T.M : T \lto U}
+
+\inferrule
+  {\Gamma \vdash M: T \lto U \\
+   \Delta \vdash N: T}
+  {\Gamma,\Delta \vdash M\,N: U}
+
+\inferrule
+  {\Gamma \vdash M: T \\
+   \Delta \vdash N: U}
+  {\Gamma,\Delta \vdash (M,N): T \times U}
+
+\inferrule
+  {\Gamma \vdash M: T \times T' \\
+   \Delta,x:T,y:T' \vdash N: U}
+  {\Gamma,\Delta \vdash \gvlet{(x,y)}{M}{N} : U}
+
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma \vdash \mkwd{inl}\,M: T+U}
+
+\inferrule
+  {\Gamma \vdash M: T+T' \\
+   \Delta,x:T \vdash N: U \\
+   \Delta,x:T' \vdash N': U}
+  {\Gamma,\Delta \vdash \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} : U}
+
+\inferrule
+  { }
+  {\vdash (): \one}
+
+\inferrule
+  {\Gamma \vdash M: \one \\
+   \Delta \vdash N: T}
+  {\Gamma,\Delta \vdash \gvlet{()}{M}{N}: T}
+
+\inferrule
+  { }
+  {\Gamma,x : \zero \vdash \mathsf{absurd}\,x : T}
+
+\mkwd{send} : T \times \gvout{T}{S} \lto S
+
+\mkwd{receive} : \gvin{T}{S} \lto T \times S
+\\
+\mkwd{fork} : (S \lto \outterm) \lto \gvdual{S}
+
+\mkwd{link} : (S, \gvdual{S}) \lto \gvend
+\end{mathpar}
+
+\subsection{Evaluation}
+
+\newcommand{\distinguish}[1]{\langle #1 \rangle}
+
+\begin{syntax}
+%  \text{Names} & \alpha,\beta \\
+  \text{Values} & V & ::= & x \mid K \mid \lambda x:T.M \\ % \mid K\,V \\
+  & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
+  \text{Expression contexts} & E & ::= &  [] \mid E\,M \mid V\,E \mid \gvlet{()}{E}{M} \\
+  & & \mid & (E,M) \mid (V,E) \mid \gvlet{(x,y)}{E}{M} \\
+  & & \mid & \mkwd{inl}\,E \mid \mkwd{inr}\,E \mid \gvcase{E}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
+  \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x) P \\
+  \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x)C
+\end{syntax}
+Configuration typing:
+\begin{mathpar}
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma \vdash \distinguish M}
+
+\inferrule
+  {\Gamma \vdash M: \outterm}
+  {\Gamma \vdash M}
+
+\inferrule
+  {\Gamma \vdash P \\
+   \Gamma' \vdash P'}
+  {\Gamma,\Gamma' \vdash P \parallel P'}
+
+\inferrule
+  {\Gamma, x:S, x:\gvdual{S} \vdash P}
+  {\Gamma \vdash (\nu x) P}
+\end{mathpar}
+Wait, $\Gamma$ is a multiset?  When did that happen? Term reductions:
+\begin{align*}
+  (\lambda x:T. M)\,V &\teval M\{V/x\} \\
+  \gvlet{()}{()}{M} &\teval M \\
+  \gvlet{(x,y)}{(V,V')}{M} &\teval M\{V/x,V'/y\} \\
+  \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N\{V/x\} \\
+  E[M] &\teval E[M'] \qquad \text{if $M \teval M'$}
+\end{align*}
+Configuration (context) equivalence:
+\begin{mathpar}
+C_0 \parallel C_1 \equiv C_1 \parallel C_0
+
+C_0 \parallel (C_1 \parallel C_2) \equiv (C_0 \parallel C_1) \parallel C_2
+
+C_0 \parallel (\nu x)C_1 \equiv (\nu x)(C_0 \parallel C_1) \text{ if $x \not\in \mathsf{fv}(C_0)$}
+\end{mathpar}
+Configuration reduction:
+\begin{mathpar}
+\inferrule
+  { }
+  {C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,x] \ceval C[x] \parallel C'[(V,x)]}
+
+\inferrule
+  {\text{$x$ fresh}}
+  {C[\mkwd{fork}\,V] \ceval (\nu x)(C[x] \parallel (V\,x))}
+
+\inferrule
+  {M \teval M'}
+  {M \ceval M'}
+
+\inferrule
+  {M \teval M'}
+  {\distinguish M \ceval \distinguish {M'}}
+
+\inferrule
+  {C_0 \ceval C_0'}
+  {C_0 \parallel C_1 \ceval C_0' \parallel C_1}
+
+\inferrule
+  {C_0 \equiv C_0' \\
+   C_0' \ceval C_1' \\
+   C_1' \equiv C_1}
+  {C_0 \ceval C_1}
+
+\inferrule
+  {C \ceval C'}
+  {(\nu x)C \ceval (\nu x)C'}
+\end{mathpar}
+Some things that might be useful
+\begin{theorem}
+If $\Gamma \vdash P$ and $P \ceval P'$ then $\Gamma \vdash P'$.
+\end{theorem}
+\begin{theorem}
+If $\Gamma \vdash M: T$, then for all $P$ such that $\distinguish M \ceval^\star P
+\centernot\ceval$, there is a value $V$ such that $P \equiv (\nu x_1,\dots,x_n)(\distinguish V
+\parallel P')$.
+\end{theorem}
+
+\subsection{Deadlock and Its Absence}
+
+Blocked terms:
+\[
+  \mathsf{blocked}(x,P) \stackrel{\mathrm{def}}{\iff} P \equiv C[\mathsf{receive}\,x] \lor \exists M. P \equiv C[\mathsf{send}\,(M,x)]
+\]
+
+Now we can say something about deadlock.  A process $P$ with free variables $y_1,\dots,y_l$ is deadlock-free if, for all $Q$ such that
+$P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu x_1,\dots,x_m)(\distinguish V \parallel E_1 \parallel \dots
+\parallel E_n)$ and, for each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $x_i \in
+\mathsf{fv}(V)$ or $x_i \in \{ y_1, \dots, y_l \}$.
+
+\begin{theorem}
+If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
+\end{theorem}
+
+\section{CP Bollocks}
+
+Suppose that we write $\tocp{-}$ for GV to CP translation, and $\togv{-}$ for CP to GV translation.
+Note that $\tocp{P}z$ will only be defined when $\Gamma \vdash P$, and when $P$ has a single
+distinguished expression.  I suspect that the following will be useful at some point.
+\begin{lemma}
+  If $\Gamma \vdash M: T$ and $\distinguish M \ceval^\star P$, then there are $x_1,\dots,x_n$, $M$ and $P'$
+  such that $P \equiv (\nu x_1,\dots,x_n)(\distinguish M \parallel P')$.
+\end{lemma}
+
+We might expect results something like the following.
+
+\begin{theorem}
+  If $\Gamma \vdash P$, where $P = (\nu x_1,\dots,x_m)(\distinguish M \parallel P')$ and $\Gamma
+  \vdash M: T$, then $\tocp{P}z \vdash \tocp{\Gamma}, z:\tocp{T}$.
+\end{theorem}
+
+\begin{theorem}
+  If $\Gamma \vdash P$ and $P \ceval P'$, then $\tocp{P}z \longrightarrow Q$ such that $\togv{Q}
+  \equiv P'$.  What to do with $z$?!
+\end{theorem}
+
+\end{document}
