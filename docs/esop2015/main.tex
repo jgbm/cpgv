@@ -45,7 +45,7 @@ polymorphism forever.
   & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
   & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
   & & \mid & () \mid \gvlet{()}{M}{N} \mid \mathsf{absurd}\,x \\
-  \text{Constants} & K & ::= & \mkwd{send} \mid \mkwd{receive} \mid \mkwd{fork} \mid \mkwd{link}\\
+  \text{Constants} & K & ::= & \mkwd{send} \mid \mkwd{receive} \mid \mkwd{fork} \mid \mkwd{wait} \mid \mkwd{link}\\
 \end{syntax}
 
 \begin{mathpar}
@@ -65,14 +65,14 @@ polymorphism forever.
   { }
   {\{x:T\} \vdash x:T}
 
-\inferrule
-  {\Gamma, x:\interm, y:\interm \vdash M: T}
-  {\Gamma, x:\interm \vdash M\{x/y\}:T}
-
-\inferrule
-  {\Gamma \vdash M: T}
-  {\Gamma, x:\interm \vdash M:T}
-
+%% \inferrule
+%%   {\Gamma, x:\interm, y:\interm \vdash M: T}
+%%   {\Gamma, x:\interm \vdash M\{x/y\}:T}
+%%
+%% \inferrule
+%%   {\Gamma \vdash M: T}
+%%   {\Gamma, x:\interm \vdash M:T}
+%%
 \inferrule
   {\Gamma,x:T \vdash M:U}
   {\Gamma \vdash \lambda x:T.M : T \lto U}
@@ -118,8 +118,10 @@ polymorphism forever.
 \mkwd{send} : T \times \gvout{T}{S} \lto S
 
 \mkwd{receive} : \gvin{T}{S} \lto T \times S
-\\
+
 \mkwd{fork} : (S \lto \outterm) \lto \gvdual{S}
+
+\mkwd{wait} : \interm \lto \one
 
 \mkwd{link} : (S, \gvdual{S}) \lto \gvend
 \end{mathpar}
@@ -157,7 +159,8 @@ Configuration typing:
   {\Gamma, x:S, x:\gvdual{S} \vdash P}
   {\Gamma \vdash (\nu x) P}
 \end{mathpar}
-Wait, $\Gamma$ is a multiset?  When did that happen? Term reductions:
+Wait, $\Gamma$ is a multiset?  When did that happen?  See below for an alternative.  Term
+reductions:
 \begin{align*}
   (\lambda x:T. M)\,V &\teval M\{V/x\} \\
   \gvlet{()}{()}{M} &\teval M \\
@@ -180,8 +183,16 @@ Configuration reduction:
   {C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,x] \ceval C[x] \parallel C'[(V,x)]}
 
 \inferrule
+  {C \ceval C'}
+  {(\nu x)C \ceval (\nu x)C'}
+
+\inferrule
   {\text{$x$ fresh}}
   {C[\mkwd{fork}\,V] \ceval (\nu x)(C[x] \parallel (V\,x))}
+
+\inferrule
+  { }
+  {C[\mkwd{wait}\,x] \parallel x \ceval C[()]}
 
 \inferrule
   {M \teval M'}
@@ -200,10 +211,6 @@ Configuration reduction:
    C_0' \ceval C_1' \\
    C_1' \equiv C_1}
   {C_0 \ceval C_1}
-
-\inferrule
-  {C \ceval C'}
-  {(\nu x)C \ceval (\nu x)C'}
 \end{mathpar}
 Some things that might be useful
 \begin{theorem}
@@ -215,6 +222,8 @@ If $\Gamma \vdash M: T$, then for all $P$ such that $\distinguish M \ceval^\star
 \parallel P')$.
 \end{theorem}
 
+
+
 \subsection{Deadlock and Its Absence}
 
 Blocked terms:
@@ -222,14 +231,58 @@ Blocked terms:
   \mathsf{blocked}(x,P) \stackrel{\mathrm{def}}{\iff} P \equiv C[\mathsf{receive}\,x] \lor \exists M. P \equiv C[\mathsf{send}\,(M,x)]
 \]
 
-Now we can say something about deadlock.  A process $P$ with free variables $y_1,\dots,y_l$ is deadlock-free if, for all $Q$ such that
-$P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu x_1,\dots,x_m)(\distinguish V \parallel E_1 \parallel \dots
-\parallel E_n)$ and, for each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $x_i \in
-\mathsf{fv}(V)$ or $x_i \in \{ y_1, \dots, y_l \}$.
+Now we can say something about deadlock.  A process $P$ with free variables $y_1,\dots,y_l$ is
+deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu
+x_1,\dots,x_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for each $1 \leq i
+\leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $x_i \in \mathsf{fv}(V)$ or $x_i \in
+\{ y_1, \dots, y_l \}$.
 
 \begin{theorem}
 If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
 \end{theorem}
+
+\subsection{Alternative Formulation}
+
+Instead, we could have
+
+\begin{syntax}
+  \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x y)P \\
+  \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x y)C
+\end{syntax}
+with one alternation to the configuration typing rules
+\[
+\inferrule
+  {\Gamma,x:S,y:\gvdual{S} \vdash P}
+  {\Gamma \vdash (\nu x y)P}
+\]
+an additional equivalence
+\[
+  (\nu x y)P \equiv (\nu y x)P
+\]
+and the following alternations to the reductions
+\begin{mathpar}
+\inferrule
+  { }
+  {(\nu x y)(C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,y] \parallel C'') \ceval (\nu x y)(C[x] \parallel C'[(V,y)] \parallel C'')}
+
+\inferrule
+  { }
+  {(\nu x y)(C[\mkwd{wait}\,x] \parallel y \parallel C') \ceval C[()] \parallel C'}
+
+\inferrule
+  {x,y \text{ fresh}}
+  {C[\mkwd{fork}\,V] \ceval (\nu x y)(C[x] \parallel V\,y)}
+\end{mathpar}
+On the one hand, this seems to make the structure of configurations and their reductions slightly
+more complicated; on the other hand, this avoids either making $\Gamma$ a multi-set or further
+restricting the form of configurations.  On the whole, I think I marginally prefer this option,
+although I'm not convinced yet.
+
+We would also have to update the definition of blocking.  A process $P$ with free variables
+$z_1,\dots,z_l$ is deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q
+\equiv (\nu x_1 y_1) \dots (\nu x_m y_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for
+each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $y_i \in
+\mathsf{fv}(V)$ or $x_i \in \{ z_1, \dots, z_l \}$.
 
 \section{CP Bollocks}
 
