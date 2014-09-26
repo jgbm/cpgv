@@ -4,6 +4,7 @@
 \newcommand{\cpbang}[1]{{! #1}}
 \newcommand{\cpquery}[1]{{? #1}}
 \newcommand{\gvdual}[1]{\overline{#1}}
+\newcommand{\channel}[1]{#1^\sharp}
 \newcommand{\gvout}[2]{{!#1.#2}}
 \newcommand{\gvin}[2]{{?#1.#2}}
 \newcommand{\gvend}{\mkwd{end}}
@@ -16,6 +17,8 @@
 \newcommand{\trule}[1]{(\textit{#1})}
 \newcommand{\cptyp}[2]{#1 \vdash #2}
 \newcommand{\gvtyp}[3]{#1 \vdash #2 : #3}
+
+\newcommand{\defiff}{\stackrel{\mathrm{def}}{\iff}}
 
 \newcommand{\mapname}{\mathsf{map}}
 \newcommand{\map}[3]{\mapname^{#1}_{#2}(#3)}
@@ -91,5 +94,7 @@
 \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
 \newcommand{\secref}[1]{(\S\ref{sec:#1})}
+\newcommand{\lemref}[1]{Lemma~\ref{thm:#1}}
+\newcommand{\thmref}[1]{Theorem~\ref{thm:#1}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}

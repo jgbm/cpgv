@@ -39,9 +39,9 @@ polymorphism forever.
 \newcommand{\zero}{\mathbf{0}}
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid % \oplus \{ \overline{l:S} \} \mid \with \{ \overline{l:S} \} \mid
-                                   \interm \mid \outterm \\
+                                   \interm \mid \outterm \mid \channel{S} \\
   \text{Types} & T,U & ::= & S \mid T \times U \mid \one \mid T + U \mid \zero \mid T \lto U \\ % \mid {!T} \\
-  \text{Terms} & M,N & ::= & x \mid K \mid \lambda x:T.M \mid M\,N \\
+  \text{Terms} & M,N & ::= & x \mid K \mid \lambda x.M \mid M\,N \\
   & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
   & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
   & & \mid & () \mid \gvlet{()}{M}{N} \mid \mathsf{absurd}\,x \\
@@ -62,7 +62,7 @@ polymorphism forever.
 
 \begin{mathpar}
 \inferrule
-  { }
+  {T \not= \channel{S}}
   {\{x:T\} \vdash x:T}
 
 %% \inferrule
@@ -140,7 +140,8 @@ polymorphism forever.
   \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x) P \\
   \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x)C
 \end{syntax}
-Configuration typing:
+We say that a configuration is well-formed if it contains exactly one component $\distinguish{M}$,
+and we will assume that all configurations are well-formed.  Configuration typing:
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T}
@@ -151,16 +152,19 @@ Configuration typing:
   {\Gamma \vdash M}
 
 \inferrule
-  {\Gamma \vdash P \\
-   \Gamma' \vdash P'}
-  {\Gamma,\Gamma' \vdash P \parallel P'}
+  {\Gamma,x:S \vdash P \\
+   \Gamma',x:\gvdual{S} \vdash P'}
+  {\Gamma,\Gamma',x:\channel{S} \vdash P \parallel P'}
 
 \inferrule
-  {\Gamma, x:S, x:\gvdual{S} \vdash P}
+  {\Gamma, x:\channel{S} \vdash P}
   {\Gamma \vdash (\nu x) P}
 \end{mathpar}
-Wait, $\Gamma$ is a multiset?  When did that happen?  See below for an alternative.  Term
-reductions:
+Note that while we can write a classic deadlocked configuration
+\[
+  (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\mathsf{receive}\,x}{\mathsf{send}\,(z,y)}} \parallel \gvlet{(z,y)}{\mathsf{receive}\,y}{\mathsf{send}\,(z,x)})
+\]
+it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions:
 \begin{align*}
   (\lambda x:T. M)\,V &\teval M\{V/x\} \\
   \gvlet{()}{()}{M} &\teval M \\
@@ -176,7 +180,11 @@ C_0 \parallel (C_1 \parallel C_2) \equiv (C_0 \parallel C_1) \parallel C_2
 
 C_0 \parallel (\nu x)C_1 \equiv (\nu x)(C_0 \parallel C_1) \text{ if $x \not\in \mathsf{fv}(C_0)$}
 \end{mathpar}
-Configuration reduction:
+At this point, it might be worth detouring to show that
+\begin{lemma}\label{thm:typing-equiv}
+  If $\Gamma \vdash P$ and $P \equiv P'$ then $\Gamma \vdash P'$.
+\end{lemma}
+This should be trivial for all the rules except for associativity.  Configuration reduction:
 \begin{mathpar}
 \inferrule
   { }
@@ -192,7 +200,7 @@ Configuration reduction:
 
 \inferrule
   { }
-  {C[\mkwd{wait}\,x] \parallel x \ceval C[()]}
+  {(\nu x)(C[\mkwd{wait}\,x] \parallel x) \ceval C[()]}
 
 \inferrule
   {M \teval M'}
@@ -212,77 +220,133 @@ Configuration reduction:
    C_1' \equiv C_1}
   {C_0 \ceval C_1}
 \end{mathpar}
-Some things that might be useful
-\begin{theorem}
-If $\Gamma \vdash P$ and $P \ceval P'$ then $\Gamma \vdash P'$.
-\end{theorem}
-\begin{theorem}
-If $\Gamma \vdash M: T$, then for all $P$ such that $\distinguish M \ceval^\star P
-\centernot\ceval$, there is a value $V$ such that $P \equiv (\nu x_1,\dots,x_n)(\distinguish V
-\parallel P')$.
+Some things that might be useful.
+\begin{theorem}\label{thm:preservation}
+  If $\Gamma \vdash P$ and $P \ceval P'$ then $\Gamma \vdash P'$.
 \end{theorem}
 
+\begin{proof}
+  By induction on the structure of $\Gamma \vdash P$. \qed
+\end{proof}
 
+The following is probably not true.
+\begin{theorem}\label{thm:normal-forms}
+  If $\Gamma \vdash P$, then for all $Q$ such that $P \ceval^\star Q \centernot\ceval$, there is a
+  value $V$ such that $Q \equiv (\nu x_1,\dots,x_n)(\distinguish V
+  \parallel Q')$.
+\end{theorem}
+In particular, I have doubts that allowing an arbitrary term to be distinguished is enough to
+guarantee that it reduces to a value.
 
 \subsection{Deadlock and Its Absence}
 
 Blocked terms:
-\[
-  \mathsf{blocked}(x,P) \stackrel{\mathrm{def}}{\iff} P \equiv C[\mathsf{receive}\,x] \lor \exists M. P \equiv C[\mathsf{send}\,(M,x)]
-\]
+\begin{align*}
+  \mathsf{send}(x,P) &\defiff \exists C,M. \; P \equiv C[\mathsf{send}\,(M,x)] \\
+  \mathsf{recv}(x,P) &\defiff \exists C. \; P \equiv C[\mathsf{receive}\,x] \\
+  \mathsf{blocked}(x,P) &\defiff (\mathsf{send}(x,P) \land \lnot \mathsf{recv}(x,P)) \lor (\mathsf{recv}(x,P) \land \lnot \mathsf{send}(x,P))
+\end{align*}
 
-Now we can say something about deadlock.  A process $P$ with free variables $y_1,\dots,y_l$ is
-deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu
-x_1,\dots,x_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for each $1 \leq i
-\leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $x_i \in \mathsf{fv}(V)$ or $x_i \in
-\{ y_1, \dots, y_l \}$.
+Now we can say something about deadlock.  A (closed) process $P$ is deadlock-free if, for all $Q$
+such that $P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu x_1,\dots,x_m)(\distinguish
+V \parallel E_1 \parallel \dots \parallel E_n)$ and, for each $1 \leq i \leq m, 1 \leq j \leq n$, if
+$\mathsf{blocked}(x_i,E_j)$ then $x_i \in \mathsf{fv}(V)$.
 
-\begin{theorem}
-If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
+\begin{theorem}\label{thm:typed-terms-df}
+  If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
 \end{theorem}
 
-\subsection{Alternative Formulation}
+Probably what we actually want to show is
+\begin{lemma}\label{thm:typed-configs-df}
+  If $\Gamma \vdash P$ then $P$ is deadlock-free.
+\end{lemma}
+from which \thmref{typed-terms-df} follows directly.
 
-Instead, we could have
+I think at least (and probably at most) one of the following will be necessary.
 
-\begin{syntax}
-  \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x y)P \\
-  \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x y)C
-\end{syntax}
-with one alternation to the configuration typing rules
-\[
-\inferrule
-  {\Gamma,x:S,y:\gvdual{S} \vdash P}
-  {\Gamma \vdash (\nu x y)P}
-\]
-an additional equivalence
-\[
-  (\nu x y)P \equiv (\nu y x)P
-\]
-and the following alternations to the reductions
-\begin{mathpar}
-\inferrule
-  { }
-  {(\nu x y)(C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,y] \parallel C'') \ceval (\nu x y)(C[x] \parallel C'[(V,y)] \parallel C'')}
+\begin{lemma}\label{thm:channel-used-twice}
+  If $\Gamma \vdash P$ and $P \equiv (\nu x_1,\dots,x_m)(\distinguish{M_1} \parallel M_2 \parallel
+  \dots \parallel P_n)$, then for any $1 \leq i \leq m$ there are exactly two indexes $j$, $1 \leq j
+  \leq n$, such that $x_i \in \mathsf{fv}(M_j)$.
+\end{lemma}
 
-\inferrule
-  { }
-  {(\nu x y)(C[\mkwd{wait}\,x] \parallel y \parallel C') \ceval C[()] \parallel C'}
+\begin{proof}
+  By induction on $n$.  The crux is that each $x_i$ must be split once (as variables of type
+  $\channel{S}$ cannot be used in the typing of terms), and that then each instance most be used
+  once (by linearity). \qed
+\end{proof}
 
-\inferrule
-  {x,y \text{ fresh}}
-  {C[\mkwd{fork}\,V] \ceval (\nu x y)(C[x] \parallel V\,y)}
-\end{mathpar}
-On the one hand, this seems to make the structure of configurations and their reductions slightly
-more complicated; on the other hand, this avoids either making $\Gamma$ a multi-set or further
-restricting the form of configurations.  On the whole, I think I marginally prefer this option,
-although I'm not convinced yet.
+\begin{lemma}\label{thm:procs-share-one-channel}
+  If $\Gamma \vdash P$ and $P \equiv (\nu x_1,\dots,x_m)(\distinguish{M_1} \parallel M_2 \parallel
+  \dots \parallel M_n)$, then for any pair of terms $M_j,M_{j'}$, there is at most one $x_i$ such
+  that $x_i \in \mathsf{fv}(M_j),x_i \in \mathsf{fv}(M_{j'})$.
+\end{lemma}
 
-We would also have to update the definition of blocking.  A process $P$ with free variables
-$z_1,\dots,z_l$ is deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q
-\equiv (\nu x_1 y_1) \dots (\nu x_m y_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for
-each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $y_i \in
-\mathsf{fv}(V)$ or $x_i \in \{ z_1, \dots, z_l \}$.
+\begin{proof}
+  By induction on $n$.
+  \begin{itemize}
+  \item \textit{Base case:} $n = 2$.  Trivial, following from the typing rule for $\parallel$.
+  \item \textit{Inductive case.} Consider the derivation of
+    \[ \Gamma,x_1:\channel{S_1},\dots,x_m:\channel{S_m} \vdash Q \parallel M_n. \] Fix $1 \leq i
+    \leq m$.  If $x_i$ is not split at this rule, then it cannot appear in $M_n$ (as variables of
+    type $\channel{S}$ cannot be used in terms).  Therefore, assume that $x_i$ is split at this
+    rule; it must be the only channel appearing in $M_n$.  Finally, note that we have $P \equiv (\nu
+    x_i)((\nu x_1,\dots,x_{i-1},x_{i+1},\dots\x_m)Q \parallel M)$, where $Q$ has one fewer process
+    than $P$, and so the proposition holds for the remaining channels by the induction
+    hypothesis. \qed
+  \end{itemize}
+\end{proof}
+
+I suspect we can show this.
+
+\begin{lemma}\label{thm:typed-stuck-df}
+  If $\Gamma \vdash P$ and $P \centernot\ceval$, then $P$ is deadlock-free.
+\end{lemma}
+
+\thmref{typed-configs-df} now follows from \lemref{typed-stuck-df} and \thmref{preservation}.
+
+%% \subsection{Alternative Formulation}
+%%
+%% Instead, we could have
+%%
+%% \begin{syntax}
+%%   \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x y)P \\
+%%   \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x y)C
+%% \end{syntax}
+%% with one alternation to the configuration typing rules
+%% \[
+%% \inferrule
+%%   {\Gamma,x:S,y:\gvdual{S} \vdash P}
+%%   {\Gamma \vdash (\nu x y)P}
+%% \]
+%% an additional equivalence
+%% \[
+%%   (\nu x y)P \equiv (\nu y x)P
+%% \]
+%% and the following alternations to the reductions
+%% \begin{mathpar}
+%% \inferrule
+%%   { }
+%%   {(\nu x y)(C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,y] \parallel C'') \ceval (\nu x y)(C[x] \parallel C'[(V,y)] \parallel C'')}
+%%
+%% \inferrule
+%%   { }
+%%   {(\nu x y)(C[\mkwd{wait}\,x] \parallel y \parallel C') \ceval C[()] \parallel C'}
+%%
+%% \inferrule
+%%   {x,y \text{ fresh}}
+%%   {C[\mkwd{fork}\,V] \ceval (\nu x y)(C[x] \parallel V\,y)}
+%% \end{mathpar}
+%% On the one hand, this seems to make the structure of configurations and their reductions slightly
+%% more complicated; on the other hand, this avoids either making $\Gamma$ a multi-set or further
+%% restricting the form of configurations.  On the whole, I think I marginally prefer this option,
+%% although I'm not convinced yet.
+%%
+%% We would also have to update the definition of blocking.  A process $P$ with free variables
+%% $z_1,\dots,z_l$ is deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q
+%% \equiv (\nu x_1 y_1) \dots (\nu x_m y_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for
+%% each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $y_i \in
+%% \mathsf{fv}(V)$ or $x_i \in \{ z_1, \dots, z_l \}$.
 
 \section{CP Bollocks}
 
