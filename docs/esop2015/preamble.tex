@@ -19,6 +19,7 @@
 \newcommand{\gvtyp}[3]{#1 \vdash #2 : #3}
 
 \newcommand{\defiff}{\stackrel{\mathrm{def}}{\iff}}
+\newcommand{\defeq}{\triangleq}
 
 \newcommand{\mapname}{\mathsf{map}}
 \newcommand{\map}[3]{\mapname^{#1}_{#2}(#3)}
@@ -26,6 +27,8 @@
 
 \newcommand{\teval}{\longrightarrow_V}
 \newcommand{\ceval}{\longrightarrow}
+
+\newcommand{\fv}{\ensuremath{\mathsf{fv}}}
 
 \newcommand{\mkwd}[1]{\mathsf{#1}}
 \newcommand{\tkwd}[1]{\textsf{#1}}
@@ -39,18 +42,21 @@
 \newcommand{\clabel}[1]{\mathit{#1}}
 \renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\sel}[2]{#1[\clabel{#2}]}
-\newcommand{\gvsend}[2]{\mkwd{send}\:#1\:#2}
-\newcommand{\gvreceive}[1]{\mkwd{receive}\:#1}
+%% \newcommand{\gvsend}[2]{\mkwd{send}\:#1\:#2}
+%% \newcommand{\gvreceive}[1]{\mkwd{receive}\:#1}
 \newcommand{\gvlet}[3]{\mkwd{let}\;#1 = #2\;\mkwd{in}\;#3}
-\newcommand{\gvselect}[2]{\mkwd{select}\:#1\:#2}
-\newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
-\newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
-\newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
-\newcommand{\lrkwd}{\mkwd{cofix}}
-\newcommand{\gvfix}[3]{\lrkwd\:#1\:#2 = #3}
-\newcommand{\gvletrec}[4]{\gvlet{#1}{\gvfix{#1}{#2}{#3}}{#4}}
-\newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
-\newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
+\newcommand{\gvletunit}[2]{#1; #2}
+\newcommand{\gvconst}[1]{\ensuremath{\mathsf{#1}}}
+\newcommand{\app}{\,}
+%% \newcommand{\gvselect}[2]{\mkwd{select}\:#1\:#2}
+%% \newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
+%% \newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
+%% \newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
+%% \newcommand{\lrkwd}{\mkwd{cofix}}
+%% \newcommand{\gvfix}[3]{\lrkwd\:#1\:#2 = #3}
+%% \newcommand{\gvletrec}[4]{\gvlet{#1}{\gvfix{#1}{#2}{#3}}{#4}}
+%% \newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
+%% \newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
 
 \newcommand{\gvifthen}[3]{\mkwd{if}\:#1\:\mkwd{then}\:#2\:\mkwd{else}\:#3}
 \newcommand{\gvreceivek}[4]{\gvlet{({#1}, {#2})}{\gvreceive{#3}}{#4}}
@@ -98,3 +104,4 @@
 \newcommand{\thmref}[1]{Theorem~\ref{thm:#1}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
+\newcommand{\nqed}{\ensuremath{\centernot\qed}}

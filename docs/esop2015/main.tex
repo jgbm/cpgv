@@ -44,8 +44,8 @@ polymorphism forever.
   \text{Terms} & M,N & ::= & x \mid K \mid \lambda x.M \mid M\,N \\
   & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
   & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
-  & & \mid & () \mid \gvlet{()}{M}{N} \mid \mathsf{absurd}\,x \\
-  \text{Constants} & K & ::= & \mkwd{send} \mid \mkwd{receive} \mid \mkwd{fork} \mid \mkwd{wait} \mid \mkwd{link}\\
+  & & \mid & () \mid \gvletunit{M}{N} \mid \gvconst{absurd} \app M \\
+  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{wait} \mid \gvconst{link}\\
 \end{syntax}
 
 \begin{mathpar}
@@ -109,21 +109,21 @@ polymorphism forever.
 \inferrule
   {\Gamma \vdash M: \one \\
    \Delta \vdash N: T}
-  {\Gamma,\Delta \vdash \gvlet{()}{M}{N}: T}
+  {\Gamma,\Delta \vdash \gvletunit{M}{N}: T}
 
 \inferrule
-  { }
-  {\Gamma,x : \zero \vdash \mathsf{absurd}\,x : T}
+  {\Gamma \vdash M: \zero}
+  {\Gamma, \Gamma' \vdash \gvconst{absurd} \app M : T}
 
-\mkwd{send} : T \times \gvout{T}{S} \lto S
+\gvconst{send} : T \times \gvout{T}{S} \lto S
 
-\mkwd{receive} : \gvin{T}{S} \lto T \times S
+\gvconst{receive} : \gvin{T}{S} \lto T \times S
 
-\mkwd{fork} : (S \lto \outterm) \lto \gvdual{S}
+\gvconst{fork} : (S \lto \outterm) \lto \gvdual{S}
 
-\mkwd{wait} : \interm \lto \one
+\gvconst{wait} : \interm \lto \one
 
-\mkwd{link} : (S, \gvdual{S}) \lto \gvend
+\gvconst{link} : (S, \gvdual{S}) \lto \outterm
 \end{mathpar}
 
 \subsection{Evaluation}
@@ -131,105 +131,193 @@ polymorphism forever.
 \newcommand{\distinguish}[1]{\langle #1 \rangle}
 
 \begin{syntax}
-%  \text{Names} & \alpha,\beta \\
-  \text{Values} & V & ::= & x \mid K \mid \lambda x:T.M \\ % \mid K\,V \\
+  \text{Values} & V & ::= & x \mid K \mid \lambda x.M \\ % \mid K\,V \\
   & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
-  \text{Expression contexts} & E & ::= &  [] \mid E\,M \mid V\,E \mid \gvlet{()}{E}{M} \\
+  \text{Expression contexts} & E & ::= &  [] \mid E\,M \mid V\,E \mid \gvletunit{E}{M} \\
   & & \mid & (E,M) \mid (V,E) \mid \gvlet{(x,y)}{E}{M} \\
   & & \mid & \mkwd{inl}\,E \mid \mkwd{inr}\,E \mid \gvcase{E}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
   \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x) P \\
-  \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x)C
+  \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x)C \\
+  \text{Flags} & \phi & ::= & \circ \mid \bullet
 \end{syntax}
-We say that a configuration is well-formed if it contains exactly one component $\distinguish{M}$,
-and we will assume that all configurations are well-formed.  Configuration typing:
+We define combination of flags $\phi + \phi'$ by
+\begin{mathpar}
+  \circ + \circ = \circ
+
+  \circ + \bullet = \bullet
+
+  \bullet + \circ = \bullet
+\end{mathpar}
+and leave $\bullet + \bullet$ undefined.  Configuration typing is given by
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T}
-  {\Gamma \vdash \distinguish M}
+  {\Gamma \vdash^\bullet \distinguish M}
 
 \inferrule
   {\Gamma \vdash M: \outterm}
-  {\Gamma \vdash M}
+  {\Gamma \vdash^\circ M}
 
 \inferrule
-  {\Gamma,x:S \vdash P \\
-   \Gamma',x:\gvdual{S} \vdash P'}
-  {\Gamma,\Gamma',x:\channel{S} \vdash P \parallel P'}
+  {\Gamma, x:\channel{S} \vdash^\phi P}
+  {\Gamma \vdash^\phi (\nu x) P}
 
 \inferrule
-  {\Gamma, x:\channel{S} \vdash P}
-  {\Gamma \vdash (\nu x) P}
+  {\Gamma,x:S \vdash^{\phi} P \\
+   \Gamma',x:\gvdual{S} \vdash^{\phi'} P'}
+  {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} P \parallel P'}
 \end{mathpar}
-Note that while we can write a classic deadlocked configuration
+We will write $\Gamma \vdash P$ for $\Gamma \vdash^\bullet P$.  Note that while we can write the
+classic deadlocked configuration
 \[
-  (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\mathsf{receive}\,x}{\mathsf{send}\,(z,y)}} \parallel \gvlet{(z,y)}{\mathsf{receive}\,y}{\mathsf{send}\,(z,x)})
+  (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\gvconst{receive} \app x}{\gvconst{send} \app (z,y)}} \parallel
+                 \gvlet{(z,y)}{\gvconst{receive} \app y}{\gvconst {send} \app (z,x)})
 \]
 it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions:
 \begin{align*}
   (\lambda x:T. M)\,V &\teval M\{V/x\} \\
-  \gvlet{()}{()}{M} &\teval M \\
+  \gvletunit{()}{M} &\teval M \\
   \gvlet{(x,y)}{(V,V')}{M} &\teval M\{V/x,V'/y\} \\
   \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N\{V/x\} \\
   E[M] &\teval E[M'] \qquad \text{if $M \teval M'$}
 \end{align*}
 Configuration (context) equivalence:
 \begin{mathpar}
+C[\mathsf{link}\,(x,y)] \equiv C[\mathsf{link}\,(y,x)]
+
 C_0 \parallel C_1 \equiv C_1 \parallel C_0
 
 C_0 \parallel (C_1 \parallel C_2) \equiv (C_0 \parallel C_1) \parallel C_2
 
-C_0 \parallel (\nu x)C_1 \equiv (\nu x)(C_0 \parallel C_1) \text{ if $x \not\in \mathsf{fv}(C_0)$}
+C_0 \parallel (\nu x)C_1 \equiv (\nu x)(C_0 \parallel C_1) \text{ if $x \not\in \fv(C_0)$}
 \end{mathpar}
-At this point, it might be worth detouring to show that
-\begin{lemma}\label{thm:typing-equiv}
-  If $\Gamma \vdash P$ and $P \equiv P'$ then $\Gamma \vdash P'$.
-\end{lemma}
-This should be trivial for all the rules except for associativity.  Configuration reduction:
+
+Awkwardly enough, the equivalence rules do not preserve typing.  For example, supposing that $x \in
+\fv(P), y \in \fv(Q), \text{ and } x,y \in \fv(R)$, we have $\vdash (\nu x
+y)(P \mid (Q \mid R))$ but not $\nvdash (\nu x y)((P \mid Q) \mid R)$.  We have a simple reduction
+rule for configuration types, given by
 \begin{mathpar}
 \inferrule
+%  [T-Output]
   { }
-  {C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,x] \ceval C[x] \parallel C'[(V,x)]}
+  {\channel{(\gvout T S)} \ceval \channel S}
 
 \inferrule
+%  [T-Input]
+  { }
+  {\channel{(\gvin T S)} \ceval \channel S}
+
+\inferrule
+%  [T-Context]
+  {T \ceval T'}
+  {\Gamma,x:T \ceval \Gamma,x:T'}
+\end{mathpar}
+Configuration reduction is given by
+\begin{mathpar}
+\inferrule
+  [Send]
+  { }
+  {C[\gvconst{send} \app (V,x)] \parallel C'[\gvconst{receive} \app x] \ceval C[x] \parallel C'[(V,x)]}
+
+\inferrule
+  [New]
   {C \ceval C'}
   {(\nu x)C \ceval (\nu x)C'}
 
 \inferrule
+  [Fork]
   {\text{$x$ fresh}}
-  {C[\mkwd{fork}\,V] \ceval (\nu x)(C[x] \parallel (V\,x))}
+  {C[\gvconst{fork} \aoo V] \ceval (\nu x)(C[x] \parallel (V\,x))}
 
 \inferrule
+  [Wait]
   { }
-  {(\nu x)(C[\mkwd{wait}\,x] \parallel x) \ceval C[()]}
+  {(\nu x)(C[\gvconst{wait} \app x] \parallel x) \ceval C[()]}
 
 \inferrule
+   [Link]
+   {x \in \fv(M)}
+   {(\nu x) (C[\gvconst{link} \app (x, y)] \parallel C'[M]) \ceval (\nu x)(C[x] \parallel C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
+
+\inferrule
+  [Thread]
   {M \teval M'}
   {M \ceval M'}
 
+%% \inferrule
+%%    [DLink]
+%%    {x \in \fv(M)}
+%%    {(\nu x) (C[\mathsf{link}\,(x, y)] \parallel \distinguish M) \ceval (\nu x)(C[x] \parallel \distinguish{\gvletunit{\mathsf{wait}\,x}{M\{y/x\}}})}
+%%
 \inferrule
+  [DThread]
   {M \teval M'}
   {\distinguish M \ceval \distinguish {M'}}
 
 \inferrule
+  [Par]
   {C_0 \ceval C_0'}
   {C_0 \parallel C_1 \ceval C_0' \parallel C_1}
-
-\inferrule
-  {C_0 \equiv C_0' \\
-   C_0' \ceval C_1' \\
-   C_1' \equiv C_1}
-  {C_0 \ceval C_1}
+%%
+%% \inferrule
+%%   {C_0 \equiv C_0' \\
+%%    C_0' \ceval C_1' \\
+%%    C_1' \equiv C_1}
+%%   {C_0 \ceval C_1}
 \end{mathpar}
 Some things that might be useful.
+\begin{lemma}\label{thm:term-preservation}
+  If $\Gamma \vdash M: T$ and $M \teval M'$, then $\Gamma \vdash M': T$
+\end{lemma}
+
+\noindent
+The proof is standard.
+
 \begin{theorem}\label{thm:preservation}
-  If $\Gamma \vdash P$ and $P \ceval P'$ then $\Gamma \vdash P'$.
+  If $\Gamma \vdash P$ and $P \ceval P'$ then there is some $\Gamma'$ such that either $\Gamma
+  \ceval \Gamma'$ or $\Gamma = \Gamma'$ and $\Gamma' \vdash P'$.
 \end{theorem}
 
 \begin{proof}
-  By induction on the structure of $\Gamma \vdash P$. \qed
+  By induction on the structure of $P \ceval P'$.
+  \begin{itemize}
+  \item Cases \textsc{Thread} and \textsc{DThread} follow from \lemref{term-preservation}, with
+    $\Gamma = \Gamma'$.
+  \item Cases \textsc{New} and \textsc{Par} are immediate by the induction hypothesis.
+  \item In case \textsc{Send}, from the assumption $\Gamma \vdash C[\mkwd{send}\,(V,x)] \parallel
+    C'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
+    $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
+    $\Gamma_1,x:\gvout{T}{S'} \vdash C[\gvconst{send} \app (V,x)]$,
+    $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash C'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
+    \times \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash C[\gvconst{send} \app
+    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash C[x]$.  By a similar argument, we conclude
+    that $\Gamma_2,x:\gvdual{S'} \vdash C'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
+    \channel{S}$, $\Gamma_1,\Gamma_2,x:\channel{(\gvout T S)} \ceval
+    \Gamma_1,\Gamma_2,x:\channel{S}$, and we can recompose the resulting processes concluding that
+    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash C[x] \parallel C'[(V,x)]$.
+  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash C[\gvconst{fork} \app V]$, we can
+    conlude that $\Gamma$ splits into $\Gamma_1,\Gamma_2$ and there is some $S$ such that
+    $\Gamma_1,x:S \vdash C[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
+    $\Gamma,x:\session{S} \vdash C[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(C[x] \parallel
+    V \app x)$.
+  \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(C[\gvconst{wait} \app
+    x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash C[\gvconst{wait} \app x]$ and
+    thus, from the typing of \gvconst{wait}, that $\Gamma \vdash C[()]$.
+  \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (C[\gvconst{link} \app
+    (x, y)] \parallel C'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
+    $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash C[\gvconst{link} \app (x,
+    y)]$ and $\Gamma_2,x:S \vdash C'[M]$.  (Note that the free variable assumption on the reduction
+    rule for \gvconst{fork} allows us to assume that neither $C$ or $C'$ binds $x$ or $y$.)  From
+    the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash C[x]$; similarly, from $x \in
+    \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash C'[M\{y/x\}]$.  Finally, from the typing rule
+    for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash C'[\gvbindunit{\gvconst{wait}
+      \app x}{M\{y/x\}}]$, and that $\Gamma \vdash (\nu x)(C[x] \parallel
+    C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$ \qed
+  \end{itemize}
 \end{proof}
 
-The following is probably not true.
+Define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$.  The following
+is probably not true.
 \begin{theorem}\label{thm:normal-forms}
   If $\Gamma \vdash P$, then for all $Q$ such that $P \ceval^\star Q \centernot\ceval$, there is a
   value $V$ such that $Q \equiv (\nu x_1,\dots,x_n)(\distinguish V
@@ -241,33 +329,62 @@ guarantee that it reduces to a value.
 \subsection{Deadlock and Its Absence}
 
 Blocked terms:
-\begin{align*}
-  \mathsf{send}(x,P) &\defiff \exists C,M. \; P \equiv C[\mathsf{send}\,(M,x)] \\
-  \mathsf{recv}(x,P) &\defiff \exists C. \; P \equiv C[\mathsf{receive}\,x] \\
-  \mathsf{blocked}(x,P) &\defiff (\mathsf{send}(x,P) \land \lnot \mathsf{recv}(x,P)) \lor (\mathsf{recv}(x,P) \land \lnot \mathsf{send}(x,P))
-\end{align*}
+\newcommand{\sendp}{\mathsf{send}}
+\newcommand{\recvp}{\mathsf{recv}}
+\newcommand{\waitp}{\mathsf{wait}}
+\newcommand{\blockedp}{\mathsf{blocked}}
+\[\begin{array}{rcl}
+  \sendp(x,M) &\defiff& \exists N. \; C = \gvconst{send} \app (x,N) \\
+  \recvp(x,M) &\defiff& \exists C. \; C = \gvconst{receive} \app x \\
+  \waitp(x,M) &\defiff& \sendp(x,M) \lor \recvp(x,M) \\
+  \blockedp(x,y,E[M]) &\defiff& \waitp(x,M) \land y \in \fv(E) \\
+  \blockedp(x,y,P) &\defiff& (P \equiv C[M] \land \blockedp(x,y,M)) \lor \, (P \equiv C[Q \parallel Q'] \\
+  && \quad \land \, (\exists z. \blockedp(x,z,Q) \land \blockedp(z,y,Q')))
+\end{array}\]
+Finally, we have a natural definition of deadlock:
+\newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
+\[
+\deadlockp(P) \defiff P \equiv C[Q \parallel Q'] \land \exists x,y. \blockedp(x,y,Q) \land \blockedp(y,x,Q').
+\]
+Because this definition depends on blocked processes (that is, those waiting to read or write) it
+avoids the problems with return values (since a process returning a channel is not blocked on it, it
+cannot be part of a deadlocked pair).
 
-Now we can say something about deadlock.  A (closed) process $P$ is deadlock-free if, for all $Q$
-such that $P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu x_1,\dots,x_m)(\distinguish
-V \parallel E_1 \parallel \dots \parallel E_n)$ and, for each $1 \leq i \leq m, 1 \leq j \leq n$, if
-$\mathsf{blocked}(x_i,E_j)$ then $x_i \in \mathsf{fv}(V)$.
+%% And we turn to deadlock.  The ability to return channels makes deadlock freedom tricky to define.
+%% Consider the following program
+%% \begin{verbatim}
+%% let c = fork (\c.
+%%           let d = fork (\d.
+%%                     let (e, d) = receive d in
+%%                     let () = wait e in d) in
+%%           let (e, c) = receive c in
+%%           let d = send (e, d) in
+%%           let () = wait d in c) in c
+%% \end{verbatim}
+%% The resulting configuration will have a chain of unblockable processes---sending a value on
+%% \texttt{c} will unblock the first forked process, which will in turn unblock the second.  Here's a
+%% complicated definition of deadlock; hopefully we can simplify.  Let $Q$ be a configuration of the
+%% form $(\nu x_1,\dots,x_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$.  We say that
+%% the unblockable channels of $Unb(P)$ is the least set $X$ such that
+%% \begin{itemize}
+%% \item $\fv(V) \subseteq X$; and,
+%% \item if $\mathsf{blocked}(x,E)$ and $x \in X$, then $\fv(E) \subseteq X$.
+%% \end{itemize}
+%% Now we can say something about deadlock.  A (closed) process $P$ is deadlock-free if, for all $Q$
+%% such that $P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu x_1,\dots,x_m)(\distinguish
+%% V \parallel E_1 \parallel \dots \parallel E_n)$ and, if $\mathsf{blocked}(x_i,E_j)$ then $x_i \in
+%% Unb(Q)$.
 
 \begin{theorem}\label{thm:typed-terms-df}
   If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
 \end{theorem}
 
-Probably what we actually want to show is
-\begin{lemma}\label{thm:typed-configs-df}
-  If $\Gamma \vdash P$ then $P$ is deadlock-free.
-\end{lemma}
-from which \thmref{typed-terms-df} follows directly.
-
 I think at least (and probably at most) one of the following will be necessary.
 
 \begin{lemma}\label{thm:channel-used-twice}
   If $\Gamma \vdash P$ and $P \equiv (\nu x_1,\dots,x_m)(\distinguish{M_1} \parallel M_2 \parallel
-  \dots \parallel P_n)$, then for any $1 \leq i \leq m$ there are exactly two indexes $j$, $1 \leq j
-  \leq n$, such that $x_i \in \mathsf{fv}(M_j)$.
+  \dots \parallel M_n)$, then for any $1 \leq i \leq m$ there are exactly two indexes $j$, $1 \leq j
+  \leq n$, such that $x_i \in \fv(M_j)$.
 \end{lemma}
 
 \begin{proof}
@@ -279,7 +396,7 @@ I think at least (and probably at most) one of the following will be necessary.
 \begin{lemma}\label{thm:procs-share-one-channel}
   If $\Gamma \vdash P$ and $P \equiv (\nu x_1,\dots,x_m)(\distinguish{M_1} \parallel M_2 \parallel
   \dots \parallel M_n)$, then for any pair of terms $M_j,M_{j'}$, there is at most one $x_i$ such
-  that $x_i \in \mathsf{fv}(M_j),x_i \in \mathsf{fv}(M_{j'})$.
+  that $x_i \in \fv(M_j),x_i \in \fv(M_{j'})$.
 \end{lemma}
 
 \begin{proof}
@@ -297,13 +414,12 @@ I think at least (and probably at most) one of the following will be necessary.
   \end{itemize}
 \end{proof}
 
-I suspect we can show this.
+I think we can now show fairly directly that
 
-\begin{lemma}\label{thm:typed-stuck-df}
-  If $\Gamma \vdash P$ and $P \centernot\ceval$, then $P$ is deadlock-free.
+\begin{lemma}\label{thm:typed-configs-df}
+  If $\Gamma \vdash P$ then $\lnot \deadlockp(P)$.
 \end{lemma}
-
-\thmref{typed-configs-df} now follows from \lemref{typed-stuck-df} and \thmref{preservation}.
+from which \thmref{typed-terms-df} follows directly.
 
 %% \subsection{Alternative Formulation}
 %%
@@ -346,7 +462,7 @@ I suspect we can show this.
 %% $z_1,\dots,z_l$ is deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q
 %% \equiv (\nu x_1 y_1) \dots (\nu x_m y_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for
 %% each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $y_i \in
-%% \mathsf{fv}(V)$ or $x_i \in \{ z_1, \dots, z_l \}$.
+%% \fv(V)$ or $x_i \in \{ z_1, \dots, z_l \}$.
 
 \section{CP Bollocks}
 
