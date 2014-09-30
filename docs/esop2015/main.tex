@@ -227,7 +227,7 @@ Configuration reduction is given by
 \inferrule
   [Fork]
   {\text{$x$ fresh}}
-  {C[\gvconst{fork} \aoo V] \ceval (\nu x)(C[x] \parallel (V\,x))}
+  {C[\gvconst{fork} \app V] \ceval (\nu x)(C[x] \parallel (V\,x))}
 
 \inferrule
   [Wait]
@@ -298,7 +298,7 @@ The proof is standard.
   \item In case \textsc{Fork}, from the assumption $\Gamma \vdash C[\gvconst{fork} \app V]$, we can
     conlude that $\Gamma$ splits into $\Gamma_1,\Gamma_2$ and there is some $S$ such that
     $\Gamma_1,x:S \vdash C[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
-    $\Gamma,x:\session{S} \vdash C[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(C[x] \parallel
+    $\Gamma,x:S \vdash C[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(C[x] \parallel
     V \app x)$.
   \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(C[\gvconst{wait} \app
     x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash C[\gvconst{wait} \app x]$ and
@@ -485,5 +485,46 @@ We might expect results something like the following.
   If $\Gamma \vdash P$ and $P \ceval P'$, then $\tocp{P}z \longrightarrow Q$ such that $\togv{Q}
   \equiv P'$.  What to do with $z$?!
 \end{theorem}
+
+\section{Direct GV semantics}
+
+\newcommand{\con}[3]{{#1} \mathbin{[\:\!\!\rangle}_{\!#2}\! {#3}}
+
+\[
+\mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
+\]
+
+Syntactic sugar:
+\begin{align*}
+\con{M}{x}{N} &\equiv \mkwd{connect}(\lambda x.M, \lambda x.N) \\
+\end{align*}
+
+Equivalences:
+\begin{align*}
+\mkwd{link}\,(x,y) &\equiv \mkwd{link}\,(y,x) \\
+\con{L}{x}{(\con{M}{y}{N})} &\equiv \con{M}{y}{(\con{L}{x}{N})} \\
+\con{L}{x}{(\con{M}{y}{N})} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
+\con{L}{x}{(\con{M}{y}{N})} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
+\end{align*}
+
+Interesting reductions
+\begin{align*}
+\con{E[\mkwd{send}\,(V,x)]}{x}{E'[\mkwd{receive}\,x]}
+  &\rto \con{E[x]}{x}{E'[(V,x)]} \\
+\con{E[\mkwd{receive}\,x]}{x}{E'[\mkwd{send}\,(V,x)]}
+  &\rto \con{E[(V,x)]}{x}{E'[x]} \\[1ex]
+\con{x}{x}{E[\mkwd{wait}\,x]}
+  &\rto E[()] \\
+\con{E[\mkwd{wait}\,x]}{x}{x}
+  &\rto E[()] \\[1ex]
+\con{E[\mkwd{link}\,(x,y)]}{x}{M}
+  &\rto \con{E[x]}{x}{\mkwd{wait}\,x; M[y/x]} \\
+\con{M}{x}{E[\mkwd{link}\,(x,y)]}
+  &\rto \con{\mkwd{wait}\,x; M[y/x]}{x}{E[x]} \\[1ex]
+\mkwd{link}\,(x,\mkwd{link}\,(y,z))
+  &\rto \mkwd{wait}\,x; \mkwd{link}\,(y,z) \\
+E[\con{M}{x}{N}]
+  &\rto \con{M}{x}{E[N]} \\
+\end{align*}
 
 \end{document}
