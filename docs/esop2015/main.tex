@@ -488,23 +488,25 @@ We might expect results something like the following.
 
 \section{Direct GV semantics}
 
-\newcommand{\con}[3]{{#1} \mathbin{[\:\!\!\rangle}_{\!#2}\! {#3}}
+\newcommand{\apar}[1]{\mathbin{{[}\:\!\!\rangle}_{\!{#1}}\!}
+\newcommand{\con}[3]{{#1} \apar{#2} {#3}}
 
 \[
-\mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
+\mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \to T
 \]
 
 Syntactic sugar:
 \begin{align*}
 \con{M}{x}{N} &\equiv \mkwd{connect}(\lambda x.M, \lambda x.N) \\
+\con{L}{x}{\con{M}{y}{N}} &\equiv \con{L}{x}{(\con{M}{y}{N})} \\
 \end{align*}
 
-Equivalences:
+Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the following rules):
 \begin{align*}
 \mkwd{link}\,(x,y) &\equiv \mkwd{link}\,(y,x) \\
-\con{L}{x}{(\con{M}{y}{N})} &\equiv \con{M}{y}{(\con{L}{x}{N})} \\
-\con{L}{x}{(\con{M}{y}{N})} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
-\con{L}{x}{(\con{M}{y}{N})} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
+\con{L}{x}{\con{M}{y}{N}} &\equiv \con{M}{y}{\con{L}{x}{N}} \\
+\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
+\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
 \end{align*}
 
 Interesting reductions
@@ -518,13 +520,59 @@ Interesting reductions
 \con{E[\mkwd{wait}\,x]}{x}{x}
   &\rto E[()] \\[1ex]
 \con{E[\mkwd{link}\,(x,y)]}{x}{M}
-  &\rto \con{E[x]}{x}{\mkwd{wait}\,x; M[y/x]} \\
+  &\rto \con{E[x]}{x}{(\mkwd{wait}\,x; M[y/x])} \\
 \con{M}{x}{E[\mkwd{link}\,(x,y)]}
-  &\rto \con{\mkwd{wait}\,x; M[y/x]}{x}{E[x]} \\[1ex]
+  &\rto \con{(\mkwd{wait}\,x; M[y/x])}{x}{E[x]} \\[1ex]
 \mkwd{link}\,(x,\mkwd{link}\,(y,z))
   &\rto \mkwd{wait}\,x; \mkwd{link}\,(y,z) \\
 E[\con{M}{x}{N}]
   &\rto \con{M}{x}{E[N]} \\
 \end{align*}
+
+Preservation
+\begin{theorem}
+If $\Gamma \vdash M : T$ and $M \rto M'$ then there exists $\Gamma'$, such that $\Gamma \rto
+\Gamma'$ and $\Gamma' \vdash M' : T$.
+\end{theorem}
+%
+\begin{proof}
+By induction on the structure of the derivation $\Gamma \vdash M : T$.
+\end{proof}
+
+Progress
+\begin{theorem}
+If $\Gamma$ is a session environment (all variables in $\Gamma$ have session type), and $\Gamma
+\vdash M : T$ then one of the following holds:
+\begin{enumerate}
+\item $M$ is a value; or
+\item there exists $N = \blockedp'(y_1, M_1) \apar{x_1} \dots \apar{x_{n}} \blockedp'(y_{n}, M_{n})$
+  such that $M \equiv N$ and $\Gamma \vdash N : T$; or
+\item there exists $N$ such that $M \rto N$.
+\end{enumerate}
+\end{theorem}
+%
+\begin{proof}
+By induction on the structure of $M$.
+\end{proof}
+% In the second case each $y_i$ must be equal to either $x_i$ or some $x$ in $\Gamma$.
+
+\begin{theorem}
+If $\vdash M : T$ then one of the following holds:
+\begin{enumerate}
+\item $M$ is a value; or
+\item there exists $N = \blockedp(x_1, M_1) \apar{x_1} \dots \apar{x_{n-1}} \blockedp(x_{n-1},
+  M_{n-1}) \apar{x_n} V$ such that $M \equiv N$ and $\Gamma \vdash N : T$; or
+\item there exists $N$ such that $M \rto N$.
+\end{enumerate}
+\end{theorem}
+%
+\begin{proof}
+By induction on the structure of $M$.
+\end{proof}
+
+$\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
+
+$\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
+involving $x$.
 
 \end{document}
