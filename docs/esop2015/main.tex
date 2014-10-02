@@ -492,13 +492,13 @@ We might expect results something like the following.
 \newcommand{\con}[3]{{#1} \apar{#2} {#3}}
 
 \[
-\mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \to T
+\mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
 \]
 
 Syntactic sugar:
 \begin{align*}
-\con{M}{x}{N} &\equiv \mkwd{connect}(\lambda x.M, \lambda x.N) \\
-\con{L}{x}{\con{M}{y}{N}} &\equiv \con{L}{x}{(\con{M}{y}{N})} \\
+\con{M}{x}{N} &\defiff \mkwd{connect}(\lambda x.M, \lambda x.N) \\
+\con{L}{x}{\con{M}{y}{N}} &\defiff \con{L}{x}{(\con{M}{y}{N})} \\
 \end{align*}
 
 Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the following rules):
@@ -506,7 +506,7 @@ Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the fo
 \mkwd{link}\,(x,y) &\equiv \mkwd{link}\,(y,x) \\
 \con{L}{x}{\con{M}{y}{N}} &\equiv \con{M}{y}{\con{L}{x}{N}} \\
 \con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
-\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
+%\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
 \end{align*}
 
 Interesting reductions
@@ -529,19 +529,23 @@ E[\con{M}{x}{N}]
   &\rto \con{M}{x}{E[N]} \\
 \end{align*}
 
+An alternative is to remove the final commuting conversion rule and augment the notion of value to
+include a suitable representation of a collection of blocked communicating processes.
+
 Preservation
 \begin{theorem}
-If $\Gamma \vdash M : T$ and $M \rto M'$ then there exists $\Gamma'$, such that $\Gamma \rto
-\Gamma'$ and $\Gamma' \vdash M' : T$.
+If $\Gamma \vdash M : T$ and $M \rto N$ then $\Gamma \vdash N : T$.
 \end{theorem}
 %
 \begin{proof}
-By induction on the structure of the derivation $\Gamma \vdash M : T$.
+By induction on the structure of the derivation of $\Gamma \vdash M : T$ using a standard
+substitution lemma for the case of $\beta$-reduction at function types.
 \end{proof}
 
 Progress
 \begin{theorem}
-If $\Gamma$ is a session environment (all variables in $\Gamma$ have session type), and $\Gamma
+\label{th:free-progress}
+If $\Gamma$ is a session environment (all variables in $\Gamma$ have session type) such that $\Gamma
 \vdash M : T$ then one of the following holds:
 \begin{enumerate}
 \item $M$ is a value; or
@@ -552,7 +556,7 @@ If $\Gamma$ is a session environment (all variables in $\Gamma$ have session typ
 \end{theorem}
 %
 \begin{proof}
-By induction on the structure of $M$.
+By induction on the structure of the derivation of $\Gamma \vdash M : T$.
 \end{proof}
 % In the second case each $y_i$ must be equal to either $x_i$ or some $x$ in $\Gamma$.
 
@@ -567,12 +571,24 @@ If $\vdash M : T$ then one of the following holds:
 \end{theorem}
 %
 \begin{proof}
-By induction on the structure of $M$.
+By induction on the structure of the derivation of $\vdash M : T$ using
+Theorem~\ref{th:free-progress}.
 \end{proof}
 
 $\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
 
 $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 involving $x$.
+
+Correspondence between reduction in CP and reduction in GV. Do the following theorems actually hold,
+or is the correspondence more subtle? (I'm pretty certain they don't.)
+
+\begin{theorem}
+If $P \vdash \Gamma$ and $P \rto Q$ then $\togv{P} \rto \togv{Q}$.
+\end{theorem}
+
+\begin{theorem}
+If $M \rto N$ then $\tocp{M}z \rto \tocp{N}z$.
+\end{theorem}
 
 \end{document}
