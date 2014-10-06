@@ -65,14 +65,6 @@ polymorphism forever.
   {T \not= \channel{S}}
   {\{x:T\} \vdash x:T}
 
-%% \inferrule
-%%   {\Gamma, x:\interm, y:\interm \vdash M: T}
-%%   {\Gamma, x:\interm \vdash M\{x/y\}:T}
-%%
-%% \inferrule
-%%   {\Gamma \vdash M: T}
-%%   {\Gamma, x:\interm \vdash M:T}
-%%
 \inferrule
   {\Gamma,x:T \vdash M:U}
   {\Gamma \vdash \lambda x:T.M : T \lto U}
@@ -220,11 +212,6 @@ Configuration reduction is given by
   {C[\gvconst{send} \app (V,x)] \parallel C'[\gvconst{receive} \app x] \ceval C[x] \parallel C'[(V,x)]}
 
 \inferrule
-  [New]
-  {C \ceval C'}
-  {(\nu x)C \ceval (\nu x)C'}
-
-\inferrule
   [Fork]
   {\text{$x$ fresh}}
   {C[\gvconst{fork} \app V] \ceval (\nu x)(C[x] \parallel (V\,x))}
@@ -240,24 +227,20 @@ Configuration reduction is given by
    {(\nu x) (C[\gvconst{link} \app (x, y)] \parallel C'[M]) \ceval (\nu x)(C[x] \parallel C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
 
 \inferrule
-  [Thread]
-  {M \teval M'}
-  {M \ceval M'}
+   [Lift]
+   {P \ceval P'}
+   {C[P] \ceval C[P']}
 
+\inferrule
+   [Lift2]
+   {M \teval M'}
+   {C[M] \ceval C[M']}
+%%
 %% \inferrule
 %%    [DLink]
 %%    {x \in \fv(M)}
 %%    {(\nu x) (C[\mathsf{link}\,(x, y)] \parallel \distinguish M) \ceval (\nu x)(C[x] \parallel \distinguish{\gvletunit{\mathsf{wait}\,x}{M\{y/x\}}})}
 %%
-\inferrule
-  [DThread]
-  {M \teval M'}
-  {\distinguish M \ceval \distinguish {M'}}
-
-\inferrule
-  [Par]
-  {C_0 \ceval C_0'}
-  {C_0 \parallel C_1 \ceval C_0' \parallel C_1}
 %%
 %% \inferrule
 %%   {C_0 \equiv C_0' \\
@@ -279,7 +262,7 @@ The proof is standard.
 \end{theorem}
 
 \begin{proof}
-  By induction on the structure of $P \ceval P'$.
+  By induction on the derivation of $P \ceval P'$.
   \begin{itemize}
   \item Cases \textsc{Thread} and \textsc{DThread} follow from \lemref{term-preservation}, with
     $\Gamma = \Gamma'$.
@@ -310,108 +293,57 @@ The proof is standard.
     rule for \gvconst{fork} allows us to assume that neither $C$ or $C'$ binds $x$ or $y$.)  From
     the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash C[x]$; similarly, from $x \in
     \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash C'[M\{y/x\}]$.  Finally, from the typing rule
-    for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash C'[\gvbindunit{\gvconst{wait}
+    for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash C'[\gvletunit{\gvconst{wait}
       \app x}{M\{y/x\}}]$, and that $\Gamma \vdash (\nu x)(C[x] \parallel
     C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$ \qed
   \end{itemize}
 \end{proof}
 
-Define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$.  The following
-is probably not true.
-\begin{theorem}\label{thm:normal-forms}
-  If $\Gamma \vdash P$, then for all $Q$ such that $P \ceval^\star Q \centernot\ceval$, there is a
-  value $V$ such that $Q \equiv (\nu x_1,\dots,x_n)(\distinguish V
-  \parallel Q')$.
+\begin{theorem}\label{thm:preservation-equiv}
+  If $\Gamma \vdash P$, $P \equiv P'$ and $P' \ceval Q'$, then there are some $\Gamma',Q$ such that
+  either $\Gamma = \Gamma'$ or $\Gamma \ceval \Gamma'$, $Q' \equiv Q$, and $\Gamma' \vdash Q$.
 \end{theorem}
-In particular, I have doubts that allowing an arbitrary term to be distinguished is enough to
-guarantee that it reduces to a value.
+
+\begin{proof}
+  We begin by observing that if $P \ceval Q$, then there is some well-typed $P'$ such that $P =
+  C[P']$, $P' \ceval Q'$, and $Q = C[Q']$.  The desired result is then obtained by structural
+  induction on $P$, examining the possible equivalences in each case. \qed
+\end{proof}
+
+Define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$.
 
 \subsection{Deadlock and Its Absence}
 
 Blocked terms:
-\newcommand{\sendp}{\mathsf{send}}
-\newcommand{\recvp}{\mathsf{recv}}
-\newcommand{\waitp}{\mathsf{wait}}
 \newcommand{\blockedp}{\mathsf{blocked}}
+\newcommand{\depp}{\mathsf{depends}}
 \[\begin{array}{rcl}
-  \sendp(x,M) &\defiff& \exists N. \; C = \gvconst{send} \app (x,N) \\
-  \recvp(x,M) &\defiff& \exists C. \; C = \gvconst{receive} \app x \\
-  \waitp(x,M) &\defiff& \sendp(x,M) \lor \recvp(x,M) \\
-  \blockedp(x,y,E[M]) &\defiff& \waitp(x,M) \land y \in \fv(E) \\
-  \blockedp(x,y,P) &\defiff& (P \equiv C[M] \land \blockedp(x,y,M)) \lor \, (P \equiv C[Q \parallel Q'] \\
-  && \quad \land \, (\exists z. \blockedp(x,z,Q) \land \blockedp(z,y,Q')))
+  \blockedp(x,M) &\defiff& \exists N. \; M = E[\gvconst{send} \app (x,N)] \\
+  && \quad \lor \, M = E[\gvconst{receive} \app x] \\
+  && \quad \lor \, M = E[\gvconst{wait} \app x] \\
+  \depp(x,y,E[M]) &\defiff& \blockedp(x,M) \land y \in \fv(E) \\
+  \depp(x,y,P) &\defiff& (P \equiv C[M] \land \depp(x,y,M)) \lor \, (P \equiv C[Q \parallel Q'] \\
+  && \quad \land \, (\exists z. \depp(x,z,Q) \land \depp(z,y,Q')))
 \end{array}\]
 Finally, we have a natural definition of deadlock:
 \newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
 \[
-\deadlockp(P) \defiff P \equiv C[Q \parallel Q'] \land \exists x,y. \blockedp(x,y,Q) \land \blockedp(y,x,Q').
+\deadlockp(P) \defiff P \equiv C[Q \parallel Q'] \land \exists x,y. \depp(x,y,Q) \land \depp(y,x,Q').
 \]
 Because this definition depends on blocked processes (that is, those waiting to read or write) it
 avoids the problems with return values (since a process returning a channel is not blocked on it, it
-cannot be part of a deadlocked pair).
-
-%% And we turn to deadlock.  The ability to return channels makes deadlock freedom tricky to define.
-%% Consider the following program
-%% \begin{verbatim}
-%% let c = fork (\c.
-%%           let d = fork (\d.
-%%                     let (e, d) = receive d in
-%%                     let () = wait e in d) in
-%%           let (e, c) = receive c in
-%%           let d = send (e, d) in
-%%           let () = wait d in c) in c
-%% \end{verbatim}
-%% The resulting configuration will have a chain of unblockable processes---sending a value on
-%% \texttt{c} will unblock the first forked process, which will in turn unblock the second.  Here's a
-%% complicated definition of deadlock; hopefully we can simplify.  Let $Q$ be a configuration of the
-%% form $(\nu x_1,\dots,x_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$.  We say that
-%% the unblockable channels of $Unb(P)$ is the least set $X$ such that
-%% \begin{itemize}
-%% \item $\fv(V) \subseteq X$; and,
-%% \item if $\mathsf{blocked}(x,E)$ and $x \in X$, then $\fv(E) \subseteq X$.
-%% \end{itemize}
-%% Now we can say something about deadlock.  A (closed) process $P$ is deadlock-free if, for all $Q$
-%% such that $P \ceval^{\star} Q \centernot\ceval$, $Q \equiv (\nu x_1,\dots,x_m)(\distinguish
-%% V \parallel E_1 \parallel \dots \parallel E_n)$ and, if $\mathsf{blocked}(x_i,E_j)$ then $x_i \in
-%% Unb(Q)$.
-
-\begin{theorem}\label{thm:typed-terms-df}
-  If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
-\end{theorem}
-
-I think at least (and probably at most) one of the following will be necessary.
-
-\begin{lemma}\label{thm:channel-used-twice}
-  If $\Gamma \vdash P$ and $P \equiv (\nu x_1,\dots,x_m)(\distinguish{M_1} \parallel M_2 \parallel
-  \dots \parallel M_n)$, then for any $1 \leq i \leq m$ there are exactly two indexes $j$, $1 \leq j
-  \leq n$, such that $x_i \in \fv(M_j)$.
-\end{lemma}
-
-\begin{proof}
-  By induction on $n$.  The crux is that each $x_i$ must be split once (as variables of type
-  $\channel{S}$ cannot be used in the typing of terms), and that then each instance most be used
-  once (by linearity). \qed
-\end{proof}
+cannot be part of a deadlocked pair).  We say a process $P$ is deadlock-free if for all $Q$ such
+that $P \ceval^\star Q$, $\lnot\deadlockp(Q)$.  Observe that if $P \equiv Q$, then $\deadlockp(P)
+\iff \deadlockp(Q)$.
 
 \begin{lemma}\label{thm:procs-share-one-channel}
-  If $\Gamma \vdash P$ and $P \equiv (\nu x_1,\dots,x_m)(\distinguish{M_1} \parallel M_2 \parallel
-  \dots \parallel M_n)$, then for any pair of terms $M_j,M_{j'}$, there is at most one $x_i$ such
-  that $x_i \in \fv(M_j),x_i \in \fv(M_{j'})$.
+  If $\Gamma \vdash P$, and $P = C[Q \parallel Q']$, then there is some variable $x$ such that
+  $\fv(Q) \cap \fv(Q') = \{ x \}$.
 \end{lemma}
 
 \begin{proof}
-  By induction on $n$.
-  \begin{itemize}
-  \item \textit{Base case:} $n = 2$.  Trivial, following from the typing rule for $\parallel$.
-  \item \textit{Inductive case.} Consider the derivation of
-    \[ \Gamma,x_1:\channel{S_1},\dots,x_m:\channel{S_m} \vdash Q \parallel M_n. \] Fix $1 \leq i
-    \leq m$.  If $x_i$ is not split at this rule, then it cannot appear in $M_n$ (as variables of
-    type $\channel{S}$ cannot be used in terms).  Therefore, assume that $x_i$ is split at this
-    rule; it must be the only channel appearing in $M_n$.  Finally, note that we have $P \equiv (\nu
-    x_i)((\nu x_1,\dots,x_{i-1},x_{i+1},\dots x_m)Q \parallel M)$, where $Q$ has one fewer process
-    than $P$, and so the proposition holds for the remaining channels by the induction
-    hypothesis. \qed
-  \end{itemize}
+  By structural induction on the derivation of $\Gamma \vdash P$; the only interesting case is for
+  parallel composition, where the desired result is assured by the partitioning of the environment.
 \end{proof}
 
 I think we can now show fairly directly that
@@ -419,50 +351,28 @@ I think we can now show fairly directly that
 \begin{lemma}\label{thm:typed-configs-df}
   If $\Gamma \vdash P$ then $\lnot \deadlockp(P)$.
 \end{lemma}
-from which \thmref{typed-terms-df} follows directly.
 
-%% \subsection{Alternative Formulation}
-%%
-%% Instead, we could have
-%%
-%% \begin{syntax}
-%%   \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x y)P \\
-%%   \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x y)C
-%% \end{syntax}
-%% with one alternation to the configuration typing rules
-%% \[
-%% \inferrule
-%%   {\Gamma,x:S,y:\gvdual{S} \vdash P}
-%%   {\Gamma \vdash (\nu x y)P}
-%% \]
-%% an additional equivalence
-%% \[
-%%   (\nu x y)P \equiv (\nu y x)P
-%% \]
-%% and the following alternations to the reductions
-%% \begin{mathpar}
-%% \inferrule
-%%   { }
-%%   {(\nu x y)(C[\mkwd{send}\,(V,x)] \parallel C'[\mkwd{receive}\,y] \parallel C'') \ceval (\nu x y)(C[x] \parallel C'[(V,y)] \parallel C'')}
-%%
-%% \inferrule
-%%   { }
-%%   {(\nu x y)(C[\mkwd{wait}\,x] \parallel y \parallel C') \ceval C[()] \parallel C'}
-%%
-%% \inferrule
-%%   {x,y \text{ fresh}}
-%%   {C[\mkwd{fork}\,V] \ceval (\nu x y)(C[x] \parallel V\,y)}
-%% \end{mathpar}
-%% On the one hand, this seems to make the structure of configurations and their reductions slightly
-%% more complicated; on the other hand, this avoids either making $\Gamma$ a multi-set or further
-%% restricting the form of configurations.  On the whole, I think I marginally prefer this option,
-%% although I'm not convinced yet.
-%%
-%% We would also have to update the definition of blocking.  A process $P$ with free variables
-%% $z_1,\dots,z_l$ is deadlock-free if, for all $Q$ such that $P \ceval^{\star} Q \centernot\ceval$, $Q
-%% \equiv (\nu x_1 y_1) \dots (\nu x_m y_m)(\distinguish V \parallel E_1 \parallel \dots \parallel E_n)$ and, for
-%% each $1 \leq i \leq m, 1 \leq j \leq n$, if $\mathsf{blocked}(x_i,E_j)$ then $y_i \in
-%% \fv(V)$ or $x_i \in \{ z_1, \dots, z_l \}$.
+\begin{proof}
+  By contradiction: suppose $\deadlockp(P)$.  Then we know there must be some variables
+  $x_1,\dots,x_n$ and processes $M_1,\dots,M_n$ in $P$ such that
+  \[
+    \blockedp(x_1,x_2,M_1) \land \blockedp(x_2,x_3,M_2) \land \cdots \land \blockedp(x_n,x_1,M_n).
+  \]
+  But now there is no possible $\Gamma$ such that any $\Gamma \vdash P'$ for any process $P'$
+  containing the $M_i$---such a $P'$ would violate \lemref{procs-share-one-channel}.  \qed
+\end{proof}
+
+Finally, the following is trivial.
+
+\begin{theorem}\label{thm:typed-terms-df}
+  If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
+\end{theorem}
+
+\begin{proof}
+  If $\Gamma \vdash M: T$, then $\Gamma \vdash \distinguish{M}$, and so
+  $\lnot\deadlockp(\distinguish M)$ and, for any $Q$ such that $\distinguish M \ceval^\star Q$, we
+  know that there is a well-typed $Q' \equiv Q$, and so $\lnot\deadlockp(Q)$. \qed
+\end{proof}
 
 \section{CP Bollocks}
 
