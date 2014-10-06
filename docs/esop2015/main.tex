@@ -115,7 +115,7 @@ polymorphism forever.
 
 \gvconst{wait} : \interm \lto \one
 
-\gvconst{link} : (S, \gvdual{S}) \lto \outterm
+\gvconst{link} : S \times \gvdual{S} \lto \outterm
 \end{mathpar}
 
 \subsection{Evaluation}
@@ -374,27 +374,88 @@ Finally, the following is trivial.
   know that there is a well-typed $Q' \equiv Q$, and so $\lnot\deadlockp(Q)$. \qed
 \end{proof}
 
-\section{CP Bollocks}
+\section{CP Translation and Equivalence}
 
-Suppose that we write $\tocp{-}$ for GV to CP translation, and $\togv{-}$ for CP to GV translation.
-Note that $\tocp{P}z$ will only be defined when $\Gamma \vdash P$, and when $P$ has a single
-distinguished expression.  I suspect that the following will be useful at some point.
+\section{GV with Mix}
+
+We define a language GVX, which, depending on your perspective, either extends GV with mix or
+combines the types of closed sessions.  The syntax is largely as in GV; the meaningful changes are
+the elimination of $\interm$ and $\outterm$ in favor of $\gvend$, and the use of \gvconst{close} instead
+of \gvconst{wait}.
+\begin{syntax}
+  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvend \mid \channel{S} \\
+  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{close} \mid \gvconst{link}\\
+\end{syntax}
+The remaining parts of the grammar are unchanged from GV.  The definition of duality is updated to
+reflect that $\gvend$ is self-dual:
+\[
+  \gvdual \gvend = \gvend
+\]
+We provide new typing rules for some of the constants
+\begin{mathpar}
+\gvconst{fork} : (S \lto \one) \lto \gvdual S
+
+\gvconst{close} : \gvend \lto \one
+
+\gvconst{link} : S \times \gvdual S \lto \one
+\end{mathpar}
+but otherwise the type system is unchanged from that of GV.  We require an extension of the type
+system for configurations, however:
+\begin{mathpar}
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma \vdash^\bullet \distinguish M}
+
+\inferrule
+  {\Gamma \vdash M: \one}
+  {\Gamma \vdash^\circ M}
+
+\inferrule
+  {\Gamma, x: \channel S \vdash^\phi P}
+  {\Gamma \vdash^\phi (\nu x)P}
+
+\inferrule
+  {\Gamma, x: S \vdash^\phi P \\
+   \Gamma', x: \gvdual S \vdash^{\phi'} P'}
+  {\Gamma,\Gamma',x:\channel S \vdash^{\phi + \phi'} P \parallel P'}
+
+\inferrule
+  {\Gamma \vdash^\phi P \\
+   \Gamma' \vdash^{\phi'} P'}
+  {\Gamma,\Gamma' \vdash^{\phi + \phi'} P \parallel P'}
+\end{mathpar}
+Perhaps the latter two rules can be combined by defining a suitable operation on environments;
+however, it seems simpler now to just provide two typing rules.  Rules \textsc{Send, Fork, Lift} and
+\textsc{Lift2} apply to GVX unchanged; the remaining reduction rules are
+\begin{mathpar}
+\inferrule
+  { }
+  {C[\gvconst{close} \app x] \parallel C'[\gvconst{close} \app x] \ceval C[()] \parallel C'[()]}
+
+\inferrule
+  {x \in \fv(P)}
+  {C[\gvconst{link} \app (x,y)] \parallel P \ceval C[()] \parallel P \{y/x\}}
+\end{mathpar}
+The equivalences are similarly extended by
+\begin{mathpar}
+(\nu x)P \equiv P \text{ if $x \not\in \fv(P)$}
+
+P \parallel () \equiv P
+\end{mathpar}
+We have a slightly different result about channels shared between processes, to account for the
+multiple forms of composition:
 \begin{lemma}
-  If $\Gamma \vdash M: T$ and $\distinguish M \ceval^\star P$, then there are $x_1,\dots,x_n$, $M$ and $P'$
-  such that $P \equiv (\nu x_1,\dots,x_n)(\distinguish M \parallel P')$.
+  If $\Gamma \vdash P$ and $P = C[Q \parallel Q']$, then $\fv(Q) \cap \fv(Q')$ is either empty or
+  the singleton set $\{x\}$ for some variable $x$.
 \end{lemma}
-
-We might expect results something like the following.
-
+The proof is again by induction on the derivation of $\Gamma \vdash P$.  However, note that this has
+no consequence for the proof of deadlock freedom (which depended on their being two channels shared
+among processes).  Thus we can conclude that
 \begin{theorem}
-  If $\Gamma \vdash P$, where $P = (\nu x_1,\dots,x_m)(\distinguish M \parallel P')$ and $\Gamma
-  \vdash M: T$, then $\tocp{P}z \vdash \tocp{\Gamma}, z:\tocp{T}$.
+  If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
 \end{theorem}
 
-\begin{theorem}
-  If $\Gamma \vdash P$ and $P \ceval P'$, then $\tocp{P}z \longrightarrow Q$ such that $\togv{Q}
-  \equiv P'$.  What to do with $z$?!
-\end{theorem}
+
 
 \section{Direct GV semantics}
 
