@@ -67,7 +67,7 @@ polymorphism forever.
 
 \inferrule
   {\Gamma,x:T \vdash M:U}
-  {\Gamma \vdash \lambda x:T.M : T \lto U}
+  {\Gamma \vdash \lambda x.M : T \lto U}
 
 \inferrule
   {\Gamma \vdash M: T \lto U \\
@@ -122,6 +122,9 @@ polymorphism forever.
 
 \newcommand{\distinguish}[1]{\langle #1 \rangle}
 
+\newcommand{\wcirc}{{\mathord{\circ}}}
+\newcommand{\bcirc}{{\mathord{\bullet}}}
+
 \begin{syntax}
   \text{Values} & V & ::= & x \mid K \mid \lambda x.M \\ % \mid K\,V \\
   & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
@@ -130,25 +133,25 @@ polymorphism forever.
   & & \mid & \mkwd{inl}\,E \mid \mkwd{inr}\,E \mid \gvcase{E}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
   \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x) P \\
   \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x)C \\
-  \text{Flags} & \phi & ::= & \circ \mid \bullet
+  \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
 We define combination of flags $\phi + \phi'$ by
 \begin{mathpar}
-  \circ + \circ = \circ
+  \wcirc + \wcirc = \wcirc
 
-  \circ + \bullet = \bullet
+  \wcirc + \bcirc = \bcirc
 
-  \bullet + \circ = \bullet
+  \bcirc + \wcirc = \bcirc
 \end{mathpar}
-and leave $\bullet + \bullet$ undefined.  Configuration typing is given by
+and leave $\bcirc + \bcirc$ undefined.  Configuration typing is given by
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T}
-  {\Gamma \vdash^\bullet \distinguish M}
+  {\Gamma \vdash^\bcirc \distinguish M}
 
 \inferrule
   {\Gamma \vdash M: \outterm}
-  {\Gamma \vdash^\circ M}
+  {\Gamma \vdash^\wcirc M}
 
 \inferrule
   {\Gamma, x:\channel{S} \vdash^\phi P}
@@ -159,7 +162,7 @@ and leave $\bullet + \bullet$ undefined.  Configuration typing is given by
    \Gamma',x:\gvdual{S} \vdash^{\phi'} P'}
   {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} P \parallel P'}
 \end{mathpar}
-We will write $\Gamma \vdash P$ for $\Gamma \vdash^\bullet P$.  Note that while we can write the
+We will write $\Gamma \vdash P$ for $\Gamma \vdash^\bcirc P$.  Note that while we can write the
 classic deadlocked configuration
 \[
   (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\gvconst{receive} \app x}{\gvconst{send} \app (z,y)}} \parallel
@@ -167,7 +170,7 @@ classic deadlocked configuration
 \]
 it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions:
 \begin{align*}
-  (\lambda x:T. M)\,V &\teval M\{V/x\} \\
+  (\lambda x.M)\,V &\teval M\{V/x\} \\
   \gvletunit{()}{M} &\teval M \\
   \gvlet{(x,y)}{(V,V')}{M} &\teval M\{V/x,V'/y\} \\
   \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N\{V/x\} \\
@@ -260,6 +263,8 @@ The proof is standard.
   If $\Gamma \vdash P$ and $P \ceval P'$ then there is some $\Gamma'$ such that either $\Gamma
   \ceval \Gamma'$ or $\Gamma = \Gamma'$ and $\Gamma' \vdash P'$.
 \end{theorem}
+
+\todo{Where are \textsc{Thread}, \textsc{DThread}, \textsc{New} and \textsc{Par} defined?}
 
 \begin{proof}
   By induction on the derivation of $P \ceval P'$.
@@ -374,6 +379,8 @@ Finally, the following is trivial.
   know that there is a well-typed $Q' \equiv Q$, and so $\lnot\deadlockp(Q)$. \qed
 \end{proof}
 
+\todo{What about a progress theorem?}
+
 \section{CP Translation and Equivalence}
 
 \section{GV with Mix}
@@ -404,11 +411,11 @@ system for configurations, however:
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T}
-  {\Gamma \vdash^\bullet \distinguish M}
+  {\Gamma \vdash^\bcirc \distinguish M}
 
 \inferrule
   {\Gamma \vdash M: \one}
-  {\Gamma \vdash^\circ M}
+  {\Gamma \vdash^\wcirc M}
 
 \inferrule
   {\Gamma, x: \channel S \vdash^\phi P}
@@ -459,8 +466,11 @@ among processes).  Thus we can conclude that
 
 \section{Direct GV semantics}
 
-\newcommand{\apar}[1]{\mathbin{{[}\:\!\!\rangle}_{\!{#1}}\!}
-\newcommand{\con}[3]{{#1} \apar{#2} {#3}}
+\newcommand{\rpar}[1]{\mathbin{{[}\:\!\!\rangle}_{\!{#1}}\!}
+\newcommand{\lrpar}[1]{\mathbin{\langle\hspace{-.3ex}\rangle}_{\!{#1}}\!}
+\newcommand{\lpar}[1]{\mathbin{\langle\:\!\!{]}}_{{#1}}\!}
+
+\newcommand{\con}[3]{{#1} \rpar{#2} {#3}}
 
 \[
 \mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
@@ -520,7 +530,7 @@ If $\Gamma$ is a session environment (all variables in $\Gamma$ have session typ
 \vdash M : T$ then one of the following holds:
 \begin{enumerate}
 \item $M$ is a value; or
-\item there exists $N = \blockedp'(y_1, M_1) \apar{x_1} \dots \apar{x_{n}} \blockedp'(y_{n}, M_{n})$
+\item there exists $N = \blockedp'(y_1, M_1) \rpar{x_1} \dots \rpar{x_{n}} \blockedp'(y_{n}, M_{n})$
   such that $M \equiv N$ and $\Gamma \vdash N : T$; or
 \item there exists $N$ such that $M \rto N$.
 \end{enumerate}
@@ -535,8 +545,8 @@ By induction on the structure of the derivation of $\Gamma \vdash M : T$.
 If $\vdash M : T$ then one of the following holds:
 \begin{enumerate}
 \item $M$ is a value; or
-\item there exists $N = \blockedp(x_1, M_1) \apar{x_1} \dots \apar{x_{n-1}} \blockedp(x_{n-1},
-  M_{n-1}) \apar{x_n} V$ such that $M \equiv N$ and $\Gamma \vdash N : T$; or
+\item there exists $N = \blockedp(x_1, M_1) \rpar{x_1} \dots \rpar{x_{n-1}} \blockedp(x_{n-1},
+  M_{n-1}) \rpar{x_n} V$ such that $M \equiv N$ and $\Gamma \vdash N : T$; or
 \item there exists $N$ such that $M \rto N$.
 \end{enumerate}
 \end{theorem}
