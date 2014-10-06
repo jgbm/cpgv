@@ -264,14 +264,11 @@ The proof is standard.
   \ceval \Gamma'$ or $\Gamma = \Gamma'$ and $\Gamma' \vdash P'$.
 \end{theorem}
 
-\todo{Where are \textsc{Thread}, \textsc{DThread}, \textsc{New} and \textsc{Par} defined?}
-
 \begin{proof}
   By induction on the derivation of $P \ceval P'$.
   \begin{itemize}
-  \item Cases \textsc{Thread} and \textsc{DThread} follow from \lemref{term-preservation}, with
-    $\Gamma = \Gamma'$.
-  \item Cases \textsc{New} and \textsc{Par} are immediate by the induction hypothesis.
+  \item Case \textsc{Lift} is immediate by the induction hypothesis.
+  \item Case \textsc{Lift2} follows from \lemref{term-preservation}, with $\Gamma = \Gamma'$.
   \item In case \textsc{Send}, from the assumption $\Gamma \vdash C[\mkwd{send}\,(V,x)] \parallel
     C'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
     $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
