@@ -29,6 +29,18 @@
 
 \end{abstract}
 
+\section{Introduction}\label{sec:intro}
+
+\section{GV by Example}\label{sec:examples}
+
+\begin{itemize}
+\item Bookstore example (with delegation).  On second thought, I'm not sure the example as presented
+  in the exceptions paper is quite the one I wanted---there's no reason for the bank and customer to
+  interact.  On the other hand, perhaps that doesn't matter---or we could modify it slightly so that
+  the bank either challenges the customer as part of the transaction (Verified By Visa).
+\item Explain encoding of select and choice into send and receive with sums.
+\end{itemize}
+
 \section{I'm Pickin' Up Good Vibrations}
 
 I'm intentionally ignoring replication for the time being.  I'm intentionally ignoring CP
@@ -345,7 +357,8 @@ that $P \ceval^\star Q$, $\lnot\deadlockp(Q)$.  Observe that if $P \equiv Q$, th
 
 \begin{proof}
   By structural induction on the derivation of $\Gamma \vdash P$; the only interesting case is for
-  parallel composition, where the desired result is assured by the partitioning of the environment.
+  parallel composition, where the desired result is assured by the partitioning of the
+  environment. \qed
 \end{proof}
 
 I think we can now show fairly directly that
@@ -376,87 +389,30 @@ Finally, the following is trivial.
   know that there is a well-typed $Q' \equiv Q$, and so $\lnot\deadlockp(Q)$. \qed
 \end{proof}
 
-\todo{What about a progress theorem?}
+\todo{What about a progress theorem? What would a progress theorem look like?  The following seems
+  ``too syntactic'' for my taste.}
 
-\section{CP Translation and Equivalence}
-
-\section{GV with Mix}
-
-We define a language GVX, which, depending on your perspective, either extends GV with mix or
-combines the types of closed sessions.  The syntax is largely as in GV; the meaningful changes are
-the elimination of $\interm$ and $\outterm$ in favor of $\gvend$, and the use of \gvconst{close} instead
-of \gvconst{wait}.
-\begin{syntax}
-  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvend \mid \channel{S} \\
-  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{close} \mid \gvconst{link}\\
-\end{syntax}
-The remaining parts of the grammar are unchanged from GV.  The definition of duality is updated to
-reflect that $\gvend$ is self-dual:
+\begin{definition}
+A process $P$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
+terms $M_1,\dots,M_n$ such that
 \[
-  \gvdual \gvend = \gvend
+  P = (\nu x_1)(M_1 \parallel (\nu x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots)).
 \]
-We provide new typing rules for some of the constants
-\begin{mathpar}
-\gvconst{fork} : (S \lto \one) \lto \gvdual S
+\end{definition}
 
-\gvconst{close} : \gvend \lto \one
-
-\gvconst{link} : S \times \gvdual S \lto \one
-\end{mathpar}
-but otherwise the type system is unchanged from that of GV.  We require an extension of the type
-system for configurations, however:
-\begin{mathpar}
-\inferrule
-  {\Gamma \vdash M: T}
-  {\Gamma \vdash^\bcirc \distinguish M}
-
-\inferrule
-  {\Gamma \vdash M: \one}
-  {\Gamma \vdash^\wcirc M}
-
-\inferrule
-  {\Gamma, x: \channel S \vdash^\phi P}
-  {\Gamma \vdash^\phi (\nu x)P}
-
-\inferrule
-  {\Gamma, x: S \vdash^\phi P \\
-   \Gamma', x: \gvdual S \vdash^{\phi'} P'}
-  {\Gamma,\Gamma',x:\channel S \vdash^{\phi + \phi'} P \parallel P'}
-
-\inferrule
-  {\Gamma \vdash^\phi P \\
-   \Gamma' \vdash^{\phi'} P'}
-  {\Gamma,\Gamma' \vdash^{\phi + \phi'} P \parallel P'}
-\end{mathpar}
-Perhaps the latter two rules can be combined by defining a suitable operation on environments;
-however, it seems simpler now to just provide two typing rules.  Rules \textsc{Send, Fork, Lift} and
-\textsc{Lift2} apply to GVX unchanged; the remaining reduction rules are
-\begin{mathpar}
-\inferrule
-  { }
-  {C[\gvconst{close} \app x] \parallel C'[\gvconst{close} \app x] \ceval C[()] \parallel C'[()]}
-
-\inferrule
-  {x \in \fv(P)}
-  {C[\gvconst{link} \app (x,y)] \parallel P \ceval C[()] \parallel P \{y/x\}}
-\end{mathpar}
-The equivalences are similarly extended by
-\begin{mathpar}
-(\nu x)P \equiv P \text{ if $x \not\in \fv(P)$}
-
-P \parallel () \equiv P
-\end{mathpar}
-We have a slightly different result about channels shared between processes, to account for the
-multiple forms of composition:
 \begin{lemma}
-  If $\Gamma \vdash P$ and $P = C[Q \parallel Q']$, then $\fv(Q) \cap \fv(Q')$ is either empty or
-  the singleton set $\{x\}$ for some variable $x$.
+  If $\Gamma \vdash P$, then there is some $P' \equiv P$ such that $\Gamma \vdash P'$ and $P'$ is in
+  canonical form.
 \end{lemma}
-The proof is again by induction on the derivation of $\Gamma \vdash P$.  However, note that this has
-no consequence for the proof of deadlock freedom (which depended on their being two channels shared
-among processes).  Thus we can conclude that
+
 \begin{theorem}
-  If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
+  Let $\Gamma \vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
+  x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
+  the canonical form of $P$.  Then we have that:
+  \begin{enumerate}
+  \item For $1 \leq i \leq n - 1$ either $\blockedp(x_i,M_i)$ or $\blockedp(y,M_i)$ for some $y \in \dom(\Gamma)$; and,
+  \item Either $M_n$ is a value or $\blockedp(y,M_n)$ for some $y \in \dom(\Gamma)$.
+  \end{enumerate}
 \end{theorem}
 
 
@@ -517,12 +473,12 @@ If $\Gamma \vdash M : T$ and $M \rto N$ then $\Gamma \vdash N : T$.
 %
 \begin{proof}
 By induction on the structure of the derivation of $\Gamma \vdash M : T$ using a standard
-substitution lemma for the case of $\beta$-reduction at function types.
+substitution lemma for the case of $\beta$-reduction at function types. \qed
 \end{proof}
 
 Progress
 \begin{theorem}
-\label{th:free-progress}
+\label{thm:free-progress}
 If $\Gamma$ is a session environment (all variables in $\Gamma$ have session type) such that $\Gamma
 \vdash M : T$ then one of the following holds:
 \begin{enumerate}
@@ -534,7 +490,7 @@ If $\Gamma$ is a session environment (all variables in $\Gamma$ have session typ
 \end{theorem}
 %
 \begin{proof}
-By induction on the structure of the derivation of $\Gamma \vdash M : T$.
+By induction on the structure of the derivation of $\Gamma \vdash M : T$. \qed
 \end{proof}
 % In the second case each $y_i$ must be equal to either $x_i$ or some $x$ in $\Gamma$.
 
@@ -550,13 +506,16 @@ If $\vdash M : T$ then one of the following holds:
 %
 \begin{proof}
 By induction on the structure of the derivation of $\vdash M : T$ using
-Theorem~\ref{th:free-progress}.
+\thmref{free-progress}. \qed
 \end{proof}
 
 $\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
 
 $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 involving $x$.
+
+\section{CP Translation and Equivalence}
+
 
 Correspondence between reduction in CP and reduction in GV. Do the following theorems actually hold,
 or is the correspondence more subtle? (I'm pretty certain they don't.)
@@ -568,5 +527,87 @@ If $P \vdash \Gamma$ and $P \rto Q$ then $\togv{P} \rto \togv{Q}$.
 \begin{theorem}
 If $M \rto N$ then $\tocp{M}z \rto \tocp{N}z$.
 \end{theorem}
+
+\section{Extending GV}
+
+We define a language GVX, which, depending on your perspective, either extends GV with mix or
+combines the types of closed sessions.  The syntax is largely as in GV; the meaningful changes are
+the elimination of $\interm$ and $\outterm$ in favor of $\gvend$, and the use of \gvconst{close} instead
+of \gvconst{wait}.
+\begin{syntax}
+  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvend \mid \channel{S} \\
+  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{close} \mid \gvconst{link}\\
+\end{syntax}
+The remaining parts of the grammar are unchanged from GV.  The definition of duality is updated to
+reflect that $\gvend$ is self-dual:
+\[
+  \gvdual \gvend = \gvend
+\]
+We provide new typing rules for some of the constants
+\begin{mathpar}
+\gvconst{fork} : (S \lto \one) \lto \gvdual S
+
+\gvconst{close} : \gvend \lto \one
+
+\gvconst{link} : S \times \gvdual S \lto \one
+\end{mathpar}
+but otherwise the type system is unchanged from that of GV.  We require an extension of the type
+system for configurations, however:
+\begin{mathpar}
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma \vdash^\bcirc \distinguish M}
+
+\inferrule
+  {\Gamma \vdash M: \one}
+  {\Gamma \vdash^\wcirc M}
+
+\inferrule
+  {\Gamma, x: \channel S \vdash^\phi P}
+  {\Gamma \vdash^\phi (\nu x)P}
+
+\inferrule
+  {\Gamma, x: S \vdash^\phi P \\
+   \Gamma', x: \gvdual S \vdash^{\phi'} P'}
+  {\Gamma,\Gamma',x:\channel S \vdash^{\phi + \phi'} P \parallel P'}
+
+\inferrule
+  {\Gamma \vdash^\phi P \\
+   \Gamma' \vdash^{\phi'} P'}
+  {\Gamma,\Gamma' \vdash^{\phi + \phi'} P \parallel P'}
+\end{mathpar}
+Perhaps the latter two rules can be combined by defining a suitable operation on environments;
+however, it seems simpler now to just provide two typing rules.  Rules \textsc{Send, Fork, Lift} and
+\textsc{Lift2} apply to GVX unchanged; the remaining reduction rules are
+\begin{mathpar}
+\inferrule
+  { }
+  {(\nu x)(C[\gvconst{close} \app x] \parallel C'[\gvconst{close} \app x)] \ceval C[()] \parallel C'[()]}
+
+\inferrule
+  {x \in \fv(P)}
+  {C[\gvconst{link} \app (x,y)] \parallel P \ceval C[()] \parallel P \{y/x\}}
+\end{mathpar}
+The equivalences are similarly extended by
+\begin{mathpar}
+P \parallel () \equiv P
+\end{mathpar}
+We have a slightly different result about channels shared between processes, to account for the
+multiple forms of composition:
+\begin{lemma}
+  If $\Gamma \vdash P$ and $P = C[Q \parallel Q']$, then $\fv(Q) \cap \fv(Q')$ is either empty or
+  the singleton set $\{x\}$ for some variable $x$.
+\end{lemma}
+The proof is again by induction on the derivation of $\Gamma \vdash P$.  However, note that this has
+no consequence for the proof of deadlock freedom (which depended on their being two channels shared
+among processes).  Thus we can conclude that
+\begin{theorem}
+  If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
+\end{theorem}
+
+\section{Related Work}\label{sec:related}
+
+\section{Conclusions and Future Work}\label{sec:conclusion}
+
 
 \end{document}
