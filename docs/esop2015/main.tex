@@ -405,17 +405,41 @@ terms $M_1,\dots,M_n$ such that
   canonical form.
 \end{lemma}
 
+\begin{proof}
+  Let $x_1,\dots,x_{n-1}$ be the $\nu$-bound variables in $P$ and $M_1,\dots,M_n$ be the terms in
+  $P$; the proof is by induction on $n$.  If $n > 1$, then pick some $M_i$ such that there is
+  exactly one $\nu$-bound variable $x_j$ where $x_j \in \fv(M_i)$.  (That there must be such an
+  $M_i$ and $x_j$ can be established by a standard counting argument, together with
+  \lemref{procs-share-one-channel}.)  Now, construct $Q$ from $P$ by the homomorphic extension of
+  the mapping $(\nu x_j)P \mapsto P$ and $P \parallel M_i \mapsto P$.  From the assumption that
+  $\Gamma \vdash P$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$ such
+  that $\Gamma',x:S \vdash Q$.  By the induction hypothesis, there is some $Q' \equiv Q$ in
+  canonical form.  Finally, let $P' = (\nu x_j)(M_i \parallel Q')$; we can see that
+  straightforwardly that $P'$ is in canonical form; that $P \equiv P'$; and, that $\Gamma \vdash
+  P'$. \qed
+\end{proof}
+
 \begin{theorem}
   Let $\Gamma \vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
-  the canonical form of $P$.  Then we have that:
+  a canonical form of $P$.  Then:
   \begin{enumerate}
-  \item For $1 \leq i \leq n - 1$ either $\blockedp(x_i,M_i)$ or $\blockedp(y,M_i)$ for some $y \in \dom(\Gamma)$; and,
-  \item Either $M_n$ is a value or $\blockedp(y,M_n)$ for some $y \in \dom(\Gamma)$.
+  \item For $1 \leq i \leq n - 1$ either $\blockedp(x_j,M_i)$ where $j \leq i$ or $\blockedp(y,M_i)$
+    for some $y \in \dom(\Gamma)$; and,
+  \item Either $M_n$ is a value or $\blockedp(y,M_n)$ for some $y \in \{ x_i \mid i \leq i \leq n -
+    1 \} \cup \dom(\Gamma)$.
   \end{enumerate}
 \end{theorem}
 
-
+\begin{corollary}
+  Let $\vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
+  x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
+  a canonical form of $P$.  Then:
+  \begin{enumerate}
+  \item For $1 \leq i \leq n - 1$, $\blockedp(x_i,M_i)$; and,
+  \item $M_n = \distinguish V$ for some value $V$.
+  \end{enumerate}
+\end{corollary}
 
 \section{Direct GV semantics}
 
