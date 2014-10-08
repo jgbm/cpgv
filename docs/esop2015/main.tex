@@ -389,9 +389,6 @@ Finally, the following is trivial.
   know that there is a well-typed $Q' \equiv Q$, and so $\lnot\deadlockp(Q)$. \qed
 \end{proof}
 
-\todo{What about a progress theorem? What would a progress theorem look like?  The following seems
-  ``too syntactic'' for my taste.}
-
 \begin{definition}
 A process $P$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
 terms $M_1,\dots,M_n$ such that
@@ -400,7 +397,7 @@ terms $M_1,\dots,M_n$ such that
 \]
 \end{definition}
 
-\begin{lemma}
+\begin{lemma}\label{thm:canonical}
   If $\Gamma \vdash P$, then there is some $P' \equiv P$ such that $\Gamma \vdash P'$ and $P'$ is in
   canonical form.
 \end{lemma}
@@ -419,7 +416,7 @@ terms $M_1,\dots,M_n$ such that
   P'$. \qed
 \end{proof}
 
-\begin{theorem}
+\begin{theorem}\label{thm:progress-open}
   Let $\Gamma \vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
   a canonical form of $P$.  Then:
@@ -431,7 +428,11 @@ terms $M_1,\dots,M_n$ such that
   \end{enumerate}
 \end{theorem}
 
-\begin{corollary}
+\begin{proof}
+  By induction on the derivation of $\Gamma \vdash P'$, using the definition of $\ceval$. \qed
+\end{proof}
+
+\begin{corollary}\label{thm:progress}
   Let $\vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
   a canonical form of $P$.  Then:
@@ -440,6 +441,10 @@ terms $M_1,\dots,M_n$ such that
   \item $M_n = \distinguish V$ for some value $V$.
   \end{enumerate}
 \end{corollary}
+
+\begin{proof}
+  By induction on the derivation of $\vdash P'$, relying on \thmref{progress-open}.  \qed
+\end{proof}
 
 \section{Direct GV semantics}
 
