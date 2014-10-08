@@ -543,18 +543,228 @@ $\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
 $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 involving $x$.
 
-\section{CP Translation and Equivalence}
+\section{CP}
+
+\todo{Shall we restrict ourselves to the multiplicative-additive fragment of CP?}
+
+\begin{figure}[float]
+
+\begin{mathpar}
+\inferrule{ }{\cptyp{\link{x}{w}}{x:A,w:\cpdual{A}}}
+
+\inferrule{\cptyp{P}{\Gamma,y:A} \\
+           \cptyp{Q}{\Delta,y:\cpdual{A}}}
+          {\cptyp{\cut{y}{A}{P}{Q}}{\Gamma,\Delta}}
+
+\inferrule{ }{\cptyp{x[].0}{x:1}}
+
+\inferrule{\cptyp{P}{\Gamma,y:A,x:B}}
+          {\cptyp{x(y).P}{\Gamma,x:A \parr B}}
+
+\inferrule{\cptyp{P}{\Gamma,y:A} \\
+           \cptyp{Q}{\Delta,x:B}}
+          {\cptyp{x[y].(P \mid Q)}{\Gamma,\Delta,x:A \otimes B}}
+
+\inferrule{\cptyp{P}{\Gamma}}
+          {\cptyp{x().P}{\Gamma,x:\bot}}
+
+\inferrule{\cptyp{P}{\Gamma,x:A_i}}
+          {\cptyp{\sel{x}{in_i}.P}{\Gamma,x:A_1 \oplus A_2}}
+
+\inferrule{\cptyp{P}{\Gamma,x:A} \\
+           \cptyp{Q}{\Gamma,x:B}}
+          {\cptyp{\case{x}{P;Q}}{\Gamma,x:A \with B}}
+
+\inferrule{ }{\cptyp{\case{x}{}}{\Gamma,x:\top}}
+
+\inferrule{\cptyp{P}{\Gamma}}{\cptyp{P}{\Gamma,x:\cpquery{A}}}
+
+\inferrule{\cptyp{P}{y:A,\Gamma}}{\cptyp{\derelict{x}{y}.P}{\Gamma,x:\cpquery{A}}}
+
+\inferrule{\cptyp{P}{x:\cpquery{A},x':\cpquery{A},\Gamma}}{\cptyp{P[x/x']}{\Gamma,x:\cpquery{A}}}
+
+\inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}}
+
+\end{mathpar}
+
+\caption{Typing Rules for CP}\label{fig:cp-typing}
+\end{figure}
+
+The types of CP are the propositions of classical linear logic.
+%
+\[\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
+  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top
+       \mid   \cpquery{A} \mid \cpbang{A} \\
+\end{array}\]
+CP adopts the standard notion of classical linear logic duality:
+\[
+\ba{c}
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
+  \cpdual{(A \otimes B)} &=& \cpdual{A} \parr \cpdual{B} \\
+  \cpdual{(A \parr B)} &=& \cpdual{A} \otimes \cpdual{B} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{1} &=& \bot \\
+  \cpdual{\bot} &=& 1 \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{(A \oplus B)} &=& \cpdual{A} \with \cpdual{B} \\
+  \cpdual{(A \with B)} &=& \cpdual{A} \oplus \cpdual{B} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{\top} &=& 0 \\
+  \cpdual{0} &=& \top \\
+\end{eqs}
+\ea
+\\
+\ba{@{}c@{\qquad}c@{}}
+\begin{eqs}
+  \cpdual{(\cpbang{A})} &=& \cpquery{\cpdual{A}} \\
+  \cpdual{(\cpquery{A})} &=& \cpbang{\cpdual{A}} \\
+\end{eqs} \\
+\ea
+\ea
+\]
+where $X^{\perp\perp} = X$.
+%
+We let $\Gamma, \Delta$ range over type environments. The judgement $\cptyp{P}{\Gamma}$ states that
+process $P$ uses channels $\Gamma$.
+%
+Typing rules for CP terms are given in Fig.~\ref{fig:cp-typing}. We write $fv(P)$ for the free
+variables used in process $P$; in the typing rules, new bound variables are designated $y$.
+
+\paragraph{Structural Rules.}
+
+CP has two structural rules, axiom and cut. We interpret the axiom $\link{x}{w}$ as channel
+forwarding: actions on channel $x$ are mirrored on $w$, and vice versa. Thus, $x$ and $w$ must have
+dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between processes $P$ and $Q$ on
+channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
+compatible. We identify CP up to structural equivalence:
+%
+\small\begin{equations}
+  \link{x}{w} &\equiv& \link{w}{x} \\
+  \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
+  \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in fv(R)$} \\
+\end{equations}\normalsize%
+
+\paragraph{Input and Output.}
+
+The multiplicative connectives $\parr$ and $\otimes$ are interpreted as input and output. The
+process $x(y).P$ inputs channel $y$ on channel $x$, and continues as $P$. The process $x[y].(P \mid
+Q)$ is interpreted as bound output: it sends a fresh variable $y$ along $x$, spawns a process $P$ in
+which $y$ is used, and continues as process $Q$ in which $x$ is used.  It amounts to the
+$\pi$-calculus term $(\nu y) \overline{x}(y).(P \mid Q)$. We write $x[y].P$ as syntactic sugar for
+$x[y'].(\link{y}{y'} \mid P)$. The units of $\parr$ and $\otimes$, $\bot$ and $1$, are interpreted
+as nullary input and nullary output, respectively.
+
+\paragraph{Selection and Choice.}
+
+The additive connectives $\oplus$ and $\with$ are interpreted as selection and choice. The process
+$\case{x}{P_1;P_2}$ offers a choice of processes $P_1$ and $P_2$; dually, the process
+$\sel{x}{in_i}.P_i$ chooses the $i$-th alternative. The unit for choice is $0$, indicating
+absurdity. Note that there is no term proving $0$. The dual of absurdity is $\top$, and provides
+arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ can reduce.
+
+\paragraph{Replication and Dereliction.}
+
+The exponential connectives $!$ and $?$ in linear logic provide restricted access to the classical
+rules of weakening and contraction. We interpret them as serving ($!$) and requesting ($?$)
+replicated processes.
+%
+For a server channel of type $\cpbang{A}$, the process $P$ proving $A$ may be replicated
+arbitrarily, so each channel that $P$ uses must be replicable as well. We write $\cpquery{\Gamma}$
+to assert that all types in $\Gamma$ be of the form $\cpquery{B}$. As well as the introduction rule
+for a request channel of type $\cpquery{A}$, there are also implicit rules for weakening and
+contraction.
+
+\subsection{Cut Elimination}
 
 
-Correspondence between reduction in CP and reduction in GV. Do the following theorems actually hold,
-or is the correspondence more subtle? (I'm pretty certain they don't.)
+\begin{figure}[float]
+
+\begin{equations}
+\cut{x}{A}{\link{w}{x}}{P}
+  &\Longrightarrow& P[w/x] \\
+\cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}
+  &\Longrightarrow&
+    \cut{y}{A}{Q}{\cut{x}{B}{P}{R}} \\
+\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}
+  &\Longrightarrow&
+    P \\
+\cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
+  &\Longrightarrow&
+    \cut{x}{A}{P}{Q_i} \\
+\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}
+  &\Longrightarrow&
+    \cut{y}{A}{P}{Q} \\
+\cut{y}{\cpbang{A}}{\replicate{x}{y}.P}{Q}
+  &\Longrightarrow&
+     Q, \qquad x \notin fv(Q) \\
+\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}
+  &\Longrightarrow&
+    \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\
+\end{equations}%
+\caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
+
+\end{figure}
+
+Cut elimination corresponds to synchronous process reduction.  The principal cut reductions are
+given in Fig.~\ref{fig:beta-reduction}. These are quite standard; for instance, cut reduction of
+$\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
+
+\begin{figure}[float]
+
+\begin{equations}
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\Longrightarrow& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in fv(Q)$} \\
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\Longrightarrow& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in fv(P)$} \\
+  \cut{z}{A}{x(y).P}{Q} &\Longrightarrow& x(y).\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\Longrightarrow& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\case{x}{P;Q}}{R} &\Longrightarrow& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
+  \cut{z}{} {\derelict{x}{y}.P}{Q} &\Longrightarrow& \derelict{x}{y}.\cut{z}{}{P}{Q} \\
+  \cut{z}{} {\replicate{x}{y}.P}{Q} &\Longrightarrow& \replicate{x}{y}.\cut{z}{}{P}{Q} \\
+\end{equations}
+\caption{Commuting Conversions}\label{fig:commuting}
+\end{figure}
+
+The commuting conversions push communication under process prefixes, and are given in
+Fig.~\ref{fig:commuting}.
+
+\todo{Show that using a sane rule for send yields an entirely equivalent system --- and use that
+  system!}
+
+\todo{Think carefully about what to do with commuting conversions.}
+
+
+\section{Translations Between GV$\pi$-ANF and CP}
+
+\todo{Various translations.}
+
+\todo{Try to fit in with the configuration semantics.}
+
+\todo{Ensure that the definition of $\equiv$ is appropriate for the theorems.}
+
+\todo{Show that GV$\pi$ reduction simulates GV reduction.}
+
+\todo{Show that the A-normalisation rules are sound (easy).}
 
 \begin{theorem}
-If $P \vdash \Gamma$ and $P \rto Q$ then $\togv{P} \rto \togv{Q}$.
+If $P \equiv Q$, then $\togv{P} \equiv \togv{Q}$.
 \end{theorem}
 
 \begin{theorem}
-If $M \rto N$ then $\tocp{M}z \rto \tocp{N}z$.
+If $P \vdash \Gamma$ and $P \rto Q$, then $\togv{P} \rto^+ \togv{Q}$.
+\end{theorem}
+
+\begin{theorem}
+If $M, N$ are GV$\pi$-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
+\end{theorem}
+
+\begin{theorem}
+If $M$ is a GV$\pi$-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
 \end{theorem}
 
 \section{Extending GV}
