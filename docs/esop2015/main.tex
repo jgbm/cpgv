@@ -1,4 +1,4 @@
-% -*- fill-column: 100 -*-
+ % -*- fill-column: 100 -*-
 
 \documentclass[orivec,envcountsame]{llncs}
 
@@ -33,13 +33,105 @@
 
 \section{GV by Example}\label{sec:examples}
 
+\subsection{Books and Stores Therefore}
+
 \begin{itemize}
-\item Bookstore example (with delegation).  On second thought, I'm not sure the example as presented
-  in the exceptions paper is quite the one I wanted---there's no reason for the bank and customer to
-  interact.  On the other hand, perhaps that doesn't matter---or we could modify it slightly so that
-  the bank either challenges the customer as part of the transaction (Verified By Visa).
 \item Explain encoding of select and choice into send and receive with sums.
 \end{itemize}
+
+\todo{This ended up being a bit long.  There are a couple of points that it makes tho:
+  \begin{itemize}
+  \item Transmission of channels (sending client channel to bank).
+  \item Sending structured values along channels.
+  \end{itemize}
+  And it has a motivation.  However, I'm not sure that either of these is important enough to
+  justify the length.  We could, for example, do the calculator with structured values and not take
+  nearly as much space.}
+
+\begin{code}
+Client \defeq \lambda c.
+  \bl
+  \gvlet{c}{\gvsend{(\text{``A Tale of Two Cities"}, c)}}{} \\
+  \gvlet{(price,c)}{\gvreceive{c}}{} \\
+  \mkwd{if}\ price \leq 20\ \mkwd{then} \\
+  \quad\bl
+    \gvlet{c}{\gvselect{purchase}{c}}{}\\
+    \gvlet{c}{\gvsend{((ccName, ccNumber), c)}}{} \\
+    \mkwd{offer}\,c \\
+    \quad \bl
+      accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
+      decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \\
+      challenge\,c \mapsto \\
+      \quad \bl
+        \gvlet{c}{\gvsend{(response, c)}}{} \\
+        \mkwd{offer}\,c \\
+        \quad \bl
+          accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
+          decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("}
+        \el
+      \el
+    \el
+  \el \\
+  \mkwd{else} \\
+  \quad \bl
+    \gvlet{c}{\gvselect{stop}{c}}{} \\
+    \gvconst{wait} \app c
+    \el
+  \el
+\end{code}
+
+\begin{code}
+Store \defeq \lambda b. \lambda c. \bl
+  \gvlet{(product, c)}{\gvreceive{c}}{} \\
+  \gvlet{c}{\gvsend{(price(product), c)}}{} \\
+  \mkwd{offer}\,c\,\{ \\
+  \quad \bl
+    purchase\,c \mapsto \\
+    \quad \bl
+      \gvlet{((ccName, ccNumber), c)}{\gvreceive{c}}{} \\
+      \gvlet{b}{\gvsend{((ccName, ccNumber, price(product), c), b)}}{} \\
+      \mkwd{offer}\,b \\
+      \quad \bl
+        accept\,b \mapsto
+          \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; \dots; c} \\
+        reject\,b \mapsto
+          \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; c}
+      \el
+    \el \\
+    stop\,c \mapsto c \}
+  \el
+\el\end{code}
+
+\begin{code}
+Bank \defeq \lambda b. \bl
+  \gvlet{((ccName, ccNumber, amount, c), b)}{\gvreceive{b}}{} \\
+  \mkwd{if}\ suspicious(ccNumber, amount)\ \mkwd{then} \\
+  \quad\bl
+    \gvlet{c}{\gvselect{challenge}{c}}{} \\
+    \gvlet{(response, c)}{\gvreceive{c}}{} \\
+    \mkwd{if}\ passes(response)\ \mkwd{then} \\
+    \quad \bl
+      \gvlet{c}{\gvselect{accept}{c}}{} \\
+      \gvlet{b}{\gvselect{accept}{b}}{} \\
+      \gvlet{b}{\gvsend{(c,b)}}{} \\
+      \dots; c \el \\
+    \mkwd{else} \\
+    \quad \bl
+      \gvlet{c}{\gvselect{reject}{c}}{} \\
+      \gvlet{b}{\gvselect{reject}{b}}{} \\
+      \gvlet{b}{\gvsend{(c,b)}}{} \\
+      c \el
+  \el
+\el
+\end{code}
+
+\begin{code}
+System \defeq \bl
+  \gvlet{bank}{\gvconst{fork} \app Bank}{} \\
+  \gvlet{store}{\gvconst{fork} \app (Store \app bank)}{} \\
+  Client \app store
+\el
+\end{code}
 
 \section{I'm Pickin' Up Good Vibrations}
 
@@ -140,11 +232,12 @@ polymorphism forever.
 \begin{syntax}
   \text{Values} & V & ::= & x \mid K \mid \lambda x.M \\ % \mid K\,V \\
   & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
-  \text{Expression contexts} & E & ::= &  [] \mid E\,M \mid V\,E \mid \gvletunit{E}{M} \\
+  \text{Evaluation contexts} & E & ::= &  [] \mid E\,M \mid V\,E \mid \gvletunit{E}{M} \\
   & & \mid & (E,M) \mid (V,E) \mid \gvlet{(x,y)}{E}{M} \\
   & & \mid & \mkwd{inl}\,E \mid \mkwd{inr}\,E \mid \gvcase{E}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
+  & F & ::= & E \mid \distinguish E \\
   \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x) P \\
-  \text{Configuration contexts} & C & ::= & E \mid \distinguish E \mid C \parallel P \mid (\nu x)C \\
+  \text{Configuration contexts} & C & ::= & F \mid C \parallel P \mid (\nu x)C \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
 We define combination of flags $\phi + \phi'$ by
@@ -219,27 +312,28 @@ rule for configuration types, given by
   {T \ceval T'}
   {\Gamma,x:T \ceval \Gamma,x:T'}
 \end{mathpar}
+We write $\Gamma \ceval^? \Gamma'$ to denote $\Gamma = \Gamma' \lor \Gamma \ceval \Gamma'$.
 Configuration reduction is given by
 \begin{mathpar}
 \inferrule
   [Send]
   { }
-  {C[\gvconst{send} \app (V,x)] \parallel C'[\gvconst{receive} \app x] \ceval C[x] \parallel C'[(V,x)]}
+  {F[\gvconst{send} \app (V,x)] \parallel F'[\gvconst{receive} \app x] \ceval F[x] \parallel F'[(V,x)]}
 
 \inferrule
   [Fork]
   {\text{$x$ fresh}}
-  {C[\gvconst{fork} \app V] \ceval (\nu x)(C[x] \parallel (V\,x))}
+  {F[\gvconst{fork} \app V] \ceval (\nu x)(F[x] \parallel (V\,x))}
 
 \inferrule
   [Wait]
   { }
-  {(\nu x)(C[\gvconst{wait} \app x] \parallel x) \ceval C[()]}
+  {(\nu x)(F[\gvconst{wait} \app x] \parallel x) \ceval F[()]}
 
 \inferrule
    [Link]
    {x \in \fv(M)}
-   {(\nu x) (C[\gvconst{link} \app (x, y)] \parallel C'[M]) \ceval (\nu x)(C[x] \parallel C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
+   {(\nu x) (F[\gvconst{link} \app (x, y)] \parallel F'[M]) \ceval (\nu x)(F[x] \parallel F'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
 
 \inferrule
    [Lift]
@@ -272,8 +366,8 @@ Some things that might be useful.
 The proof is standard.
 
 \begin{theorem}\label{thm:preservation}
-  If $\Gamma \vdash P$ and $P \ceval P'$ then there is some $\Gamma'$ such that either $\Gamma
-  \ceval \Gamma'$ or $\Gamma = \Gamma'$ and $\Gamma' \vdash P'$.
+  If $\Gamma \vdash P$ and $P \ceval P'$ then there is some $\Gamma'$ such that $\Gamma \ceval^?
+  \Gamma'$ and $\Gamma' \vdash P'$.
 \end{theorem}
 
 \begin{proof}
@@ -547,6 +641,12 @@ involving $x$.
 
 \todo{Shall we restrict ourselves to the multiplicative-additive fragment of CP?}
 
+\todo{We're well short of the page limit for now, but I suspect we can probably cut much of this
+  text.}
+
+\todo{Should we write selection and choice the way other process calculi do? $x \triangleright
+  l_i$ and $x \triangleleft \{ P;Q \}$.}
+
 \begin{figure}[float]
 
 \begin{mathpar}
@@ -705,7 +805,7 @@ Fig.~\ref{fig:commuting}.
     \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
   \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
   \togv{x[y].(P \mid Q)} &=&
-    \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}})}{x}}{\togv{Q}} \\
+    \gvlet{x}{\gvsend{((\gvfork{y}{\togv{P}}),x)}}{\togv{Q}} \\
   \togv{x(y).P} &=&
     \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
   \togv{x[].0} &=& x \\
@@ -768,6 +868,8 @@ If $M$ is a GV$\pi$-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
 \end{theorem}
 
 \section{Extending GV}
+
+\subsection{Unifying $\gvend_x$}
 
 We define a language GVX, which, depending on your perspective, either extends GV with mix or
 combines the types of closed sessions.  The syntax is largely as in GV; the meaningful changes are
@@ -844,7 +946,69 @@ among processes).  Thus we can conclude that
   If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
 \end{theorem}
 
+\subsection{Adding Exponentials}
+
+Basic approach: add a new type \gvforever{T} in the functional fragment, subject to contraction and
+weakening, and with the usual introduction and elimination rules
+\begin{syntax}
+  \text{Types} & T & ::= & \gvforever T \mid \dots \\
+  \text{Terms} & M,N & ::= & \gvlet{{!x}}{M}{N} \mid {!M} \mid \dots \\
+  \text{Values} & V & ::= & {!V} \mid \dots \\
+  \text{Evaluation contexts} & E & ::= & \gvlet{{!x}}{E}{M} \mid {!E} \mid \dots
+\end{syntax}
+
+\begin{mathpar}
+\inferrule
+  {\Gamma \vdash M: T \\
+   \gvforever\Gamma}
+  {\Gamma \vdash M: \gvforever T}
+
+\inferrule
+  {\Gamma \vdash M: \gvforever T \\
+   \Gamma', x:T \vdash N: U}
+  {\Gamma \vdash \gvlet{{!x}}{M}{N}: U}
+
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma, x: \gvforever U \vdash M: T}
+
+\inferrule
+  {\Gamma,x:\gvforever T,x':\gvforever T \vdash M: U}
+  {\Gamma,x:\gvforever T \vdash M \{ x/x' \}: T}
+\end{mathpar}
+with suitable expansion of evaluation contexts and the reduction rule
+\begin{mathpar}
+\gvlet{{!x}}{{!V}}{M} \teval M \{V/x\}
+\end{mathpar}
+with the observation that $x$ may appear multiple times in $M$.  The extension of the deadlock
+freedom results to this calculus are immediate.
+
+Our previous work on GV provided unlimited service channels, which could be used to obtain
+arbitrarily many copies of some concurrent behavior.  We can encode such channels by introducing a
+new type constructor $Service$ and two new constants \gvconst{replicate} and \gvconst{request}, with
+the types
+\begin{mathpar}
+\gvconst{replicate} : (\gvforever(\gvdual S \lto \outterm)) \lto Service(S)
+
+\gvconst{request} : Service(S) \lto S
+\end{mathpar}
+defined as follows
+\begin{align*}
+  Service(S) &\defeq \gvforever(\gvdual S \lto \outterm) \\
+   \gvconst{replicate} &\defeq \lambda x.x \\
+   \gvconst{request} &\defeq \lambda g. \gvlet{{!f}}{g}{\gvconst{fork} \app f}
+\end{align*}
+
+The translation from CP is unchanged from the previous version (albeit with changed names).  The
+semantic correspondence should be straightforward, although GV's single evaluation rule for
+$\gvlet{{!x}}{M}{N}$ may correspond to multiple cut\-against\-weakening or cut\-against\-contraction
+reductions in CP.
+
+
 \section{Related Work}\label{sec:related}
+
+Something about connection to Carbone et al.  Their progress property requires that every
+communication will eventually take place.  This is hopefully an easy consequence of ours.
 
 \section{Conclusions and Future Work}\label{sec:conclusion}
 

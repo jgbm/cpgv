@@ -11,7 +11,7 @@
 \newcommand{\gvin}[2]{{?#1.#2}}
 \newcommand{\gvend}{\mkwd{end}}
 \newcommand{\lto}{\ensuremath{\multimap}}
-\newcommand{\uto}{\ensuremath{\rightarrow}}
+\newcommand{\gvforever}[1]{\ensuremath{\Box #1}}
 \newcommand{\outterm}{\mkwd{end}_!}
 \newcommand{\interm}{\mkwd{end}_?}
 \newcommand{\gvserver}[1]{\flat #1}
@@ -47,8 +47,8 @@
 \newcommand{\clabel}[1]{\mathit{#1}}
 \renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\sel}[2]{#1[\clabel{#2}]}
-\newcommand{\gvsend}[2]{\mkwd{send}\:#1\:#2}
-\newcommand{\gvreceive}[1]{\mkwd{receive}\:#1}
+\newcommand{\gvsend}[1]{\gvconst{send} \app #1}
+\newcommand{\gvreceive}[1]{\gvconst{receive} \app #1}
 \newcommand{\gvlet}[3]{\mkwd{let}\;#1 = #2\;\mkwd{in}\;#3}
 \newcommand{\gvletunit}[2]{#1; #2}
 \newcommand{\gvconst}[1]{\ensuremath{\mathsf{#1}}}
@@ -92,6 +92,8 @@
 
 \newcommand{\bl}{\ba[t]{@{}l@{}}}
 \newcommand{\el}{\ea}
+
+\newenvironment{code}{\small\[\bl}{\el\]\normalsize}
 
 \newenvironment{equations}{\[\ba{@{}r@{~}c@{~}l@{}}}{\ea\]}
 \newenvironment{eqs}{\ba{@{}r@{~}c@{~}l@{}}}{\ea}
