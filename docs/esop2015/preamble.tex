@@ -3,8 +3,8 @@
 \newcommand{\with}{\mathbin\binampersand}
 \newcommand{\parr}{\mathbin\bindnasrepma}
 \newcommand{\cpdual}[1]{#1^\perp}
-\newcommand{\cpbang}[1]{{! #1}}
-\newcommand{\cpquery}[1]{{? #1}}
+%% \newcommand{\cpbang}[1]{{! #1}}
+%% \newcommand{\cpquery}[1]{{? #1}}
 \newcommand{\gvdual}[1]{\overline{#1}}
 \newcommand{\channel}[1]{#1^\sharp}
 \newcommand{\gvout}[2]{{!#1.#2}}
@@ -37,7 +37,8 @@
 \newcommand{\mkwd}[1]{\mathsf{#1}}
 \newcommand{\tkwd}[1]{\textsf{#1}}
 \newcommand{\link}[2]{#1 \leftrightarrow #2}
-\newcommand{\cut}[4]{\mkwd{new}\:#1 \: (#3 \mid #4)}
+%\newcommand{\cut}[4]{\mkwd{new}\:#1 \: (#3 \mid #4)}
+\newcommand{\cut}[4]{\nu#1 \: (#3 \mid #4)}
 \newcommand{\replicate}[2]{{!#1(#2)}}
 \newcommand{\derelict}[2]{{?#1[#2]}}
 \newcommand{\rec}[1]{\mkwd{rec}\:#1}
@@ -46,16 +47,16 @@
 \newcommand{\clabel}[1]{\mathit{#1}}
 \renewcommand{\case}[2]{\mkwd{case}\:#1\:\{#2\}}
 \newcommand{\sel}[2]{#1[\clabel{#2}]}
-%% \newcommand{\gvsend}[2]{\mkwd{send}\:#1\:#2}
-%% \newcommand{\gvreceive}[1]{\mkwd{receive}\:#1}
+\newcommand{\gvsend}[2]{\mkwd{send}\:#1\:#2}
+\newcommand{\gvreceive}[1]{\mkwd{receive}\:#1}
 \newcommand{\gvlet}[3]{\mkwd{let}\;#1 = #2\;\mkwd{in}\;#3}
 \newcommand{\gvletunit}[2]{#1; #2}
 \newcommand{\gvconst}[1]{\ensuremath{\mathsf{#1}}}
 \newcommand{\app}{\,}
-%% \newcommand{\gvselect}[2]{\mkwd{select}\:#1\:#2}
+\newcommand{\gvselect}[2]{\mkwd{select}\:#1\:#2}
 \newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
-%% \newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
-%% \newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
+\newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
+\newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
 %% \newcommand{\lrkwd}{\mkwd{cofix}}
 %% \newcommand{\gvfix}[3]{\lrkwd\:#1\:#2 = #3}
 %% \newcommand{\gvletrec}[4]{\gvlet{#1}{\gvfix{#1}{#2}{#3}}{#4}}

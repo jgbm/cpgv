@@ -576,15 +576,6 @@ involving $x$.
           {\cptyp{\case{x}{P;Q}}{\Gamma,x:A \with B}}
 
 \inferrule{ }{\cptyp{\case{x}{}}{\Gamma,x:\top}}
-
-\inferrule{\cptyp{P}{\Gamma}}{\cptyp{P}{\Gamma,x:\cpquery{A}}}
-
-\inferrule{\cptyp{P}{y:A,\Gamma}}{\cptyp{\derelict{x}{y}.P}{\Gamma,x:\cpquery{A}}}
-
-\inferrule{\cptyp{P}{x:\cpquery{A},x':\cpquery{A},\Gamma}}{\cptyp{P[x/x']}{\Gamma,x:\cpquery{A}}}
-
-\inferrule{\cptyp{P}{y:A,\cpquery{\Gamma}}}{\cptyp{\replicate{x}{y}.P}{\Gamma,x:\cpbang{A}}}
-
 \end{mathpar}
 
 \caption{Typing Rules for CP}\label{fig:cp-typing}
@@ -593,12 +584,10 @@ involving $x$.
 The types of CP are the propositions of classical linear logic.
 %
 \[\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
-  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top
-       \mid   \cpquery{A} \mid \cpbang{A} \\
+  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
 \end{array}\]
 CP adopts the standard notion of classical linear logic duality:
 \[
-\ba{c}
 \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
   \cpdual{(A \otimes B)} &=& \cpdual{A} \parr \cpdual{B} \\
@@ -619,14 +608,6 @@ CP adopts the standard notion of classical linear logic duality:
   \cpdual{\top} &=& 0 \\
   \cpdual{0} &=& \top \\
 \end{eqs}
-\ea
-\\
-\ba{@{}c@{\qquad}c@{}}
-\begin{eqs}
-  \cpdual{(\cpbang{A})} &=& \cpquery{\cpdual{A}} \\
-  \cpdual{(\cpquery{A})} &=& \cpbang{\cpdual{A}} \\
-\end{eqs} \\
-\ea
 \ea
 \]
 where $X^{\perp\perp} = X$.
@@ -669,18 +650,6 @@ $\sel{x}{in_i}.P_i$ chooses the $i$-th alternative. The unit for choice is $0$, 
 absurdity. Note that there is no term proving $0$. The dual of absurdity is $\top$, and provides
 arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ can reduce.
 
-\paragraph{Replication and Dereliction.}
-
-The exponential connectives $!$ and $?$ in linear logic provide restricted access to the classical
-rules of weakening and contraction. We interpret them as serving ($!$) and requesting ($?$)
-replicated processes.
-%
-For a server channel of type $\cpbang{A}$, the process $P$ proving $A$ may be replicated
-arbitrarily, so each channel that $P$ uses must be replicable as well. We write $\cpquery{\Gamma}$
-to assert that all types in $\Gamma$ be of the form $\cpquery{B}$. As well as the introduction rule
-for a request channel of type $\cpquery{A}$, there are also implicit rules for weakening and
-contraction.
-
 \subsection{Cut Elimination}
 
 
@@ -698,15 +667,6 @@ contraction.
 \cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
   &\Longrightarrow&
     \cut{x}{A}{P}{Q_i} \\
-\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\derelict{x}{y}.Q}
-  &\Longrightarrow&
-    \cut{y}{A}{P}{Q} \\
-\cut{y}{\cpbang{A}}{\replicate{x}{y}.P}{Q}
-  &\Longrightarrow&
-     Q, \qquad x \notin fv(Q) \\
-\cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{Q[x/x']}
-  &\Longrightarrow&
-    \cut{x}{\cpbang{A}}{\replicate{x}{y}.P}{\cut{x'}{\cpbang{A}}{\replicate{x'}{y}.P}{Q}} \\
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
 
@@ -724,8 +684,6 @@ $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
   \cut{z}{A}{x(y).P}{Q} &\Longrightarrow& x(y).\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\Longrightarrow& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\Longrightarrow& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
-  \cut{z}{} {\derelict{x}{y}.P}{Q} &\Longrightarrow& \derelict{x}{y}.\cut{z}{}{P}{Q} \\
-  \cut{z}{} {\replicate{x}{y}.P}{Q} &\Longrightarrow& \replicate{x}{y}.\cut{z}{}{P}{Q} \\
 \end{equations}
 \caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
@@ -738,6 +696,48 @@ Fig.~\ref{fig:commuting}.
 
 \todo{Think carefully about what to do with commuting conversions.}
 
+\section{Translation from CP to GV}
+
+\begin{figure}[float]
+\small
+\begin{equations}
+  \togv{\cut{x}{}{P}{Q}} &=&
+    \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
+  \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
+  \togv{x[y].(P \mid Q)} &=&
+    \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}})}{x}}{\togv{Q}} \\
+  \togv{x(y).P} &=&
+    \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
+  \togv{x[].0} &=& x \\
+  \togv{x().P} &=& \gvlet{()}{\mkwd{wait}\,x}{\togv{P}} \\
+  \togv{\sel{x}{\mathit{l}}.P} &=&
+    \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
+  \togv{\case{x}{l_i.P_i}_i} &=&
+    \gvcase{x}{l_i.\togv{P_i}}_i \\
+\end{equations}%
+\caption{Translation of CP Terms into GV}\label{fig:fromcp}
+\end{figure}
+
+We now present the translation $\togv{-}$ from CP to GV. On types:
+\[
+\ba{@{}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
+\togv{A \otimes B} &=& \gvout{\gvdual{\togv{A}}}{\togv{B}} \\
+\togv{A \parr B}   &=& \gvin{\togv{A}}{\togv{B}} \\
+\end{eqs}
+&
+\begin{eqs}
+\togv{1}           &=& \outterm \\
+\togv{\bot}        &=& \interm \\
+\end{eqs}
+&
+\begin{eqs}
+\togv{+\{l_i:A_i\}_i}     &=& +\{l_i:\togv{A_i}\}_i  \\
+\togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\
+\end{eqs}
+\ea
+\]
+The translation on terms is given in Fig.~\ref{fig:fromcp}.
 
 \section{Translations Between GV$\pi$-ANF and CP}
 
