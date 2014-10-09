@@ -240,6 +240,9 @@ polymorphism forever.
   \text{Configuration contexts} & C & ::= & F \mid C \parallel P \mid (\nu x)C \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
+%
+\todo{SL: I think that the basis for configuarations contexts should be $[~]$ rather than $F$.}
+%
 We define combination of flags $\phi + \phi'$ by
 \begin{mathpar}
   \wcirc + \wcirc = \wcirc
@@ -291,6 +294,30 @@ C_0 \parallel (C_1 \parallel C_2) \equiv (C_0 \parallel C_1) \parallel C_2
 
 C_0 \parallel (\nu x)C_1 \equiv (\nu x)(C_0 \parallel C_1) \text{ if $x \not\in \fv(C_0)$}
 \end{mathpar}
+
+\todo{SL: I think the structural equivalence should be defined on configurations rather than
+  configuration contexts}
+
+\begin{mathpar}
+F[\mathsf{link}\,(x,y)] \equiv F[\mathsf{link}\,(y,x)]
+
+P \parallel Q \equiv Q \parallel P
+
+P \parallel (Q \parallel R) \equiv (P \parallel Q) \parallel R
+
+P \parallel (\nu x)Q \equiv (\nu x)(P \parallel Q) \text{ if $x \not\in \fv(P)$}
+
+M \parallel \distinguish{N} \equiv \distinguish{M} \parallel N
+
+\inferrule
+  {P \equiv Q}
+  {C[P] \equiv C[Q]}
+\end{mathpar}
+
+\todo{If we take the transitive, reflexive, symmetric closure of the above rules then that gives us
+  a congruence over configurations, but it doesn't correspond to the congruence closure of the
+  structural equivalence of CP because it isn't a congruence over the term structure - e.g. link
+  equivalence only holds at the top level. Is this OK?}
 
 Awkwardly enough, the equivalence rules do not preserve typing.  For example, supposing that $x \in
 \fv(P), y \in \fv(Q), \text{ and } x,y \in \fv(R)$, we have $\vdash (\nu x
@@ -726,11 +753,14 @@ dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between proces
 channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
 compatible. We identify CP up to structural equivalence:
 %
-\small\begin{equations}
+\begin{equations}
   \link{x}{w} &\equiv& \link{w}{x} \\
   \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
   \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in fv(R)$} \\
-\end{equations}\normalsize%
+\end{equations}
+
+\todo{We need to be careful here. Do we take the congruence closure of these rules, or do we do
+  something more restrictive as in the GV semantics?}
 
 \paragraph{Input and Output.}
 
@@ -799,10 +829,9 @@ Fig.~\ref{fig:commuting}.
 \section{Translation from CP to GV}
 
 \begin{figure}[float]
-\small
 \begin{equations}
   \togv{\cut{x}{}{P}{Q}} &=&
-    \gvlet{x}{\gvfork{x}{\togv{P}}{\togv{Q}}} \\
+    \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
   \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
   \togv{x[y].(P \mid Q)} &=&
     \gvlet{y}{\gvfork{y}{\togv{P}}}{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}} \\
@@ -814,7 +843,16 @@ Fig.~\ref{fig:commuting}.
     \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
   \togv{\case{x}{l_i.P_i}_i} &=&
     \gvcase{x}{l_i.\togv{P_i}}_i \\
+\end{equations}
+
+\begin{equations}
+  \togvc{\cut{x}{}{P}{Q}} &=&
+    (\nu x)(\togvc{P} \parallel \togvc{Q}) \\
+  \togvc{x[y].(P \mid Q)} &=&
+    (\nu y)(\togvc{P} \parallel \distinguish{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}}) \\
+  \togvc{P} &=& \distinguish{\togv{P}}, \quad \text{$P$ is not a cut or a send} \\
 \end{equations}%
+
 \caption{Translation of CP Terms into GV}\label{fig:fromcp}
 \end{figure}
 
@@ -837,15 +875,19 @@ We now present the translation $\togv{-}$ from CP to GV. On types:
 \end{eqs}
 \ea
 \]
-The translation on terms is given in Fig.~\ref{fig:fromcp}.
 
+Figure~\ref{fig:fromcp} gives a translation from CP terms to GV terms ($\togvc{-}$) and a
+translation from CP terms to GV configurations ($\togvc{-}$).
 
 \begin{theorem}
-If $P \equiv Q$, then $\togv{P} \equiv \togv{Q}$.
+If $P \equiv Q$, then $\togvc{P} \equiv \togvc{Q}$.
 \end{theorem}
 
+\todo{The above theorem isn't currently correct. We need to take more care in how we phrase
+  structural equivalence for GV.}
+
 \begin{theorem}
-If $P \vdash \Gamma$ and $P \rto Q$, then $\togv{P} \rto^+ \togv{Q}$.
+If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{theorem}
 
 
