@@ -549,18 +549,18 @@ terms $M_1,\dots,M_n$ such that
 \newcommand{\con}[3]{{#1} \rpar{#2} {#3}}
 
 \[
-\mkwd{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
+\gvconst{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
 \]
 
 Syntactic sugar:
 \begin{align*}
-\con{M}{x}{N} &\defiff \mkwd{connect}(\lambda x.M, \lambda x.N) \\
+\con{M}{x}{N} &\defiff \gvconst{connect}(\lambda x.M, \lambda x.N) \\
 \con{L}{x}{\con{M}{y}{N}} &\defiff \con{L}{x}{(\con{M}{y}{N})} \\
 \end{align*}
 
 Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the following rules):
 \begin{align*}
-\mkwd{link}\,(x,y) &\equiv \mkwd{link}\,(y,x) \\
+\gvconst{link}\,(x,y) &\equiv \gvconst{link}\,(y,x) \\
 \con{L}{x}{\con{M}{y}{N}} &\equiv \con{M}{y}{\con{L}{x}{N}} \\
 \con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
 %\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
@@ -568,20 +568,20 @@ Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the fo
 
 Interesting reductions
 \begin{align*}
-\con{E[\mkwd{send}\,(V,x)]}{x}{E'[\mkwd{receive}\,x]}
+\con{E[\gvconst{send}\,(V,x)]}{x}{E'[\gvconst{receive}\,x]}
   &\rto \con{E[x]}{x}{E'[(V,x)]} \\
-\con{E[\mkwd{receive}\,x]}{x}{E'[\mkwd{send}\,(V,x)]}
+\con{E[\gvconst{receive}\,x]}{x}{E'[\gvconst{send}\,(V,x)]}
   &\rto \con{E[(V,x)]}{x}{E'[x]} \\[1ex]
-\con{x}{x}{E[\mkwd{wait}\,x]}
+\con{x}{x}{E[\gvconst{wait}\,x]}
   &\rto E[()] \\
-\con{E[\mkwd{wait}\,x]}{x}{x}
+\con{E[\gvconst{wait}\,x]}{x}{x}
   &\rto E[()] \\[1ex]
-\con{E[\mkwd{link}\,(x,y)]}{x}{M}
-  &\rto \con{E[x]}{x}{(\mkwd{wait}\,x; M[y/x])} \\
-\con{M}{x}{E[\mkwd{link}\,(x,y)]}
-  &\rto \con{(\mkwd{wait}\,x; M[y/x])}{x}{E[x]} \\[1ex]
-\mkwd{link}\,(x,\mkwd{link}\,(y,z))
-  &\rto \mkwd{wait}\,x; \mkwd{link}\,(y,z) \\
+\con{E[\gvconst{link}\,(x,y)]}{x}{M}
+  &\rto \con{E[x]}{x}{(\gvconst{wait}\,x; M[y/x])} \\
+\con{M}{x}{E[\gvconst{link}\,(x,y)]}
+  &\rto \con{(\gvconst{wait}\,x; M[y/x])}{x}{E[x]} \\[1ex]
+\gvconst{link}\,(x,\gvconst{link}\,(y,z))
+  &\rto \gvconst{wait}\,x; \gvconst{link}\,(y,z) \\
 E[\con{M}{x}{N}]
   &\rto \con{M}{x}{E[N]} \\
 \end{align*}
@@ -802,14 +802,14 @@ Fig.~\ref{fig:commuting}.
 \small
 \begin{equations}
   \togv{\cut{x}{}{P}{Q}} &=&
-    \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
+    \gvlet{x}{\gvfork{x}{\togv{P}}{\togv{Q}}} \\
   \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
   \togv{x[y].(P \mid Q)} &=&
-    \gvlet{x}{\gvsend{((\gvfork{y}{\togv{P}}),x)}}{\togv{Q}} \\
+    \gvlet{y}{\gvfork{y}{\togv{P}}}{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}} \\
   \togv{x(y).P} &=&
     \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
   \togv{x[].0} &=& x \\
-  \togv{x().P} &=& \gvlet{()}{\mkwd{wait}\,x}{\togv{P}} \\
+  \togv{x().P} &=& \gvlet{()}{\gvwait{x}}{\togv{P}} \\
   \togv{\sel{x}{\mathit{l}}.P} &=&
     \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
   \togv{\case{x}{l_i.P_i}_i} &=&
@@ -839,7 +839,17 @@ We now present the translation $\togv{-}$ from CP to GV. On types:
 \]
 The translation on terms is given in Fig.~\ref{fig:fromcp}.
 
-\section{Translations Between GV$\pi$-ANF and CP}
+
+\begin{theorem}
+If $P \equiv Q$, then $\togv{P} \equiv \togv{Q}$.
+\end{theorem}
+
+\begin{theorem}
+If $P \vdash \Gamma$ and $P \rto Q$, then $\togv{P} \rto^+ \togv{Q}$.
+\end{theorem}
+
+
+\section{Translation from GV to CP}
 
 \todo{Various translations.}
 
@@ -850,14 +860,6 @@ The translation on terms is given in Fig.~\ref{fig:fromcp}.
 \todo{Show that GV$\pi$ reduction simulates GV reduction.}
 
 \todo{Show that the A-normalisation rules are sound (easy).}
-
-\begin{theorem}
-If $P \equiv Q$, then $\togv{P} \equiv \togv{Q}$.
-\end{theorem}
-
-\begin{theorem}
-If $P \vdash \Gamma$ and $P \rto Q$, then $\togv{P} \rto^+ \togv{Q}$.
-\end{theorem}
 
 \begin{theorem}
 If $M, N$ are GV$\pi$-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.

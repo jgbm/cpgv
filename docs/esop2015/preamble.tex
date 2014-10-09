@@ -55,8 +55,9 @@
 \newcommand{\app}{\,}
 \newcommand{\gvselect}[2]{\mkwd{select}\:#1\:#2}
 \newcommand{\gvcase}[2]{\mkwd{case}\:#1\:\{#2\}}
-\newcommand{\gvlink}[2]{\mkwd{link}\:#1\:#2}
-\newcommand{\gvfork}[2]{\mkwd{fork}\:#1.#2}
+\newcommand{\gvlink}[2]{\gvconst{link}\:(#1, #2)}
+\newcommand{\gvfork}[2]{\gvconst{fork}\:(\lambda #1.#2)}
+\newcommand{\gvwait}[1]{\gvconst{wait}\:#1}
 %% \newcommand{\lrkwd}{\mkwd{cofix}}
 %% \newcommand{\gvfix}[3]{\lrkwd\:#1\:#2 = #3}
 %% \newcommand{\gvletrec}[4]{\gvlet{#1}{\gvfix{#1}{#2}{#3}}{#4}}
