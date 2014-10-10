@@ -663,10 +663,7 @@ involving $x$.
 
 \subsection{CP}
 
-\todo{Shall we restrict ourselves to the multiplicative-additive fragment of CP?}
-
-\todo{We're well short of the page limit for now, but I suspect we can probably cut much of this
-  text.}
+\todo{This section (particularly the text) needs quite a bit of tidying}
 
 \todo{Should we write selection and choice the way other process calculi do? $x \triangleright
   l_i$ and $x \triangleleft \{ P;Q \}$.}
@@ -748,16 +745,21 @@ CP has two structural rules, axiom and cut. We interpret the axiom $\link{x}{w}$
 forwarding: actions on channel $x$ are mirrored on $w$, and vice versa. Thus, $x$ and $w$ must have
 dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between processes $P$ and $Q$ on
 channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
-compatible. We identify CP up to structural equivalence:
+compatible. We identify CP terms up to structural equivalence:
 %
 \begin{equations}
   \link{x}{w} &\equiv& \link{w}{x} \\
   \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
   \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in fv(R)$} \\
-\end{equations}
+\end{equations}%
+%
+\begin{mathpar}
+\inferrule
+  {P_1 \equiv P_2}
+  {\cut{x}{}{P_1}{Q} \equiv \cut{x}{}{P_2}{Q}}
+\end{mathpar}
 
-\todo{We need to be careful here. Do we take the congruence closure of these rules, or do we do
-  something more restrictive as in the GV semantics?}
+We take $\equiv$ to be the least equivalence relation that is closed under these rules. 
 
 \paragraph{Input and Output.}
 
@@ -784,15 +786,15 @@ arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ c
 
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
-  &\Longrightarrow& P[w/x] \\
+  &\rto& P[w/x] \\
 \cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}
-  &\Longrightarrow&
+  &\rto&
     \cut{y}{A}{Q}{\cut{x}{B}{P}{R}} \\
 \cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}
-  &\Longrightarrow&
+  &\rto&
     P \\
 \cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
-  &\Longrightarrow&
+  &\rto&
     \cut{x}{A}{P}{Q_i} \\
 \end{equations}%
 \caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
@@ -803,14 +805,20 @@ Cut elimination corresponds to synchronous process reduction.  The principal cut
 given in Fig.~\ref{fig:beta-reduction}. These are quite standard; for instance, cut reduction of
 $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
 
+\begin{mathpar}
+\inferrule
+  {P_1 \longrightarrow P_2}
+  {\cut{x}{}{P_1}{Q} \longrightarrow \cut{x}{}{P_1}{Q}}
+\end{mathpar}
+
 \begin{figure}[float]
 
 \begin{equations}
-  \cut{z}{A}{x[y].(P \mid Q)}{R} &\Longrightarrow& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in fv(Q)$} \\
-  \cut{z}{A}{x[y].(P \mid Q)}{R} &\Longrightarrow& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in fv(P)$} \\
-  \cut{z}{A}{x(y).P}{Q} &\Longrightarrow& x(y).\cut{z}{A}{P}{Q} \\
-  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\Longrightarrow& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
-  \cut{z}{A}{\case{x}{P;Q}}{R} &\Longrightarrow& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in fv(Q)$} \\
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in fv(P)$} \\
+  \cut{z}{A}{x(y).P}{Q} &\rto& x(y).\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\rto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\case{x}{P;Q}}{R} &\rto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
 \end{equations}
 \caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
@@ -818,40 +826,88 @@ $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
 The commuting conversions push communication under process prefixes, and are given in
 Fig.~\ref{fig:commuting}.
 
-\todo{Show that using a sane rule for send yields an entirely equivalent system --- and use that
-  system!}
-
 \todo{Think carefully about what to do with commuting conversions.}
 
-\subsection{Translation from CP to GV}
+\subsection{A Simpler Send}
 
-\begin{figure}[float]
+\todo{Make this description clearer}
+
+The CP send rule is appealing because if one erases the terms it is exactly the classical linear
+logic rule for tensor. However, this correspondence comes at a price. Operationally, the process
+$x[y].(P \mid Q)$ does three things: it introduces a fresh variable $y$, it sends $y$ to a freshly
+spawned process $P$, and in parallel it continues as process $Q$.
+%
+This is painful on many levels, but in particular it complicates our attempts to relate the
+semantics of CP with that of GV (whose send operator only does one thing: performing a send).
+
+Fortunately, we can give an alternative rule for send, corresponding with the send operator of GV,
+and which gives rise to a system which is entirely equivalent to CP, apart from having a slightly
+different syntax.
+%
+\begin{mathpar}
+\inferrule
+  {\cptyp{P}{\Gamma,x:B,y:A}}
+  {\cptyp{x[y].P}{\Gamma,x:A \otimes B,y:\cpdual{A}}}
+\end{mathpar}
+The cut rule for a send against a receive is straightforward:
 \begin{equations}
-  \togv{\cut{x}{}{P}{Q}} &=&
-    \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
-  \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
-  \togv{x[y].(P \mid Q)} &=&
-    \gvlet{y}{\gvfork{y}{\togv{P}}}{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}} \\
-  \togv{x(y).P} &=&
-    \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
-  \togv{x[].0} &=& x \\
-  \togv{x().P} &=& \gvlet{()}{\gvwait{x}}{\togv{P}} \\
-  \togv{\sel{x}{\mathit{l}}.P} &=&
-    \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
-  \togv{\case{x}{l_i.P_i}_i} &=&
-    \gvcase{x}{l_i.\togv{P_i}}_i \\
+\cut{x}{A \otimes B}{x[y].P}{x(y).Q} &\rto& \cut{x}{B}{P}{Q} \\
+\end{equations}
+%
+For clarity let us refer to the original form as cut-send, and the one we have just defined as send.
+
+It we take send as primitive, then we can express cut-send as a macro:
+\[
+x[y].P \defeq x[z].(\link{y}{z} \mid P)
+\]
+Conversely, if we take cut-send as primitive, then we can express send as a macro:
+\[
+x[y].(P \mid Q) \defeq \cut{y}{}{P}{x[y].Q}
+\]
+
+With cut-send as primitive we can simulate a cut of a send against a receive in two steps.
+\begin{equations}
+  \cut{x}{}{x[y].P}{x(y).Q}
+    &\defeq& \cut{x}{}{x[z].(\link{y}{z} \mid P)}{x(y).Q} \\
+    &\rto& \cut{z}{}{\link{y}{z}}{\cut{x}{}{P}{Q}} \\
+    &\rto& \cut{x}{}{P}{Q} \\
 \end{equations}
 
+With send as primitive we can simulate a cut of a cut-send against a receive in one step.
 \begin{equations}
-  \togvc{\cut{x}{}{P}{Q}} &=&
-    (\nu x)(\togvc{P} \parallel \togvc{Q}) \\
-  \togvc{x[y].(P \mid Q)} &=&
-    (\nu y)(\togvc{P} \parallel \distinguish{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}}) \\
-  \togvc{P} &=& \distinguish{\togv{P}}, \quad \text{$P$ is not a cut or a send} \\
-\end{equations}%
+  \cut{x}{}{x[y].(P \mid Q)}{x(y).R}
+    &\defeq& \cut{x}{}{\cut{y}{}{P}{x[y].Q}}{x(y).R} \\
+    &\equiv& \cut{y}{}{P}{\cut{x}{}{x[y].Q}{x(y).R}} \\
+    &\rto& \cut{y}{}{P}{\cut{x}{}{Q}{R}} \\
+\end{equations}
 
-\caption{Translation of CP Terms into GV}\label{fig:fromcp}
-\end{figure}
+Using these two observations it is straightforward to show that CP with send is equivalent to CP
+with cut-send. In order to simplify our formal development, we will work with CP with send from now
+on.
+
+\todo{I'm not sure whether or not we want to include the next bit.}
+
+However, there is a slightly subtlety.
+%
+Let us consider the possible reductions on the representation of cut-send in terms of send. Let $P_1
+= x[y].(P \mid Q)$ and $P_2 = \cut{y}{}{P}{x[y].Q}$. Notice that $P_1$ is blocked, but $P_2$ may not
+be as it allows reductions to take place inside $P$.
+%
+Now let us consider the possible reductions on the representation of send in terms of cut-send. Let
+$Q_1 = x[y].P$ and $Q_2 = x[z].(\link{y}{z} \mid P)$. Clearly both $Q_1$ and $Q_2$ are blocked.
+%
+This discrepancy, suggests that perhaps we should have added the following congruence rule to CP in
+the first place:
+\begin{mathpar}
+\inferrule
+  {P_1 \longrightarrow P_2}
+  {x[y].(P_1 \mid Q) \longrightarrow x[y].(P_2 \mid Q)}
+\end{mathpar}
+%
+
+\todo{Do we want to state anything more formal relating CP-cut-send with CP-send?}
+
+\subsection{Translation from CP to GV}
 
 We now present the translation $\togv{-}$ from CP to GV. On types:
 \[
@@ -872,16 +928,54 @@ We now present the translation $\togv{-}$ from CP to GV. On types:
 \end{eqs}
 \ea
 \]
+%
+The translation on type environments is defined pointwise. Figure~\ref{fig:fromcp} gives a
+translation from CP terms to GV terms ($\togv{-}$) and a translation from CP terms to GV
+configurations ($\togvc{-}$).
 
-Figure~\ref{fig:fromcp} gives a translation from CP terms to GV terms ($\togvc{-}$) and a
-translation from CP terms to GV configurations ($\togvc{-}$).
+\begin{figure}[float]
+\begin{equations}
+  \togv{\cut{x}{}{P}{Q}} &=&
+    \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
+  \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
+  %% \togv{x[y].(P \mid Q)} &=&
+  %%   \gvlet{y}{\gvfork{y}{\togv{P}}}{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}} \\
+  \togv{x[y].P} &=&
+    \gvlet{x}{\gvsend{(y, x)}}{\togv{P}} \\
+  \togv{x(y).P} &=&
+    \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
+  \togv{x[].0} &=& x \\
+  \togv{x().P} &=& \gvlet{()}{\gvwait{x}}{\togv{P}} \\
+  \togv{\sel{x}{\mathit{l}}.P} &=&
+    \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
+  \togv{\case{x}{l_i.P_i}_i} &=&
+    \gvcase{x}{l_i.\togv{P_i}}_i
+\medskip
+\\
+  \togvc{\cut{x}{}{P}{Q}} &=&
+    (\nu x)(\togvc{P} \parallel \togvc{Q}) \\
+  \togvc{P} &=& \togv{P}, \quad \text{$P$ is not a cut} \\
+  %% \togvc{x[y].(P \mid Q)} &=&
+  %%   (\nu y)(\togvc{P} \parallel \distinguish{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}}) \\
+  %% \togvc{P} &=& \distinguish{\togv{P}}, \quad \text{$P$ is not a cut or a send} \\
+\end{equations}%
+
+\caption{Translation of CP Terms into GV}\label{fig:fromcp}
+\end{figure}
+
+As CP processes have no return value, a CP judgement is translated to a non-returning configuration.
+
+\begin{theorem}
+If $P \vdash \Gamma$ then $\togv{\Gamma} \vdash^\wcirc \togvc{P}$.
+\end{theorem}
+
+Structural equivalence is preserved by the translation.
 
 \begin{theorem}
 If $P \equiv Q$, then $\togvc{P} \equiv \togvc{Q}$.
 \end{theorem}
 
-\todo{The above theorem isn't currently correct. We need to take more care in how we phrase
-  structural equivalence for GV.}
+Every CP reduction can be simulated by one or more GV reductions.
 
 \begin{theorem}
 If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
