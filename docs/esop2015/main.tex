@@ -983,12 +983,15 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \todo{Show that the A-normalisation rules are sound (easy).}
 
-Attempt at the ANF syntax.  Should we pick a new letter for ANF terms?
+Attempt at the ANF syntax.  Should we pick a new letter for ANF terms? [SL: No.]
+
+[SL: I fixed some bugs in the ANF syntax]
+
 \begin{syntax}
   \text{Terms} & M,N & ::= & V \mid \gvlet{x}{V \app W}{N} \\
-  & & \mid & \gvlet{(x,y)}{V}{N} \mid \gvletunit{M}{N} \\
-  & & \mid & \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
-  & & \mid & \gvconst{absurd} \app M \\
+  & & \mid & \gvlet{(x,y)}{V \app W}{N} \mid \gvletunit{V \app W}{N} \\
+  & & \mid & \gvcase{V}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
+  & & \mid & \gvconst{absurd} \app V \\
 \end{syntax}
 
 \small\[
