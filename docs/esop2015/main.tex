@@ -57,17 +57,17 @@ Client \defeq \lambda c.
   \quad\bl
     \gvlet{c}{\gvselect{purchase}{c}}{}\\
     \gvlet{c}{\gvsend{((ccName, ccNumber), c)}}{} \\
-    \mkwd{offer}\,c \\
+    \mkwd{offer}\,c\,\{ \\
     \quad \bl
       accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
       decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \\
       challenge\,c \mapsto \\
       \quad \bl
         \gvlet{c}{\gvsend{(response, c)}}{} \\
-        \mkwd{offer}\,c \\
+        \mkwd{offer}\,c\,\{ \\
         \quad \bl
           accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
-          decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("}
+          decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \} \}
         \el
       \el
     \el
@@ -90,12 +90,12 @@ Store \defeq \lambda b. \lambda c. \bl
     \quad \bl
       \gvlet{((ccName, ccNumber), c)}{\gvreceive{c}}{} \\
       \gvlet{b}{\gvsend{((ccName, ccNumber, price(product), c), b)}}{} \\
-      \mkwd{offer}\,b \\
+      \mkwd{offer}\,b \, \{\\
       \quad \bl
         accept\,b \mapsto
           \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; \dots; c} \\
         reject\,b \mapsto
-          \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; c}
+          \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; c} \}
       \el
     \el \\
     stop\,c \mapsto c \}
@@ -133,10 +133,17 @@ System \defeq \bl
 \el
 \end{code}
 
+\subsection{Selection and Choice}
+
+\begin{align*}
+  \gvconst{select} \app \ell_i \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell_i \app x, M)) \\
+  \gvconst{offer} \app M \,\{ \ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q \}
+    &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\\\gvcase{x}{\ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q}}} \el
+\end{align*}
+
 \section{I'm Pickin' Up Good Vibrations}
 
-I'm intentionally ignoring replication for the time being.  I'm intentionally ignoring CP
-polymorphism forever.
+I'm intentionally ignoring CP polymorphism forever.
 
 \subsection{Syntax}
 \newcommand{\one}{\mathbf{1}}
@@ -371,18 +378,6 @@ Configuration reduction is given by
    [Lift2]
    {M \teval M'}
    {C[M] \ceval C[M']}
-%%
-%% \inferrule
-%%    [DLink]
-%%    {x \in \fv(M)}
-%%    {(\nu x) (C[\mathsf{link}\,(x, y)] \parallel \distinguish M) \ceval (\nu x)(C[x] \parallel \distinguish{\gvletunit{\mathsf{wait}\,x}{M\{y/x\}}})}
-%%
-%%
-%% \inferrule
-%%   {C_0 \equiv C_0' \\
-%%    C_0' \ceval C_1' \\
-%%    C_1' \equiv C_1}
-%%   {C_0 \ceval C_1}
 \end{mathpar}
 Some things that might be useful.
 \begin{lemma}\label{thm:term-preservation}
@@ -567,7 +562,7 @@ terms $M_1,\dots,M_n$ such that
   By induction on the derivation of $\vdash P'$, relying on \thmref{progress-open}.  \qed
 \end{proof}
 
-\section{Direct GV semantics}
+\subsection{Direct GV semantics}
 
 \newcommand{\rpar}[1]{\mathbin{{[}\:\!\!\rangle}_{\!{#1}}\!}
 \newcommand{\lrpar}[1]{\mathbin{\langle\hspace{-.3ex}\rangle}_{\!{#1}}\!}
@@ -664,7 +659,9 @@ $\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
 $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 involving $x$.
 
-\section{CP}
+\section{Linear Logic}
+
+\subsection{CP}
 
 \todo{Shall we restrict ourselves to the multiplicative-additive fragment of CP?}
 
@@ -826,7 +823,7 @@ Fig.~\ref{fig:commuting}.
 
 \todo{Think carefully about what to do with commuting conversions.}
 
-\section{Translation from CP to GV}
+\subsection{Translation from CP to GV}
 
 \begin{figure}[float]
 \begin{equations}
@@ -891,24 +888,103 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{theorem}
 
 
-\section{Translation from GV to CP}
+\subsection{Translation from GV to CP}
 
-\todo{Various translations.}
-
-\todo{Try to fit in with the configuration semantics.}
+\todo{ANF translation.}
 
 \todo{Ensure that the definition of $\equiv$ is appropriate for the theorems.}
 
-\todo{Show that GV$\pi$ reduction simulates GV reduction.}
-
 \todo{Show that the A-normalisation rules are sound (easy).}
 
+Attempt at the ANF syntax.  Should we pick a new letter for terms?
+\begin{syntax}
+  \text{Terms} & M,N & ::= & V \mid \gvlet{x}{V \app W}{N} \\
+  & & \mid & \gvlet{(x,y)}{V}{N} \mid \gvletunit{M}{N} \\
+  & & \mid & \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
+  & & \mid & \gvconst{absurd} \app M \\
+\end{syntax}
+
+\small\[
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c}
+\begin{eqs}
+\tocp{T + U} &=& \tocp{T} \with \tocp{U} \\
+\tocp{T \times U} &=& \tocp{T} \parr \tocp{U} \\
+\tocp{T \lto U} &=& \cpdual{\tocp{T}} \otimes \tocp U
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\zero} &=& \top \\
+\tocp{\one} &=& \bot
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
+\tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\outterm}            &=& 1 \\
+\tocp{\interm}             &=& \bot \\
+\end{eqs}
+%&
+%\begin{eqs}
+%\tocp{\oplus \{l_i:S_i \}_i} &=& \oplus \{l_i:\tocp{S_i}\}_i \\
+%\tocp{\with \{l_i:S_i \}_i}  &=& \with \{l_i:\tocp{S_i}\}_i \\
+%\tocp{\gvservice{S}}       &=& \cpquery{\tocp{S}} \\
+%\tocp{\gvserver{S}}        &=& \cpbang{\tocp{S}} \\
+%\end{eqs}
+\ea
+\]\normalsize
+
+\small\begin{equations}
+\tocp{x}z &=& \link{x}{z} \\
+\tocp{\lambda x.N}z &=& z(x).\tocp{N}z \\
+\tocp{\gvlet{y}{V \app W}{N}}z &=&
+  \bl
+    \cut y {} {\cut x {} {\tocp{V}x} {x[z].(\tocp{W}z \mid \link x y)}} {\tocp{N}z} \\
+    \text{if $V$ is not a constant $K$}
+  \el \\
+\tocp{(V,W)}z &=& z[y].(\tocp{V}y \mid \tocp{W}z) \\
+\tocp{\gvlet{(x,y)}{V}{N}}z &=& \cut y {} {\tocp{V}y} {y(x).\tocp{N}z} \\
+\tocp{\mkwd {inl} \app V}z &=& z[\mkwd{inl}].\tocp{V}z\\
+\tocp{\gvcase V {\mkwd {inl} \app x \mapsto M; \mkwd {inr} \app x \mapsto N}}z &=&
+   \cut x {} {\tocp{V}x} {\mkwd{case} \app x \app \{ \mkwd{inl} \mapsto \tocp{M}z; \mkwd{inr} \mapsto \tocp{N}z \}} \\
+\tocp{\mkwd{absurd} \app V}z &=& \cut x {} {\tocp{V}x} {\mkwd{case}\app x \app \{ \}} \\
+\tocp{\gvlet{x}{\gvsend{(V,W)}}{N}}z &=& \cut{x}{}{\tocp{W}x}{x[y].(\tocp{V}y \mid \tocp{N}z)} \\
+\tocp{\gvlet{(x,y)}{\gvreceive{V}}{N}}z &=& \cut{y}{}{\tocp{V}y}{y(x).\tocp{N}z} \\
+\tocp{\gvlet{()}{\gvconst{wait} \app V}{N}}z &=& \cut y {} {\tocp{V}y} {y().\tocp{N}z} \\
+\tocp{\gvlet{x}{\gvfork{x}{M}}{N}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\tocp{N}z} \\
+\tocp{\gvlet{x}{\gvlink{V}{W}}{N}}z &=& \cut x {} {x().\cut y {} {\tocp{V}y} {\tocp{W}y}} {\tocp{N}z} \\
+\end{equations}\normalsize
+
 \begin{theorem}
-If $M, N$ are GV$\pi$-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
+  If $\Gamma \vdash M: T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\tocp{T}^\perp$.
+\end{theorem}
+
+\begin{proof}
+  By structural induction on the derivation of $\Gamma \vdash M: T$.  Representative cases follow.
+  \begin{itemize}
+  \item In case $M = x$, we must have $\Gamma = \{x:T\}$; we can directly conclude that $\link x z
+    \vdash x:T,z:\cpdual T$.
+  \item In case $M = \lambda x.N$, where $T = U \lto U'$, the induction hypothesis provides that
+    $\tocp{N}z \vdash \tocp{\Gamma},x:\tocp{U},z:\cpdual{\tocp{U'}}$.  Therefore, from the rule for
+    $\parr$ and the observation that $\cpdual{\tocp{U \lto U'}} = \tocp U \parr \cpdual{\tocp {U'}}$, we can
+    conclude that $z(x).\tocp{N}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U \lto U'}}$.
+  \item In case $M = \mkwd{inl} \app V$, where $T = U + U'$, the induction hypothesis provides that
+    $\tocp{V}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U}}$.  Therefore, from the rule for $\oplus$
+    and the observation that $\cpdual{\tocp{U + U'}} = \cpdual{\tocp{U}} \oplus \cpdual{\tocp{U'}}$,
+    we have that $z[\mkwd{inl}].\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U + U'}}$.
+  \end{itemize}
+\end{proof}
+
+\todo{Translation of configurations}
+
+\begin{theorem}
+  If $M, N$ are GV$\pi$-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
 \end{theorem}
 
 \begin{theorem}
-If $M$ is a GV$\pi$-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
+  If $M$ is a GV$\pi$-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
 \end{theorem}
 
 \section{Extending GV}
@@ -967,11 +1043,11 @@ however, it seems simpler now to just provide two typing rules.  Rules \textsc{S
 \begin{mathpar}
 \inferrule
   { }
-  {(\nu x)(C[\gvconst{close} \app x] \parallel C'[\gvconst{close} \app x)] \ceval C[()] \parallel C'[()]}
+  {(\nu x)(F[\gvconst{close} \app x] \parallel F'[\gvconst{close} \app x)] \ceval F[()] \parallel F'[()]}
 
 \inferrule
   {x \in \fv(P)}
-  {C[\gvconst{link} \app (x,y)] \parallel P \ceval C[()] \parallel P \{y/x\}}
+  {F[\gvconst{link} \app (x,y)] \parallel P \ceval F[()] \parallel P \{y/x\}}
 \end{mathpar}
 The equivalences are similarly extended by
 \begin{mathpar}
@@ -1043,9 +1119,23 @@ defined as follows
    \gvconst{request} &\defeq \lambda g. \gvlet{{!f}}{g}{\gvconst{fork} \app f}
 \end{align*}
 
-The translation from CP is unchanged from the previous version (albeit with changed names).  The
-semantic correspondence should be straightforward, although GV's single evaluation rule for
-$\gvlet{{!x}}{M}{N}$ may correspond to multiple cut\-against\-weakening or cut\-against\-contraction
+\todo{\gvconst{replicate} was called \gvconst{serve} in the PLACES paper and was, like
+  \gvconst{fork}, first order.  I find the newer name more representiative of its meaning, but would
+  it be better to stick with a consistent presentation?}
+
+The translation from CP is unchanged from the previous version (albeit with changed names).
+
+\begin{equations}
+  \tocp{\gvrequest{M}}z &\defeq& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\
+  \tocp{\gvserve{y}{M}}z &\defeq& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
+  \togv{\derelict{s}{x}.P} &\defeq& \gvlet{x}{\gvrequest{s}}{\togv{P}} \\
+  \togv{\replicate{s}{x}.P} &\defeq& \gvlet{x}{\gvlink{s}{(\gvserve{x}{\togv{P}})}}{x}
+\end{equations}
+
+\todo{Translation for $\replicate s x .P$ is fucked: what does \gvconst{link} do on non-channel values?}
+
+The semantic correspondence should be straightforward, although GV's single evaluation rule for
+$\gvlet{{!x}}{M}{N}$ may correspond to multiple cut-against-weakening or cut-against-contraction
 reductions in CP.
 
 
@@ -1056,5 +1146,6 @@ communication will eventually take place.  This is hopefully an easy consequence
 
 \section{Conclusions and Future Work}\label{sec:conclusion}
 
+Asynchrony and recursion.
 
 \end{document}

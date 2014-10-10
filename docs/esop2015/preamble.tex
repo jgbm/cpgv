@@ -61,8 +61,8 @@
 %% \newcommand{\lrkwd}{\mkwd{cofix}}
 %% \newcommand{\gvfix}[3]{\lrkwd\:#1\:#2 = #3}
 %% \newcommand{\gvletrec}[4]{\gvlet{#1}{\gvfix{#1}{#2}{#3}}{#4}}
-%% \newcommand{\gvserve}[2]{\mkwd{serve}\:#1.#2}
-%% \newcommand{\gvrequest}[1]{\mkwd{request}\:#1}
+\newcommand{\gvserve}[2]{\gvconst{replicate} \app (\lambda #1.#2)}
+\newcommand{\gvrequest}[1]{\gvconst{request} \app #1}
 
 \newcommand{\gvifthen}[3]{\mkwd{if}\:#1\:\mkwd{then}\:#2\:\mkwd{else}\:#3}
 \newcommand{\gvreceivek}[4]{\gvlet{({#1}, {#2})}{\gvreceive{#3}}{#4}}
