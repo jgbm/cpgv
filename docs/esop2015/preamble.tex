@@ -1,10 +1,14 @@
 \DeclareMathOperator{\dom}{dom}
 
+\newcommand{\Cx}{\mathcal{C}}
+\newcommand{\Ex}{\mathcal{E}}
+\newcommand{\Fx}{\mathcal{F}}
+
 \newcommand{\with}{\mathbin\binampersand}
 \newcommand{\parr}{\mathbin\bindnasrepma}
 \newcommand{\cpdual}[1]{#1^\perp}
-%% \newcommand{\cpbang}[1]{{! #1}}
-%% \newcommand{\cpquery}[1]{{? #1}}
+\newcommand{\cpbang}[1]{{! #1}}
+\newcommand{\cpquery}[1]{{? #1}}
 \newcommand{\gvdual}[1]{\overline{#1}}
 \newcommand{\channel}[1]{#1^\sharp}
 \newcommand{\gvout}[2]{{!#1.#2}}
@@ -37,7 +41,7 @@
 \newcommand{\mkwd}[1]{\mathsf{#1}}
 \newcommand{\tkwd}[1]{\textsf{#1}}
 \newcommand{\link}[2]{#1 \leftrightarrow #2}
-%\newcommand{\cut}[4]{\mkwd{new}\:#1 \: (#3 \mid #4)}
+\newcommand{\cutty}[4]{\mkwd{new}\:#1 \: (#3 \mid #4)}
 \newcommand{\cut}[4]{\nu#1 \: (#3 \mid #4)}
 \newcommand{\replicate}[2]{{!#1(#2)}}
 \newcommand{\derelict}[2]{{?#1[#2]}}
@@ -74,6 +78,7 @@
 \newcommand{\cofix}{\lrkwd}
 
 \newcommand{\tocpbig}[1]{\left\llbracket #1 \right\rrbracket}
+\newcommand{\togvbig}[1]{\stretchleftright{\llparenthesis}{#1}{\rrparenthesis}}
 
 \newcommand{\tocp}[1]{\llbracket #1 \rrbracket}
 \newcommand{\togv}[1]{\llparenthesis #1 \rrparenthesis}
@@ -104,8 +109,6 @@
 \newenvironment{syntax}%
 {\[\begin{array}{@{}lr@{\hspace{2px}}c@{\hspace{2px}}l}\ignorespaces}
 {\end{array}\]\ignorespacesafterend}
-
-
 
 \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 

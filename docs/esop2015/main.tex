@@ -2,7 +2,7 @@
 
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,stmaryrd,url,xspace}
+\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,scalerel,stmaryrd,url,xspace}
 \usepackage[table]{xcolor}
 \usepackage{colortbl}
 \addtolength{\jot}{-3px}
@@ -16,7 +16,7 @@
 
 \input{preamble.tex}
 
-\title{Joke or Something}
+\title{Deadlock Freedom in a Functional Session-typed Language}
 \author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
 \institute{The University of Edinburgh \\
            \email{\{Garrett.Morris,Sam.Lindley,Philip.Wadler\}@ed.ac.uk} \vspace{-5mm}}
@@ -26,10 +26,24 @@
 \maketitle
 
 \begin{abstract}
-
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
+
+Contributions:
+
+\begin{itemize}
+\item We define a core linearly-typed functional language, by extending linear lambda calculus
+  with session-typed communication primitives.
+\item We present an (untyped) operational semantics for our core language,
+\item We give characterizations of deadlock and normal forms, and show that well-typed terms are
+  deadlock-free.
+\item We connect our language to the interpretation of session types as linear logic propositions,
+  by establishing a correspondence between the semantics of our language and that of Wadler's
+  calculus CP.
+\item We give several extensions of our core language, and show that these extensions preserve
+  deadlock freedom.
+\end{itemize}
 
 \section{GV by Example}\label{sec:examples}
 
@@ -135,11 +149,11 @@ System \defeq \bl
 
 \subsection{Selection and Choice}
 
-\begin{align*}
+\small\begin{align*}
   \gvconst{select} \app \ell_i \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell_i \app x, M)) \\
   \gvconst{offer} \app M \,\{ \ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q \}
     &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\\\gvcase{x}{\ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q}}} \el
-\end{align*}
+\end{align*}\normalsize
 
 \section{I'm Pickin' Up Good Vibrations}
 
@@ -239,17 +253,14 @@ I'm intentionally ignoring CP polymorphism forever.
 \begin{syntax}
   \text{Values} & V & ::= & x \mid K \mid \lambda x.M \\ % \mid K\,V \\
   & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
-  \text{Evaluation contexts} & E & ::= &  [] \mid E\,M \mid V\,E \mid \gvletunit{E}{M} \\
-  & & \mid & (E,M) \mid (V,E) \mid \gvlet{(x,y)}{E}{M} \\
-  & & \mid & \mkwd{inl}\,E \mid \mkwd{inr}\,E \mid \gvcase{E}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
-  & F & ::= & E \mid \distinguish E \\
-  \text{Configurations} & P & ::= & M \mid \distinguish M \mid P \parallel P' \mid (\nu x) P \\
-  \text{Configuration contexts} & C & ::= & F \mid C \parallel P \mid (\nu x)C \\
+  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,E \mid \gvletunit{\Ex}{M} \\
+  & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
+  & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
+  & \Fx & ::= & \Ex \mid \distinguish \Ex \\
+  \text{Configurations} & C,D,E & ::= & M \mid \distinguish M \mid C \parallel C' \mid (\nu x) C \\
+  \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
-%
-\todo{SL: I think that the basis for configuarations contexts should be $[~]$ rather than $F$.}
-%
 We define combination of flags $\phi + \phi'$ by
 \begin{mathpar}
   \wcirc + \wcirc = \wcirc
@@ -269,15 +280,15 @@ and leave $\bcirc + \bcirc$ undefined.  Configuration typing is given by
   {\Gamma \vdash^\wcirc M}
 
 \inferrule
-  {\Gamma, x:\channel{S} \vdash^\phi P}
-  {\Gamma \vdash^\phi (\nu x) P}
+  {\Gamma, x:\channel{S} \vdash^\phi C}
+  {\Gamma \vdash^\phi (\nu x) C}
 
 \inferrule
-  {\Gamma,x:S \vdash^{\phi} P \\
-   \Gamma',x:\gvdual{S} \vdash^{\phi'} P'}
-  {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} P \parallel P'}
+  {\Gamma,x:S \vdash^{\phi} C \\
+   \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+  {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}
 \end{mathpar}
-We will write $\Gamma \vdash P$ for $\Gamma \vdash^\bcirc P$.  Note that while we can write the
+We will write $\Gamma \vdash P$ for $\Gamma \vdash^\phi P$.  Note that while we can write the
 classic deadlocked configuration
 \[
   (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\gvconst{receive} \app x}{\gvconst{send} \app (z,y)}} \parallel
@@ -291,45 +302,23 @@ it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term r
   \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N\{V/x\} \\
   E[M] &\teval E[M'] \qquad \text{if $M \teval M'$}
 \end{align*}
-Configuration (context) equivalence:
+Configuration equivalence:
 \begin{mathpar}
-C[\mathsf{link}\,(x,y)] \equiv C[\mathsf{link}\,(y,x)]
+\Fx[\mathsf{link}\,(x,y)] \equiv \Fx[\mathsf{link}\,(y,x)]
 
-C_0 \parallel C_1 \equiv C_1 \parallel C_0
+C \parallel D \equiv D \parallel C
 
-C_0 \parallel (C_1 \parallel C_2) \equiv (C_0 \parallel C_1) \parallel C_2
+C \parallel (D \parallel E) \equiv (C \parallel D) \parallel E
 
-C_0 \parallel (\nu x)C_1 \equiv (\nu x)(C_0 \parallel C_1) \text{ if $x \not\in \fv(C_0)$}
+C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
+
+\Cx[C] \equiv \Cx[D] \text{ if $C \equiv D$}
 \end{mathpar}
-
-\todo{SL: I think the structural equivalence should be defined on configurations rather than
-  configuration contexts}
-
-\begin{mathpar}
-F[\mathsf{link}\,(x,y)] \equiv F[\mathsf{link}\,(y,x)]
-
-P \parallel Q \equiv Q \parallel P
-
-P \parallel (Q \parallel R) \equiv (P \parallel Q) \parallel R
-
-P \parallel (\nu x)Q \equiv (\nu x)(P \parallel Q) \text{ if $x \not\in \fv(P)$}
-
-M \parallel \distinguish{N} \equiv \distinguish{M} \parallel N
-
-\inferrule
-  {P \equiv Q}
-  {C[P] \equiv C[Q]}
-\end{mathpar}
-
-\todo{If we take the transitive, reflexive, symmetric closure of the above rules then that gives us
-  a congruence over configurations, but it doesn't correspond to the congruence closure of the
-  structural equivalence of CP because it isn't a congruence over the term structure - e.g. link
-  equivalence only holds at the top level. Is this OK?}
 
 Awkwardly enough, the equivalence rules do not preserve typing.  For example, supposing that $x \in
-\fv(P), y \in \fv(Q), \text{ and } x,y \in \fv(R)$, we have $\vdash (\nu x
-y)(P \mid (Q \mid R))$ but not $\nvdash (\nu x y)((P \mid Q) \mid R)$.  We have a simple reduction
-rule for configuration types, given by
+\fv(C), y \in \fv(D), \text{ and } x,y \in \fv(E)$, we have $\vdash (\nu x y)(C \mid (D \mid E))$
+but not $\nvdash (\nu x y)((C \mid D) \mid E)$.  We have a simple reduction rule for configuration
+types, given by
 \begin{mathpar}
 \inferrule
 %  [T-Output]
@@ -352,32 +341,32 @@ Configuration reduction is given by
 \inferrule
   [Send]
   { }
-  {F[\gvconst{send} \app (V,x)] \parallel F'[\gvconst{receive} \app x] \ceval F[x] \parallel F'[(V,x)]}
+  {\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x] \parallel \Fx'[(V,x)]}
 
 \inferrule
   [Fork]
   {\text{$x$ fresh}}
-  {F[\gvconst{fork} \app V] \ceval (\nu x)(F[x] \parallel (V\,x))}
+  {\Fx[\gvconst{fork} \app V] \ceval (\nu x)(\Fx[x] \parallel (V\,x))}
 
 \inferrule
   [Wait]
   { }
-  {(\nu x)(F[\gvconst{wait} \app x] \parallel x) \ceval F[()]}
+  {(\nu x)(\Fx[\gvconst{wait} \app x] \parallel x) \ceval \Fx[()]}
 
 \inferrule
    [Link]
    {x \in \fv(M)}
-   {(\nu x) (F[\gvconst{link} \app (x, y)] \parallel F'[M]) \ceval (\nu x)(F[x] \parallel F'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
+   {(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
 
 \inferrule
    [Lift]
-   {P \ceval P'}
-   {C[P] \ceval C[P']}
+   {C \ceval C'}
+   {\Cx[C] \ceval \Cx[C']}
 
 \inferrule
    [Lift2]
    {M \teval M'}
-   {C[M] \ceval C[M']}
+   {\Cx[M] \ceval \Cx[M']}
 \end{mathpar}
 Some things that might be useful.
 \begin{lemma}\label{thm:term-preservation}
@@ -388,59 +377,62 @@ Some things that might be useful.
 The proof is standard.
 
 \begin{theorem}\label{thm:preservation}
-  If $\Gamma \vdash P$ and $P \ceval P'$ then there is some $\Gamma'$ such that $\Gamma \ceval^?
-  \Gamma'$ and $\Gamma' \vdash P'$.
+  If $\Gamma \vdash C$ and $C \ceval C'$ then there is some $\Gamma'$ such that $\Gamma \ceval^?
+  \Gamma'$ and $\Gamma' \vdash C'$.
 \end{theorem}
 
 \begin{proof}
-  By induction on the derivation of $P \ceval P'$.
+  By induction on the derivation of $C \ceval C'$.
   \begin{itemize}
   \item Case \textsc{Lift} is immediate by the induction hypothesis.
   \item Case \textsc{Lift2} follows from \lemref{term-preservation}, with $\Gamma = \Gamma'$.
-  \item In case \textsc{Send}, from the assumption $\Gamma \vdash C[\mkwd{send}\,(V,x)] \parallel
+  \item In case \textsc{Send}, from the assumption $\Gamma \vdash \Cx[\mkwd{send}\,(V,x)] \parallel
     C'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
     $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
-    $\Gamma_1,x:\gvout{T}{S'} \vdash C[\gvconst{send} \app (V,x)]$,
+    $\Gamma_1,x:\gvout{T}{S'} \vdash \Cx[\gvconst{send} \app (V,x)]$,
     $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash C'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
-    \times \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash C[\gvconst{send} \app
-    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash C[x]$.  By a similar argument, we conclude
+    \times \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Cx[\gvconst{send} \app
+    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash \Cx[x]$.  By a similar argument, we conclude
     that $\Gamma_2,x:\gvdual{S'} \vdash C'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
     \channel{S}$, $\Gamma_1,\Gamma_2,x:\channel{(\gvout T S)} \ceval
     \Gamma_1,\Gamma_2,x:\channel{S}$, and we can recompose the resulting processes concluding that
-    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash C[x] \parallel C'[(V,x)]$.
-  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash C[\gvconst{fork} \app V]$, we can
+    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash \Cx[x] \parallel C'[(V,x)]$.
+  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash \Cx[\gvconst{fork} \app V]$, we can
     conlude that $\Gamma$ splits into $\Gamma_1,\Gamma_2$ and there is some $S$ such that
-    $\Gamma_1,x:S \vdash C[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
-    $\Gamma,x:S \vdash C[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(C[x] \parallel
+    $\Gamma_1,x:S \vdash \Cx[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
+    $\Gamma,x:S \vdash \Cx[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(\Cx[x] \parallel
     V \app x)$.
-  \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(C[\gvconst{wait} \app
-    x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash C[\gvconst{wait} \app x]$ and
-    thus, from the typing of \gvconst{wait}, that $\Gamma \vdash C[()]$.
-  \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (C[\gvconst{link} \app
+  \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(\Cx[\gvconst{wait} \app
+    x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash \Cx[\gvconst{wait} \app x]$ and
+    thus, from the typing of \gvconst{wait}, that $\Gamma \vdash \Cx[()]$.
+  \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (\Cx[\gvconst{link} \app
     (x, y)] \parallel C'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
-    $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash C[\gvconst{link} \app (x,
+    $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash \Cx[\gvconst{link} \app (x,
     y)]$ and $\Gamma_2,x:S \vdash C'[M]$.  (Note that the free variable assumption on the reduction
     rule for \gvconst{fork} allows us to assume that neither $C$ or $C'$ binds $x$ or $y$.)  From
-    the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash C[x]$; similarly, from $x \in
+    the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash \Cx[x]$; similarly, from $x \in
     \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash C'[M\{y/x\}]$.  Finally, from the typing rule
     for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash C'[\gvletunit{\gvconst{wait}
-      \app x}{M\{y/x\}}]$, and that $\Gamma \vdash (\nu x)(C[x] \parallel
+      \app x}{M\{y/x\}}]$, and that $\Gamma \vdash (\nu x)(\Cx[x] \parallel
     C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$ \qed
   \end{itemize}
 \end{proof}
 
 \begin{theorem}\label{thm:preservation-equiv}
-  If $\Gamma \vdash P$, $P \equiv P'$ and $P' \ceval Q'$, then there are some $\Gamma',Q$ such that
-  either $\Gamma = \Gamma'$ or $\Gamma \ceval \Gamma'$, $Q' \equiv Q$, and $\Gamma' \vdash Q$.
+  If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, then there are some $\Gamma',D$ such that
+  $\Gamma \vdash^? \Gamma'$ and $\Gamma' \vdash D$.
 \end{theorem}
 
 \begin{proof}
-  We begin by observing that if $P \ceval Q$, then there is some well-typed $P'$ such that $P =
-  C[P']$, $P' \ceval Q'$, and $Q = C[Q']$.  The desired result is then obtained by structural
-  induction on $P$, examining the possible equivalences in each case. \qed
+  We begin by observing that if $C \ceval D$, then there is some well-typed $C'$ such that $C =
+  \Cx[C']$, $C' \ceval D'$, and $D = \Cx[D']$.  The desired result is then obtained by structural
+  induction on $C$, examining the possible equivalences in each case. \qed
 \end{proof}
 
-Define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$.
+Define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$.  Note that,
+while $\equiv$ does not necessarily preserve typing, we can use \thmref{preservation-equiv} to
+conclude that if $\Gamma \vdash C$ and $C \ceval^\star D$, there are some $\Gamma',D'$ such that
+$\Gamma \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
 
 \subsection{Deadlock and Its Absence}
 
@@ -448,31 +440,31 @@ Blocked terms:
 \newcommand{\blockedp}{\mathsf{blocked}}
 \newcommand{\depp}{\mathsf{depends}}
 \[\begin{array}{rcl}
-  \blockedp(x,M) &\defiff& \exists N. \; M = E[\gvconst{send} \app (x,N)] \\
-  && \quad \lor \, M = E[\gvconst{receive} \app x] \\
-  && \quad \lor \, M = E[\gvconst{wait} \app x] \\
-  \depp(x,y,E[M]) &\defiff& \blockedp(x,M) \land y \in \fv(E) \\
-  \depp(x,y,P) &\defiff& (P \equiv C[M] \land \depp(x,y,M)) \lor \, (P \equiv C[Q \parallel Q'] \\
-  && \quad \land \, (\exists z. \depp(x,z,Q) \land \depp(z,y,Q')))
+  \blockedp(x,M) &\defiff& \exists N. \; M = \Ex[\gvconst{send} \app (x,N)] \\
+  && \quad \lor \, M = \Ex[\gvconst{receive} \app x] \\
+  && \quad \lor \, M = \Ex[\gvconst{wait} \app x] \\
+  \depp(x,y,\Ex[M]) &\defiff& \blockedp(x,M) \land y \in \fv(\Ex) \\
+  \depp(x,y,C) &\defiff& (C \equiv \Cx[M] \land \depp(x,y,M)) \lor \, (C \equiv \Cx[D \parallel D'] \\
+  && \quad \land \, (\exists z. \depp(x,z,D) \land \depp(z,y,D')))
 \end{array}\]
 Finally, we have a natural definition of deadlock:
 \newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
 \[
-\deadlockp(P) \defiff P \equiv C[Q \parallel Q'] \land \exists x,y. \depp(x,y,Q) \land \depp(y,x,Q').
+\deadlockp(C) \defiff C \equiv \Cx[D \parallel D'] \land \exists x,y. \depp(x,y,D) \land \depp(y,x,D').
 \]
 Because this definition depends on blocked processes (that is, those waiting to read or write) it
 avoids the problems with return values (since a process returning a channel is not blocked on it, it
-cannot be part of a deadlocked pair).  We say a process $P$ is deadlock-free if for all $Q$ such
-that $P \ceval^\star Q$, $\lnot\deadlockp(Q)$.  Observe that if $P \equiv Q$, then $\deadlockp(P)
-\iff \deadlockp(Q)$.
+cannot be part of a deadlocked pair).  We say a process $C$ is deadlock-free if for all $D$ such
+that $C \ceval^\star D$, $\lnot\deadlockp(D)$.  Observe that if $C \equiv D$, then $\deadlockp(C)
+\iff \deadlockp(D)$.
 
 \begin{lemma}\label{thm:procs-share-one-channel}
-  If $\Gamma \vdash P$, and $P = C[Q \parallel Q']$, then there is some variable $x$ such that
-  $\fv(Q) \cap \fv(Q') = \{ x \}$.
+  If $\Gamma \vdash C$, and $C = \Cx[D \parallel D']$, then there is some variable $x$ such that
+  $\fv(D) \cap \fv(D') = \{ x \}$.
 \end{lemma}
 
 \begin{proof}
-  By structural induction on the derivation of $\Gamma \vdash P$; the only interesting case is for
+  By structural induction on the derivation of $\Gamma \vdash C$; the only interesting case is for
   parallel composition, where the desired result is assured by the partitioning of the
   environment. \qed
 \end{proof}
@@ -480,17 +472,17 @@ that $P \ceval^\star Q$, $\lnot\deadlockp(Q)$.  Observe that if $P \equiv Q$, th
 I think we can now show fairly directly that
 
 \begin{lemma}\label{thm:typed-configs-df}
-  If $\Gamma \vdash P$ then $\lnot \deadlockp(P)$.
+  If $\Gamma \vdash C$ then $\lnot \deadlockp(C)$.
 \end{lemma}
 
 \begin{proof}
-  By contradiction: suppose $\deadlockp(P)$.  Then we know there must be some variables
-  $x_1,\dots,x_n$ and processes $M_1,\dots,M_n$ in $P$ such that
+  By contradiction: suppose $\deadlockp(C)$.  Then we know there must be some variables
+  $x_1,\dots,x_n$ and processes $M_1,\dots,M_n$ in $C$ such that
   \[
     \blockedp(x_1,x_2,M_1) \land \blockedp(x_2,x_3,M_2) \land \cdots \land \blockedp(x_n,x_1,M_n).
   \]
-  But now there is no possible $\Gamma$ such that any $\Gamma \vdash P'$ for any process $P'$
-  containing the $M_i$---such a $P'$ would violate \lemref{procs-share-one-channel}.  \qed
+  But now there is no possible $\Gamma$ such that any $\Gamma \vdash C'$ for any process $C'$
+  containing the $M_i$---such a $C'$ would violate \lemref{procs-share-one-channel}.  \qed
 \end{proof}
 
 Finally, the following is trivial.
@@ -501,41 +493,42 @@ Finally, the following is trivial.
 
 \begin{proof}
   If $\Gamma \vdash M: T$, then $\Gamma \vdash \distinguish{M}$, and so
-  $\lnot\deadlockp(\distinguish M)$ and, for any $Q$ such that $\distinguish M \ceval^\star Q$, we
-  know that there is a well-typed $Q' \equiv Q$, and so $\lnot\deadlockp(Q)$. \qed
+  $\lnot\deadlockp(\distinguish M)$ and, for any $D$ such that $\distinguish M \ceval^\star D$, we
+  know that there is a well-typed $D' \equiv D$, and so $\lnot\deadlockp(D)$. \qed
 \end{proof}
 
 \begin{definition}
-A process $P$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
+A process $C$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
 terms $M_1,\dots,M_n$ such that
 \[
-  P = (\nu x_1)(M_1 \parallel (\nu x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots)).
+  C = (\nu x_1)(M_1 \parallel (\nu x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel D)\dots)),
 \]
+where either $D = M_n$ or $D = \distinguish M_n$.
 \end{definition}
 
 \begin{lemma}\label{thm:canonical}
-  If $\Gamma \vdash P$, then there is some $P' \equiv P$ such that $\Gamma \vdash P'$ and $P'$ is in
+  If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
   canonical form.
 \end{lemma}
 
 \begin{proof}
-  Let $x_1,\dots,x_{n-1}$ be the $\nu$-bound variables in $P$ and $M_1,\dots,M_n$ be the terms in
+  Let $x_1,\dots,x_{n-1}$ be the $\nu$-bound variables in $C$ and $M_1,\dots,M_n$ be the terms in
   $P$; the proof is by induction on $n$.  If $n > 1$, then pick some $M_i$ such that there is
   exactly one $\nu$-bound variable $x_j$ where $x_j \in \fv(M_i)$.  (That there must be such an
   $M_i$ and $x_j$ can be established by a standard counting argument, together with
-  \lemref{procs-share-one-channel}.)  Now, construct $Q$ from $P$ by the homomorphic extension of
-  the mapping $(\nu x_j)P \mapsto P$ and $P \parallel M_i \mapsto P$.  From the assumption that
-  $\Gamma \vdash P$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$ such
-  that $\Gamma',x:S \vdash Q$.  By the induction hypothesis, there is some $Q' \equiv Q$ in
-  canonical form.  Finally, let $P' = (\nu x_j)(M_i \parallel Q')$; we can see that
-  straightforwardly that $P'$ is in canonical form; that $P \equiv P'$; and, that $\Gamma \vdash
-  P'$. \qed
+  \lemref{procs-share-one-channel}.)  Now, construct $D$ from $C$ by the homomorphic extension of
+  the mapping $(\nu x_j)E \mapsto E$ and $E \parallel M_i \mapsto E$.  From the assumption that
+  $\Gamma \vdash C$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$ such
+  that $\Gamma',x:S \vdash D$.  By the induction hypothesis, there is some $D' \equiv D$ in
+  canonical form.  Finally, let $C' = (\nu x_j)(M_i \parallel D')$; we can see that
+  straightforwardly that $C'$ is in canonical form; that $C \equiv C'$; and, that $\Gamma \vdash
+  C'$. \qed
 \end{proof}
 
 \begin{theorem}\label{thm:progress-open}
-  Let $\Gamma \vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
+  Let $\Gamma \vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
-  a canonical form of $P$.  Then:
+  a canonical form of $C$.  Then:
   \begin{enumerate}
   \item For $1 \leq i \leq n - 1$ either $\blockedp(x_j,M_i)$ where $j \leq i$ or $\blockedp(y,M_i)$
     for some $y \in \dom(\Gamma)$; and,
@@ -545,13 +538,13 @@ terms $M_1,\dots,M_n$ such that
 \end{theorem}
 
 \begin{proof}
-  By induction on the derivation of $\Gamma \vdash P'$, using the definition of $\ceval$. \qed
+  By induction on the derivation of $\Gamma \vdash C'$, using the definition of $\ceval$. \qed
 \end{proof}
 
 \begin{corollary}\label{thm:progress}
-  Let $\vdash P$, $P \centernot\ceval$ and let $P' = (\nu x_1)(M_1 \parallel (\nu
+  Let $\vdash^\bcirc C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
-  a canonical form of $P$.  Then:
+  a canonical form of $C$.  Then:
   \begin{enumerate}
   \item For $1 \leq i \leq n - 1$, $\blockedp(x_i,M_i)$; and,
   \item $M_n = \distinguish V$ for some value $V$.
@@ -759,7 +752,7 @@ compatible. We identify CP terms up to structural equivalence:
   {\cut{x}{}{P_1}{Q} \equiv \cut{x}{}{P_2}{Q}}
 \end{mathpar}
 
-We take $\equiv$ to be the least equivalence relation that is closed under these rules. 
+We take $\equiv$ to be the least equivalence relation that is closed under these rules.
 
 \paragraph{Input and Output.}
 
@@ -990,7 +983,7 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \todo{Show that the A-normalisation rules are sound (easy).}
 
-Attempt at the ANF syntax.  Should we pick a new letter for terms?
+Attempt at the ANF syntax.  Should we pick a new letter for ANF terms?
 \begin{syntax}
   \text{Terms} & M,N & ::= & V \mid \gvlet{x}{V \app W}{N} \\
   & & \mid & \gvlet{(x,y)}{V}{N} \mid \gvletunit{M}{N} \\
@@ -1044,7 +1037,7 @@ Attempt at the ANF syntax.  Should we pick a new letter for terms?
 \tocp{\gvcase V {\mkwd {inl} \app x \mapsto M; \mkwd {inr} \app x \mapsto N}}z &=&
    \cut x {} {\tocp{V}x} {\mkwd{case} \app x \app \{ \mkwd{inl} \mapsto \tocp{M}z; \mkwd{inr} \mapsto \tocp{N}z \}} \\
 \tocp{\mkwd{absurd} \app V}z &=& \cut x {} {\tocp{V}x} {\mkwd{case}\app x \app \{ \}} \\
-\tocp{\gvlet{x}{\gvsend{(V,W)}}{N}}z &=& \cut{x}{}{\tocp{W}x}{x[y].(\tocp{V}y \mid \tocp{N}z)} \\
+\tocp{\gvlet{x}{\gvsend{(V,W)}}{N}}z &=& \cut{x}{}{\tocp{W}x}{\cut y {} {\tocp{V}y} {x[y].\tocp{N}z}} \\
 \tocp{\gvlet{(x,y)}{\gvreceive{V}}{N}}z &=& \cut{y}{}{\tocp{V}y}{y(x).\tocp{N}z} \\
 \tocp{\gvlet{()}{\gvconst{wait} \app V}{N}}z &=& \cut y {} {\tocp{V}y} {y().\tocp{N}z} \\
 \tocp{\gvlet{x}{\gvfork{x}{M}}{N}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\tocp{N}z} \\
@@ -1071,14 +1064,34 @@ Attempt at the ANF syntax.  Should we pick a new letter for terms?
   \end{itemize}
 \end{proof}
 
-\todo{Translation of configurations}
+\small\begin{equations}
+\tocp{M}z &=& \tocp{M}z \\
+\tocp{\distinguish M}z &=& \tocp{M}z \\
+\tocp{(\nu x)C}z &=& \tocp{C}z \\
+\tocpbig{
+  \inferrule
+    {\Gamma,x:S \vdash^{\phi} C \\
+     \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+    {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
+  \left\{
+    \ba{l}
+    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
+    \qquad\text{if $\phi' = \bcirc$;} \\
+    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
+    \qquad\text{otherwise.}
+    \ea \right.
+\end{equations}\normalsize
 
 \begin{theorem}
-  If $M, N$ are GV$\pi$-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
+  If $\Gamma \vdash P$, then there is some $T$ such that $\tocp{P}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
 \end{theorem}
 
 \begin{theorem}
-  If $M$ is a GV$\pi$-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
+  If $M, N$ are GV-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
+\end{theorem}
+
+\begin{theorem}
+  If $M$ is a GV-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
 \end{theorem}
 
 \section{Extending GV}
@@ -1118,18 +1131,18 @@ system for configurations, however:
   {\Gamma \vdash^\wcirc M}
 
 \inferrule
-  {\Gamma, x: \channel S \vdash^\phi P}
-  {\Gamma \vdash^\phi (\nu x)P}
+  {\Gamma, x: \channel S \vdash^\phi C}
+  {\Gamma \vdash^\phi (\nu x)C}
 
 \inferrule
-  {\Gamma, x: S \vdash^\phi P \\
-   \Gamma', x: \gvdual S \vdash^{\phi'} P'}
-  {\Gamma,\Gamma',x:\channel S \vdash^{\phi + \phi'} P \parallel P'}
+  {\Gamma, x: S \vdash^\phi C \\
+   \Gamma', x: \gvdual S \vdash^{\phi'} C'}
+  {\Gamma,\Gamma',x:\channel S \vdash^{\phi + \phi'} C \parallel C'}
 
 \inferrule
-  {\Gamma \vdash^\phi P \\
-   \Gamma' \vdash^{\phi'} P'}
-  {\Gamma,\Gamma' \vdash^{\phi + \phi'} P \parallel P'}
+  {\Gamma \vdash^\phi C \\
+   \Gamma' \vdash^{\phi'} C'}
+  {\Gamma,\Gamma' \vdash^{\phi + \phi'} C \parallel C'}
 \end{mathpar}
 Perhaps the latter two rules can be combined by defining a suitable operation on environments;
 however, it seems simpler now to just provide two typing rules.  Rules \textsc{Send, Fork, Lift} and
@@ -1145,15 +1158,15 @@ however, it seems simpler now to just provide two typing rules.  Rules \textsc{S
 \end{mathpar}
 The equivalences are similarly extended by
 \begin{mathpar}
-P \parallel () \equiv P
+C \parallel () \equiv C
 \end{mathpar}
 We have a slightly different result about channels shared between processes, to account for the
 multiple forms of composition:
 \begin{lemma}
-  If $\Gamma \vdash P$ and $P = C[Q \parallel Q']$, then $\fv(Q) \cap \fv(Q')$ is either empty or
+  If $\Gamma \vdash C$ and $C = \Cx[D \parallel D']$, then $\fv(D) \cap \fv(D')$ is either empty or
   the singleton set $\{x\}$ for some variable $x$.
 \end{lemma}
-The proof is again by induction on the derivation of $\Gamma \vdash P$.  However, note that this has
+The proof is again by induction on the derivation of $\Gamma \vdash C$.  However, note that this has
 no consequence for the proof of deadlock freedom (which depended on their being two channels shared
 among processes).  Thus we can conclude that
 \begin{theorem}
@@ -1198,40 +1211,50 @@ with the observation that $x$ may appear multiple times in $M$.  The extension o
 freedom results to this calculus are immediate.
 
 Our previous work on GV provided unlimited service channels, which could be used to obtain
-arbitrarily many copies of some concurrent behavior.  We can encode such channels by introducing a
-new type constructor $Service$ and two new constants \gvconst{replicate} and \gvconst{request}, with
-the types
+arbitrarily many copies of some concurrent behavior.  We can encode such channels by introducing new
+dual session type constructors $Service(S)$ and $Server(S)$ and new constants \gvconst{replicate}
+and \gvconst{request}, with the types
 \begin{mathpar}
-\gvconst{replicate} : (\gvforever(\gvdual S \lto \outterm)) \lto Service(S)
+\gvconst{replicate} : (\gvforever(\gvdual S \lto \outterm)) \lto Server(S)
 
 \gvconst{request} : Service(S) \lto S
 \end{mathpar}
 defined as follows
 \begin{align*}
-  Service(S) &\defeq \gvforever(\gvdual S \lto \outterm) \\
-   \gvconst{replicate} &\defeq \lambda x.x \\
-   \gvconst{request} &\defeq \lambda g. \gvlet{{!f}}{g}{\gvconst{fork} \app f}
+  Server(S) &\defeq \gvout{(\gvforever(\gvdual S \lto \outterm))}{\outterm} \\
+  \gvconst{replicate} \app f &\defeq \gvconst{fork} \app (\lambda x. \gvsend{(f,x)}) \\
+  \gvconst{request} \app s &\defeq
+    \bl \gvlet{(f,s)}{\gvreceive{s}}{\\\gvletunit{\gvconst{wait}\app s}{\\\gvlet{{!g}}{f}{g}}} \el
 \end{align*}
 
-\todo{\gvconst{replicate} was called \gvconst{serve} in the PLACES paper and was, like
-  \gvconst{fork}, first order.  I find the newer name more representiative of its meaning, but would
-  it be better to stick with a consistent presentation?}
+Note the parallel between the encoding of session-level sums using value-level sums and the encoding
+of session-level replication using value-level replication---in each case, the key is ``trivial''
+channels $\gvout{T}{\outterm}$ for suitable $T$.
 
-The translation from CP is unchanged from the previous version (albeit with changed names).
+\todo{\gvconst{replicate} was called \gvconst{serve} in the PLACES paper and was, like
+  \gvconst{fork}, first order.  I find the newer name more representative of its meaning, but would
+  it be better to stick with the previous presentation?}
 
 \begin{equations}
-  \tocp{\gvrequest{M}}z &\defeq& \cut{x}{}{\tocp{M}x}{\derelict{x}{y}.\link{y}{z}} \\
-  \tocp{\gvserve{y}{M}}z &\defeq& \replicate{z}{y}.\cut{x}{}{\tocp{M}x}{x[].0} \\
-  \togv{\derelict{s}{x}.P} &\defeq& \gvlet{x}{\gvrequest{s}}{\togv{P}} \\
-  \togv{\replicate{s}{x}.P} &\defeq& \gvlet{x}{\gvlink{s}{(\gvserve{x}{\togv{P}})}}{x}
+  \tocp{{!M}}z &\defeq& \replicate z y.\tocp{M}y \\
+  \tocp{\gvlet{{!x}}{V}{M}}z &\defeq& \cut y {} {\tocp{V}y} {\derelict{y}{x}.\tocp{M}z} \\
+  \togv{\replicate{s}{x}.P} &\defeq& \gvconst{replicate} \app (\lambda x. \togv{P}) \\
+  \togv{\derelict{s}{x}.P} &\defeq& \gvlet{x}{\gvconst{request} \app s}{\togv{P}} \\
+  \togvbig{
+    \inferrule
+      {P \vdash \Gamma}
+      {P \vdash \Gamma, x:\cpquery{A}}} &\defeq&
+    \ba[c]{l} \gvlet{(y,s)}{\gvreceive{s}}{\\\gvletunit{\gvconst{wait}\app s}{\togv{P}}} \ea \\
+  \togvbig{
+    \inferrule
+      {P \vdash \Gamma,x:\cpquery{A},y:\cpquery{A}}
+      {P[x/y] \vdash \Gamma,x:\cpquery{A}}} &\defeq&
+    \ba{l} \gvlet{f}{\gvconst{request}\app x}{\\\gvlet{x}{\gvconst{replicate}\app f}{\\\gvlet{y}{\gvconst{replicate}\app f}{\togv{P}}}} \ea
 \end{equations}
 
-\todo{Translation for $\replicate s x .P$ is fucked: what does \gvconst{link} do on non-channel values?}
-
-The semantic correspondence should be straightforward, although GV's single evaluation rule for
-$\gvlet{{!x}}{M}{N}$ may correspond to multiple cut-against-weakening or cut-against-contraction
-reductions in CP.
-
+The correspondence between the semantics is direct; the translation from CP terms into GV terms
+emphasizes that, while weakening and contraction are implicit in CP syntax, they play a central role
+in the CP semantics of exponentials.
 
 \section{Related Work}\label{sec:related}
 
