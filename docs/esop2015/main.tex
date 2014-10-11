@@ -253,11 +253,11 @@ I'm intentionally ignoring CP polymorphism forever.
 \begin{syntax}
   \text{Values} & V & ::= & x \mid K \mid \lambda x.M \\ % \mid K\,V \\
   & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
-  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,E \mid \gvletunit{\Ex}{M} \\
+  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid \gvletunit{\Ex}{M} \\
   & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
   & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
   & \Fx & ::= & \Ex \mid \distinguish \Ex \\
-  \text{Configurations} & C,D,E & ::= & M \mid \distinguish M \mid C \parallel C' \mid (\nu x) C \\
+  \text{Configurations} & C,D & ::= & M \mid \distinguish M \mid C \parallel C' \mid (\nu x) C \\
   \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
