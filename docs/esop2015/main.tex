@@ -975,6 +975,22 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{theorem}
 
 
+\subsection{Functions as Processes}
+
+Following our previous work, we show that functions in GV can be translated into processes, and in
+particular that the translation respects the semantics.
+
+\[
+\topi{T \lto U} = \gvout{\topi{T}}{\topi{U}}
+\]
+
+\begin{equations}
+\topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
+\topi{L\,M}        &=& \gvsend{(\topi{M},\topi{L})} \\
+\topi{\gvfork{x}{M}} &=& \gvfork{x}{\gvsend{(x,\topi{M})}} \\
+\end{equations}
+
+
 \subsection{Translation from GV to CP}
 
 \todo{ANF translation.}
