@@ -977,6 +977,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \subsection{Functions as Processes}
 
+\todo{Probably scrap this, as it turns out to be quite hard to prove correct directly.}
+
 Following our previous work, we show that functions in GV can be translated into processes, and in
 particular that the translation respects the semantics.
 
@@ -991,7 +993,141 @@ particular that the translation respects the semantics.
 \end{equations}
 
 
-\subsection{Translation from GV to CP}
+\subsection{Direct Translation from GV to CP}
+
+\newcommand{\tocpflip}[1]{\llceil{#1}\rrceil}
+
+\[
+\ba{@{}c@{\qquad}c@{\qquad}c}
+\begin{eqs}
+\tocp{\zero} &=& \top \\
+\tocp{\one} &=& \bot
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
+\tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
+\end{eqs}
+&
+\begin{eqs}
+\tocp{\outterm}            &=& 1 \\
+\tocp{\interm}             &=& \bot \\
+\end{eqs}
+\ea
+\]
+
+\begin{equations}
+\tocp{T} &=& \cpdual{\tocpflip{T}}, \quad \text{if $T$ is not a session type} \\
+\tocpflip{T + U} &=& \tocpflip{T} \oplus \tocpflip{U} \\
+\tocpflip{T \times U} &=& \tocpflip{T} \otimes \tocpflip{U} \\
+\tocpflip{T \lto U} &=& \cpdual{\tocpflip{T}} \parr \tocpflip U \\
+\tocpflip{S} &=& \tocp{S} \\
+\end{equations}
+
+\begin{equations}
+\tocp{x}z &=& \link{x}{z} \\
+\tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
+\tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
+%\tocp{\gvsend{(M,N)}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{x[y].\link{x}{z}}}{\tocp{N}x} \\
+\tocp{\gvsend{(M,N)}}z &=& \cut{y}{}{\tocp{M}y}{\cut{x}{}{\tocp{N}x}{y[x].\link{y}{z}}} \\
+\tocp{\gvreceive{M}}z &=& \tocp{M}z \\
+\tocp{\gvwait{M}}z    &=& \tocp{M}z \\
+\tocp{\lambda x.M}z &=& z(x).\tocp{M}z \\
+\tocp{L \app M}z &=&
+  \cut{y}{}{\tocp{L}y}{\cut{x}{}{\tocp{M}x}{y[x].\link{y}{z}}} \\
+%% \tocp{L \app M}z &=&
+%%     \cut y {} {\tocp{L}y}{y[x].(\tocp{M}x \mid \link{y}{z})} \\
+\tocp{()}z    &=& z[] \\
+\tocp{(M,N)}z &=& z[y].(\tocp{M}y \mid \tocp{N}z) \\
+\tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
+\tocp{\gvlet{(x,y)}{M}{N}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
+\tocp{\mkwd {inl} \app M}z &=& z[\mkwd{inl}].\tocp{M}z\\
+\tocp{\mkwd {inr} \app M}z &=& z[\mkwd{inr}].\tocp{M}z\\
+\tocp{\gvcase{L}{\mkwd {inl} \app x \mapsto M;
+                 \mkwd {inr} \app x \mapsto N}}z &=&
+   \cut x {} {\tocp{L}x} {\case{x}{\mkwd{inl} \mapsto \tocp{M}z;
+                                   \mkwd{inr} \mapsto \tocp{N}z}} \\
+\tocp{\mkwd{absurd} \app L}z &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}} \\
+\end{equations}
+
+
+\begin{equations}
+\tocp{M}z &=& \tocp{M}z \\
+\tocp{\distinguish M}z &=& \tocp{M}z \\
+\tocp{(\nu x)C}z &=& \tocp{C}z \\
+\tocpbig{
+  \inferrule
+    {\Gamma,x:S \vdash^{\phi} C \\
+     \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+    {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
+  \left\{
+    \ba{l}
+    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
+    \qquad\text{if $\phi' = \bcirc$;} \\
+    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
+    \qquad\text{otherwise.}
+    \ea \right.
+\end{equations}
+
+
+\begin{theorem}
+  If $\Gamma \vdash M : T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
+\end{theorem}
+
+
+
+
+\begin{theorem}
+If $\Gamma \vdash M \teval N : T$, then $\tocp{M}z \rto^* \tocp{N}v$.
+\end{theorem}
+
+\begin{lemma}
+$\cut{x}{}{\tocp{M}z}{\tocp{V}x} \rto^* \tocp{M[V/x]}z$
+\end{lemma}
+
+\begin{lemma}
+$\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
+\end{lemma}
+
+\begin{theorem}
+If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
+\end{theorem}
+
+\begin{theorem}
+If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
+\rto^* \tocp{D}v$.
+\end{theorem}
+
+\begin{lemma}
+$\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
+\end{lemma}
+
+\begin{lemma}
+$\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
+\end{lemma}
+
+OK. Bugger this. The substitution lemma is false.
+
+%%     nu x.([[\y.wait y; x]]z | [[()]]x)
+%%   =
+%%     nu x.(z(y).y().x <-> z | x[])
+
+%% But
+
+%%   [[\y.wait; ()]]z = z(y).y().z[]
+
+%% Similarly, the main theorem is false.
+
+%%     [[(\x.\y.wait y; x)()]]z
+%%   -->*
+%%     nu x(z(y).y().x <-> z | x[])
+
+%% But
+  
+%%   [[\y.wait y; ()]]z = z(y).y.z[]
+
+\subsection{Indirect Translation from GV to CP}
+
 
 \todo{ANF translation.}
 
