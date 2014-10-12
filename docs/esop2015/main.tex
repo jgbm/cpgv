@@ -977,7 +977,7 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \subsection{Functions as Processes}
 
-\todo{Probably scrap this, as it turns out to be quite hard to prove correct directly.}
+\todo{Probably scrap this, as it turns out to be wrong.}
 
 Following our previous work, we show that functions in GV can be translated into processes, and in
 particular that the translation respects the semantics.
@@ -1029,7 +1029,7 @@ particular that the translation respects the semantics.
 \tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 %\tocp{\gvsend{(M,N)}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{x[y].\link{x}{z}}}{\tocp{N}x} \\
-\tocp{\gvsend{(M,N)}}z &=& \cut{y}{}{\tocp{M}y}{\cut{x}{}{\tocp{N}x}{y[x].\link{y}{z}}} \\
+\tocp{\gvsend{(L,M)}}z &=& \cut{y}{}{\tocp{L}y}{\cut{x}{}{\tocp{M}x}{y[x].\link{y}{z}}} \\
 \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \tocp{\lambda x.M}z &=& z(x).\tocp{M}z \\
@@ -1074,29 +1074,64 @@ particular that the translation respects the semantics.
   If $\Gamma \vdash M : T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
 \end{theorem}
 
-
-
-
 \begin{theorem}
-If $\Gamma \vdash M \teval N : T$, then $\tocp{M}z \rto^* \tocp{N}v$.
+  If $\Gamma \vdash C$, then $\tocp{C}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
 \end{theorem}
 
-\begin{lemma}
-$\cut{x}{}{\tocp{M}z}{\tocp{V}x} \rto^* \tocp{M[V/x]}z$
-\end{lemma}
 
-\begin{lemma}
-$\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
-\end{lemma}
+One might hope that reduction in GV would be preserved by the translation to CP. However, it turns
+out that this is not the case. Consider the following straightforward $\beta$-reduction:
+\[
+  \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \teval \lambda y.\gvwait{y}; ()
+\]
+Translating the left-hand side yields:
+\[
+\bl
+\quad \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \\
+= \\
+\quad \cut{w}{}{w(x).\tocp{\lambda y.\gvwait{y; x}w}}{\cut{x}{}{\tocp{()}x}{y[x].\link{y}{z}}} \\
+\equiv \\
+\quad \cut{w}{}{w(x).w(y).y().\link{x}{w}}{\cut{x}{}{x[]}{w[x].\link{w}{z}}} \\
+\equiv \\
+\quad \cut{x}{}{x[]}{\cut{w}{}{w(x).w(y).y().\link{x}{w}}{w[x].\link{w}{z}}} \\
+\rto \\
+\quad \cut{x}{}{x[]}{\cut{w}{}{w(y).y().\link{x}{w}}{\link{w}{z}}} \\
+\rto \\
+\quad \cut{x}{}{x[]}{z(y).y().\link{x}{z}} \\
+\rto^* (\text{commuting conversions}) \\
+\quad z(y).y().\cut{x}{}{x[]}{\link{x}{z}} = P \\
+\el
+\]
+Translating the right-hand side yields:
+\[
+\bl
+\quad \tocp{\lambda y.\gvwait{y}; ()} \\
+= \\
+\quad z(y).y().z[] = Q
+\el
+\]
+
+Alas, $P$ does not reduce to $Q$.
+%
+Notice that we could reduce $P$ to $Q$ if we were allowed to reduce under a prefix.
+
+As we have shown previously, we can translate a term $P$ from CP to GV and back, perform some
+reductions, and arrive back at $P$.
+\begin{theorem}
+$\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
+\end{theorem}
+
+\paragraph{Some results that hold, but may be of no use}
 
 \begin{theorem}
 If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
 \end{theorem}
-
-\begin{theorem}
-If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-\rto^* \tocp{D}v$.
-\end{theorem}
+%
+The following lemmas can be made to hold, by construction.
+%
+\begin{lemma}
+$\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
+\end{lemma}
 
 \begin{lemma}
 $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
@@ -1106,7 +1141,25 @@ $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
 $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
 \end{lemma}
 
-OK. Bugger this. The substitution lemma is false.
+\paragraph{A whole load of results that do not hold}
+
+\begin{lemma}
+$\cut{x}{}{\tocp{M}z}{\tocp{V}x} \rto^* \tocp{M[V/x]}z$
+\end{lemma}
+
+\begin{theorem}
+If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
+\rto^* \tocp{N}v$.
+\end{theorem}
+
+\begin{theorem}
+If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
+\rto^* \tocp{D}v$.
+\end{theorem}
+
+
+
+%% OK. Bugger this. The substitution lemma is false.
 
 %%     nu x.([[\y.wait y; x]]z | [[()]]x)
 %%   =
