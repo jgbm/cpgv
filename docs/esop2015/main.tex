@@ -1047,6 +1047,9 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 %%
 \subsection{Direct Translation from GV to CP}
 
+\newcommand{\clos}[3]{\lambda^{#1}\!#2.#3}
+
+
 \newcommand{\tocpflip}[1]{\llceil{#1}\rrceil}
 
 \[
@@ -1078,7 +1081,9 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \begin{equations}
 \tocp{x}z &=& \link{x}{z} \\
-\tocp{\gvconst{fork} \app V}z &=& \cut{x}{}{\link x z}{\cut{y}{}{\tocp{M}y}{y[x].y[].0}} \\
+%\tocp{\gvconst{fork}\:V}z &=& \cut{x}{}{\tocp{V}x}{x[y](\link{y}{z} \mid x[])} \\
+\tocp{\gvconst{fork}\:(\clos{\sigma}{z}{M})}z &=&
+  \tocp{\sigma}(\cut{x}{}{\tocp{M}{x}}{x[]}) \\
 \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
 \tocp{\gvsend{(L,M)}}z &=&
   \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
@@ -1105,6 +1110,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
 \end{equations}
 
+\todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
+  enforce left-to-right evaluation of applications and pairs. Is this what we want?}
 
 \begin{equations}
 \tocp{M}z &=& \tocp{M}z \\
@@ -1117,11 +1124,23 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
   \left\{
     \ba{l}
-    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
+    \cut{x}{}{\cut{y}{}{\tocp{C}y}{y[]}}{\tocp{C'}z} \\
     \qquad\text{if $\phi' = \bcirc$;} \\
-    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
+    \cut{x}{}{\tocp{C}z}{\cut{y}{}{\tocp{C'}y}{y[]}} \\
     \qquad\text{otherwise.}
     \ea \right.
+%% \tocpbig{
+%%   \inferrule
+%%     {\Gamma,x:S \vdash^{\phi} C \\
+%%      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+%%     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
+%%   \left\{
+%%     \ba{l}
+%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
+%%     \qquad\text{if $\phi' = \bcirc$;} \\
+%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
+%%     \qquad\text{otherwise.}
+%%     \ea \right.
 \end{equations}
 
 \paragraph{Type soundness}
@@ -1169,8 +1188,6 @@ Each translation of a context takes two arguments: a function that describes the
 into the hole, and an output channel.
 
 \todo{Perhaps include the full definitions in an appendix?}
-
-\newcommand{\clos}[3]{\lambda^{#1}\!#2.#3}
 
 In order to prove that reduction is preserved by the translation we need a substitution lemma.
 \begin{lemma}
