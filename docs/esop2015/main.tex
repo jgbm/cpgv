@@ -30,28 +30,28 @@
 
 \section{Introduction}\label{sec:intro}
 
-Contributions:
-
+In this paper, we make the following contributions.
 \begin{itemize}
 \item We define a core linearly-typed functional language, by extending linear lambda calculus
-  with session-typed communication primitives.
-\item We present an (untyped) operational semantics for our core language,
-\item We give characterizations of deadlock and normal forms, and show that well-typed terms are
-  deadlock-free.
+  with session-typed communication primitives~\secref{gv-static}.
+\item We present an (untyped) synchronous operational semantics for our core language, introducing
+  explicit closures in the semantics of $\lambda$ terms and following the approach of Gay and
+  Vasconcelos for the semantics of concurrent processes~\secref{gv-eval}.
+\item We characterize deadlock and normal forms; we show that typed terms are deadlock-free, and
+  that closed typed terms evaluate to normal forms~\secref{gv-deadlock}.
 \item We connect our language to the interpretation of session types as linear logic propositions,
   by establishing a correspondence between the semantics of our language and that of Wadler's
-  calculus CP.
-\item We give several extensions of our core language, and show that these extensions preserve
-  deadlock freedom.
+  calculus CP~\secref{cp}.
+\item We consider two extensions of our core language~\secref{extend}: one which harmonizes the
+  treatment of closed channels with their treatment in other session-typed calculi~\secref{gv-end},
+  and another which adds unlimited types and replicated behavior~\secref{gv-repl}.  We show that
+  these extensions preserve the essential deadlock-freedom properties of the core language.
 \end{itemize}
+Finally, we discuss related work~\secref{related} and conclude~\secref{conclusion}.
 
 \section{GV by Example}\label{sec:examples}
 
 \subsection{Books and Stores Therefore}
-
-\begin{itemize}
-\item Explain encoding of select and choice into send and receive with sums.
-\end{itemize}
 
 \todo{This ended up being a bit long.  There are a couple of points that it makes tho:
   \begin{itemize}
@@ -150,18 +150,20 @@ System \defeq \bl
 \subsection{Selection and Choice}
 
 \small\begin{align*}
+  \oplus \{ \ell_1 : S_1,\dots,\ell_n:S_n \} &\defeq \gvout{(\ell_1:S_1 + \cdots + \ell_n:S_n)}{\outterm} \\
+  \with \{ \ell_1 : S_1,\dots,\ell_n:S_n \} &\defeq \gvin{(\ell_1:S_1 + \cdots + \ell_n:S_n)}{\interm} \\
   \gvconst{select} \app \ell_i \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell_i \app x, M)) \\
   \gvconst{offer} \app M \,\{ \ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q \}
     &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\\\gvcase{x}{\ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q}}} \el
 \end{align*}\normalsize
 
-\section{I'm Pickin' Up Good Vibrations}
+\section{I'm Pickin' Up Good Vibrations}\label{sec:gv}
 
 I'm intentionally ignoring CP polymorphism forever.
 
-\subsection{Syntax}
-\newcommand{\one}{\mathbf{1}}
-\newcommand{\zero}{\mathbf{0}}
+\subsection{Syntax and Typing}\label{sec:gv-static}
+
+\begin{figure}[t]
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid % \oplus \{ \overline{l:S} \} \mid \with \{ \overline{l:S} \} \mid
                                    \interm \mid \outterm \mid \channel{S} \\
@@ -172,6 +174,26 @@ I'm intentionally ignoring CP polymorphism forever.
   & & \mid & () \mid \gvletunit{M}{N} \mid \gvconst{absurd} \app M \\
   \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{wait} \mid \gvconst{link}\\
 \end{syntax}
+\caption{Syntax of GV terms and types}\label{fig:gv-syntax}
+\end{figure}
+
+\figref{gv-syntax} gives the syntax of GV types and terms.  The types include 0-ary and binary
+(linear) sums and pairs, and the linear
+
+
+                        The terms are the standard terms of a (linear) lambda calculus, augmented
+with construction and deconstruction of 0-ary and binary pairs and sums.  The concurrent behavior is
+provided by the constants $K$.  Communication is provided by \gvconst{send} and \gvconst{receive}.
+For example, a computation that received two numbers along a channel $z$ and then sent their sum
+along the same channel could be expressed by
+\[\bl
+  \gvlet{(x,z)}{\gvreceive{z}}{} \\
+  \gvlet{(y,z)}{\gvreceive{z}}{} \\
+  \gvsend{(x+y,z)} \el
+\]
+Channels are treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value
+($x$ or $y$), but also a new copy of the channel ($z$); similarly, \gvconst{send} returns a copy of
+the channel (which we have not bound in the example).
 
 \begin{mathpar}
 \gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual S}
@@ -183,8 +205,8 @@ I'm intentionally ignoring CP polymorphism forever.
 \gvdual{\outterm} = \interm
 \end{mathpar}
 
-\subsection{Typing}
-
+\begin{figure}
+Typing rules:
 \begin{mathpar}
 \inferrule
   {T \not= \channel{S}}
@@ -231,7 +253,9 @@ I'm intentionally ignoring CP polymorphism forever.
 \inferrule
   {\Gamma \vdash M: \zero}
   {\Gamma, \Gamma' \vdash \gvconst{absurd} \app M : T}
-
+\end{mathpar}
+Type schemas for constants:
+\begin{mathpar}
 \gvconst{send} : T \times \gvout{T}{S} \lto S
 
 \gvconst{receive} : \gvin{T}{S} \lto T \times S
@@ -242,8 +266,10 @@ I'm intentionally ignoring CP polymorphism forever.
 
 \gvconst{link} : S \times \gvdual{S} \lto \outterm
 \end{mathpar}
+\caption{GV typing rules}\label{fig:gv-typing}
+\end{figure}
 
-\subsection{Evaluation}
+\subsection{Evaluation}\label{sec:gv-eval}
 
 \newcommand{\distinguish}[1]{\langle #1 \rangle}
 
@@ -251,7 +277,9 @@ I'm intentionally ignoring CP polymorphism forever.
 \newcommand{\bcirc}{{\mathord{\bullet}}}
 
 \begin{syntax}
-  \text{Values} & V & ::= & x \mid K \mid \lambda x.M \\ % \mid K\,V \\
+  \text{Substitutions} & \sigma & ::= & \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \} \\
+  & & & \qquad\text{ where the $x_i$ are pairwise distinct} \\
+  \text{Values} & V & ::= & x \mid K \mid \lambda^\sigma x.M \\
   & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
   \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid \gvletunit{\Ex}{M} \\
   & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
@@ -261,6 +289,30 @@ I'm intentionally ignoring CP polymorphism forever.
   \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
+We will implicitly treat substitutions $\sigma$ as sets of bindings.  We define the application of
+one substitution $\sigma$ to another $\sigma'$ by
+\[
+  \sigma'\sigma \defeq \{ \bind x {\sigma V} \mid \bind x v \in \sigma' \}.
+\]
+Note that this is not the standard notion of substitution composition.  Finally, we define the
+application of a substitution to a term $M\sigma$ by the homomorphic extension of the following
+\begin{align*}
+  x\sigma  &\defeq V &&\text{if $(\bind x V) \in \sigma$} \\
+  (\lambda^{\sigma'} x.M)\sigma  &\defeq \lambda^{\sigma' \sigma} x.M \\
+  M\sigma  &\defeq M &&\text{if $x \not\in \fv(M)$}
+\end{align*}
+As values, we have closures, which combine an abstraction with a captured substitution.  We will
+treat $\lambda x.M$ as syntactic sugar for $\lambda^\sigma x.M$ where $\sigma = \{ \bind x x \mid x
+\in \fv(M) \setminus \{ x \}\}.$ We extend the typing rules for terms with a typing rule for
+closures:
+\[
+\inferrule
+  {\Gamma, x:T \vdash M\sigma : U \\
+   \dom(\sigma) = (\fv(M) \setminus \{ x \})}
+  {\Gamma \vdash \lambda^\sigma x.M : T \lto U}
+\]
+Note that the invariant on the domain of $\sigma$ is preserved under substitution.
+
 We define combination of flags $\phi + \phi'$ by
 \begin{mathpar}
   \wcirc + \wcirc = \wcirc
@@ -269,7 +321,8 @@ We define combination of flags $\phi + \phi'$ by
 
   \bcirc + \wcirc = \bcirc
 \end{mathpar}
-and leave $\bcirc + \bcirc$ undefined.  Configuration typing is given by
+and leave $\bcirc + \bcirc$ undefined.
+Configuration typing is given by
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T}
@@ -294,12 +347,13 @@ classic deadlocked configuration
   (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\gvconst{receive} \app x}{\gvconst{send} \app (z,y)}} \parallel
                  \gvlet{(z,y)}{\gvconst{receive} \app y}{\gvconst {send} \app (z,x)})
 \]
-it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions:
+it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions follow.
+$\beta$ rules:
 \begin{align*}
-  (\lambda x.M)\,V &\teval M\{V/x\} \\
+  (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \cup \sigma) \\
   \gvletunit{()}{M} &\teval M \\
-  \gvlet{(x,y)}{(V,V')}{M} &\teval M\{V/x,V'/y\} \\
-  \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N\{V/x\} \\
+  \gvlet{(x,y)}{(V,V')}{M} &\teval M \{ \bind x V, \bind y {V'} \} \\
+  \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N \{ \bind x V \} \\
   E[M] &\teval E[M'] \qquad \text{if $M \teval M'$}
 \end{align*}
 Configuration equivalence:
@@ -420,7 +474,7 @@ The proof is standard.
 
 \begin{theorem}\label{thm:preservation-equiv}
   If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, then there are some $\Gamma',D$ such that
-  $\Gamma \vdash^? \Gamma'$ and $\Gamma' \vdash D$.
+  $\Gamma \ceval^? \Gamma'$ and $\Gamma' \vdash D$.
 \end{theorem}
 
 \begin{proof}
@@ -434,7 +488,7 @@ while $\equiv$ does not necessarily preserve typing, we can use \thmref{preserva
 conclude that if $\Gamma \vdash C$ and $C \ceval^\star D$, there are some $\Gamma',D'$ such that
 $\Gamma \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
 
-\subsection{Deadlock and Its Absence}
+\subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
 
 Blocked terms:
 \newcommand{\blockedp}{\mathsf{blocked}}
@@ -501,9 +555,9 @@ Finally, the following is trivial.
 A process $C$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
 terms $M_1,\dots,M_n$ such that
 \[
-  C = (\nu x_1)(M_1 \parallel (\nu x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel D)\dots)),
+  C = (\nu x_1)(M_1 \parallel (\nu x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel C_n)\dots)),
 \]
-where either $D = M_n$ or $D = \distinguish M_n$.
+where either $C_n = M_n$ or $C_n = \distinguish M_n$.
 \end{definition}
 
 \begin{lemma}\label{thm:canonical}
@@ -527,13 +581,14 @@ where either $D = M_n$ or $D = \distinguish M_n$.
 
 \begin{theorem}\label{thm:progress-open}
   Let $\Gamma \vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
-  x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
+  x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel D)\dots))$ be
   a canonical form of $C$.  Then:
   \begin{enumerate}
   \item For $1 \leq i \leq n - 1$ either $\blockedp(x_j,M_i)$ where $j \leq i$ or $\blockedp(y,M_i)$
     for some $y \in \dom(\Gamma)$; and,
-  \item Either $M_n$ is a value or $\blockedp(y,M_n)$ for some $y \in \{ x_i \mid i \leq i \leq n -
-    1 \} \cup \dom(\Gamma)$.
+  \item There is a term $M_n$ such either $D = M_n$ or $D = \distinguish{M_n}$ and either $M_n$ is a
+    value or $\blockedp(y,M_n)$ for some $y \in \{ x_i \mid i \leq i \leq n - 1 \} \cup
+    \dom(\Gamma)$.
   \end{enumerate}
 \end{theorem}
 
@@ -542,12 +597,12 @@ where either $D = M_n$ or $D = \distinguish M_n$.
 \end{proof}
 
 \begin{corollary}\label{thm:progress}
-  Let $\vdash^\bcirc C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
+  Let $\vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
   a canonical form of $C$.  Then:
   \begin{enumerate}
   \item For $1 \leq i \leq n - 1$, $\blockedp(x_i,M_i)$; and,
-  \item $M_n = \distinguish V$ for some value $V$.
+  \item There is a value $V$ such that either $M_n = \distinguish V$ or $M_n = V$.
   \end{enumerate}
 \end{corollary}
 
@@ -555,111 +610,108 @@ where either $D = M_n$ or $D = \distinguish M_n$.
   By induction on the derivation of $\vdash P'$, relying on \thmref{progress-open}.  \qed
 \end{proof}
 
-\subsection{Direct GV semantics}
+%% \subsection{Direct GV semantics}
+%%
+%% \newcommand{\rpar}[1]{\mathbin{{[}\:\!\!\rangle}_{\!{#1}}\!}
+%% \newcommand{\lrpar}[1]{\mathbin{\langle\hspace{-.3ex}\rangle}_{\!{#1}}\!}
+%% \newcommand{\lpar}[1]{\mathbin{\langle\:\!\!{]}}_{{#1}}\!}
+%%
+%% \newcommand{\con}[3]{{#1} \rpar{#2} {#3}}
+%%
+%% \[
+%% \gvconst{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
+%% \]
+%%
+%% Syntactic sugar:
+%% \begin{align*}
+%% \con{M}{x}{N} &\defiff \gvconst{connect}(\lambda x.M, \lambda x.N) \\
+%% \con{L}{x}{\con{M}{y}{N}} &\defiff \con{L}{x}{(\con{M}{y}{N})} \\
+%% \end{align*}
+%%
+%% Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the following rules):
+%% \begin{align*}
+%% \gvconst{link}\,(x,y) &\equiv \gvconst{link}\,(y,x) \\
+%% \con{L}{x}{\con{M}{y}{N}} &\equiv \con{M}{y}{\con{L}{x}{N}} \\
+%% \con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
+%% %\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
+%% \end{align*}
+%%
+%% Interesting reductions
+%% \begin{align*}
+%% \con{E[\gvconst{send}\,(V,x)]}{x}{E'[\gvconst{receive}\,x]}
+%%   &\rto \con{E[x]}{x}{E'[(V,x)]} \\
+%% \con{E[\gvconst{receive}\,x]}{x}{E'[\gvconst{send}\,(V,x)]}
+%%   &\rto \con{E[(V,x)]}{x}{E'[x]} \\[1ex]
+%% \con{x}{x}{E[\gvconst{wait}\,x]}
+%%   &\rto E[()] \\
+%% \con{E[\gvconst{wait}\,x]}{x}{x}
+%%   &\rto E[()] \\[1ex]
+%% \con{E[\gvconst{link}\,(x,y)]}{x}{M}
+%%   &\rto \con{E[x]}{x}{(\gvconst{wait}\,x; M[y/x])} \\
+%% \con{M}{x}{E[\gvconst{link}\,(x,y)]}
+%%   &\rto \con{(\gvconst{wait}\,x; M[y/x])}{x}{E[x]} \\[1ex]
+%% \gvconst{link}\,(x,\gvconst{link}\,(y,z))
+%%   &\rto \gvconst{wait}\,x; \gvconst{link}\,(y,z) \\
+%% E[\con{M}{x}{N}]
+%%   &\rto \con{M}{x}{E[N]} \\
+%% \end{align*}
+%%
+%% An alternative is to remove the final commuting conversion rule and augment the notion of value to
+%% include a suitable representation of a collection of blocked communicating processes.
+%%
+%% Preservation
+%% \begin{theorem}
+%% If $\Gamma \vdash M : T$ and $M \rto N$ then $\Gamma \vdash N : T$.
+%% \end{theorem}
+%% %
+%% \begin{proof}
+%% By induction on the structure of the derivation of $\Gamma \vdash M : T$ using a standard
+%% substitution lemma for the case of $\beta$-reduction at function types. \qed
+%% \end{proof}
+%%
+%% Progress
+%% \begin{theorem}
+%% \label{thm:free-progress}
+%% If $\Gamma$ is a session environment (all variables in $\Gamma$ have session type) such that $\Gamma
+%% \vdash M : T$ then one of the following holds:
+%% \begin{enumerate}
+%% \item $M$ is a value; or
+%% \item there exists $N = \blockedp'(y_1, M_1) \rpar{x_1} \dots \rpar{x_{n}} \blockedp'(y_{n}, M_{n})$
+%%   such that $M \equiv N$ and $\Gamma \vdash N : T$; or
+%% \item there exists $N$ such that $M \rto N$.
+%% \end{enumerate}
+%% \end{theorem}
+%% %
+%% \begin{proof}
+%% By induction on the structure of the derivation of $\Gamma \vdash M : T$. \qed
+%% \end{proof}
+%% % In the second case each $y_i$ must be equal to either $x_i$ or some $x$ in $\Gamma$.
+%%
+%% \begin{theorem}
+%% If $\vdash M : T$ then one of the following holds:
+%% \begin{enumerate}
+%% \item $M$ is a value; or
+%% \item there exists $N = \blockedp(x_1, M_1) \rpar{x_1} \dots \rpar{x_{n-1}} \blockedp(x_{n-1},
+%%   M_{n-1}) \rpar{x_n} V$ such that $M \equiv N$ and $\Gamma \vdash N : T$; or
+%% \item there exists $N$ such that $M \rto N$.
+%% \end{enumerate}
+%% \end{theorem}
+%% %
+%% \begin{proof}
+%% By induction on the structure of the derivation of $\vdash M : T$ using
+%% \thmref{free-progress}. \qed
+%% \end{proof}
+%%
+%% $\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
+%%
+%% $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
+%% involving $x$.
 
-\newcommand{\rpar}[1]{\mathbin{{[}\:\!\!\rangle}_{\!{#1}}\!}
-\newcommand{\lrpar}[1]{\mathbin{\langle\hspace{-.3ex}\rangle}_{\!{#1}}\!}
-\newcommand{\lpar}[1]{\mathbin{\langle\:\!\!{]}}_{{#1}}\!}
-
-\newcommand{\con}[3]{{#1} \rpar{#2} {#3}}
-
-\[
-\gvconst{connect} : (S \lto \outterm, \gvdual{S} \lto T) \lto T
-\]
-
-Syntactic sugar:
-\begin{align*}
-\con{M}{x}{N} &\defiff \gvconst{connect}(\lambda x.M, \lambda x.N) \\
-\con{L}{x}{\con{M}{y}{N}} &\defiff \con{L}{x}{(\con{M}{y}{N})} \\
-\end{align*}
-
-Equivalences ($\equiv$ is the transitive, reflexive, symmetric closure of the following rules):
-\begin{align*}
-\gvconst{link}\,(x,y) &\equiv \gvconst{link}\,(y,x) \\
-\con{L}{x}{\con{M}{y}{N}} &\equiv \con{M}{y}{\con{L}{x}{N}} \\
-\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{L}{x}{M})}{y}{N} \\
-%\con{L}{x}{\con{M}{y}{N}} &\equiv \con{(\con{M}{x}{L})}{y}{N} \\
-\end{align*}
-
-Interesting reductions
-\begin{align*}
-\con{E[\gvconst{send}\,(V,x)]}{x}{E'[\gvconst{receive}\,x]}
-  &\rto \con{E[x]}{x}{E'[(V,x)]} \\
-\con{E[\gvconst{receive}\,x]}{x}{E'[\gvconst{send}\,(V,x)]}
-  &\rto \con{E[(V,x)]}{x}{E'[x]} \\[1ex]
-\con{x}{x}{E[\gvconst{wait}\,x]}
-  &\rto E[()] \\
-\con{E[\gvconst{wait}\,x]}{x}{x}
-  &\rto E[()] \\[1ex]
-\con{E[\gvconst{link}\,(x,y)]}{x}{M}
-  &\rto \con{E[x]}{x}{(\gvconst{wait}\,x; M[y/x])} \\
-\con{M}{x}{E[\gvconst{link}\,(x,y)]}
-  &\rto \con{(\gvconst{wait}\,x; M[y/x])}{x}{E[x]} \\[1ex]
-\gvconst{link}\,(x,\gvconst{link}\,(y,z))
-  &\rto \gvconst{wait}\,x; \gvconst{link}\,(y,z) \\
-E[\con{M}{x}{N}]
-  &\rto \con{M}{x}{E[N]} \\
-\end{align*}
-
-An alternative is to remove the final commuting conversion rule and augment the notion of value to
-include a suitable representation of a collection of blocked communicating processes.
-
-Preservation
-\begin{theorem}
-If $\Gamma \vdash M : T$ and $M \rto N$ then $\Gamma \vdash N : T$.
-\end{theorem}
-%
-\begin{proof}
-By induction on the structure of the derivation of $\Gamma \vdash M : T$ using a standard
-substitution lemma for the case of $\beta$-reduction at function types. \qed
-\end{proof}
-
-Progress
-\begin{theorem}
-\label{thm:free-progress}
-If $\Gamma$ is a session environment (all variables in $\Gamma$ have session type) such that $\Gamma
-\vdash M : T$ then one of the following holds:
-\begin{enumerate}
-\item $M$ is a value; or
-\item there exists $N = \blockedp'(y_1, M_1) \rpar{x_1} \dots \rpar{x_{n}} \blockedp'(y_{n}, M_{n})$
-  such that $M \equiv N$ and $\Gamma \vdash N : T$; or
-\item there exists $N$ such that $M \rto N$.
-\end{enumerate}
-\end{theorem}
-%
-\begin{proof}
-By induction on the structure of the derivation of $\Gamma \vdash M : T$. \qed
-\end{proof}
-% In the second case each $y_i$ must be equal to either $x_i$ or some $x$ in $\Gamma$.
-
-\begin{theorem}
-If $\vdash M : T$ then one of the following holds:
-\begin{enumerate}
-\item $M$ is a value; or
-\item there exists $N = \blockedp(x_1, M_1) \rpar{x_1} \dots \rpar{x_{n-1}} \blockedp(x_{n-1},
-  M_{n-1}) \rpar{x_n} V$ such that $M \equiv N$ and $\Gamma \vdash N : T$; or
-\item there exists $N$ such that $M \rto N$.
-\end{enumerate}
-\end{theorem}
-%
-\begin{proof}
-By induction on the structure of the derivation of $\vdash M : T$ using
-\thmref{free-progress}. \qed
-\end{proof}
-
-$\blockedp(x, M)$ means $M$ is blocked on a send or receive involving $x$.
-
-$\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
-involving $x$.
-
-\section{Linear Logic}
+\section{Linear Logic}\label{sec:cp}
 
 \subsection{CP}
 
 \todo{This section (particularly the text) needs quite a bit of tidying}
-
-\todo{Should we write selection and choice the way other process calculi do? $x \triangleright
-  l_i$ and $x \triangleleft \{ P;Q \}$.}
 
 \begin{figure}[float]
 
@@ -975,24 +1027,24 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{theorem}
 
 
-\subsection{Functions as Processes}
+%% \subsection{Functions as Processes}
+%%
+%% \todo{Probably scrap this, as it turns out to be wrong.}
+%%
+%% Following our previous work, we show that functions in GV can be translated into processes, and in
+%% particular that the translation respects the semantics.
 
-\todo{Probably scrap this, as it turns out to be wrong.}
-
-Following our previous work, we show that functions in GV can be translated into processes, and in
-particular that the translation respects the semantics.
-
-\[
-\topi{T \lto U} = \gvout{\topi{T}}{\topi{U}}
-\]
-
-\begin{equations}
-\topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
-\topi{L\,M}        &=& \gvsend{(\topi{M},\topi{L})} \\
-\topi{\gvfork{x}{M}} &=& \gvfork{x}{\gvsend{(x,\topi{M})}} \\
-\end{equations}
-
-
+%% \[
+%% \topi{T \lto U} = \gvout{\topi{T}}{\topi{U}}
+%% \]
+%%
+%% \begin{equations}
+%% \topi{\lambda x.M} &=& \gvfork{z}{\gvlet{(x, z)}{\gvreceive{z}}{\gvlink{\topi{M}}{z}}} \\
+%% \topi{L\,M}        &=& \gvsend{(\topi{M},\topi{L})} \\
+%% \topi{\gvfork{x}{M}} &=& \gvfork{x}{\gvsend{(x,\topi{M})}} \\
+%% \end{equations}
+%%
+%%
 \subsection{Direct Translation from GV to CP}
 
 \newcommand{\tocpflip}[1]{\llceil{#1}\rrceil}
@@ -1026,15 +1078,16 @@ particular that the translation respects the semantics.
 
 \begin{equations}
 \tocp{x}z &=& \link{x}{z} \\
-\tocp{\gvfork{x}{M}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\link{x}{z}} \\
+\tocp{\gvconst{fork} \app V}z &=& \cut x {} {\cut y {} {\tocp{M}y} {y[x].y[].0}} {\link x z} \\
 \tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
 %\tocp{\gvsend{(M,N)}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{x[y].\link{x}{z}}}{\tocp{N}x} \\
-\tocp{\gvsend{(L,M)}}z &=& \cut{y}{}{\tocp{L}y}{\cut{x}{}{\tocp{M}x}{y[x].\link{y}{z}}} \\
+\tocp{\gvsend{(M,N)}}z &=& \cut{y}{}{\tocp{M}y}{\cut{x}{}{\tocp{N}x}{y[x].\link{y}{z}}} \\
 \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
-\tocp{\lambda x.M}z &=& z(x).\tocp{M}z \\
-\tocp{L \app M}z &=&
-  \cut{y}{}{\tocp{L}y}{\cut{x}{}{\tocp{M}x}{y[x].\link{y}{z}}} \\
+\tocp{\lambda^\sigma x.M}z &=& \cut {x_1} {} {\tocp{V_1}x_1} {\dots \mid \cut {x_n} {} {\tocp{V_n}} {z(x).\tocp{M}z} \dots} \\
+&& \text{ if $\sigma = \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \}$} \\
+\tocp{M \app N}z &=&
+  \cut{y}{}{\tocp{M}y}{\cut{x}{}{\tocp{N}x}{y[x].\link{y}{z}}} \\
 %% \tocp{L \app M}z &=&
 %%     \cut y {} {\tocp{L}y}{y[x].(\tocp{M}x \mid \link{y}{z})} \\
 \tocp{()}z    &=& z[] \\
@@ -1176,135 +1229,135 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 %%     nu x(z(y).y().x <-> z | x[])
 
 %% But
-  
+
 %%   [[\y.wait y; ()]]z = z(y).y.z[]
 
-\subsection{Indirect Translation from GV to CP}
+%% \subsection{Indirect Translation from GV to CP}
+%%
+%%
+%% \todo{ANF translation.}
+%%
+%% \todo{Ensure that the definition of $\equiv$ is appropriate for the theorems.}
+%%
+%% \todo{Show that the A-normalisation rules are sound (easy).}
+%%
+%% Attempt at the ANF syntax.  Should we pick a new letter for ANF terms? [SL: No.]
+%%
+%% [SL: I fixed some bugs in the ANF syntax]
+%%
+%% \begin{syntax}
+%%   \text{Terms} & M,N & ::= & V \mid \gvlet{x}{V \app W}{N} \\
+%%   & & \mid & \gvlet{(x,y)}{V \app W}{N} \mid \gvletunit{V \app W}{N} \\
+%%   & & \mid & \gvcase{V}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
+%%   & & \mid & \gvconst{absurd} \app V \\
+%% \end{syntax}
+%%
+%% \small\[
+%% \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c}
+%% \begin{eqs}
+%% \tocp{T + U} &=& \tocp{T} \with \tocp{U} \\
+%% \tocp{T \times U} &=& \tocp{T} \parr \tocp{U} \\
+%% \tocp{T \lto U} &=& \cpdual{\tocp{T}} \otimes \tocp U
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \tocp{\zero} &=& \top \\
+%% \tocp{\one} &=& \bot
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
+%% \tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
+%% \end{eqs}
+%% &
+%% \begin{eqs}
+%% \tocp{\outterm}            &=& 1 \\
+%% \tocp{\interm}             &=& \bot \\
+%% \end{eqs}
+%% %&
+%% %\begin{eqs}
+%% %\tocp{\oplus \{l_i:S_i \}_i} &=& \oplus \{l_i:\tocp{S_i}\}_i \\
+%% %\tocp{\with \{l_i:S_i \}_i}  &=& \with \{l_i:\tocp{S_i}\}_i \\
+%% %\tocp{\gvservice{S}}       &=& \cpquery{\tocp{S}} \\
+%% %\tocp{\gvserver{S}}        &=& \cpbang{\tocp{S}} \\
+%% %\end{eqs}
+%% \ea
+%% \]\normalsize
+%%
+%% \small\begin{equations}
+%% \tocp{x}z &=& \link{x}{z} \\
+%% \tocp{\lambda x.N}z &=& z(x).\tocp{N}z \\
+%% \tocp{\gvlet{y}{V \app W}{N}}z &=&
+%%   \bl
+%%     \cut y {} {\cut x {} {\tocp{V}x} {x[z].(\tocp{W}z \mid \link x y)}} {\tocp{N}z} \\
+%%     \text{if $V$ is not a constant $K$}
+%%   \el \\
+%% \tocp{(V,W)}z &=& z[y].(\tocp{V}y \mid \tocp{W}z) \\
+%% \tocp{\gvlet{(x,y)}{V}{N}}z &=& \cut y {} {\tocp{V}y} {y(x).\tocp{N}z} \\
+%% \tocp{\mkwd {inl} \app V}z &=& z[\mkwd{inl}].\tocp{V}z\\
+%% \tocp{\gvcase V {\mkwd {inl} \app x \mapsto M; \mkwd {inr} \app x \mapsto N}}z &=&
+%%    \cut x {} {\tocp{V}x} {\mkwd{case} \app x \app \{ \mkwd{inl} \mapsto \tocp{M}z; \mkwd{inr} \mapsto \tocp{N}z \}} \\
+%% \tocp{\mkwd{absurd} \app V}z &=& \cut x {} {\tocp{V}x} {\mkwd{case}\app x \app \{ \}} \\
+%% \tocp{\gvlet{x}{\gvsend{(V,W)}}{N}}z &=& \cut{x}{}{\tocp{W}x}{\cut y {} {\tocp{V}y} {x[y].\tocp{N}z}} \\
+%% \tocp{\gvlet{(x,y)}{\gvreceive{V}}{N}}z &=& \cut{y}{}{\tocp{V}y}{y(x).\tocp{N}z} \\
+%% \tocp{\gvlet{()}{\gvconst{wait} \app V}{N}}z &=& \cut y {} {\tocp{V}y} {y().\tocp{N}z} \\
+%% \tocp{\gvlet{x}{\gvfork{x}{M}}{N}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\tocp{N}z} \\
+%% \tocp{\gvlet{x}{\gvlink{V}{W}}{N}}z &=& \cut x {} {x().\cut y {} {\tocp{V}y} {\tocp{W}y}} {\tocp{N}z} \\
+%% \end{equations}\normalsize
+%%
+%% \begin{theorem}
+%%   If $\Gamma \vdash M: T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\tocp{T}^\perp$.
+%% \end{theorem}
+%%
+%% \begin{proof}
+%%   By structural induction on the derivation of $\Gamma \vdash M: T$.  Representative cases follow.
+%%   \begin{itemize}
+%%   \item In case $M = x$, we must have $\Gamma = \{x:T\}$; we can directly conclude that $\link x z
+%%     \vdash x:T,z:\cpdual T$.
+%%   \item In case $M = \lambda x.N$, where $T = U \lto U'$, the induction hypothesis provides that
+%%     $\tocp{N}z \vdash \tocp{\Gamma},x:\tocp{U},z:\cpdual{\tocp{U'}}$.  Therefore, from the rule for
+%%     $\parr$ and the observation that $\cpdual{\tocp{U \lto U'}} = \tocp U \parr \cpdual{\tocp {U'}}$, we can
+%%     conclude that $z(x).\tocp{N}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U \lto U'}}$.
+%%   \item In case $M = \mkwd{inl} \app V$, where $T = U + U'$, the induction hypothesis provides that
+%%     $\tocp{V}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U}}$.  Therefore, from the rule for $\oplus$
+%%     and the observation that $\cpdual{\tocp{U + U'}} = \cpdual{\tocp{U}} \oplus \cpdual{\tocp{U'}}$,
+%%     we have that $z[\mkwd{inl}].\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U + U'}}$.
+%%   \end{itemize}
+%% \end{proof}
+%%
+%% \small\begin{equations}
+%% \tocp{M}z &=& \tocp{M}z \\
+%% \tocp{\distinguish M}z &=& \tocp{M}z \\
+%% \tocp{(\nu x)C}z &=& \tocp{C}z \\
+%% \tocpbig{
+%%   \inferrule
+%%     {\Gamma,x:S \vdash^{\phi} C \\
+%%      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+%%     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
+%%   \left\{
+%%     \ba{l}
+%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
+%%     \qquad\text{if $\phi' = \bcirc$;} \\
+%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
+%%     \qquad\text{otherwise.}
+%%     \ea \right.
+%% \end{equations}\normalsize
+%%
+%% \begin{theorem}
+%%   If $\Gamma \vdash P$, then there is some $T$ such that $\tocp{P}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
+%% \end{theorem}
+%%
+%% \begin{theorem}
+%%   If $M, N$ are GV-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
+%% \end{theorem}
+%%
+%% \begin{theorem}
+%%   If $M$ is a GV-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
+%% \end{theorem}
+%%
+\section{Extending GV}\label{sec:extend}
 
-
-\todo{ANF translation.}
-
-\todo{Ensure that the definition of $\equiv$ is appropriate for the theorems.}
-
-\todo{Show that the A-normalisation rules are sound (easy).}
-
-Attempt at the ANF syntax.  Should we pick a new letter for ANF terms? [SL: No.]
-
-[SL: I fixed some bugs in the ANF syntax]
-
-\begin{syntax}
-  \text{Terms} & M,N & ::= & V \mid \gvlet{x}{V \app W}{N} \\
-  & & \mid & \gvlet{(x,y)}{V \app W}{N} \mid \gvletunit{V \app W}{N} \\
-  & & \mid & \gvcase{V}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
-  & & \mid & \gvconst{absurd} \app V \\
-\end{syntax}
-
-\small\[
-\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c}
-\begin{eqs}
-\tocp{T + U} &=& \tocp{T} \with \tocp{U} \\
-\tocp{T \times U} &=& \tocp{T} \parr \tocp{U} \\
-\tocp{T \lto U} &=& \cpdual{\tocp{T}} \otimes \tocp U
-\end{eqs}
-&
-\begin{eqs}
-\tocp{\zero} &=& \top \\
-\tocp{\one} &=& \bot
-\end{eqs}
-&
-\begin{eqs}
-\tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
-\tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
-\end{eqs}
-&
-\begin{eqs}
-\tocp{\outterm}            &=& 1 \\
-\tocp{\interm}             &=& \bot \\
-\end{eqs}
-%&
-%\begin{eqs}
-%\tocp{\oplus \{l_i:S_i \}_i} &=& \oplus \{l_i:\tocp{S_i}\}_i \\
-%\tocp{\with \{l_i:S_i \}_i}  &=& \with \{l_i:\tocp{S_i}\}_i \\
-%\tocp{\gvservice{S}}       &=& \cpquery{\tocp{S}} \\
-%\tocp{\gvserver{S}}        &=& \cpbang{\tocp{S}} \\
-%\end{eqs}
-\ea
-\]\normalsize
-
-\small\begin{equations}
-\tocp{x}z &=& \link{x}{z} \\
-\tocp{\lambda x.N}z &=& z(x).\tocp{N}z \\
-\tocp{\gvlet{y}{V \app W}{N}}z &=&
-  \bl
-    \cut y {} {\cut x {} {\tocp{V}x} {x[z].(\tocp{W}z \mid \link x y)}} {\tocp{N}z} \\
-    \text{if $V$ is not a constant $K$}
-  \el \\
-\tocp{(V,W)}z &=& z[y].(\tocp{V}y \mid \tocp{W}z) \\
-\tocp{\gvlet{(x,y)}{V}{N}}z &=& \cut y {} {\tocp{V}y} {y(x).\tocp{N}z} \\
-\tocp{\mkwd {inl} \app V}z &=& z[\mkwd{inl}].\tocp{V}z\\
-\tocp{\gvcase V {\mkwd {inl} \app x \mapsto M; \mkwd {inr} \app x \mapsto N}}z &=&
-   \cut x {} {\tocp{V}x} {\mkwd{case} \app x \app \{ \mkwd{inl} \mapsto \tocp{M}z; \mkwd{inr} \mapsto \tocp{N}z \}} \\
-\tocp{\mkwd{absurd} \app V}z &=& \cut x {} {\tocp{V}x} {\mkwd{case}\app x \app \{ \}} \\
-\tocp{\gvlet{x}{\gvsend{(V,W)}}{N}}z &=& \cut{x}{}{\tocp{W}x}{\cut y {} {\tocp{V}y} {x[y].\tocp{N}z}} \\
-\tocp{\gvlet{(x,y)}{\gvreceive{V}}{N}}z &=& \cut{y}{}{\tocp{V}y}{y(x).\tocp{N}z} \\
-\tocp{\gvlet{()}{\gvconst{wait} \app V}{N}}z &=& \cut y {} {\tocp{V}y} {y().\tocp{N}z} \\
-\tocp{\gvlet{x}{\gvfork{x}{M}}{N}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\tocp{N}z} \\
-\tocp{\gvlet{x}{\gvlink{V}{W}}{N}}z &=& \cut x {} {x().\cut y {} {\tocp{V}y} {\tocp{W}y}} {\tocp{N}z} \\
-\end{equations}\normalsize
-
-\begin{theorem}
-  If $\Gamma \vdash M: T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\tocp{T}^\perp$.
-\end{theorem}
-
-\begin{proof}
-  By structural induction on the derivation of $\Gamma \vdash M: T$.  Representative cases follow.
-  \begin{itemize}
-  \item In case $M = x$, we must have $\Gamma = \{x:T\}$; we can directly conclude that $\link x z
-    \vdash x:T,z:\cpdual T$.
-  \item In case $M = \lambda x.N$, where $T = U \lto U'$, the induction hypothesis provides that
-    $\tocp{N}z \vdash \tocp{\Gamma},x:\tocp{U},z:\cpdual{\tocp{U'}}$.  Therefore, from the rule for
-    $\parr$ and the observation that $\cpdual{\tocp{U \lto U'}} = \tocp U \parr \cpdual{\tocp {U'}}$, we can
-    conclude that $z(x).\tocp{N}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U \lto U'}}$.
-  \item In case $M = \mkwd{inl} \app V$, where $T = U + U'$, the induction hypothesis provides that
-    $\tocp{V}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U}}$.  Therefore, from the rule for $\oplus$
-    and the observation that $\cpdual{\tocp{U + U'}} = \cpdual{\tocp{U}} \oplus \cpdual{\tocp{U'}}$,
-    we have that $z[\mkwd{inl}].\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U + U'}}$.
-  \end{itemize}
-\end{proof}
-
-\small\begin{equations}
-\tocp{M}z &=& \tocp{M}z \\
-\tocp{\distinguish M}z &=& \tocp{M}z \\
-\tocp{(\nu x)C}z &=& \tocp{C}z \\
-\tocpbig{
-  \inferrule
-    {\Gamma,x:S \vdash^{\phi} C \\
-     \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
-    {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
-  \left\{
-    \ba{l}
-    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
-    \qquad\text{if $\phi' = \bcirc$;} \\
-    \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
-    \qquad\text{otherwise.}
-    \ea \right.
-\end{equations}\normalsize
-
-\begin{theorem}
-  If $\Gamma \vdash P$, then there is some $T$ such that $\tocp{P}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
-\end{theorem}
-
-\begin{theorem}
-  If $M, N$ are GV-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
-\end{theorem}
-
-\begin{theorem}
-  If $M$ is a GV-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
-\end{theorem}
-
-\section{Extending GV}
-
-\subsection{Unifying $\gvend_x$}
+\subsection{Unifying $\gvend_x$}\label{sec:gv-end}
 
 We define a language GVX, which, depending on your perspective, either extends GV with mix or
 combines the types of closed sessions.  The syntax is largely as in GV; the meaningful changes are
@@ -1381,7 +1434,7 @@ among processes).  Thus we can conclude that
   If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
 \end{theorem}
 
-\subsection{Adding Exponentials}
+\subsection{Adding Exponentials}\label{sec:gv-repl}
 
 Basic approach: add a new type \gvforever{T} in the functional fragment, subject to contraction and
 weakening, and with the usual introduction and elimination rules
@@ -1413,7 +1466,7 @@ weakening, and with the usual introduction and elimination rules
 \end{mathpar}
 with suitable expansion of evaluation contexts and the reduction rule
 \begin{mathpar}
-\gvlet{{!x}}{{!V}}{M} \teval M \{V/x\}
+\gvlet{{!x}}{{!V}}{M} \teval M \{ \bind x V \}
 \end{mathpar}
 with the observation that $x$ may appear multiple times in $M$.  The extension of the deadlock
 freedom results to this calculus are immediate.
@@ -1438,10 +1491,6 @@ defined as follows
 Note the parallel between the encoding of session-level sums using value-level sums and the encoding
 of session-level replication using value-level replication---in each case, the key is ``trivial''
 channels $\gvout{T}{\outterm}$ for suitable $T$.
-
-\todo{\gvconst{replicate} was called \gvconst{serve} in the PLACES paper and was, like
-  \gvconst{fork}, first order.  I find the newer name more representative of its meaning, but would
-  it be better to stick with the previous presentation?}
 
 \begin{equations}
   \tocp{{!M}}z &\defeq& \replicate z y.\tocp{M}y \\
