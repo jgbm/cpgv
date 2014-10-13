@@ -2,7 +2,7 @@
 
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs}
+\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem}
 \usepackage[table]{xcolor}
 \usepackage{colortbl}
 \addtolength{\jot}{-3px}
@@ -1078,29 +1078,31 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \begin{equations}
 \tocp{x}z &=& \link{x}{z} \\
-\tocp{\gvconst{fork} \app V}z &=& \cut x {} {\cut y {} {\tocp{M}y} {y[x].y[].0}} {\link x z} \\
-\tocp{\gvlink{M}{N}}z &=& z().\cut{x}{}{\tocp{M}x}{\tocp{N}x} \\
-%\tocp{\gvsend{(M,N)}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{x[y].\link{x}{z}}}{\tocp{N}x} \\
-\tocp{\gvsend{(M,N)}}z &=& \cut{y}{}{\tocp{M}y}{\cut{x}{}{\tocp{N}x}{y[x].\link{y}{z}}} \\
+\tocp{\gvconst{fork} \app V}z &=& \cut{x}{}{\link x z}{\cut{y}{}{\tocp{M}y}{y[x].y[].0}} \\
+\tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
+\tocp{\gvsend{(L,M)}}z &=&
+  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
 \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
-\tocp{\lambda^\sigma x.M}z &=& \cut {x_1} {} {\tocp{V_1}x_1} {\dots \mid \cut {x_n} {} {\tocp{V_n}} {z(x).\tocp{M}z} \dots} \\
-&& \text{ if $\sigma = \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \}$} \\
-\tocp{M \app N}z &=&
-  \cut{y}{}{\tocp{M}y}{\cut{x}{}{\tocp{N}x}{y[x].\link{y}{z}}} \\
-%% \tocp{L \app M}z &=&
-%%     \cut y {} {\tocp{L}y}{y[x].(\tocp{M}x \mid \link{y}{z})} \\
+\tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
+\tocp{L \app M}z &=&
+  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
 \tocp{()}z    &=& z[] \\
-\tocp{(M,N)}z &=& z[y].(\tocp{M}y \mid \tocp{N}z) \\
+\tocp{(M,N)}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z[w].(\link{w}{x} \mid \link{y}{z})}} \\
 \tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
 \tocp{\gvlet{(x,y)}{M}{N}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
-\tocp{\mkwd {inl} \app M}z &=& z[\mkwd{inl}].\tocp{M}z\\
-\tocp{\mkwd {inr} \app M}z &=& z[\mkwd{inr}].\tocp{M}z\\
+\tocp{\mkwd {inl} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link{x}{z}} \\
+\tocp{\mkwd {inr} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link{x}{z}} \\
 \tocp{\gvcase{L}{\mkwd {inl} \app x \mapsto M;
                  \mkwd {inr} \app x \mapsto N}}z &=&
    \cut x {} {\tocp{L}x} {\case{x}{\mkwd{inl} \mapsto \tocp{M}z;
                                    \mkwd{inr} \mapsto \tocp{N}z}} \\
-\tocp{\mkwd{absurd} \app L}z &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}} \\
+\tocp{\mkwd{absurd} \app L}z &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}}
+\medskip
+\\
+\tocp{[x_i \mapsto V_i]_i}P &=& \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)[P] \\
+\\
+\hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
 \end{equations}
 
 
@@ -1122,6 +1124,7 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
     \ea \right.
 \end{equations}
 
+\paragraph{Type soundness}
 
 \begin{theorem}
   If $\Gamma \vdash M : T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
@@ -1131,9 +1134,103 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
   If $\Gamma \vdash C$, then $\tocp{C}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
 \end{theorem}
 
+\paragraph{Semantic soundness}
 
-One might hope that reduction in GV would be preserved by the translation to CP. However, it turns
-out that this is not the case. Consider the following straightforward $\beta$-reduction:
+\begin{theorem}
+If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
+\end{theorem}
+%
+\begin{proof}
+By induction on the derivation of $\Gamma \vdash C$.\qed
+\end{proof}
+
+As the translation on terms and configurations are compositional, we can mechanically lift them to
+translations on evaluation contexts and configuration contexts, such that the following lemma holds
+by construction.
+%
+%% In order to ease reasoning by induction, we lift the translation on terms to contexts.
+%% \begin{equations}
+%% \tocp{\Ex}[\Ex{M}]z &=& \tocp{\Ex[M]}z \\
+%% \tocp{\Fx}[\Fx{M}]z &=& \tocp{\Fx[M]}z \\
+%% \tocp{\Gx}[\Gx{M}]z &=& \tocp{\Gx[M]}z \\
+%% \end{equations}
+%% That these equations are well-defined follows from compositionality of the translation on terms.
+%% The following lemmas can be made to hold, by construction.
+%
+\begin{lemma}
+~
+\begin{enumerate}
+\item $\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
+\item $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
+\item $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
+\end{enumerate}
+\end{lemma}
+Each translation of a context takes two arguments: a function that describes the CP term to plug
+into the hole, and an output channel.
+
+\todo{Perhaps include the full definitions in an appendix?}
+
+\newcommand{\clos}[3]{\lambda^{#1}\!#2.#3}
+
+In order to prove that reduction is preserved by the translation we need a substitution lemma.
+\begin{lemma}
+If $\Gamma \vdash M : T$, $\Gamma \vdash \sigma : \Delta$, and $z \notin \dom(\sigma)$, then
+$\tocp{\sigma}(\tocp{M}z) \rto^* \tocp{\sigma(M)}z$.
+\end{lemma}
+\begin{proof}
+By induction on the structure of $M$. Here we show the cases for variables and closures.
+\begin{itemize}
+\item Case $x$. By linearity there exists $V$ such that $\sigma = [x \mapsto V]$.
+\[
+\tocp{\sigma}(\tocp{x}z) =
+\cut{x}{}{\tocp{V}x}{\link{x}{z}} \rto \tocp{V}z = \tocp{\sigma(x)}z
+\]
+\item Case $\clos{\sigma'}{x}{M}$.
+\[
+\bl
+\quad \tocp{\sigma}(\tocp{\clos{\sigma'}{x}{M}}) \\
+= \quad (\sigma' = [x_i \mapsto V_i]) \\
+\quad \tocp{\sigma}(\hat{\nu} (x_i \mapsto (\tocp{V_i}x_i))_i[z(x).\tocp{M}z]) \\
+= \quad (\sigma = \sigma_1 \uplus \dots \uplus \sigma_n \text{ where } \dom(\sigma_i) = \fv(V_i)) \\
+\quad \tocp{\sigma_1}(\dots\tocp{\sigma_n} (\hat{\nu} (x_i \mapsto \tocp{V_i}x_i)_i[z(x).\tocp{M}z])) \\
+= \quad (\text{structural equivalence}) \\
+\quad \hat{\nu} (x_i \mapsto \tocp{\sigma_i}(\tocp{V_i}x_i))_i[z(x).\tocp{M}z] \\
+\rto^* (\text{IH}) \\
+\quad \hat{\nu} (x_i \mapsto \tocp{\sigma_i(V_i)}x_i)_i[z(x).\tocp{M}z] \\
+= \quad (\sigma_i(V_i) = \sigma(V)) \\
+\quad \hat{\nu} (x_i \mapsto \tocp{\sigma(V_i)}x_i)_i[z(x).\tocp{M}z] \\
+= \quad (\text{definition of }\tocp{-}) \\
+\quad \tocp{\clos{\sigma(\sigma')}{x}{M}} \\
+= \quad (\text{definition of substitution}) \\
+\quad \tocp{\sigma(\clos{\sigma'}{x}{M})} \\
+\el
+\]
+\end{itemize}
+Each of the remaining non-binding form cases follows straightforwardly using the induction
+hypothesis. Each of the remaining binding form cases requires a commuting conversion in order to
+push the appropriate substitution through a prefix.\qed
+\end{proof}
+
+
+\begin{theorem}
+If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
+\rto^* \tocp{N}v$.
+\end{theorem}
+
+\begin{theorem}
+If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
+\rto^* \tocp{D}v$.
+\end{theorem}
+
+
+
+
+
+\paragraph{Why we need closures}
+
+One might hope that reduction in GV without closures would be preserved by the translation to
+CP. However, it turns out that this is not the case. Consider the following straightforward
+$\beta$-reduction:
 \[
   \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \teval \lambda y.\gvwait{y}; ()
 \]
