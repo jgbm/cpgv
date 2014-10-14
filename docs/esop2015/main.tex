@@ -412,6 +412,12 @@ Configuration reduction is given by
   {(\nu x)(\Fx[\gvconst{wait} \app x] \parallel x) \ceval \Fx[()]}
 
 \inferrule
+  [Wait2]
+  { }
+  {(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \distinguish x) \ceval \distinguish{\Fx[()]}}
+
+
+\inferrule
    [Link]
    {x \in \fv(M)}
    {(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
@@ -425,6 +431,13 @@ Configuration reduction is given by
    [Lift2]
    {M \teval M'}
    {\Cx[M] \ceval \Cx[M']}
+
+%% [Lift3] would allow us to slightly simplify [Send] and [Link]
+%%
+%% \inferrule
+%%    [Lift3]
+%%    {\Cx[M] \ceval \Cx[M']}
+%%    {\Cx[\Fx[M]] \ceval \Cx[\Fx[M']]}
 \end{mathpar}
 Some things that might be useful.
 \begin{lemma}\label{thm:term-preservation}
@@ -1123,23 +1136,24 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \todo{In fact we can get away with the simpler definition for wait - perhaps we should?}
 
 \begin{equations}
-\tocp{M}z &=& \tocp{M}z \\
+\tocp{M}z              &=& \cut{y}{}{\tocp{M}y}{y[]} \\
 \tocp{\distinguish M}z &=& \tocp{M}z \\
 \tocp{(\nu x)C}z &=& \tocp{C}z \\
-\tocpbig{
-  \inferrule
-    {\Gamma,x:S \vdash^{\phi} C \\
-     \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
-    {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
-    \bl
-    \cut{x}{}{\tocp{C_1}z}{\cut{y}{}{\tocp{C_2}y}{y[]}} \\
-    \quad \text{where }C_1,C_2 =
-    \left\{
-      \ba{l}
-       C,C' \quad \text{if }\phi = \bcirc \\
-       C',C \quad \text{otherwise} \\
-      \ea \right. \\
-    \el \\
+\tocp{C \parallel_x C'} &=& \cut{x}{}{\tocp{C}z}{\tocp{C'}z} \\
+%% \tocpbig{
+%%   \inferrule
+%%     {\Gamma,x:S \vdash^{\phi} C \\
+%%      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+%%     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
+%%     \bl
+%%     \cut{x}{}{\tocp{C_1}z}{\cut{y}{}{\tocp{C_2}y}{y[]}} \\
+%%     \quad \text{where }C_1,C_2 =
+%%     \left\{
+%%       \ba{l}
+%%        C,C' \quad \text{if }\phi = \bcirc \\
+%%        C',C \quad \text{otherwise} \\
+%%       \ea \right. \\
+%%     \el \\
   %% \left\{
   %%   \ba{l}
   %%   \cut{x}{}{\cut{y}{}{\tocp{C}y}{y[]}}{\tocp{C'}z} \\
