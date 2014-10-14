@@ -1088,18 +1088,21 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x[w].(\link{w}{y} \mid \link{x}{z})}} \\
-\tocp{\gvreceive{M}}z &=& \tocp{M}z \\
-\tocp{\gvwait{M}}z    &=& \tocp{M}z \\
+%% SL: we need these eta-expanded definitions for receive and wait
+%% in order for the simulation theorem to hold
+\tocp{\gvreceive{M}}z &=& 
+  \cut{y}{}{\tocp{M}y}{y(x).z\sd{x}.\link{y}{z}} \\
+\tocp{\gvwait{M}}z    &=& 
+  \cut{y}{}{\tocp{M}y}{y().z[]} \\
+%% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
+%% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
 \tocp{L \app M}z &=&
-%  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}
-%     {\cut{w}{}{\link{y}{w}}{x[v](\link{v}{w} \mid \link{x}{z})}}} \\
-%%  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
   \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{y[w].(\link{w}{x} \mid \link{y}{z})}} \\
 \tocp{()}z    &=& z[] \\
 \tocp{(M,N)}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z[w].(\link{w}{x} \mid \link{y}{z})}} \\
-\tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
 \tocp{\gvlet{(x,y)}{M}{N}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
+\tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
 \tocp{\mkwd {inl} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link{x}{z}} \\
 \tocp{\mkwd {inr} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link{x}{z}} \\
 \tocp{\gvcase{L}{\mkwd {inl} \app x \mapsto M;
