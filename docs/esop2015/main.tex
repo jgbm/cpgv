@@ -1120,7 +1120,7 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
   enforce left-to-right evaluation of applications and pairs. Is this what we want?}
 
-\todo{Wait probably requires similar treatment to receive.}
+\todo{In fact we can get away with the simpler definition for wait - perhaps we should?}
 
 \begin{equations}
 \tocp{M}z &=& \tocp{M}z \\
@@ -1342,107 +1342,124 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 \el
 \]
 
-This is what goes wrong if we don't use the convoluted translation of receive.
-\[
-\bl
-\quad \tocp{\gvconst{send} \app (V,x) \parallel \distinguish{\gvconst{receive} \app x}}z \\
-= \\
-\quad \cut{x}{}
-        {\cut{y}{}{\tocp{\gvconst{send} \app (V,x)}y}{y[]}}
-        {\tocp{\gvconst{receive} \app x}z} \\
-= \\
-\quad 
-  \cut{x}{}
-    {\cut{y}{}{
-     \cut{v}{}{\tocp{V}v}
-      {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}}{y[]}}
-    {\link x z} \\
-= \\
-\quad 
-  \cut{v}{}{\tocp{V}v}
-    {\cut{x}{}
-      {\cut{y}{}
-        {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{y[]}}
-      {\link x z}} \\
-= \\
-\quad 
-  \cut{v}{}{\tocp{V}v}
-    {\cut{y}{}
-      {\cut{x}{}
-        {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{\link x z}}
-      {y[]}} \\
-= \\
-\quad 
-  \cut{v}{}{\tocp{V}v}
-    {\cut{y}{}
-      {\cut{w}{}
-        {\cut{x}{}
-          {\link{x}{w}}
-          {\link x z}}
-        {w[v].\link{w}{y}}}
-      {y[]}} \\
-
-%% \rto^* \\
-%% \quad 
-%%     \cut{y}{}{
-%%      \cut{v}{}{\tocp{V}v}
-%%       {z[v].\link{z}{y}}}{y[]} \\
+%% This is what goes wrong if we don't use the convoluted translation of receive.
+%% \[
+%% \bl
+%% \quad \tocp{\gvconst{send} \app (V,x) \parallel \distinguish{\gvconst{receive} \app x}}z \\
 %% = \\
-%% \dots \\
+%% \quad \cut{x}{}
+%%         {\cut{y}{}{\tocp{\gvconst{send} \app (V,x)}y}{y[]}}
+%%         {\tocp{\gvconst{receive} \app x}z} \\
 %% = \\
 %% \quad 
 %%   \cut{x}{}
-%%     {x[]}
+%%     {\cut{y}{}{
+%%      \cut{v}{}{\tocp{V}v}
+%%       {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}}{y[]}}
+%%     {\link x z} \\
+%% = \\
+%% \quad 
+%%   \cut{v}{}{\tocp{V}v}
+%%     {\cut{x}{}
+%%       {\cut{y}{}
+%%         {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{y[]}}
+%%       {\link x z}} \\
+%% = \\
+%% \quad 
+%%   \cut{v}{}{\tocp{V}v}
+%%     {\cut{y}{}
+%%       {\cut{x}{}
+%%         {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{\link x z}}
+%%       {y[]}} \\
+%% = \\
+%% \quad 
+%%   \cut{v}{}{\tocp{V}v}
+%%     {\cut{y}{}
+%%       {\cut{w}{}
+%%         {\cut{x}{}
+%%           {\link{x}{w}}
+%%           {\link x z}}
+%%         {w[v].\link{w}{y}}}
+%%       {y[]}} \\
+
+%% %% \rto^* \\
+%% %% \quad 
+%% %%     \cut{y}{}{
+%% %%      \cut{v}{}{\tocp{V}v}
+%% %%       {z[v].\link{z}{y}}}{y[]} \\
+%% %% = \\
+%% %% \dots \\
+%% %% = \\
+%% %% \quad 
+%% %%   \cut{x}{}
+%% %%     {x[]}
+%% %%     {\cut{v}{}{\tocp{V}v}
+%% %%       {z[v].\link{x}{z}}} \\
+%% %% {}^*\!\longleftarrow \\
+%% = ...\\
+%% \quad
+%%   \cut{v}{}
+%%     {\tocp{V}v} 
+%%     {\cut{y}{}
+%%       {\cut{w}{}
+%%         {\cut{x}{}
+%%           {\link{x}{w}}
+%%           {\link x y}}
+%%         {z[v].\link{w}{z}}}
+%%       {y[]}} \\
+%% = \\
+%% \quad
+%%   \cut{v}{}
+%%     {\tocp{V}v} 
+%%     {\cut{y}{}
+%%       {\cut{x}{}
+%%         {\link x y}
+%%         {\cut{w}{}{\link{x}{w}}
+%%           {z[v].\link{w}{z}}}}
+%%       {y[]}} \\
+%% = \\
+%% \quad
+%%   \cut{v}{}
+%%     {\tocp{V}v} 
+%%     {\cut{x}{}
+%%       {\cut{y}{}{\link x y}{y[]}}
+%%       {\cut{w}{}{\link{x}{w}}
+%%          {z[v].\link{w}{z}}}} \\
+%% = \\
+%% \quad 
+%%   \cut{x}{}
+%%     {\cut{y}{}{\link x y}{y[]}}
 %%     {\cut{v}{}{\tocp{V}v}
-%%       {z[v].\link{x}{z}}} \\
-%% {}^*\!\longleftarrow \\
-= ...\\
-\quad
-  \cut{v}{}
-    {\tocp{V}v} 
-    {\cut{y}{}
-      {\cut{w}{}
-        {\cut{x}{}
-          {\link{x}{w}}
-          {\link x y}}
-        {z[v].\link{w}{z}}}
-      {y[]}} \\
+%%       {\cut{w}{}{\link{x}{w}}
+%%          {z[v].\link{w}{z}}}} \\
+%% = \\
+%% \quad
+%%   \cut{x}{}
+%%     {\cut{y}{}{\link x y}{y[]}}
+%%     {\tocp{(V,x)}z} \\
+%% = \\
+%% \quad \cut{x}{}{\cut{y}{}{\tocp{x}y}{y[]}}{\tocp{(V,x)}z} \\
+%% = \\
+%% \quad \tocp{x \parallel \distinguish{(V,x)}} \\
+%% \el
+%% \]
+
+\item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel x) \ceval ()$.
+By Lemma~\ref{bla} we need only consider the case where $\Fx = \distinguish{[~]}$.
+\[
+\bl
+\quad \tocp{(\nu x)(\distinguish{\gvconst{wait} \app x} \parallel x)}z \\
 = \\
-\quad
-  \cut{v}{}
-    {\tocp{V}v} 
-    {\cut{y}{}
-      {\cut{x}{}
-        {\link x y}
-        {\cut{w}{}{\link{x}{w}}
-          {z[v].\link{w}{z}}}}
-      {y[]}} \\
+\quad \cut{x}{}{\tocp{\gvconst{wait} \app x}z}{\cut{y}{}{\tocp{x}{y}}{y[]}} \\
 = \\
-\quad
-  \cut{v}{}
-    {\tocp{V}v} 
-    {\cut{x}{}
-      {\cut{y}{}{\link x y}{y[]}}
-      {\cut{w}{}{\link{x}{w}}
-         {z[v].\link{w}{z}}}} \\
+\quad \cut{x}{}{\cut{y}{}{\link x y}{y().z[]}}{\cut{y}{}{\link x y}{y[]}} \\
+\Longrightarrow (\text{cut links and cut end channels}) \\
+\quad z[] \\
 = \\
-\quad 
-  \cut{x}{}
-    {\cut{y}{}{\link x y}{y[]}}
-    {\cut{v}{}{\tocp{V}v}
-      {\cut{w}{}{\link{x}{w}}
-         {z[v].\link{w}{z}}}} \\
-= \\
-\quad
-  \cut{x}{}
-    {\cut{y}{}{\link x y}{y[]}}
-    {\tocp{(V,x)}z} \\
-= \\
-\quad \cut{x}{}{\cut{y}{}{\tocp{x}y}{y[]}}{\tocp{(V,x)}z} \\
-= \\
-\quad \tocp{x \parallel \distinguish{(V,x)}} \\
+\quad \tocp{()}z
 \el
 \]
+
 \end{itemize}
 \end{proof}
 
