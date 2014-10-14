@@ -350,7 +350,7 @@ classic deadlocked configuration
 it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions follow.
 $\beta$ rules:
 \begin{align*}
-  (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \cup \sigma) \\
+  (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \uplus \sigma) \\
   \gvletunit{()}{M} &\teval M \\
   \gvlet{(x,y)}{(V,V')}{M} &\teval M \{ \bind x V, \bind y {V'} \} \\
   \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N \{ \bind x V \} \\
@@ -399,8 +399,12 @@ Configuration reduction is given by
 
 \inferrule
   [Fork]
-  {\text{$x$ fresh}}
-  {\Fx[\gvconst{fork} \app V] \ceval (\nu x)(\Fx[x] \parallel (V\,x))}
+  {\text{$x$ is a fresh channel name}}
+  {\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})] \ceval (\nu x)(\Fx[x] \parallel M\sigma)}
+%%  {\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})] \ceval (\nu x)(\Fx[x] \parallel M(\{\bind x x\} \uplus \sigma)}
+  %% [Fork]
+  %% {\text{$x$ fresh}}
+  %% {\Fx[\gvconst{fork} \app V] \ceval (\nu x)(\Fx[x] \parallel (V\,x))}
 
 \inferrule
   [Wait]
@@ -1047,9 +1051,6 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 %%
 \subsection{Direct Translation from GV to CP}
 
-\newcommand{\clos}[3]{\lambda^{#1}\!#2.#3}
-
-
 \newcommand{\tocpflip}[1]{\llceil{#1}\rrceil}
 
 \[
@@ -1085,13 +1086,16 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
   \tocp{\sigma}(\cut{y}{}{\tocp{M}{y}}{\cut{x}{}{x[]}{\link{y}{z}}}) \\
 \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
-\tocp{\gvsend{(L,M)}}z &=&
-  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
+\tocp{\gvsend{(M,N)}}z &=&
+  \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x[w].(\link{w}{y} \mid \link{x}{z})}} \\
 \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
 \tocp{L \app M}z &=&
-  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
+%  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}
+%     {\cut{w}{}{\link{y}{w}}{x[v](\link{v}{w} \mid \link{x}{z})}}} \\
+%%  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
+  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{y[w].(\link{w}{x} \mid \link{y}{z})}} \\
 \tocp{()}z    &=& z[] \\
 \tocp{(M,N)}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z[w].(\link{w}{x} \mid \link{y}{z})}} \\
 \tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
@@ -1122,25 +1126,22 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
     {\Gamma,x:S \vdash^{\phi} C \\
      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
-  \left\{
-    \ba{l}
-    \cut{x}{}{\cut{y}{}{\tocp{C}y}{y[]}}{\tocp{C'}z} \\
-    \qquad\text{if $\phi' = \bcirc$;} \\
-    \cut{x}{}{\tocp{C}z}{\cut{y}{}{\tocp{C'}y}{y[]}} \\
-    \qquad\text{otherwise.}
-    \ea \right.
-%% \tocpbig{
-%%   \inferrule
-%%     {\Gamma,x:S \vdash^{\phi} C \\
-%%      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
-%%     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
-%%   \left\{
-%%     \ba{l}
-%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
-%%     \qquad\text{if $\phi' = \bcirc$;} \\
-%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
-%%     \qquad\text{otherwise.}
-%%     \ea \right.
+    \bl
+    \cut{x}{}{\tocp{C_1}z}{\cut{y}{}{\tocp{C_2}y}{y[]}} \\
+    \quad \text{where }C_1,C_2 =
+    \left\{
+      \ba{l}
+       C,C' \quad \text{if }\phi = \bcirc \\
+       C',C \quad \text{otherwise} \\
+      \ea \right. \\
+    \el \\
+  %% \left\{
+  %%   \ba{l}
+  %%   \cut{x}{}{\cut{y}{}{\tocp{C}y}{y[]}}{\tocp{C'}z} \\
+  %%   \qquad\text{if $\phi' = \bcirc$;} \\
+  %%   \cut{x}{}{\tocp{C}z}{\cut{y}{}{\tocp{C'}y}{y[]}} \\
+  %%   \qquad\text{otherwise.}
+  %%   \ea \right.
 \end{equations}
 
 \paragraph{Type soundness}
@@ -1148,10 +1149,16 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \begin{theorem}
   If $\Gamma \vdash M : T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
 \end{theorem}
+\begin{proof}
+By induction on the derivation of $\Gamma \vdash M : T$.\qed
+\end{proof}
 
 \begin{theorem}
   If $\Gamma \vdash C$, then $\tocp{C}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
 \end{theorem}
+\begin{proof}
+By induction on the derivation of $\Gamma \vdash C$.\qed
+\end{proof}
 
 \paragraph{Semantic soundness}
 
@@ -1191,6 +1198,7 @@ into the hole, and an output channel.
 
 In order to prove that reduction is preserved by the translation we need a substitution lemma.
 \begin{lemma}
+\label{lem:tocp-subst}
 If $\Gamma \vdash M : T$, $\Gamma \vdash \sigma : \Delta$, and $z \notin \dom(\sigma)$, then
 $\tocp{\sigma}(\tocp{M}z) \rto^* \tocp{\sigma(M)}z$.
 \end{lemma}
@@ -1228,17 +1236,159 @@ hypothesis. Each of the remaining binding form cases requires a commuting conver
 push the appropriate substitution through a prefix.\qed
 \end{proof}
 
+%% [INLINED]
+%%
+%% \begin{lemma}
+%% If $\tocp{M}z \rto \tocp{N}z$ then $\tocp{E}[\tocp{M}]z \rto \tocp{E}[\tocp{N}]z$.
+%% \end{lemma}
+%% \begin{proof}
+%% This follows straightforwardly by observing that the translation of an evaluation context never
+%% places its argument inside a prefix.
+%% \end{proof}
 
 \begin{theorem}
 If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
 \rto^* \tocp{N}v$.
 \end{theorem}
+%
+\begin{proof}
+By induction on the derivation of $M \teval N$. Here we show the case of $\beta$-reduction.
+\begin{itemize}
+\item Case $(\lambda^\sigma x.M)\,V \teval M(\{\bind x V\} \cup \sigma)$.
+\[
+\bl
+\quad \tocp{(\lambda^\sigma x.M)\,V}z \\
+= \quad (\text{definition of }\tocp{-}) \\
+\quad \cut{w}{}{\tocp{V}w}{\cut{y}{}{\tocp{\sigma}(y(x).\tocp{M}y)}{y[x](\link{w}{x} \mid \link{y}{z})}} \\
+\rto (\text{cut send against receive}) \\
+\quad \cut{w}{}{\tocp{V}w}{\cut{y}{}{\link{y}{z}}{\cut{x}{}{\link{w}{x}}{\tocp{\sigma}(\tocp{M}y)}}} \\
+\rto^* (\text{cut links and $\alpha$ rename}) \\
+\cut{x}{}{\tocp{V}x}{\tocp{\sigma}(\tocp{M}z)} \\
+= \quad (\text{by Lemma~\ref{lem:tocp-subst}}) \\
+\tocp{M(\{\bind x V\} \cup \sigma)}
+\el
+\]
+\end{itemize}
+The remaining base cases are similarly direct. The inductive case for reduction inside an evaluation
+context follows straightforwardly by observing that the translation of an evaluation context never
+places its argument inside a prefix.\qed
+\end{proof}
 
 \begin{theorem}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
 \rto^* \tocp{D}z$.
 \end{theorem}
+\begin{proof}
+By induction on the derivation of $C \ceval D$. Here we show the case of send/receive reduction.
+\begin{itemize}
+\item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
+  \parallel \Fx'[(V,x)]$.
+%
+By Lemma~\ref{bla} we need only consider the case where $\Fx = \Fx' = [~]$.
+\[
+\bl
+\quad \tocp{\gvconst{send} \app (V,x) \parallel \distinguish{\gvconst{receive} \app x}}z \\
+= \\
+\quad \cut{x}{}
+        {\cut{y}{}{\tocp{\gvconst{send} \app (V,x)}y}{y[]}}
+        {\tocp{\gvconst{receive} \app x}z} \\
+= \\
+\quad 
+  \cut{x}{}
+    {\cut{y}{}{
+     \cut{v}{}{\tocp{V}v}
+      {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}}{y[]}}
+    {\link x z} \\
+= \\
+\quad 
+  \cut{v}{}{\tocp{V}v}
+    {\cut{x}{}
+      {\cut{y}{}
+        {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{y[]}}
+      {\link x z}} \\
+= \\
+\quad 
+  \cut{v}{}{\tocp{V}v}
+    {\cut{y}{}
+      {\cut{x}{}
+        {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{\link x z}}
+      {y[]}} \\
+= \\
+\quad 
+  \cut{v}{}{\tocp{V}v}
+    {\cut{y}{}
+      {\cut{w}{}
+        {\cut{x}{}
+          {\link{x}{w}}
+          {\link x z}}
+        {w[v].\link{w}{y}}}
+      {y[]}} \\
 
+
+
+%% \rto^* \\
+%% \quad 
+%%     \cut{y}{}{
+%%      \cut{v}{}{\tocp{V}v}
+%%       {z[v].\link{z}{y}}}{y[]} \\
+%% = \\
+%% \dots \\
+%% = \\
+%% \quad 
+%%   \cut{x}{}
+%%     {x[]}
+%%     {\cut{v}{}{\tocp{V}v}
+%%       {z[v].\link{x}{z}}} \\
+%% {}^*\!\longleftarrow \\
+= ...\\
+\quad
+  \cut{v}{}
+    {\tocp{V}v} 
+    {\cut{y}{}
+      {\cut{w}{}
+        {\cut{x}{}
+          {\link{x}{w}}
+          {\link x y}}
+        {z[v].\link{w}{z}}}
+      {y[]}} \\
+= \\
+\quad
+  \cut{v}{}
+    {\tocp{V}v} 
+    {\cut{y}{}
+      {\cut{x}{}
+        {\link x y}
+        {\cut{w}{}{\link{x}{w}}
+          {z[v].\link{w}{z}}}}
+      {y[]}} \\
+= \\
+\quad
+  \cut{v}{}
+    {\tocp{V}v} 
+    {\cut{x}{}
+      {\cut{y}{}{\link x y}{y[]}}
+      {\cut{w}{}{\link{x}{w}}
+         {z[v].\link{w}{z}}}} \\
+= \\
+\quad 
+  \cut{x}{}
+    {\cut{y}{}{\link x y}{y[]}}
+    {\cut{v}{}{\tocp{V}v}
+      {\cut{w}{}{\link{x}{w}}
+         {z[v].\link{w}{z}}}} \\
+= \\
+\quad
+  \cut{x}{}
+    {\cut{y}{}{\link x y}{y[]}}
+    {\tocp{(V,x)}z} \\
+= \\
+\quad \cut{x}{}{\cut{y}{}{\tocp{x}y}{y[]}}{\tocp{(V,x)}z} \\
+= \\
+\quad \tocp{x \parallel \distinguish{(V,x)}} \\
+\el
+\]
+\end{itemize}
+\end{proof}
 
 
 
