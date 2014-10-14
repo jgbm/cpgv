@@ -1091,9 +1091,13 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 %% SL: we need these eta-expanded definitions for receive and wait
 %% in order for the simulation theorem to hold
 \tocp{\gvreceive{M}}z &=& 
-  \cut{y}{}{\tocp{M}y}{y(x).z\sd{x}.\link{y}{z}} \\
+  \cut{y}{}{\tocp{M}y}{y(x).\cut{w}{}{\link{y}{w}}{z\sd{x}.\link{w}{z}}} \\
 \tocp{\gvwait{M}}z    &=& 
   \cut{y}{}{\tocp{M}y}{y().z[]} \\
+%% \tocp{\gvreceive{M}}z &=& 
+%%   \cut{y}{}{\tocp{M}y}{y(x).z\sd{x}.\link{y}{z}} \\
+%% \tocp{\gvwait{M}}z    &=& 
+%%   \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
@@ -1119,6 +1123,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
   enforce left-to-right evaluation of applications and pairs. Is this what we want?}
+
+\todo{Wait probably requires similar treatment to receive.}
 
 \begin{equations}
 \tocp{M}z &=& \tocp{M}z \\
@@ -1279,7 +1285,7 @@ places its argument inside a prefix.\qed
 
 \begin{theorem}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-\rto^* \tocp{D}z$.
+\Longrightarrow \tocp{D}z$ where $\Longrightarrow ~\defeq~ (\equiv\rto^*\equiv)$.
 \end{theorem}
 \begin{proof}
 By induction on the derivation of $C \ceval D$. Here we show the case of send/receive reduction.
@@ -1287,7 +1293,60 @@ By induction on the derivation of $C \ceval D$. Here we show the case of send/re
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
   \parallel \Fx'[(V,x)]$.
 %
-By Lemma~\ref{bla} we need only consider the case where $\Fx = \Fx' = [~]$.
+By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = \distinguish{[~]}$.
+\[
+\bl
+\quad \tocp{\gvconst{send} \app (V,x) \parallel \distinguish{\gvconst{receive} \app x}}z \\
+= \\
+\quad \cut{x}{}
+        {\cut{y}{}{\tocp{\gvconst{send} \app (V,x)}y}{y[]}}
+        {\tocp{\gvconst{receive} \app x}z} \\
+= \\
+\quad
+  \nu x(
+    {\cut{y}{}{
+     \cut{v}{}{\tocp{V}v}
+      {\cut{w}{}{\link{x}{w}}{w\sd{v}.\link{w}{y}}}}{y[]}} \\
+\qquad \mid
+    {\cut{y}{}
+       {\link{x}{y}}
+       {y(v).\cut{w}{}{\link{y}{w}}{z\sd{v}.\link{w}{z}}}} \\
+\Longrightarrow (\text{cut links}) \\
+\quad
+  \cut{x}{}
+    {\cut{y}{}
+       {\cut{v}{}{\tocp{V}v}
+         {x\sd{v}.\link{x}{y}}}
+       {y[]}}
+    {x(v).\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}} \\
+\Longrightarrow (\text{cut send against receive}) \\
+\quad
+  \cut{x}{}
+    {\cut{y}{}
+       {\cut{v}{}{\tocp{V}v}
+         {\link{x}{y}}}
+       {y[]}}
+    {\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}} \\
+\equiv \\
+\quad 
+  \cut{x}{}
+    {\cut{y}{}{\link x y}{y[]}}
+    {\cut{v}{}{\tocp{V}v}
+      {\cut{w}{}{\link{x}{w}}
+         {z\sd{v}.\link{w}{z}}}} \\
+= \\
+\quad
+  \cut{x}{}
+    {\cut{y}{}{\link x y}{y[]}}
+    {\tocp{(V,x)}z} \\
+= \\
+\quad \cut{x}{}{\cut{y}{}{\tocp{x}y}{y[]}}{\tocp{(V,x)}z} \\
+= \\
+\quad \tocp{x \parallel \distinguish{(V,x)}} \\
+\el
+\]
+
+This is what goes wrong if we don't use the convoluted translation of receive.
 \[
 \bl
 \quad \tocp{\gvconst{send} \app (V,x) \parallel \distinguish{\gvconst{receive} \app x}}z \\
@@ -1326,8 +1385,6 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = \Fx' = [~]$.
           {\link x z}}
         {w[v].\link{w}{y}}}
       {y[]}} \\
-
-
 
 %% \rto^* \\
 %% \quad 
