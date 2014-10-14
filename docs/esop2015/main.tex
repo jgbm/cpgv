@@ -1136,10 +1136,10 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \todo{In fact we can get away with the simpler definition for wait - perhaps we should?}
 
 \begin{equations}
-\tocp{M}z              &=& \cut{y}{}{\tocp{M}y}{y[]} \\
-\tocp{\distinguish M}z &=& \tocp{M}z \\
-\tocp{(\nu x)C}z &=& \tocp{C}z \\
-\tocp{C \parallel_x C'} &=& \cut{x}{}{\tocp{C}z}{\tocp{C'}z} \\
+\tocp{M}z                &=& \cut{y}{}{\tocp{M}y}{y[]} \\
+\tocp{\distinguish M}z   &=& \tocp{M}z \\
+\tocp{(\nu x)C}z         &=& \tocp{C}z \\
+\tocp{C \parallel_x C'}z &=& \cut{x}{}{\tocp{C}z}{\tocp{C'}z} \\
 %% \tocpbig{
 %%   \inferrule
 %%     {\Gamma,x:S \vdash^{\phi} C \\
