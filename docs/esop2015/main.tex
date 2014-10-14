@@ -1082,8 +1082,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \begin{equations}
 \tocp{x}z &=& \link{x}{z} \\
 %\tocp{\gvconst{fork}\:V}z &=& \cut{x}{}{\tocp{V}x}{x[y](\link{y}{z} \mid x[])} \\
-\tocp{\gvconst{fork}\:(\clos{\sigma}{z}{M})}z &=&
-  \tocp{\sigma}(\cut{x}{}{\tocp{M}{x}}{x[]}) \\
+\tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
+  \tocp{\sigma}(\cut{y}{}{\tocp{M}{y}}{\cut{x}{}{x[]}{\link{y}{z}}}) \\
 \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
 \tocp{\gvsend{(L,M)}}z &=&
   \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{x[w].(\link{y}{w} \mid \link{x}{z})}} \\
@@ -1156,7 +1156,7 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \paragraph{Semantic soundness}
 
 \begin{theorem}
-If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
+If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}z$.
 \end{theorem}
 %
 \begin{proof}
@@ -1236,7 +1236,7 @@ If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
 
 \begin{theorem}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-\rto^* \tocp{D}v$.
+\rto^* \tocp{D}z$.
 \end{theorem}
 
 
@@ -1288,41 +1288,41 @@ reductions, and arrive back at $P$.
 $\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
 \end{theorem}
 
-\paragraph{Some results that hold, but may be of no use}
+%% \paragraph{Some results that hold, but may be of no use}
 
-\begin{theorem}
-If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
-\end{theorem}
-%
-The following lemmas can be made to hold, by construction.
-%
-\begin{lemma}
-$\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
-\end{lemma}
+%% \begin{theorem}
+%% If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
+%% \end{theorem}
+%% %
+%% The following lemmas can be made to hold, by construction.
+%% %
+%% \begin{lemma}
+%% $\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
+%% \end{lemma}
 
-\begin{lemma}
-$\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
-\end{lemma}
+%% \begin{lemma}
+%% $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
+%% \end{lemma}
 
-\begin{lemma}
-$\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
-\end{lemma}
+%% \begin{lemma}
+%% $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
+%% \end{lemma}
 
-\paragraph{A whole load of results that do not hold}
+%% \paragraph{A whole load of results that do not hold}
 
-\begin{lemma}
-$\cut{x}{}{\tocp{M}z}{\tocp{V}x} \rto^* \tocp{M[V/x]}z$
-\end{lemma}
+%% \begin{lemma}
+%% $\cut{x}{}{\tocp{M}z}{\tocp{V}x} \rto^* \tocp{M[V/x]}z$
+%% \end{lemma}
 
-\begin{theorem}
-If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
-\rto^* \tocp{N}v$.
-\end{theorem}
+%% \begin{theorem}
+%% If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
+%% \rto^* \tocp{N}v$.
+%% \end{theorem}
 
-\begin{theorem}
-If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-\rto^* \tocp{D}v$.
-\end{theorem}
+%% \begin{theorem}
+%% If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
+%% \rto^* \tocp{D}v$.
+%% \end{theorem}
 
 
 
