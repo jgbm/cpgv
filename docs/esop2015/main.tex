@@ -1124,6 +1124,11 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
 \end{equations}
 
+\todo{Sort out how we deal with constants. Currently our translation of fork doesn't make sense - it
+  should be a translation of fork M. The translations of link (M, N) and send (M, N) are OK if we
+  insist constants are always fully applied. But perhaps we can reasonably change them to
+  translations of link M and send M.}
+
 \todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
   enforce left-to-right evaluation of applications and pairs. Is this what we want?}
 
@@ -1495,6 +1500,20 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 \el
 \]
 
+Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
+        (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
+\dots
+%% \[
+%% \bl
+%% \quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
+%% = \\
+%% \quad \cut{x}{}
+%%          {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
+%%          {\tocp{\Fx'}[\tocp{M}]z} \\
+%% = \\
+%% \quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
+%% \el
+%% \]
 
 \end{itemize}
 \end{proof}
