@@ -409,13 +409,8 @@ Configuration reduction is given by
 \inferrule
   [Wait]
   { }
-  {(\nu x)(\Fx[\gvconst{wait} \app x] \parallel x) \ceval \Fx[()]}
-
-\inferrule
-  [Wait2]
-  { }
-  {(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \distinguish x) \ceval \distinguish{\Fx[()]}}
-
+  {(\nu x)(\phi E[\gvconst{wait} \app x] \parallel \phi' x)
+       \ceval (\phi + \phi')\Fx[()]}
 
 \inferrule
    [Link]
@@ -1095,9 +1090,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 
 \begin{equations}
 \tocp{x}z &=& \link{x}{z} \\
-%\tocp{\gvconst{fork}\:V}z &=& \cut{x}{}{\tocp{V}x}{x[y](\link{y}{z} \mid x[])} \\
 \tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
-  \tocp{\sigma}(\cut{y}{}{\tocp{M}{y}}{\cut{x}{}{x[]}{\link{y}{z}}}) \\
+  \tocp{\sigma}(\cut{x}{}{\cut{y}{}{\tocp{M}{y}}{y[]}}{\link x z}) \\
 \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link{x}{z}}} \\
@@ -1458,21 +1452,49 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %% \el
 %% \]
 
-\item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel x) \ceval ()$.
-By Lemma~\ref{bla} we need only consider the case where $\Fx = \distinguish{[~]}$.
+\item Case $(\nu x)(\phi \Ex[\gvconst{wait} \app x] \parallel \phi' x) \ceval ()$.
 \[
 \bl
-\quad \tocp{(\nu x)(\distinguish{\gvconst{wait} \app x} \parallel x)}z \\
+\quad \tocp{(\nu x)(\phi E[\gvconst{wait} \app x] \parallel \phi' E[x])}z \\
 = \\
-\quad \cut{x}{}{\tocp{\gvconst{wait} \app x}z}{\cut{y}{}{\tocp{x}{y}}{y[]}} \\
+\quad \cut{x}{}{\tocp{\phi E}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
+               {\tocp{\phi'}[y \mapsto \tocp{x}{y}]z} \\
 = \\
-\quad \cut{x}{}{\cut{y}{}{\link x y}{y().z[]}}{\cut{y}{}{\link x y}{y[]}} \\
+\quad \cut{x}{}{\tocp{\phi E}[y \mapsto \cut{w}{}{\link x w}{w().y[]}]z}
+               {\tocp{\phi'}[y \mapsto \link x y]z} \\
 \Longrightarrow (\text{cut links and cut end channels}) \\
-\quad z[] \\
+\quad \tocp{(\phi + \phi') E}[y \mapsto y[]]z \\
 = \\
-\quad \tocp{()}z
+\quad \tocp{(\phi + \phi') E[()]}z
 \el
 \]
+\item Case $\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]
+                      \ceval (\nu x)(\Fx[x] \parallel M\sigma)$.
+\[
+\bl
+\quad \tocp{\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]}z \\
+= \\
+\quad \tocp{\Fx}[\tocp{\gvconst{fork} \app (\clos{\sigma}{x}{M})}]z \\
+= \\
+\quad \tocp{\Fx}[z \mapsto
+         \tocp{\sigma}
+            (\cut{x}{}
+               {\cut{y}{}
+                 {\tocp{M}{y}}{y[]}}
+                 {\tocp{x}z})]z \\
+\equiv \\
+\quad \cut{x}{}
+        {\tocp{\Fx}[\tocp{x}]z}
+        {\tocp{\sigma}(\tocp{\cut{y}{}{\tocp{M}y}{y[]}})} \\
+%% = \\
+%% \quad \cut{x}{}
+%%         {\tocp{\Fx}[\tocp{x}]z}
+%%         {\tocp{\sigma}(\tocp{\wcirc}[\tocp{M}]z)} \\
+= \\
+\quad \tocp{(\nu x)(\Fx[x] \parallel M\sigma)}z \\
+\el
+\]
+
 
 \end{itemize}
 \end{proof}
