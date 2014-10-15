@@ -16,7 +16,7 @@
 
 \input{preamble.tex}
 
-\title{Deadlock Freedom in a Functional Session-typed Language}
+\title{Session Freedom in a Functional Deadlock-typed Language}
 \author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
 \institute{The University of Edinburgh \\
            \email{\{Garrett.Morris,Sam.Lindley,Philip.Wadler\}@ed.ac.uk} \vspace{-5mm}}
@@ -147,17 +147,7 @@ System \defeq \bl
 \el
 \end{code}
 
-\subsection{Selection and Choice}
-
-\small\begin{align*}
-  \oplus \{ \ell_1 : S_1,\dots,\ell_n:S_n \} &\defeq \gvout{(\ell_1:S_1 + \cdots + \ell_n:S_n)}{\outterm} \\
-  \with \{ \ell_1 : S_1,\dots,\ell_n:S_n \} &\defeq \gvin{(\ell_1:S_1 + \cdots + \ell_n:S_n)}{\interm} \\
-  \gvconst{select} \app \ell_i \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell_i \app x, M)) \\
-  \gvconst{offer} \app M \,\{ \ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q \}
-    &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\\\gvcase{x}{\ell_1 \app x \mapsto P; \dots; \ell_n \app x \mapsto Q}}} \el
-\end{align*}\normalsize
-
-\section{I'm Pickin' Up Good Vibrations}\label{sec:gv}
+\section{A Session-Typed Functional Language}\label{sec:gv}
 
 I'm intentionally ignoring CP polymorphism forever.
 
@@ -165,8 +155,7 @@ I'm intentionally ignoring CP polymorphism forever.
 
 \begin{figure}[t]
 \begin{syntax}
-  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid % \oplus \{ \overline{l:S} \} \mid \with \{ \overline{l:S} \} \mid
-                                   \interm \mid \outterm \mid \channel{S} \\
+  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \interm \mid \outterm \mid \channel{S} \\
   \text{Types} & T,U & ::= & S \mid T \times U \mid \one \mid T + U \mid \zero \mid T \lto U \\ % \mid {!T} \\
   \text{Terms} & M,N & ::= & x \mid K \mid \lambda x.M \mid M\,N \\
   & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
@@ -177,35 +166,18 @@ I'm intentionally ignoring CP polymorphism forever.
 \caption{Syntax of GV terms and types}\label{fig:gv-syntax}
 \end{figure}
 
-\figref{gv-syntax} gives the syntax of GV types and terms.  The types include 0-ary and binary
-(linear) sums and pairs, and the linear
+\figref{gv-syntax} gives the syntax of GV types and terms.  The types $T$ include 0-ary and binary
+(linear) sums and pairs, and linear implication $T \lto U$.  We write $\gvletunit{M}{N}$ as the
+elimination form of $\one$, rather than the more verbose $\gvlet{()}{M}{N}$.  Session types $S$
+include input (\gvin T S), output (\gvout T S), and closed channels ($\interm$, $\outterm$).  We
+also include a type $\channel S$ of channels; values of channel type cannot be used directly in
+terms, but will appear in the typing of thread configurations.  The terms are the standard terms of
+a (linear) lambda calculus, augmented with construction and deconstruction of 0-ary and binary pairs
+and sums (there is, of course, no term to construct a 0-ary sum).  Typing rules, including the type schema for the constants $K$, are given in
+\figref{gv-typing}
 
 
-                        The terms are the standard terms of a (linear) lambda calculus, augmented
-with construction and deconstruction of 0-ary and binary pairs and sums.  The concurrent behavior is
-provided by the constants $K$.  Communication is provided by \gvconst{send} and \gvconst{receive}.
-For example, a computation that received two numbers along a channel $z$ and then sent their sum
-along the same channel could be expressed by
-\[\bl
-  \gvlet{(x,z)}{\gvreceive{z}}{} \\
-  \gvlet{(y,z)}{\gvreceive{z}}{} \\
-  \gvsend{(x+y,z)} \el
-\]
-Channels are treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value
-($x$ or $y$), but also a new copy of the channel ($z$); similarly, \gvconst{send} returns a copy of
-the channel (which we have not bound in the example).
-
-\begin{mathpar}
-\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual S}
-
-\gvdual{\gvin{T}{S}} = \gvout{T}{\gvdual S}
-
-\gvdual{\interm} = \outterm
-
-\gvdual{\outterm} = \interm
-\end{mathpar}
-
-\begin{figure}
+\begin{figure}[h]
 Typing rules:
 \begin{mathpar}
 \inferrule
@@ -218,18 +190,18 @@ Typing rules:
 
 \inferrule
   {\Gamma \vdash M: T \lto U \\
-   \Delta \vdash N: T}
-  {\Gamma,\Delta \vdash M\,N: U}
+   \Gamma' \vdash N: T}
+  {\Gamma,\Gamma' \vdash M\,N: U}
 
 \inferrule
   {\Gamma \vdash M: T \\
-   \Delta \vdash N: U}
-  {\Gamma,\Delta \vdash (M,N): T \times U}
+   \Gamma' \vdash N: U}
+  {\Gamma,\Gamma' \vdash (M,N): T \times U}
 
 \inferrule
   {\Gamma \vdash M: T \times T' \\
-   \Delta,x:T,y:T' \vdash N: U}
-  {\Gamma,\Delta \vdash \gvlet{(x,y)}{M}{N} : U}
+   \Gamma',x:T,y:T' \vdash N: U}
+  {\Gamma,\Gamma' \vdash \gvlet{(x,y)}{M}{N} : U}
 
 \inferrule
   {\Gamma \vdash M: T}
@@ -237,9 +209,9 @@ Typing rules:
 
 \inferrule
   {\Gamma \vdash M: T+T' \\
-   \Delta,x:T \vdash N: U \\
-   \Delta,x:T' \vdash N': U}
-  {\Gamma,\Delta \vdash \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} : U}
+   \Gamma',x:T \vdash N: U \\
+   \Gamma',x:T' \vdash N': U}
+  {\Gamma,\Gamma' \vdash \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} : U}
 
 \inferrule
   { }
@@ -247,8 +219,8 @@ Typing rules:
 
 \inferrule
   {\Gamma \vdash M: \one \\
-   \Delta \vdash N: T}
-  {\Gamma,\Delta \vdash \gvletunit{M}{N}: T}
+   \Gamma' \vdash N: T}
+  {\Gamma,\Gamma' \vdash \gvletunit{M}{N}: T}
 
 \inferrule
   {\Gamma \vdash M: \zero}
@@ -266,8 +238,113 @@ Type schemas for constants:
 
 \gvconst{link} : S \times \gvdual{S} \lto \outterm
 \end{mathpar}
+Duality:
+\begin{mathpar}
+\gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual S}
+
+\gvdual{\gvin{T}{S}} = \gvout{T}{\gvdual S}
+
+\gvdual{\interm} = \outterm
+
+\gvdual{\outterm} = \interm
+\end{mathpar}
 \caption{GV typing rules}\label{fig:gv-typing}
 \end{figure}
+
+\subsubsection{Concurrency.}
+
+Concurrent behavior is provided by the constants $K$.  Communication is provided by \gvconst{send}
+and \gvconst{receive}.  For example, a computation that received a pair of numbers along a channel
+$z$ and then sent their sum along the same channel could be expressed by
+%
+\[\bl
+  \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
+  \gvsend{(x+y,z)}
+\el\]
+%
+(where the interpretation of nested patterns by sequences of bindings is standard).  Sessions are
+treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value (the pair of
+$x$ and $y$) but also a new copy of the session used for receiving ($z$); similarly, \gvconst{send}
+returns a copy of the session used for sending.  The term above, therefore, requires that $z :
+\gvin{(Int \times Int)}{\gvout{Int}{S}}$ at its start, and evaluates to a session of type $S$. Session
+initiation is provided by \gvconst{fork}.  If $f$ is a function from a session of type $S$ to a
+closed session (of type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a session (of
+type $\gvdual S$) to communicate with it.  For example, the term
+%
+\[\bl
+ \gvconst{fork} \app (\lambda z. \\
+ \quad \bl
+   \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
+   \gvsend{(x+y,z)}) \el
+\el\]
+%
+returns a channel of type $\gvout{(Int \times Int)}{\gvin{Int}{\interm}}$.  In a process created by
+$\gvconst{fork} \app f$, the session returned from $f$ is implicitly closed by $\gvconst{fork}$;
+however, the other end of the channel must be explicity closed by calling \gvconst{wait}.  So a
+client of the process above might look like
+%
+\[\bl
+  \gvlet{z}{\gvsend{((6,7),z)}}{} \\
+  \gvlet{(x,z)}{\gvreceive{z}}{} \\
+  \gvletunit{\gvconst{wait}\app z}{x}
+\el\]
+%
+The combination of these processes would evaluate to 13.  Finally, \gvconst{link} is used for
+session forwarding; evaluating $\gvconst{link} \app (x, y)$ results in messages sent on $x$ being
+received on $y$ and vice versa.
+
+\subsubsection{Choice.}
+
+In addition to input and output, most session typed systems also provide session types representing
+internal ($S_1 \oplus S_2$) and external ($S_1 \with S_2$) choice (also called selection and
+branching, respectively).  For example, we could write a process that can either sum two numbers or
+negate one:
+%
+\[\bl
+  \mkwd{offer} \: z \: \{ \:
+  \bl
+     \mkwd{inl} \app z \mapsto \bl
+       \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
+       \gvsend{(x+y,z)} \el \\
+     \mkwd{inr} \app z \mapsto \bl
+       \gvlet{(x, z)}{\gvreceive{z}}{} \\
+       \gvsend{(-x,z)} \: \} \el \\
+  \el
+\el\]
+%
+This term initially requires $z : (\gvin{(Int \times Int)}{\gvout{Int}{S}}) \with
+(\gvin{Int}{\gvout{Int}{S}})$.  A client of this process would begin by choosing which branch of the
+session to take; for example, we could extend the preceding example as follows:
+%
+\[\bl
+  \gvlet{z}{\gvselect{\mkwd{inl}}{z}}{} \\
+  \gvlet{z}{\gvsend{((6,7),z)}}{} \\
+  \gvlet{(x,z)}{\gvreceive{z}}{} \\
+  \gvletunit{\gvconst{wait}\app z}{x}
+\el\]
+%
+In GV, we do not provide primitives for selection and branching in sessions; rather, we show that
+they are macro-expressable using the term-level sum construct.  The intuition is that selection is
+implemented by sending a suitably tagged process, while branching is implemented by a term-level
+branch on a received value.  Concretely, we define the types by
+\begin{mathpar}
+S_1 \with S_2 \defeq \gvin{(S_1 + S_2)}{\interm}
+
+S_1 \oplus S_2 \defeq \gvout{(\gvdual{S_1} + \gvdual{S_2})}{\outterm}
+\end{mathpar}
+Note that we have the expected duality relationship: $\gvdual{S_1 \with S_2} = \gvdual{S_1} \oplus
+\gvdual{S_2}$.  We can implement the \gvconst{select} and \gvconst{offer} primitives as follows
+(where $\ell$ ranges over $\{ \mkwd{inl}, \mkwd{inr} \}$)
+%
+\begin{align*}
+  \gvconst{select} \app \ell \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell \app x, M)) \\
+  \gvconst{offer} \app M \,\{ \mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q \}
+    &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\\\gvcase{x}{\mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q}}} \el
+\end{align*}
+%
+While we would expect a surface langauge to include selection and branching, we will omit them, as
+it simplifies the core calculus with no loss of expressivity.
+
 
 \subsection{Evaluation}\label{sec:gv-eval}
 
@@ -276,11 +353,12 @@ Type schemas for constants:
 \newcommand{\wcirc}{{\mathord{\circ}}}
 \newcommand{\bcirc}{{\mathord{\bullet}}}
 
+\begin{figure}[t]
 \begin{syntax}
+  \text{Values} & V,W & ::= & x \mid K \mid \lambda^\sigma x.M \\
+  & & \mid & () \mid (V,W) \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
   \text{Substitutions} & \sigma & ::= & \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \} \\
   & & & \qquad\text{ where the $x_i$ are pairwise distinct} \\
-  \text{Values} & V & ::= & x \mid K \mid \lambda^\sigma x.M \\
-  & & \mid & () \mid (V,V') \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
   \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid \gvletunit{\Ex}{M} \\
   & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
   & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
@@ -289,66 +367,73 @@ Type schemas for constants:
   \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
-We will implicitly treat substitutions $\sigma$ as sets of bindings.  We define the application of
-one substitution $\sigma$ to another $\sigma'$ by
-\[
-  \sigma'\sigma \defeq \{ \bind x {\sigma V} \mid \bind x v \in \sigma' \}.
-\]
-Note that this is not the standard notion of substitution composition.  Finally, we define the
-application of a substitution to a term $M\sigma$ by the homomorphic extension of the following
-\begin{align*}
-  x\sigma  &\defeq V &&\text{if $(\bind x V) \in \sigma$} \\
-  (\lambda^{\sigma'} x.M)\sigma  &\defeq \lambda^{\sigma' \sigma} x.M \\
-  M\sigma  &\defeq M &&\text{if $x \not\in \fv(M)$}
-\end{align*}
-As values, we have closures, which combine an abstraction with a captured substitution.  We will
-treat $\lambda x.M$ as syntactic sugar for $\lambda^\sigma x.M$ where $\sigma = \{ \bind x x \mid x
-\in \fv(M) \setminus \{ x \}\}.$ We extend the typing rules for terms with a typing rule for
-closures:
+\caption{Syntax of values, configurations, and contexts}\label{fig:gv-eval-syntax}
+\end{figure}
+
+Following Gay and Vasconcelos~\cite{}, we factor the semantics of GV into a (deterministic)
+reduction relation on terms (called $\teval$) and a (non-deterministic) reduction on configurations
+of processes (called $\ceval$).  \figref{gv-eval-syntax} gives the syntax of values, configurations,
+and evaluation and configuration contexts.
+
+\subsubsection{Terms.}
+
+To preserve a close connection between the semantics of our term language and cut-reduction in
+linear logic, we define term reduction using weak explicit substitutions~\cite{}.  In this approach,
+we capture substitutions at $\lambda$-terms rather than immediately applying them to the body of the
+term.  Our language of terms, therefore, includes closures $\lambda^\sigma x.M$, where $\sigma$
+provides the captured substitution.  We extend the typing relation on terms to include closures, as
+follows:
 \[
 \inferrule
   {\Gamma, x:T \vdash M\sigma : U \\
    \dom(\sigma) = (\fv(M) \setminus \{ x \})}
   {\Gamma \vdash \lambda^\sigma x.M : T \lto U}
 \]
-Note that the invariant on the domain of $\sigma$ is preserved under substitution.
+The free variables of a closure $\lambda^\sigma x.M$ are the free variables of the range of
+$\sigma$, not the free variables of $M$; application of substitution $M\sigma$ is then defined as
+usual on the free variables of terms.  Note that the side condition on the domain of $\sigma$ is
+preserved under substitution.  Finally, we will implicitly treat terms $\lambda x.M$ as closures
+$\lambda^\sigma x.M$ where $\sigma$ is the identity substitution restricted to the free variables of
+$M$ less $\{x\}$.
 
-We define combination of flags $\phi + \phi'$ by
-\begin{mathpar}
-  \wcirc + \wcirc = \wcirc
+%% We will implicitly treat substitutions $\sigma$ as sets of bindings.  We define the application of
+%% one substitution $\sigma$ to another $\sigma'$ by
+%% \[
+%%   \sigma'\sigma \defeq \{ \bind x {\sigma V} \mid \bind x v \in \sigma' \}.
+%% \]
+%% Note that this is not the standard notion of substitution composition.  Finally, we define the
+%% application of a substitution to a term $M\sigma$ by the homomorphic extension of the following
+%% \begin{align*}
+%%   x\sigma  &\defeq V &&\text{if $(\bind x V) \in \sigma$} \\
+%%   (\lambda^{\sigma'} x.M)\sigma  &\defeq \lambda^{\sigma' \sigma} x.M \\
+%%   M\sigma  &\defeq M &&\text{if $x \not\in \fv(M)$}
+%% \end{align*}
 
-  \wcirc + \bcirc = \bcirc
+%% As values, we have closures, which combine an abstraction with a captured substitution.  We will
+%% treat $\lambda x.M$ as syntactic sugar for $\lambda^\sigma x.M$ where $\sigma = \{ \bind x x \mid x
+%% \in \fv(M) \setminus \{ x \}\}.$ We extend the typing rules for terms with a typing rule for
+%% closures:
+%% \[
+%% \inferrule
+%%   {\Gamma, x:T \vdash M\sigma : U \\
+%%    \dom(\sigma) = (\fv(M) \setminus \{ x \})}
+%%   {\Gamma \vdash \lambda^\sigma x.M : T \lto U}
+%% \]
+%% Note that the invariant on the domain of $\sigma$ is preserved under substitution.
 
-  \bcirc + \wcirc = \bcirc
-\end{mathpar}
-and leave $\bcirc + \bcirc$ undefined.
-Configuration typing is given by
-\begin{mathpar}
-\inferrule
-  {\Gamma \vdash M: T}
-  {\Gamma \vdash^\bcirc \distinguish M}
+\subsubsection{Configurations.}
 
-\inferrule
-  {\Gamma \vdash M: \outterm}
-  {\Gamma \vdash^\wcirc M}
+The grammar of configurations includes the usual $\pi$-calculus forms for composition and name
+restriction.  However, because we are beginning with a functional language, in which computations
+may return values (which may, in turn, contain channels), it is important to distinguish between the
+``main'' thread (which returns a meaningful value) and the threads created by \gvconst{fork} (which
+do not).  We designate the main thread in a configuration by surrounding it in brackets
+$\distinguish M$.
 
-\inferrule
-  {\Gamma, x:\channel{S} \vdash^\phi C}
-  {\Gamma \vdash^\phi (\nu x) C}
+\subsubsection{Reduction.}
 
-\inferrule
-  {\Gamma,x:S \vdash^{\phi} C \\
-   \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
-  {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}
-\end{mathpar}
-We will write $\Gamma \vdash P$ for $\Gamma \vdash^\phi P$.  Note that while we can write the
-classic deadlocked configuration
-\[
-  (\nu x)(\nu y)(\distinguish{\gvlet{(z,x)}{\gvconst{receive} \app x}{\gvconst{send} \app (z,y)}} \parallel
-                 \gvlet{(z,y)}{\gvconst{receive} \app y}{\gvconst {send} \app (z,x)})
-\]
-it is not well typed: we can only split one of $x,y$ at the $\parallel$.  Term reductions follow.
-$\beta$ rules:
+\begin{figure}[t]
+Term reduction:
 \begin{align*}
   (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \uplus \sigma) \\
   \gvletunit{()}{M} &\teval M \\
@@ -368,34 +453,17 @@ C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 
 \Cx[C] \equiv \Cx[D] \text{ if $C \equiv D$}
 \end{mathpar}
-
-Awkwardly enough, the equivalence rules do not preserve typing.  For example, supposing that $x \in
-\fv(C), y \in \fv(D), \text{ and } x,y \in \fv(E)$, we have $\vdash (\nu x y)(C \mid (D \mid E))$
-but not $\nvdash (\nu x y)((C \mid D) \mid E)$.  We have a simple reduction rule for configuration
-types, given by
-\begin{mathpar}
-\inferrule
-%  [T-Output]
-  { }
-  {\channel{(\gvout T S)} \ceval \channel S}
-
-\inferrule
-%  [T-Input]
-  { }
-  {\channel{(\gvin T S)} \ceval \channel S}
-
-\inferrule
-%  [T-Context]
-  {T \ceval T'}
-  {\Gamma,x:T \ceval \Gamma,x:T'}
-\end{mathpar}
-We write $\Gamma \ceval^? \Gamma'$ to denote $\Gamma = \Gamma' \lor \Gamma \ceval \Gamma'$.
-Configuration reduction is given by
+Configuration reduction:
 \begin{mathpar}
 \inferrule
   [Send]
   { }
   {\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x] \parallel \Fx'[(V,x)]}
+
+\inferrule
+   [Lift]
+   {C \ceval C'}
+   {\Cx[C] \ceval \Cx[C']}
 
 \inferrule
   [Fork]
@@ -418,12 +486,7 @@ Configuration reduction is given by
    {(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
 
 \inferrule
-   [Lift]
-   {C \ceval C'}
-   {\Cx[C] \ceval \Cx[C']}
-
-\inferrule
-   [Lift2]
+   [LiftV]
    {M \teval M'}
    {\Cx[M] \ceval \Cx[M']}
 
@@ -434,95 +497,247 @@ Configuration reduction is given by
 %%    {\Cx[M] \ceval \Cx[M']}
 %%    {\Cx[\Fx[M]] \ceval \Cx[\Fx[M']]}
 \end{mathpar}
-Some things that might be useful.
+\caption{Reduction rules and equivalences for terms and configurations}\label{fig:gv-reduction}
+\end{figure}
+
+Reduction rules for terms and configurations, and equivalences for configurations, are given in
+\figref{gv-reduction}.  Term reduction is typical call-by-value left-to-right evaluation; the only
+complication is that application not only substitutes for the $\lambda$-bound variables, but also
+applies any substitution captured by the closure.  Configuration equivalence is also relatively
+standard.  We provide an additional equivalence observing that \gvconst{link} is symmetric; this
+reduces the number of reduction rules.  Communication is provided by rule \textsc{Send} and session
+initiation is provided by rule \textsc{Fork}.  Rule \textsc{Wait} combines syncronization of closed
+channels with garbage collection of the associated name restriction.  Rule \textsc{Link} is
+complicated by the need to produce a session of type $\outterm$; the inserted \gvconst{wait}
+synchronizes with the produced session.  Atypically, we do not include a structural rule, including
+equivalence in reduction; we will return to the treatment of equivalence at the end of the section.
+
+\subsubsection{Configuration typing.}
+
+\begin{figure}[t]
+Configuration typing:
+\begin{mathpar}
+\inferrule
+  {\Gamma \vdash M: T}
+  {\Gamma \vdash^\bcirc \distinguish M}
+
+\inferrule
+  {\Gamma \vdash M: \outterm}
+  {\Gamma \vdash^\wcirc M}
+
+\inferrule
+  {\Gamma, x:\channel{S} \vdash^\phi C}
+  {\Gamma \vdash^\phi (\nu x) C}
+
+\inferrule
+  {\Gamma,x:S \vdash^{\phi} C \\
+   \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
+  {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}
+\end{mathpar}
+Combination of flags:
+\begin{mathpar}
+  \wcirc + \wcirc = \wcirc
+
+  \wcirc + \bcirc = \bcirc
+
+  \bcirc + \wcirc = \bcirc
+
+  \bcirc + \bcirc \text{ undefined}
+\end{mathpar}
+Reduction of configuration typing environments:
+\begin{mathpar}
+\inferrule
+  { }
+  {\channel{(\gvout T S)} \ceval \channel S}
+
+\inferrule
+  { }
+  {\channel{(\gvin T S)} \ceval \channel S}
+
+\inferrule
+  {T \ceval T'}
+  {\Gamma,x:T \ceval \Gamma,x:T'}
+\end{mathpar}
+\caption{Configuration typing}\label{fig:gv-conf-typing}
+\end{figure}
+
+Our syntax of configurations permits various forms of deadlocked configurations.  For example, if we
+define the terms $M$ and $N$ by
+\begin{align*}
+  M &\defeq \bl
+    \gvlet{(z,y)}{\gvreceive{y}}{} \\
+    \gvlet{x}{\gvsend{(z,x)}}{M'} \el \\
+  N &\defeq \bl
+    \gvlet{(z,x)}{\gvreceive{x}}{} \\
+    \gvlet{y}{\gvsend{(z,y)}}{N'} \el
+\end{align*}
+given suitable terms $M'$ and $N'$, then it is apparent that configurations such as $(\nu xy)M$,
+$(\nu xy)(M \parallel M)$ and $(\nu xy)(M \parallel N)$ cannot reduce further, even though $M$ and
+$N$ can be individually well-typed.  \figref{gv-conf-typing} gives our typing discipline for
+configurations.  It is based on type systems for linear $\pi$-calculus~\cite{} with two significant
+differences.
+\begin{itemize}
+\item First, we seek to assure that there is at most one main thread.  This is done by the flags
+  ($\bcirc$ and $\wcirc$) on the derivations: a derivation $\Gamma \vdash^\bcirc C$ indicates that
+  configuration $C$ contains the main thread, while $\Gamma \vdash^\wcirc C$ incidates that $C$ does
+  not contain the main thread.  We will write $\Gamma \vdash C$ to abbreviate $\Gamma \vdash^\phi
+  C$, that is, that $C$ may contain a main thread.
+\item Second, we require that exactly one channel is shared at each composition of processes.  This
+  restricts standard type systems for linear $\pi$-calculus, which allow an arbitrary number of
+  processes (including none) to be shared at a composition of processes.
+\end{itemize}
+We can see that none of the earlier examples are well-typed in this type system: $(\nu xy)M$ is
+ill-typed because $y$ must have a type $\channel S$ in $M$; $(\nu xy)(M \parallel M)$ is ill-typed
+because there is no type $\channel S$ such that both $S$ and $\gvdual{S}$ are of the form
+$\gvin{T}{S'}$, as required by \gvconst{request}, and $(\nu xy)(M \parallel N)$ is ill-typed because
+both $x$ and $y$ must be shared between $M$ and $N$, but the typing rule for composition only allows
+one channel to be shared.
+
+Observe that reduction may transform the types of sessions---for example, if $\Gamma \vdash
+F[\gvconst{send}\app(V,x)] \parallel F'[\gvconst{receive}\app x]$, then $\Gamma$ must contain an
+assignment $x : \channel{(\gvout{T}{S})}$ for some type $T$ and session type $S$.  However, after
+reduction, for $F[x] \parallel F'[(V,x)]$ to be well-typed we need $x:\channel S$.  We capture this
+with the reduction relation $\Gamma \ceval \Gamma'$.  As long all reductions require evolution of
+the type environment, we introduce the shorthand
+\[
+  \Gamma \ceval^? \Gamma' \defiff (\Gamma \ceval \Gamma') \lor (\Gamma = \Gamma').
+\]
+Finally, we can show that reduction preserves typing.  We begin with term reduction.
+%
 \begin{lemma}\label{thm:term-preservation}
   If $\Gamma \vdash M: T$ and $M \teval M'$, then $\Gamma \vdash M': T$
 \end{lemma}
-
-\noindent
-The proof is standard.
-
+%
+The proof is by induction on $M$; the cases are all standard.  We can extend this result to show
+preservation of configuration typing under reduction.
+%
 \begin{theorem}\label{thm:preservation}
   If $\Gamma \vdash C$ and $C \ceval C'$ then there is some $\Gamma'$ such that $\Gamma \ceval^?
   \Gamma'$ and $\Gamma' \vdash C'$.
 \end{theorem}
-
+%
 \begin{proof}
-  By induction on the derivation of $C \ceval C'$.
+  By induction on the derivation of $C \ceval C'$.  We include several representative cases.
   \begin{itemize}
-  \item Case \textsc{Lift} is immediate by the induction hypothesis.
-  \item Case \textsc{Lift2} follows from \lemref{term-preservation}, with $\Gamma = \Gamma'$.
-  \item In case \textsc{Send}, from the assumption $\Gamma \vdash \Cx[\mkwd{send}\,(V,x)] \parallel
-    C'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
+%%   \item Case \textsc{Lift} is immediate by the induction hypothesis.
+%%   \item Case \textsc{LiftV} follows from \lemref{term-preservation}.
+  \item In case \textsc{Send}, from the assumption $\Gamma \vdash \Fx[\mkwd{send}\,(V,x)] \parallel
+    \Fx'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
     $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
-    $\Gamma_1,x:\gvout{T}{S'} \vdash \Cx[\gvconst{send} \app (V,x)]$,
-    $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash C'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
-    \times \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Cx[\gvconst{send} \app
-    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash \Cx[x]$.  By a similar argument, we conclude
-    that $\Gamma_2,x:\gvdual{S'} \vdash C'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
+    $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app (V,x)]$,
+    $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash \Fx'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
+    \times \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app
+    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash \Fx[x]$.  By a similar argument, we conclude
+    that $\Gamma_2,x:\gvdual{S'} \vdash \Fx'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
     \channel{S}$, $\Gamma_1,\Gamma_2,x:\channel{(\gvout T S)} \ceval
     \Gamma_1,\Gamma_2,x:\channel{S}$, and we can recompose the resulting processes concluding that
-    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash \Cx[x] \parallel C'[(V,x)]$.
-  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash \Cx[\gvconst{fork} \app V]$, we can
-    conlude that $\Gamma$ splits into $\Gamma_1,\Gamma_2$ and there is some $S$ such that
-    $\Gamma_1,x:S \vdash \Cx[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
-    $\Gamma,x:S \vdash \Cx[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(\Cx[x] \parallel
-    V \app x)$.
-  \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(\Cx[\gvconst{wait} \app
-    x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash \Cx[\gvconst{wait} \app x]$ and
-    thus, from the typing of \gvconst{wait}, that $\Gamma \vdash \Cx[()]$.
-  \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (\Cx[\gvconst{link} \app
-    (x, y)] \parallel C'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
-    $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash \Cx[\gvconst{link} \app (x,
-    y)]$ and $\Gamma_2,x:S \vdash C'[M]$.  (Note that the free variable assumption on the reduction
-    rule for \gvconst{fork} allows us to assume that neither $C$ or $C'$ binds $x$ or $y$.)  From
-    the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash \Cx[x]$; similarly, from $x \in
-    \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash C'[M\{y/x\}]$.  Finally, from the typing rule
-    for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash C'[\gvletunit{\gvconst{wait}
-      \app x}{M\{y/x\}}]$, and that $\Gamma \vdash (\nu x)(\Cx[x] \parallel
-    C'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$ \qed
+    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash \Fx[x] \parallel \Fx'[(V,x)]$.
+  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash \Fx[\gvconst{fork} \app V]$, we
+    can conlude that $\Gamma$ splits as $\Gamma_1,\Gamma_2$ and there is some $S$ such that
+    $\Gamma_1,x:S \vdash \Fx[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
+    $\Gamma,x:S \vdash \Fx[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(\Fx[x] \parallel V \app
+    x)$.
+%%   \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(\Fx[\gvconst{wait} \app
+%%     x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash \Fx[\gvconst{wait} \app x]$ and
+%%     thus, from the typing of \gvconst{wait}, that $\Gamma \vdash \Fx[()]$.
+%%   \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (\Fx[\gvconst{link} \app
+%%     (x, y)] \parallel \Fx'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
+%%     $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash \Fx[\gvconst{link} \app (x,
+%%     y)]$ and $\Gamma_2,x:S \vdash \Fx'[M]$.  (Note that the free variable assumption on the
+%%     reduction rule for \gvconst{fork} allows us to assume that neither $\Fx$ nor $\Fx'$ binds $x$ or
+%%     $y$.)  From the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash \Fx[x]$;
+%%     similarly, from $x \in \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash \Fx'[M\{\bind x y\}]$.
+%%     Finally, from the typing rule for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash
+%%     \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{\bind x y\}}]$, and that $\Gamma \vdash (\nu
+%%     x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{\bind x y\}}])$
+    \qed
   \end{itemize}
 \end{proof}
 
+\subsubsection{Typing and configuration equivalence.}
+
+Unfortunately, our notion of typing is not preserved by configuration equivalence.  For a simple
+example, assume that $\Gamma \vdash (\nu x y)(C \parallel (D \parallel E))$, where $x \in \fv(C), y
+\in \fv(D), \text{ and } x,y \in \fv(E)$.  We have that $C \parallel (D \parallel E) \equiv
+(C \parallel D) \parallel E$, but $\Gamma \nvdash (\nu x y)((C \parallel D) \parallel E)$, as both
+$x$ and $y$ must be shared between the processes $C \parallel D$ and $E$.  However, we can show that
+starting from a well-typed configuration, we need never rely on an ill-typed equivalent
+configuration to expose possible reductions.
+%
 \begin{theorem}\label{thm:preservation-equiv}
   If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, then there are some $\Gamma',D$ such that
-  $\Gamma \ceval^? \Gamma'$ and $\Gamma' \vdash D$.
+  $\Gamma \ceval^? \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D$.
 \end{theorem}
-
+%
 \begin{proof}
-  We begin by observing that if $C \ceval D$, then there is some well-typed $C'$ such that $C =
-  \Cx[C']$, $C' \ceval D'$, and $D = \Cx[D']$.  The desired result is then obtained by structural
-  induction on $C$, examining the possible equivalences in each case. \qed
+  We begin by observing that if $\Gamma \vdash C$, then for any pair of terms $M_1, M_2$ appearing
+  in $C$, there are environments $\Gamma_1,\Gamma_2$ and types $T_1,T_2$ such that $\Gamma_1 \vdash
+  M_1 : T_1,\Gamma_2 \vdash M_2 : T_2$, and (because of the typing rule for composition) $\Gamma_1$
+  and $\Gamma_2$ share at most one variable.  From this, by examination of the reduction rules, we
+  can conclude that there are well-typed $C_0,D_0$ such that $C' = \Cx[C_0]$, $C_0 \ceval D_0$ and
+  $D' = \Cx[D_0]$.  The desired result is then obtained by structural induction on $C$, examining
+  the possible equivalences in each case. \qed
 \end{proof}
-
-Define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$.  Note that,
-while $\equiv$ does not necessarily preserve typing, we can use \thmref{preservation-equiv} to
-conclude that if $\Gamma \vdash C$ and $C \ceval^\star D$, there are some $\Gamma',D'$ such that
-$\Gamma \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
+%
+Finally, we define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$ on
+configurations, and of $\ceval^?$ on typing environments.
+%
+\begin{corollary}
+  $\Gamma \vdash C$ and $C \ceval^\star D$, there are some $\Gamma',D'$ such that $\Gamma
+  \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
+\end{corollary}
 
 \subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
-
-Blocked terms:
 \newcommand{\blockedp}{\mathsf{blocked}}
 \newcommand{\depp}{\mathsf{depends}}
+\newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
+
+In the previous section, we showed several examples of deadlocked terms, and showed that they were
+rejected by our type system.  This section generalizes that observation: we characterize deadlocked
+configurations, and show that well-typed configurations do not evaluate to deadlocked
+configurations.
+
+We begin by observing that many examples of stuck configurations are already excluded by existing
+session-typing disciplines: in particular, those configurations in which either too many or too few
+threads attempt to synchronize on a given channel.  The cases of interest to us are those in which
+the threads individually obey the session-typing discipline, but the order of synchronizations in
+the threads creates deadlock.  We say that a thread $M$ is blocked on a channel $x$, written
+$\blockedp(x,M)$, if $M$ has evaluated to some context surrounding a communication primitive applied
+to $x$:
+%
 \[\begin{array}{rcl}
-  \blockedp(x,M) &\defiff& \exists N. \; M = \Ex[\gvconst{send} \app (x,N)] \\
+  \blockedp(x,M) &\defiff& \exists N. \; M = \Ex[\gvconst{send} \app (N,x)] \\
   && \quad \lor \, M = \Ex[\gvconst{receive} \app x] \\
-  && \quad \lor \, M = \Ex[\gvconst{wait} \app x] \\
+  && \quad \lor \, M = \Ex[\gvconst{wait} \app x]
+\end{array}\]
+%
+In such a case, $M$ can only reduce further in composition with another thread blocked on $x$, and
+any synchronization on other channels in $M$ will be delayed until a synchronization on $x$ has
+occurred.  We capture this by saying that $y$ depends on $x$ in $M$, written $\depp(x,y,M)$, $M$ is
+blocked on $x$, but has $y$ as one of its (other) free variables.  We extend this notion of
+dependency from single threads to configurations of threads, with the observation that in a larger
+configuration there may be intermediate channels in the dependency.
+\[\begin{array}{rcl}
   \depp(x,y,\Ex[M]) &\defiff& \blockedp(x,M) \land y \in \fv(\Ex) \\
   \depp(x,y,C) &\defiff& (C \equiv \Cx[M] \land \depp(x,y,M)) \lor \, (C \equiv \Cx[D \parallel D'] \\
   && \quad \land \, (\exists z. \depp(x,z,D) \land \depp(z,y,D')))
 \end{array}\]
-Finally, we have a natural definition of deadlock:
-\newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
+%
+We now have a natural definition of deadlocked configurations as being those with a cycle of
+dependencies:
+%
 \[
 \deadlockp(C) \defiff C \equiv \Cx[D \parallel D'] \land \exists x,y. \depp(x,y,D) \land \depp(y,x,D').
 \]
-Because this definition depends on blocked processes (that is, those waiting to read or write) it
-avoids the problems with return values (since a process returning a channel is not blocked on it, it
-cannot be part of a deadlocked pair).  We say a process $C$ is deadlock-free if for all $D$ such
-that $C \ceval^\star D$, $\lnot\deadlockp(D)$.  Observe that if $C \equiv D$, then $\deadlockp(C)
-\iff \deadlockp(D)$.
+%
+Because the definition of dependency permits intermediate channels, this definition encompasses
+cycles involving an arbitrary number of channels.  Finally, we say that a configuration $C$ is
+deadlock free if, for all $D$ such that $C \ceval^\star D$, $\lnot\deadlockp(D)$.  Observe that if
+$C \equiv D$, then $\deadlockp(C) \iff \deadlockp(D)$.
+
+At this point, we can observe that in any deadlocked configuration, there must be a composition of
+configurations that shares more than one channel.  This is precisely the situation that is excluded
+by our configuration type system.
 
 \begin{lemma}\label{thm:procs-share-one-channel}
   If $\Gamma \vdash C$, and $C = \Cx[D \parallel D']$, then there is some variable $x$ such that
@@ -535,7 +750,9 @@ that $C \ceval^\star D$, $\lnot\deadlockp(D)$.  Observe that if $C \equiv D$, th
   environment. \qed
 \end{proof}
 
-I think we can now show fairly directly that
+To extend this observation to deadlock freedom, we must take equivalence into account.  While it is
+true that equivalence need not preserve typing, there are no equivalence rules that affect the free
+variables of individual threads.  Thus, cycles of dependent channels are preserved by equivalence.
 
 \begin{lemma}\label{thm:typed-configs-df}
   If $\Gamma \vdash C$ then $\lnot \deadlockp(C)$.
@@ -551,7 +768,8 @@ I think we can now show fairly directly that
   containing the $M_i$---such a $C'$ would violate \lemref{procs-share-one-channel}.  \qed
 \end{proof}
 
-Finally, the following is trivial.
+Finally, we can combine the previous result with preservation of typing to show that well-typed
+terms never evaluate to deadlocked configurations.
 
 \begin{theorem}\label{thm:typed-terms-df}
   If $\Gamma \vdash M: T$, then $\distinguish M$ is deadlock-free.
@@ -563,6 +781,27 @@ Finally, the following is trivial.
   know that there is a well-typed $D' \equiv D$, and so $\lnot\deadlockp(D)$. \qed
 \end{proof}
 
+\subsubsection{Progress and Canonical Forms.}
+
+We conclude the section by describing a canonical form for configurations, and characterizing the
+stuck terms resulting from the evaluation of well-typed terms.  One might hope that evaluation of a
+well-typed term would always produce a value; however, this is complicated by the possibility of
+terms that return sessions.  For a simple example, consider the term
+%
+\[
+  \gvconst{fork} \app (\lambda x. \gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)})
+\]
+%
+This term spawns a thread (which simply echoes once), and then returns the resulting session; thus,
+the result of evaluation is a configuration equivalent to
+\[
+  (\nu x)(\distinguish x \parallel \gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)}).
+\]
+Clearly, no more evaluation is possible, yet we would not describe this configuration itself as a
+value.  However, we can give strong results about the configurations resulting from the evaluation
+of closed term, and so to conclude that evaluation of terms that do not return channels does always
+produce a value.
+
 \begin{definition}
 A process $C$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
 terms $M_1,\dots,M_n$ such that
@@ -571,6 +810,14 @@ terms $M_1,\dots,M_n$ such that
 \]
 where either $C_n = M_n$ or $C_n = \distinguish M_n$.
 \end{definition}
+
+Note that canonical forms need not be unique.  For example, consider the configuration $\vdash (\nu
+xy)(C \parallel D \parallel E)$ where $x \in \fv(C), y \in \fv(D), \text{ and } x,y \in \fv(E)$.
+Both $(\nu x)(C \parallel (\nu y)(D \parallel E))$ and $(\nu y)(D \parallel (\nu x)(C \parallel E))$
+are canonical forms of the original configuration.  We can show that any well-typed term must be
+equivalent to a term in canonical form; again, the key insight is that captured by
+\lemref{procs-share-one-channel}: if any two subconfigurations share at most one channel, then we
+can order the threads by the channels they share.
 
 \begin{lemma}\label{thm:canonical}
   If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
@@ -591,6 +838,10 @@ where either $C_n = M_n$ or $C_n = \distinguish M_n$.
   C'$. \qed
 \end{proof}
 
+We can now state some simple progress results.  We begin with configurations that may have free
+variables; of course, each thread must be blocked either on some previous $\nu$-bound variable or on
+one of the free variables.
+%
 \begin{theorem}\label{thm:progress-open}
   Let $\Gamma \vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel D)\dots))$ be
@@ -603,11 +854,18 @@ where either $C_n = M_n$ or $C_n = \distinguish M_n$.
     \dom(\Gamma)$.
   \end{enumerate}
 \end{theorem}
-
+%
 \begin{proof}
   By induction on the derivation of $\Gamma \vdash C'$, using the definition of $\ceval$. \qed
 \end{proof}
 
+We can strengthen the result significantly when we move to configurations without free variables.
+To see why, consider just the first two threads of a configuration $(\nu x_1)(M_1 \parallel (\nu
+x_2)(M_2 \parallel \dots))$.  As there are no free varibles, thread $M_1$ can only be blocked on
+$x_1$.  Now, from the previous result, thread $M_2$ can be blocked on either $x_1$ or $x_2$.  But,
+were it blocked on $x_1$, it could reduce with thread $M_1$; we can conclude it is blocked on $x_2$.
+Generalizing this observation gives the following progress result.
+%
 \begin{corollary}\label{thm:progress}
   Let $\vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
   x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
@@ -617,10 +875,16 @@ where either $C_n = M_n$ or $C_n = \distinguish M_n$.
   \item There is a value $V$ such that either $M_n = \distinguish V$ or $M_n = V$.
   \end{enumerate}
 \end{corollary}
-
+%
 \begin{proof}
   By induction on the derivation of $\vdash P'$, relying on \thmref{progress-open}.  \qed
 \end{proof}
+%
+Finally, observe that some subset of the variables $x_1,\dots,x_n$ must appear in the result $V$.
+Therefore, if the original expression returns a value that does not contain any channels, it will
+evaluate to a configuration with no blocked threads.
+
+\todo{End of revised text}
 
 %% \subsection{Direct GV semantics}
 %%
@@ -719,6 +983,8 @@ where either $C_n = M_n$ or $C_n = \distinguish M_n$.
 %% $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 %% involving $x$.
 
+
+
 \section{Linear Logic}\label{sec:cp}
 
 \subsection{CP}
@@ -804,17 +1070,6 @@ dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between proces
 channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
 compatible. We identify CP terms up to structural equivalence:
 %
-\begin{equations}
-  \link{x}{w} &\equiv& \link{w}{x} \\
-  \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
-  \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in fv(R)$} \\
-\end{equations}%
-%
-\begin{mathpar}
-\inferrule
-  {P_1 \equiv P_2}
-  {\cut{x}{}{P_1}{Q} \equiv \cut{x}{}{P_2}{Q}}
-\end{mathpar}
 
 We take $\equiv$ to be the least equivalence relation that is closed under these rules.
 
@@ -839,8 +1094,15 @@ arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ c
 \subsection{Cut Elimination}
 
 
-\begin{figure}[float]
-
+\begin{figure}[t]
+Structural congruence:
+\begin{equations}
+  \link{x}{w} &\equiv& \link{w}{x} \\
+  \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
+  \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in fv(R)$} \\
+\cut{x}{}{P_1}{Q} &\equiv& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \equiv P_2$}
+\end{equations}
+Primary cut reduction rules:
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
   &\rto& P[w/x] \\
@@ -853,9 +1115,17 @@ arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ c
 \cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
   &\rto&
     \cut{x}{A}{P}{Q_i} \\
+\cut{x}{}{P_1}{Q} &\rto& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \rto P_2$}
 \end{equations}%
-\caption{Principal Cut Elimination Rules}\label{fig:beta-reduction}
-
+Commuting conversions:
+\begin{equations}
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in fv(Q)$} \\
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in fv(P)$} \\
+  \cut{z}{A}{x(y).P}{Q} &\rto& x(y).\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\rto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\case{x}{P;Q}}{R} &\rto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
+\end{equations}
+\caption{CP congurences and cut reduction}\label{fig:beta-reduction}
 \end{figure}
 
 Cut elimination corresponds to synchronous process reduction.  The principal cut reductions are
@@ -864,19 +1134,12 @@ $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
 
 \begin{mathpar}
 \inferrule
-  {P_1 \longrightarrow P_2}
-  {\cut{x}{}{P_1}{Q} \longrightarrow \cut{x}{}{P_1}{Q}}
+  {}
+  {}
 \end{mathpar}
 
 \begin{figure}[float]
 
-\begin{equations}
-  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in fv(Q)$} \\
-  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in fv(P)$} \\
-  \cut{z}{A}{x(y).P}{Q} &\rto& x(y).\cut{z}{A}{P}{Q} \\
-  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\rto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
-  \cut{z}{A}{\case{x}{P;Q}}{R} &\rto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
-\end{equations}
 \caption{Commuting Conversions}\label{fig:commuting}
 \end{figure}
 
@@ -1034,7 +1297,7 @@ If $P \equiv Q$, then $\togvc{P} \equiv \togvc{Q}$.
 
 Every CP reduction can be simulated by one or more GV reductions.
 
-\begin{theorem}
+\begin{theorem}\label{thm:cp-reduction-simulated}
 If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{theorem}
 
@@ -1097,9 +1360,9 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link{x}{z}}} \\
 %% SL: we need these eta-expanded definitions for receive and wait
 %% in order for the simulation theorem to hold
-\tocp{\gvreceive{M}}z &=& 
+\tocp{\gvreceive{M}}z &=&
   \cut{y}{}{\tocp{M}y}{y(x).\cut{w}{}{\link{y}{w}}{z\sd{x}.\link{w}{z}}} \\
-\tocp{\gvwait{M}}z    &=& 
+\tocp{\gvwait{M}}z    &=&
   \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
@@ -1292,7 +1555,7 @@ context follows straightforwardly by observing that the translation of an evalua
 places its argument inside a prefix.\qed
 \end{proof}
 
-\begin{theorem}
+\begin{theorem}\label{thm:gv-reduction-simulated}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
 \Longrightarrow \tocp{D}z$ where $\Longrightarrow ~\defeq~ (\equiv\rto^*\equiv)$.
 \end{theorem}
@@ -1337,7 +1600,7 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
        {y[]}}
     {\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}} \\
 \equiv \\
-\quad 
+\quad
   \cut{x}{}
     {\cut{y}{}{\link x y}{y[]}}
     {\cut{v}{}{\tocp{V}v}
@@ -1364,28 +1627,28 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %%         {\cut{y}{}{\tocp{\gvconst{send} \app (V,x)}y}{y[]}}
 %%         {\tocp{\gvconst{receive} \app x}z} \\
 %% = \\
-%% \quad 
+%% \quad
 %%   \cut{x}{}
 %%     {\cut{y}{}{
 %%      \cut{v}{}{\tocp{V}v}
 %%       {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}}{y[]}}
 %%     {\link x z} \\
 %% = \\
-%% \quad 
+%% \quad
 %%   \cut{v}{}{\tocp{V}v}
 %%     {\cut{x}{}
 %%       {\cut{y}{}
 %%         {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{y[]}}
 %%       {\link x z}} \\
 %% = \\
-%% \quad 
+%% \quad
 %%   \cut{v}{}{\tocp{V}v}
 %%     {\cut{y}{}
 %%       {\cut{x}{}
 %%         {\cut{w}{}{\link{x}{w}}{w[v].\link{w}{y}}}{\link x z}}
 %%       {y[]}} \\
 %% = \\
-%% \quad 
+%% \quad
 %%   \cut{v}{}{\tocp{V}v}
 %%     {\cut{y}{}
 %%       {\cut{w}{}
@@ -1396,14 +1659,14 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %%       {y[]}} \\
 
 %% %% \rto^* \\
-%% %% \quad 
+%% %% \quad
 %% %%     \cut{y}{}{
 %% %%      \cut{v}{}{\tocp{V}v}
 %% %%       {z[v].\link{z}{y}}}{y[]} \\
 %% %% = \\
 %% %% \dots \\
 %% %% = \\
-%% %% \quad 
+%% %% \quad
 %% %%   \cut{x}{}
 %% %%     {x[]}
 %% %%     {\cut{v}{}{\tocp{V}v}
@@ -1412,7 +1675,7 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %% = ...\\
 %% \quad
 %%   \cut{v}{}
-%%     {\tocp{V}v} 
+%%     {\tocp{V}v}
 %%     {\cut{y}{}
 %%       {\cut{w}{}
 %%         {\cut{x}{}
@@ -1423,7 +1686,7 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %% = \\
 %% \quad
 %%   \cut{v}{}
-%%     {\tocp{V}v} 
+%%     {\tocp{V}v}
 %%     {\cut{y}{}
 %%       {\cut{x}{}
 %%         {\link x y}
@@ -1433,13 +1696,13 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %% = \\
 %% \quad
 %%   \cut{v}{}
-%%     {\tocp{V}v} 
+%%     {\tocp{V}v}
 %%     {\cut{x}{}
 %%       {\cut{y}{}{\link x y}{y[]}}
 %%       {\cut{w}{}{\link{x}{w}}
 %%          {z[v].\link{w}{z}}}} \\
 %% = \\
-%% \quad 
+%% \quad
 %%   \cut{x}{}
 %%     {\cut{y}{}{\link x y}{y[]}}
 %%     {\cut{v}{}{\tocp{V}v}
@@ -1749,22 +2012,29 @@ $\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
 %%
 \section{Extending GV}\label{sec:extend}
 
-\subsection{Unifying $\gvend_x$}\label{sec:gv-end}
+In this section, we consider two extensions of our core calculus.  The first unifies the session
+types $\interm$ and $\outterm$ to have a single, self-dual session type $\gvend$; this more closely
+mirrors other developments of session types, but results in a system that no longer corresponds to
+Wadler's CP calculus.  The second introduces unlimited types in the term calculus; we show how they
+can be lifted to provide replicated sessions, analogously to lifting term-level sums to provide
+session-level choice, and that the resulting system is equivalent to the replicated channels in CP.
+In both cases, we are able to directly apply our characterizations of deadlock and deadlock freedom
+to show that the extended systems are deadlock free.
 
-We define a language GVX, which, depending on your perspective, either extends GV with mix or
-combines the types of closed sessions.  The syntax is largely as in GV; the meaningful changes are
-the elimination of $\interm$ and $\outterm$ in favor of $\gvend$, and the use of \gvconst{close} instead
-of \gvconst{wait}.
+\subsection{Unifying $\interm$ and $\outterm$}\label{sec:gv-end}
+
+\begin{figure}
+Syntax:
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvend \mid \channel{S} \\
-  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{close} \mid \gvconst{link}\\
+  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid
+    \gvconst{close} \mid \gvconst{link}\\
 \end{syntax}
-The remaining parts of the grammar are unchanged from GV.  The definition of duality is updated to
-reflect that $\gvend$ is self-dual:
+Duality:
 \[
   \gvdual \gvend = \gvend
 \]
-We provide new typing rules for some of the constants
+Type schemas for constants:
 \begin{mathpar}
 \gvconst{fork} : (S \lto \one) \lto \gvdual S
 
@@ -1772,49 +2042,67 @@ We provide new typing rules for some of the constants
 
 \gvconst{link} : S \times \gvdual S \lto \one
 \end{mathpar}
-but otherwise the type system is unchanged from that of GV.  We require an extension of the type
-system for configurations, however:
+\caption{Syntax and typing rules for combined closed channels.}\label{fig:gv-end-syntax}
+\end{figure}
+
+We begin by defining a language, based on GV, but combining the types $\interm$ and $\outterm$ of
+closed sessions.  \figref{gv-end-syntax} gives the alterations to the syntax and typing rules.  The
+session types are updated to have a single, self-dual type $\gvend$; a new constant,
+$\gvconst{close}$ is provided to eliminate sessions of type $\gvend$.  (In many existing systems,
+sessions of type $\gvend$ are treated as unlimited, subject to weakening, rather than providing an
+explicit \gvconst{close}.  We have left \gvconst{close} explicit to simplify the presentation.)  The
+type schemas for \gvconst{fork} and \gvconst{link} have been simplified, as we no longer need to
+build the elimination of closed sessions into \gvconst{fork}.  \figref{gv-end-conf-eval} gives the
+update evaluation rules for the extended language.  In addition to a new rule for \gvconst{close}
+(replacing the rule for \gvconst{wait}), the rule for \gvconst{link} can be simplified significantly
+(as it can now return a unit value instead of a closed channel).
+
+\begin{figure}
+Extended configuration equivalence:
+\begin{mathpar}
+C \parallel () \equiv C
+\end{mathpar}
+Extended reduction rules (all other reduction rules apply as in GV)
 \begin{mathpar}
 \inferrule
-  {\Gamma \vdash M: T}
-  {\Gamma \vdash^\bcirc \distinguish M}
+  [Close]
+  { }
+  {(\nu x)(F[\gvconst{close} \app x] \parallel F'[\gvconst{close} \app x]) \ceval F[()] \parallel F'[()]}
 
 \inferrule
-  {\Gamma \vdash M: \one}
-  {\Gamma \vdash^\wcirc M}
+[Link]
+  {x \in \fv(P)}
+  {F[\gvconst{link} \app (x,y)] \parallel C \ceval F[()] \parallel C\{y/x\}}
+\end{mathpar}
+\caption{Updated configuration evaluation rules}\label{fig:gv-end-conf-eval}
+\end{figure}
 
-\inferrule
-  {\Gamma, x: \channel S \vdash^\phi C}
-  {\Gamma \vdash^\phi (\nu x)C}
-
-\inferrule
-  {\Gamma, x: S \vdash^\phi C \\
-   \Gamma', x: \gvdual S \vdash^{\phi'} C'}
-  {\Gamma,\Gamma',x:\channel S \vdash^{\phi + \phi'} C \parallel C'}
-
+Our extended language is, perhaps surprisingly, strictly more expressive than GV.  To see this, we
+can consider the following term (assuming sessions $x$ and $y$ are in scope):
+%
+\[\bl
+  \mkwd{let}\:{w} = \gvconst{fork} \app (\lambda w.\:
+    \bl \gvletunit{\gvconst{close}\app w}{} \\
+        \gvlet{(z,x)}{\gvreceive{x}}{M}) \:\mkwd{in}\el \\
+  \gvletunit{\gvconst{close}\app w}{} \\
+  \gvlet{(z,y)}{\gvreceive{y}}{N}
+\el\]
+%
+Initially, the forked thread and its parent share (only) session $w$.  After both threads close
+session $w$, however, there can be no further synchronization between the threads; in contrast, in
+GV, there is always a final synchronization with \gvconst{wait}.  To capture the increase in
+expressivity, we must extend the existing configuration typing rules (\figref{gv-conf-typing}) with
+a rule for composition in which no threads are shared (such as after the reduction of
+$\gvconst{close}\app w$ in the example):
+\[
 \inferrule
   {\Gamma \vdash^\phi C \\
    \Gamma' \vdash^{\phi'} C'}
   {\Gamma,\Gamma' \vdash^{\phi + \phi'} C \parallel C'}
-\end{mathpar}
-Perhaps the latter two rules can be combined by defining a suitable operation on environments;
-however, it seems simpler now to just provide two typing rules.  Rules \textsc{Send, Fork, Lift} and
-\textsc{Lift2} apply to GVX unchanged; the remaining reduction rules are
-\begin{mathpar}
-\inferrule
-  { }
-  {(\nu x)(F[\gvconst{close} \app x] \parallel F'[\gvconst{close} \app x)] \ceval F[()] \parallel F'[()]}
+\]
 
-\inferrule
-  {x \in \fv(P)}
-  {F[\gvconst{link} \app (x,y)] \parallel P \ceval F[()] \parallel P \{y/x\}}
-\end{mathpar}
-The equivalences are similarly extended by
-\begin{mathpar}
-C \parallel () \equiv C
-\end{mathpar}
 We have a slightly different result about channels shared between processes, to account for the
-multiple forms of composition:
+multiple possible typings of composition:
 \begin{lemma}
   If $\Gamma \vdash C$ and $C = \Cx[D \parallel D']$, then $\fv(D) \cap \fv(D')$ is either empty or
   the singleton set $\{x\}$ for some variable $x$.
@@ -1826,28 +2114,35 @@ among processes).  Thus we can conclude that
   If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
 \end{theorem}
 
-\subsection{Adding Exponentials}\label{sec:gv-repl}
+\subsection{Adding Unlimited Types}\label{sec:gv-repl}
 
-Basic approach: add a new type \gvforever{T} in the functional fragment, subject to contraction and
-weakening, and with the usual introduction and elimination rules
+So far, we have limited GV to containing only linear types.  In this section, we consider one
+standard approach to extending the term language to include unlimited types (i.e., types subject to
+contraction and weakening).  It is unsurprising that this does not introduce deadlock, as it is
+purely at the term level.  However, we will then show we can encode replicated processes using
+term-level contraction and weakening, similarly to the encoding of session-level choice using sums.
+Finally, we will show that our encoding is equivalent to the replicated processes in CP.
+
+\begin{figure}
+Syntactic extensions:
 \begin{syntax}
   \text{Types} & T & ::= & \gvforever T \mid \dots \\
   \text{Terms} & M,N & ::= & \gvlet{{!x}}{M}{N} \mid {!M} \mid \dots \\
   \text{Values} & V & ::= & {!V} \mid \dots \\
   \text{Evaluation contexts} & E & ::= & \gvlet{{!x}}{E}{M} \mid {!E} \mid \dots
 \end{syntax}
-
+Typing rules:
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T \\
    \gvforever\Gamma}
-  {\Gamma \vdash M: \gvforever T}
+  {\Gamma \vdash {!M}: \gvforever T}
 
 \inferrule
   {\Gamma \vdash M: \gvforever T \\
    \Gamma', x:T \vdash N: U}
   {\Gamma \vdash \gvlet{{!x}}{M}{N}: U}
-
+\\
 \inferrule
   {\Gamma \vdash M: T}
   {\Gamma, x: \gvforever U \vdash M: T}
@@ -1856,38 +2151,59 @@ weakening, and with the usual introduction and elimination rules
   {\Gamma,x:\gvforever T,x':\gvforever T \vdash M: U}
   {\Gamma,x:\gvforever T \vdash M \{ x/x' \}: T}
 \end{mathpar}
-with suitable expansion of evaluation contexts and the reduction rule
+Reduction:
 \begin{mathpar}
 \gvlet{{!x}}{{!V}}{M} \teval M \{ \bind x V \}
 \end{mathpar}
-with the observation that $x$ may appear multiple times in $M$.  The extension of the deadlock
-freedom results to this calculus are immediate.
+\caption{GV extensions for unlimited types}
+\label{fig:gv-repl}
+\end{figure}
 
-Our previous work on GV provided unlimited service channels, which could be used to obtain
-arbitrarily many copies of some concurrent behavior.  We can encode such channels by introducing new
-dual session type constructors $Service(S)$ and $Server(S)$ and new constants \gvconst{replicate}
-and \gvconst{request}, with the types
+\figref{gv-repl} gives the extension of GV.  We begin by adding a new class of types, $\gvforever
+T$, representing unlimited types.  (The typical notation for such types in linear logic, ${!T}$,
+clashes with the notation for output in session types.)  As usual, we will write $T \to U$ to
+abbreviate $\gvforever{(T \lto U)}$.  We add terms to construct and deconstruct values of type
+$\gvforever T$; we write $\gvforever \Gamma$ to denote that every type in $\Gamma$ must be of the
+form $\gvforever U$ for some type $U$.  Finally, we allow values of type $\gvforever T$ to be
+weakened (discarded) and contracted (duplicated).  The reduction rule for $\gvforever T$ values is
+unsurprising---however, unlike in the other reductions, $x$ may appear multiple times in $M$.  The
+extension of the deadlock freedom results to this calculus are immediate.
+
+Wadler's CP calculus provides unlimited service channels, which can be used to obtain arbitrarily
+many copies of some concurrent behavior.  We can encode such channels as follows.  First, we
+introduce new, dual session type constructors $Service(S)$ and $Server(S)$, defined by
+\begin{align*}
+  Server(S) &\defeq \gvout{(\gvdual S \to \outterm)}{\outterm} \\
+  Service(S) &\defeq \gvin{(S \to \outterm)}{\outterm}
+\end{align*}
+Note that $\gvdual{Server(S)} = Service(\gvdual S)$.  (We do not, however, extend our type system to
+treat $Service(S)$ channels themselves as unlimited.)  Note the parallel between the encoding of
+session-level sums using value-level sums and the encoding of session-level replication using
+value-level replication---in each case, the key is ``trivial'' channels $\gvout{T}{\outterm}$ for
+suitable $T$.  We then introduce new constants \gvconst{replicate} and \gvconst{request}, with the
+types
 \begin{mathpar}
-\gvconst{replicate} : (\gvforever(\gvdual S \lto \outterm)) \lto Server(S)
+\gvconst{replicate} : (\gvdual S \to \outterm) \lto Server(S)
 
 \gvconst{request} : Service(S) \lto S
 \end{mathpar}
 defined as follows
 \begin{align*}
-  Server(S) &\defeq \gvout{(\gvforever(\gvdual S \lto \outterm))}{\outterm} \\
+ \\
   \gvconst{replicate} \app f &\defeq \gvconst{fork} \app (\lambda x. \gvsend{(f,x)}) \\
   \gvconst{request} \app s &\defeq
     \bl \gvlet{(f,s)}{\gvreceive{s}}{\\\gvletunit{\gvconst{wait}\app s}{\\\gvlet{{!g}}{f}{g}}} \el
 \end{align*}
-
-Note the parallel between the encoding of session-level sums using value-level sums and the encoding
-of session-level replication using value-level replication---in each case, the key is ``trivial''
-channels $\gvout{T}{\outterm}$ for suitable $T$.
-
+Finally, we can give translations from GV into CP.
 \begin{equations}
-  \tocp{{!M}}z &\defeq& \replicate z y.\tocp{M}y \\
-  \tocp{\gvlet{{!x}}{V}{M}}z &\defeq& \cut y {} {\tocp{V}y} {\derelict{y}{x}.\tocp{M}z} \\
-  \togv{\replicate{s}{x}.P} &\defeq& \gvconst{replicate} \app (\lambda x. \togv{P}) \\
+  \tocp{{!M}}z &\defeq& \cut{x} {} {\replicate z y.\link y x}{\tocp{M}x} \\
+  \tocp{\gvlet{{!x}}{V}{M}}z &\defeq& \cut y {} {\tocp{V}y} {\derelict{y}{x}.\tocp{M}z}
+\end{equations}
+And similarly translation from CP into GV.  The translation from CP into GV emphasizes that, while
+weakening and contraction are implicit in CP syntax, they play a central role in the CP semantics of
+exponentials, and thus have non-trivial translation to GV.
+\begin{equations}
+\togv{\replicate{s}{x}.P} &\defeq& \gvconst{replicate} \app (\lambda x. \togv{P}) \\
   \togv{\derelict{s}{x}.P} &\defeq& \gvlet{x}{\gvconst{request} \app s}{\togv{P}} \\
   \togvbig{
     \inferrule
@@ -1900,10 +2216,9 @@ channels $\gvout{T}{\outterm}$ for suitable $T$.
       {P[x/y] \vdash \Gamma,x:\cpquery{A}}} &\defeq&
     \ba{l} \gvlet{f}{\gvconst{request}\app x}{\\\gvlet{x}{\gvconst{replicate}\app f}{\\\gvlet{y}{\gvconst{replicate}\app f}{\togv{P}}}} \ea
 \end{equations}
+Finally, the extensions of Theorems~\ref{thm:cp-reduction-simulated}
+and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
 
-The correspondence between the semantics is direct; the translation from CP terms into GV terms
-emphasizes that, while weakening and contraction are implicit in CP syntax, they play a central role
-in the CP semantics of exponentials.
 
 \section{Related Work}\label{sec:related}
 
