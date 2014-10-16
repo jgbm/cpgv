@@ -1359,7 +1359,12 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
   \cut{w}{}{\link w z}{\cut{x}{}{\tocp{M}x}{\cut{y}{}{x\sd{w}.\link x y}{y[]}}} \\
 %% \tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
 %%   \tocp{\sigma}(\cut{x}{}{\cut{y}{}{\tocp{M}{y}}{y[]}}{\link x z}) \\
-\tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link x y}} \\
+%% \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link x y}} \\
+\tocp{\gvlink{M}{N}}z &=&
+  \nu v (\link v z \mid
+    \nu w (\link v w \mid \\
+&& \qquad 
+      {\cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{w().\link x y}}})) \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link x z}} \\
 %% SL: we need these eta-expanded definitions for receive and wait
@@ -1367,7 +1372,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \tocp{\gvreceive{M}}z &=&
   \cut{y}{}{\tocp{M}y}{y(x).\cut{w}{}{\link w y}{z\sd{x}.\link w z}} \\
 \tocp{\gvwait{M}}z    &=&
-  \cut{y}{}{\tocp{M}y}{y().z[]} \\
+  \cut{y}{}{\tocp{M}y}{\link y z} \\
+%  \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
@@ -1564,7 +1570,8 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 \Longrightarrow \tocp{D}z$ where $\Longrightarrow ~\defeq~ (\equiv\rto\equiv)^*$.
 \end{theorem}
 \begin{proof}
-By induction on the derivation of $C \ceval D$. Here we show the case of send/receive reduction.
+By induction on the derivation of $C \ceval D$. Here we show the base cases. The inductive cases
+follow straightforwardly from the compositionality of the definitions.
 \begin{itemize}
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
   \parallel \Fx'[(V,x)]$.
@@ -1727,10 +1734,15 @@ By induction on the derivation of $C \ceval D$. Here we show the case of send/re
 %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
 %%                {\tocp{\wcirc}[\tocp{x}]z} \\
 = \\
-\quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{w().y[]}]z}
+\quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{\link w y}]z}
                {\cut{y}{}{\link x y}{y[]}} \\
-\Longrightarrow (\text{cut links and cut end channels}) \\
-\quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
+\Longrightarrow (\text{cut links}) \\
+\quad \cut{x}{}{\tocp{\Fx}[y \mapsto \link x y]z}
+               {x[]} \\
+\Longrightarrow (\text{cut link}) \\
+%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
+%% = \\
+\quad \tocp{\Fx}[y \mapsto y[]]z \\
 = \\
 \quad \tocp{\Fx[()]}z \\
 \el
@@ -1789,22 +1801,63 @@ By induction on the derivation of $C \ceval D$. Here we show the case of send/re
 \el
 \]
 
-Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
-        (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
-\dots
-%% \[
-%% \bl
-%% \quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
-%% = \\
+\item Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
+          (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
+\[
+\bl
+\quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
+= \\
+\quad \cut{x}{}
+         {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
+         {\tocp{\Fx'}[\tocp{M}]z} \\
+= \\
 %% \quad \cut{x}{}
-%%          {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
+%%          {\tocp{\Fx}[z \mapsto 
+%%                        \cut{w}{}{\link w z}
+%%                          {\cut{v}{}{\link v w}
+%%                            {\cut{x'}{}
+%%                              {\link{x}{x'}}
+%%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}}]z}
 %%          {\tocp{\Fx'}[\tocp{M}]z} \\
-%% = \\
-%% \quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
-%% \el
-%% \]
+\quad \nu x
+         (\tocp{\Fx}[z \mapsto 
+                       \nu v (\link v z \mid
+                         \nu w (\link v w \mid \\
+\qquad 
+                           {\cut{x'}{}
+                             {\link{x}{x'}}
+                             {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
+         {\tocp{\Fx'}[\tocp{M}]z}) \\
+\Longrightarrow (\text{cut links}) \\
+\quad \cut{x}{}
+         {\tocp{\Fx}[z \mapsto 
+                       \cut{v}{}{\link v z}
+                         {\cut{w}{}{\link v w}
+                            {w().\link{x}{y}}}]z}
+         {\tocp{\Fx'}[\tocp{M}]z} \\
+\equiv \\
+\quad \cut{v}{}
+         {\tocp{\Fx}[z \mapsto \link v z]z}
+         {\cut{x}{}
+           {\cut{w}{}
+              {\link v w}
+              {w().\link{x}{y}}}
+           {\tocp{\Fx'}[\tocp{M}]z}} \\
+\equiv \\
+\quad 
+  \cut{v}{}
+    {\tocp{\Fx}[z \mapsto \link v z]z}
+    {\tocp{\Fx'}[z \mapsto
+                  \cut{w}{}
+                     {\link v w}
+                     {w().\cut{x}{}{\link x y}{\tocp{M}z}}]z} \\
+= \\
+\quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
+\el
+\]
 
 \end{itemize}
+\qed
 \end{proof}
 
 
