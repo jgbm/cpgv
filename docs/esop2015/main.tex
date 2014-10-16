@@ -379,10 +379,11 @@ and evaluation and configuration contexts.
 \subsubsection{Terms.}
 
 To preserve a close connection between the semantics of our term language and cut-reduction in
-linear logic, we define term reduction using weak explicit substitutions~\cite{}.  In this approach,
-we capture substitutions at $\lambda$-terms rather than immediately applying them to the body of the
-term.  Our language of terms, therefore, includes closures $\lambda^\sigma x.M$, where $\sigma$
-provides the captured substitution.  We extend the typing judgement to include closures, as follows:
+linear logic, we define term reduction using weak explicit substitutions~\cite{LevyM99}. In this
+approach, we capture substitutions at $\lambda$-terms rather than immediately applying them to the
+body of the term. Our language of terms, therefore, includes closures $\lambda^\sigma x.M$, where
+$\sigma$ provides the captured substitution. We extend the typing judgement to include closures, as
+follows:
 \[
 \inferrule
   {\Gamma, x:T \vdash M\sigma : U \\
@@ -391,10 +392,25 @@ provides the captured substitution.  We extend the typing judgement to include c
 \]
 The free variables of a closure $\lambda^\sigma x.M$ are the free variables of the range of
 $\sigma$, not the free variables of $M$; application of substitution $M\sigma$ is then defined as
-usual on the free variables of terms.  Note that the side condition on the domain of $\sigma$ is
-preserved under substitution.  Finally, we will implicitly treat terms $\lambda x.M$ as closures
-$\lambda^\sigma x.M$ where $\sigma$ is the identity substitution restricted to the free variables of
-$M$ less $\{x\}$.
+usual on the free variables of terms. Note that the side condition on the domain of $\sigma$ is
+preserved under substitution. Finally, we will implicitly treat terms $\lambda x.M$ as closures
+$\lambda^\sigma x.M$ where $\sigma$ is a renaming substitution restricted to the free variables of
+$M$ less $\{x\}$, concretely:
+\[
+\bl
+\lambda x.M \defeq \lambda^\sigma x.(M\sigma') \\
+\quad \text{where }
+  \bl
+  \fv(M)  = \{x_1, \dots, x_n\} \\
+  x'_1, \dots, x'_n \text{ are fresh variables} \\
+  \sigma  = \{\bind{x_1}{x'_1}, \dots, \bind{x_1}{x'_1}\} \\
+  \sigma' = \{\bind{x'_i}{x_i}, \dots, \bind{x'_n}{x_n}\} \\
+  \el
+\el
+\]
+(Note that the $\sigma$ annotation on the lambda abstraction is an object language construct that
+binds the variables in the domain of $\sigma$ inside the body of the lambda abstraction, whereas
+$M\sigma'$ is a meta language application of the substitution $\sigma'$ to $M$.)
 
 %% We will implicitly treat substitutions $\sigma$ as sets of bindings.  We define the application of
 %% one substitution $\sigma$ to another $\sigma'$ by
@@ -2163,5 +2179,9 @@ communication will eventually take place.  This is hopefully an easy consequence
 \section{Conclusions and Future Work}\label{sec:conclusion}
 
 Asynchrony and recursion.
+
+\label{sect:bib}
+\bibliographystyle{abbrv}
+\bibliography{main}
 
 \end{document}
