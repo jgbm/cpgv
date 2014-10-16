@@ -1134,8 +1134,8 @@ $\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
 
 \begin{mathpar}
 \inferrule
-  {}
-  {}
+  { }
+  { }
 \end{mathpar}
 
 \begin{figure}[float]
@@ -1352,29 +1352,31 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{equations}
 
 \begin{equations}
-\tocp{x}z &=& \link{x}{z} \\
-\tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
-  \tocp{\sigma}(\cut{x}{}{\cut{y}{}{\tocp{M}{y}}{y[]}}{\link x z}) \\
-\tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link{x}{y}}} \\
+\tocp{x}z &=& \link x z \\
+\tocp{\gvconst{fork}\:M}z &=&
+  \cut{w}{}{\link w z}{\cut{x}{}{\tocp{M}x}{\cut{y}{}{x\sd{w}.\link x y}{y[]}}} \\
+%% \tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
+%%   \tocp{\sigma}(\cut{x}{}{\cut{y}{}{\tocp{M}{y}}{y[]}}{\link x z}) \\
+\tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link x y}} \\
 \tocp{\gvsend{(M,N)}}z &=&
-  \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link{x}{z}}} \\
+  \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link x z}} \\
 %% SL: we need these eta-expanded definitions for receive and wait
 %% in order for the simulation theorem to hold
 \tocp{\gvreceive{M}}z &=&
-  \cut{y}{}{\tocp{M}y}{y(x).\cut{w}{}{\link{y}{w}}{z\sd{x}.\link{w}{z}}} \\
+  \cut{y}{}{\tocp{M}y}{y(x).\cut{w}{}{\link w y}{z\sd{x}.\link w z}} \\
 \tocp{\gvwait{M}}z    &=&
   \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
 \tocp{L \app M}z &=&
-  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{y\sd{x}.\link{y}{z}}} \\
+  \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{y\sd{x}.\link y z}} \\
 \tocp{()}z    &=& z[] \\
-\tocp{(M,N)}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z\sd{x}.\link{y}{z}}} \\
+\tocp{(M,N)}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z\sd{x}.\link y z}} \\
 \tocp{\gvlet{(x,y)}{M}{N}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
 \tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
-\tocp{\mkwd {inl} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link{x}{z}} \\
-\tocp{\mkwd {inr} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link{x}{z}} \\
+\tocp{\mkwd {inl} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link x z} \\
+\tocp{\mkwd {inr} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link x z} \\
 \tocp{\gvcase{L}{\mkwd {inl} \app x \mapsto M;
                  \mkwd {inr} \app x \mapsto N}}z &=&
    \cut x {} {\tocp{L}x} {\case{x}{\mkwd{inl} \mapsto \tocp{M}z;
@@ -1557,7 +1559,7 @@ places its argument inside a prefix.\qed
 
 \begin{theorem}\label{thm:gv-reduction-simulated}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-\Longrightarrow \tocp{D}z$ where $\Longrightarrow ~\defeq~ (\equiv\rto^*\equiv)$.
+\Longrightarrow \tocp{D}z$ where $\Longrightarrow ~\defeq~ (\equiv\rto\equiv)^*$.
 \end{theorem}
 \begin{proof}
 By induction on the derivation of $C \ceval D$. Here we show the case of send/receive reduction.
@@ -1565,56 +1567,51 @@ By induction on the derivation of $C \ceval D$. Here we show the case of send/re
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
   \parallel \Fx'[(V,x)]$.
 %
-By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = \distinguish{[~]}$.
 \[
 \bl
-\quad \tocp{\gvconst{send} \app (V,x) \parallel \distinguish{\gvconst{receive} \app x}}z \\
+\quad \tocp{\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x]}z \\
 = \\
 \quad \cut{x}{}
-        {\cut{y}{}{\tocp{\gvconst{send} \app (V,x)}y}{y[]}}
-        {\tocp{\gvconst{receive} \app x}z} \\
+        {\tocp{\Fx}[\tocp{\gvconst{send} \app (V,x)}y]z}
+        {\tocp{\Fx'}[\tocp{\gvconst{receive} \app x}]z} \\
 = \\
 \quad
   \nu x(
-    {\cut{y}{}{
-     \cut{v}{}{\tocp{V}v}
-      {\cut{w}{}{\link{x}{w}}{w\sd{v}.\link{w}{y}}}}{y[]}} \\
+    {\tocp{\Fx}
+      [z \mapsto \cut{v}{}{\tocp{V}v}
+        {\cut{w}{}{\link{x}{w}}{w\sd{v}.\link{w}{z}}}]z} \\
 \qquad \mid
-    {\cut{y}{}
-       {\link{x}{y}}
-       {y(v).\cut{w}{}{\link{y}{w}}{z\sd{v}.\link{w}{z}}}} \\
+    {\tocp{\Fx'}
+       [z \mapsto \cut{y}{}
+          {\link{x}{y}}
+          {y(v).\cut{w}{}{\link{y}{w}}{z\sd{v}.\link{w}{z}}}]z} \\
 \Longrightarrow (\text{cut links}) \\
 \quad
-  \cut{x}{}
-    {\cut{y}{}
-       {\cut{v}{}{\tocp{V}v}
-         {x\sd{v}.\link{x}{y}}}
-       {y[]}}
-    {x(v).\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}} \\
+  \nu x(
+    {\tocp{\Fx}
+       [z \mapsto \cut{v}{}{\tocp{V}v}
+         {x\sd{v}.\link x z}]z} \\
+\qquad \mid
+    {\tocp{\Fx'}
+       [z \mapsto x(v).\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}]z} \\
 \Longrightarrow (\text{cut send against receive}) \\
 \quad
   \cut{x}{}
-    {\cut{y}{}
-       {\cut{v}{}{\tocp{V}v}
-         {\link{x}{y}}}
-       {y[]}}
-    {\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}} \\
+    {\tocp{\Fx}
+       [z \mapsto
+         \cut{v}{}{\tocp{V}v}{\link x z}]}
+    {\tocp{\Fx'}
+       [z \mapsto \cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}]z} \\
 \equiv \\
 \quad
   \cut{x}{}
-    {\cut{y}{}{\link x y}{y[]}}
-    {\cut{v}{}{\tocp{V}v}
-      {\cut{w}{}{\link{x}{w}}
-         {z\sd{v}.\link{w}{z}}}} \\
+    {\tocp{\Fx}[z \mapsto \link x z]z}
+    {\tocp{\Fx'}[z \mapsto
+      \cut{v}{}{\tocp{V}v}
+        {\cut{w}{}{\link{x}{w}}
+          {z\sd{v}.\link{w}{z}}}]z} \\
 = \\
-\quad
-  \cut{x}{}
-    {\cut{y}{}{\link x y}{y[]}}
-    {\tocp{(V,x)}z} \\
-= \\
-\quad \cut{x}{}{\cut{y}{}{\tocp{x}y}{y[]}}{\tocp{(V,x)}z} \\
-= \\
-\quad \tocp{x \parallel \distinguish{(V,x)}} \\
+\quad \tocp{\Fx[x] \parallel \Fx'[(V,x)]} \\
 \el
 \]
 
@@ -1720,22 +1717,23 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 %% \el
 %% \]
 
-\item Case $(\nu x)(\phi \Ex[\gvconst{wait} \app x] \parallel \phi' x) \ceval ()$.
+\item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \wcirc\,x) \ceval \Fx[()]$.
 \[
 \bl
-\quad \tocp{(\nu x)(\phi E[\gvconst{wait} \app x] \parallel \phi' E[x])}z \\
+\quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \wcirc\,x)}z \\
+%% = \\
+%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
+%%                {\tocp{\wcirc}[\tocp{x}]z} \\
 = \\
-\quad \cut{x}{}{\tocp{\phi E}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
-               {\tocp{\phi'}[y \mapsto \tocp{x}{y}]z} \\
-= \\
-\quad \cut{x}{}{\tocp{\phi E}[y \mapsto \cut{w}{}{\link x w}{w().y[]}]z}
-               {\tocp{\phi'}[y \mapsto \link x y]z} \\
+\quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{w().y[]}]z}
+               {\cut{y}{}{\link x y}{y[]}} \\
 \Longrightarrow (\text{cut links and cut end channels}) \\
-\quad \tocp{(\phi + \phi') E}[y \mapsto y[]]z \\
+\quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
 = \\
-\quad \tocp{(\phi + \phi') E[()]}z
+\quad \tocp{\Fx[()]}z \\
 \el
 \]
+
 \item Case $\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]
                       \ceval (\nu x)(\Fx[x] \parallel M\sigma)$.
 \[
@@ -1745,11 +1743,37 @@ By Lemma~\ref{bla} we need only consider the case where $\Fx = [~]$ and $\Fx' = 
 \quad \tocp{\Fx}[\tocp{\gvconst{fork} \app (\clos{\sigma}{x}{M})}]z \\
 = \\
 \quad \tocp{\Fx}[z \mapsto
-         \tocp{\sigma}
-            (\cut{x}{}
-               {\cut{y}{}
-                 {\tocp{M}{y}}{y[]}}
-                 {\tocp{x}z})]z \\
+         \cut{x}{}{\tocp{x}z}
+           {\cut{y}{}
+              {\tocp{\sigma}(y(x).\tocp{M}y)}
+              {\cut{w}{}{y\sd{x}.\link y w}{w[]}}}]z \\
+
+\Longrightarrow (\text{cut send against receive}) \\
+%% \quad \tocp{\Fx}[x \mapsto
+%%          \cut{v}{}{\tocp{v}x}
+%%            {\cut{y}{}
+%%               {\tocp{\sigma}(\tocp{M}y)}
+%%               {\cut{w}{}{\link y w}{w[]}}}]z \\
+%% = \\
+\quad \tocp{\Fx}[z \mapsto
+         \cut{x}{}{\tocp{x}z}
+           {\cut{y}{}
+             {\tocp{\sigma}(\tocp{M}y)}
+             {y[]}}]z \\
+
+%% = \\
+%% \quad \tocp{\Fx}[z \mapsto
+%%          \tocp{\sigma}
+%%             (\cut{x}{}
+%%                {\cut{y}{}
+%%                  {\tocp{M}{y}}{y[]}}
+%%                  {\tocp{x}z})]z \\
+%% \equiv \\
+%% \quad \tocp{\Fx}[
+%%         z \mapsto 
+%%           \cut{x}{}
+%%             {\tocp{x}z}
+%%             {\tocp{\cut{y}{}{\tocp{\sigma}(\tocp{M}y)}{y[]}}} \\
 \equiv \\
 \quad \cut{x}{}
         {\tocp{\Fx}[\tocp{x}]z}
