@@ -1102,15 +1102,18 @@ Commuting conversions:
 
 The semantics of CP terms are given by cut reduction, as shown in \figref{cp-reduction}.  We write
 $\fv(P)$ for the free names of process $P$.  Terms are identified up to structural congruence
-$\equiv$.  Note that, as name restriction and composition are combined into one form, composition is
-not associative.  The majority of the cut reduction rules correspond closely to the synchronous
-reductions in $\pi$-calculus---for example, the reduction of $\with$ against $\oplus$ corresponds to
-the synchronization of an internal and external choice.  The rule for reduction of $\parr$ against
-$\otimes$ is more complex than the usual synchronization of input and output, as it must also
-manipulate the implicit name restriction and composition in CP's output term.  The commuting
-conversions allow composition to be moved under prefixes; they do not correspond to any reduction
-rule in $\pi$-calculus.  We define $\bigcrto$ to be the reflexive, transitive closure of
-$\equiv\crto\equiv$, and $\bigccto$ as $\bigcrto\ccto^\star$.
+$\equiv$. We write $\crto$ for the cut reduction relation, $\ccto$ for the commuting conversion
+relation, $\rto$ for $\crto \cup \ccto$, and juxtaposition for sequential composition of relations,
+and $R^*$ for the reflexive, transitive closure of relation $R$. Note that, as name restriction and
+composition are combined into one form, composition is not associative.  The majority of the cut
+reduction rules correspond closely to the synchronous reductions in $\pi$-calculus---for example,
+the reduction of $\with$ against $\oplus$ corresponds to the synchronization of an internal and
+external choice.  The rule for reduction of $\parr$ against $\otimes$ is more complex than the usual
+synchronization of input and output, as it must also manipulate the implicit name restriction and
+composition in CP's output term. The commuting conversions allow composition to be moved under
+prefixes; they do not correspond to any reduction rule in $\pi$-calculus. We write $\bigrto$ for
+$(\equiv\rto\equiv)^*$, $\bigcrto$ for $(\equiv\crto\equiv)^*$, and $\bigccto$ for
+$\bigcrto(\ccto^\star)$.
 
 Just as cut elimination in logic can be used to show that any proof can be transformed to a proof
 that does not make use of cut, the reduction rules of CP transform any term into a term blocked on
@@ -1339,44 +1342,46 @@ deadlock freedom in GV has no such requirement, so we have no need of correspond
 
 \newcommand{\tocpflip}[1]{\llceil{#1}\rrceil}
 
+Types:
+\[
+\bl
+\tocp{\gvout{T}{S}}        = \cpdual{\tocp{T}} \otimes \tocp{S} \qquad
+\tocp{\gvin{T}{S}}         = \tocp{T} \parr \tocp{S} \qquad
+\tocp{\outterm}            = 1 \qquad
+\tocp{\interm}             = \bot \\
+\tocp{T} = \cpdual{\tocpflip{T}}, \quad \text{if $T$ is not a session type} \\
+\el
+\]
+
 \[
 \ba{@{}c@{\qquad}c@{\qquad}c}
 \begin{eqs}
-\tocp{\zero} &=& \top \\
-\tocp{\one} &=& \bot
+\tocpflip{\zero} &=& \tocpflip{0} \\
+\tocpflip{T + U} &=& \tocpflip{T} \oplus \tocpflip{U} \\
 \end{eqs}
 &
 \begin{eqs}
-\tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
-\tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
-\end{eqs}
-&
-\begin{eqs}
-\tocp{\outterm}            &=& 1 \\
-\tocp{\interm}             &=& \bot \\
+\tocpflip{\one} &=& \tocpflip{1} \\
+\tocpflip{T \times U} &=& \tocpflip{T} \otimes \tocpflip{U} \\
 \end{eqs}
 \ea
-\]
-
+\]%
 \begin{equations}
-\tocp{T} &=& \cpdual{\tocpflip{T}}, \quad \text{if $T$ is not a session type} \\
-\tocpflip{T + U} &=& \tocpflip{T} \oplus \tocpflip{U} \\
-\tocpflip{T \times U} &=& \tocpflip{T} \otimes \tocpflip{U} \\
 \tocpflip{T \lto U} &=& \cpdual{\tocpflip{T}} \parr \tocpflip U \\
 \tocpflip{S} &=& \tocp{S} \\
 \end{equations}
 
+Session terms:
 \begin{equations}
-\tocp{x}z &=& \link x z \\
 \tocp{\gvconst{fork}\:M}z &=&
   \cut{w}{}{\link w z}{\cut{x}{}{\tocp{M}x}{\cut{y}{}{x\sd{w}.\link x y}{y[]}}} \\
 %% \tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
 %%   \tocp{\sigma}(\cut{x}{}{\cut{y}{}{\tocp{M}{y}}{y[]}}{\link x z}) \\
 %% \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link x y}} \\
 \tocp{\gvlink{M}{N}}z &=&
-  \nu v (\link v z \mid
-    \nu w (\link v w \mid \\
-&& \qquad 
+  \nu v\:(\link v z \mid
+    \nu w\:(\link v w \mid \\
+&& \quad 
       {\cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{w().\link x y}}})) \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link x z}} \\
@@ -1389,24 +1394,35 @@ deadlock freedom in GV has no such requirement, so we have no need of correspond
 %  \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
-\tocp{\lambda^\sigma x.M}z &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
-\tocp{L \app M}z &=&
+\end{equations}%
+Functional terms:
+\begin{equations}
+\tocp{x}z &=& \link x z \\
+\tocp{\lambda^\sigma x.M}z                         &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
+\tocp{L \app M}z                                 &=&
   \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{L}y}{y\sd{x}.\link y z}} \\
-\tocp{()}z    &=& z[] \\
-\tocp{(M,N)}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z\sd{x}.\link y z}} \\
-\tocp{\gvlet{(x,y)}{M}{N}}z &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
-\tocp{\gvlet{()}{M}{N}}z &=& \cut y {} {\tocp{M}y} {y().\tocp{N}z} \\
-\tocp{\mkwd {inl} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link x z} \\
-\tocp{\mkwd {inr} \app M}z &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link x z} \\
+\tocp{()}z                                       &=& z[] \\
+\tocp{\gvlet{()}{M}{N}}z                         &=& \cut{y}{}{\tocp{M}y} {y().\tocp{N}z} \\
+\tocp{(M,N)}z                                    &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z\sd{x}.\link y z}} \\
+\tocp{\gvlet{(x,y)}{M}{N}}z                      &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
+\tocp{\mkwd {inl} \app M}z                       &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link x z} \\
+\tocp{\mkwd {inr} \app M}z                       &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link x z} \\
 \tocp{\gvcase{L}{\mkwd {inl} \app x \mapsto M;
                  \mkwd {inr} \app x \mapsto N}}z &=&
    \cut x {} {\tocp{L}x} {\case{x}{\mkwd{inl} \mapsto \tocp{M}z;
                                    \mkwd{inr} \mapsto \tocp{N}z}} \\
-\tocp{\mkwd{absurd} \app L}z &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}}
-\medskip
-\\
-\tocp{[x_i \mapsto V_i]_i}P &=& \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)[P] \\
-\\
+\tocp{\mkwd{absurd} \app L}z                     &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}}
+\end{equations}%
+Substitutions:
+\begin{equations}
+\tocp{\{\bind{x_i}{V_i}\}} &=& \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)_i[P] \medskip\\
+%% \tocp{\{\}}(P) &=& P \\
+%% \tocp{\{\bind{x}{x}\} \uplus \sigma}(P) &=& \tocp{\sigma}(P) \\
+%% \tocp{\{\bind{x}{V}\} \uplus \sigma}(P) &=& \tocp{\sigma}(P) \\
+%%   \left\{
+%%     \ba{l}
+%%       \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)[P] \\
+%%       \hat{
 \hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
 \end{equations}
 
@@ -1419,8 +1435,6 @@ deadlock freedom in GV has no such requirement, so we have no need of correspond
 
 \todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
   enforce left-to-right evaluation of applications and pairs. Is this what we want?}
-
-\todo{In fact we can get away with the simpler definition for wait - perhaps we should?}
 
 \begin{equations}
 \tocp{\thread M}z        &=& \cut{y}{}{\tocp{M}y}{y[]} \\
@@ -1477,8 +1491,11 @@ By induction on the derivation of $\Gamma \vdash C$.\qed
 \end{proof}
 
 As the translation on terms and configurations are compositional, we can mechanically lift them to
-translations on evaluation contexts and configuration contexts, such that the following lemma holds
+translations on evaluation contexts and configuration contexts such that the following lemma holds
 by construction.
+%
+Each translation of a context takes two arguments: a function that describes the CP term to plug
+into the hole, and an output channel.
 %
 %% In order to ease reasoning by induction, we lift the translation on terms to contexts.
 %% \begin{equations}
@@ -1497,8 +1514,8 @@ by construction.
 \item $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
 \end{enumerate}
 \end{lemma}
-Each translation of a context takes two arguments: a function that describes the CP term to plug
-into the hole, and an output channel.
+%
+We write $x \mapsto P$ for a function that maps a name $x$ to a process $P$ that depends on $x$.
 
 \todo{Perhaps include the full definitions in an appendix?}
 
@@ -1506,34 +1523,34 @@ In order to prove that reduction is preserved by the translation we need a subst
 \begin{lemma}
 \label{lem:tocp-subst}
 If $\Gamma \vdash M : T$, $\Gamma \vdash \sigma : \Delta$, and $z \notin \dom(\sigma)$, then
-$\tocp{\sigma}(\tocp{M}z) \rto^* \tocp{\sigma(M)}z$.
+$\tocp{\sigma}(\tocp{M}z) \bigrto \tocp{M \sigma}z$.
 \end{lemma}
 \begin{proof}
 By induction on the structure of $M$. Here we show the cases for variables and closures.
 \begin{itemize}
-\item Case $x$. By linearity there exists $V$ such that $\sigma = [x \mapsto V]$.
+\item Case $x$. By linearity there exists $V$ such that $\sigma = \{\bind{x}{V}\}$.
 \[
 \tocp{\sigma}(\tocp{x}z) =
-\cut{x}{}{\tocp{V}x}{\link{x}{z}} \rto \tocp{V}z = \tocp{\sigma(x)}z
+\cut{x}{}{\tocp{V}x}{\link{x}{z}} \rto \tocp{V}z = \tocp{x \sigma}z
 \]
 \item Case $\clos{\sigma'}{x}{M}$.
 \[
 \bl
 \quad \tocp{\sigma}(\tocp{\clos{\sigma'}{x}{M}}) \\
-= \quad (\sigma' = [x_i \mapsto V_i]) \\
+= \quad (\sigma' = \{\bind{x_i}{V_i}\}_i) \\
 \quad \tocp{\sigma}(\hat{\nu} (x_i \mapsto (\tocp{V_i}x_i))_i[z(x).\tocp{M}z]) \\
 = \quad (\sigma = \sigma_1 \uplus \dots \uplus \sigma_n \text{ where } \dom(\sigma_i) = \fv(V_i)) \\
 \quad \tocp{\sigma_1}(\dots\tocp{\sigma_n} (\hat{\nu} (x_i \mapsto \tocp{V_i}x_i)_i[z(x).\tocp{M}z])) \\
 = \quad (\text{structural equivalence}) \\
 \quad \hat{\nu} (x_i \mapsto \tocp{\sigma_i}(\tocp{V_i}x_i))_i[z(x).\tocp{M}z] \\
-\rto^* (\text{IH}) \\
-\quad \hat{\nu} (x_i \mapsto \tocp{\sigma_i(V_i)}x_i)_i[z(x).\tocp{M}z] \\
-= \quad (\sigma_i(V_i) = \sigma(V)) \\
-\quad \hat{\nu} (x_i \mapsto \tocp{\sigma(V_i)}x_i)_i[z(x).\tocp{M}z] \\
+\bigrto (\text{IH}) \\
+\quad \hat{\nu} (x_i \mapsto \tocp{V_i \sigma_i}x_i)_i[z(x).\tocp{M}z] \\
+= \quad (V_i \sigma_i = V \sigma) \\
+\quad \hat{\nu} (x_i \mapsto \tocp{V_i \sigma}x_i)_i[z(x).\tocp{M}z] \\
 = \quad (\text{definition of }\tocp{-}) \\
-\quad \tocp{\clos{\sigma(\sigma')}{x}{M}} \\
+\quad \tocp{\clos{\sigma' \sigma}{x}{M}} \\
 = \quad (\text{definition of substitution}) \\
-\quad \tocp{\sigma(\clos{\sigma'}{x}{M})} \\
+\quad \tocp{\clos{\sigma'}{x}{M} \sigma} \\
 \el
 \]
 \end{itemize}
@@ -1554,7 +1571,7 @@ push the appropriate substitution through a prefix.\qed
 
 \begin{theorem}
 If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
-\rto^* \tocp{N}v$.
+\bigrto \tocp{N}v$.
 \end{theorem}
 %
 \begin{proof}
@@ -1566,12 +1583,12 @@ By induction on the derivation of $M \teval N$. Here we show the case of $\beta$
 \quad \tocp{(\lambda^\sigma x.M)\,V}z \\
 = \quad (\text{definition of }\tocp{-}) \\
 \quad \cut{w}{}{\tocp{V}w}{\cut{y}{}{\tocp{\sigma}(y(x).\tocp{M}y)}{y[x](\link{w}{x} \mid \link{y}{z})}} \\
-\rto (\text{cut send against receive}) \\
+\bigcrto (\text{cut send against receive}) \\
 \quad \cut{w}{}{\tocp{V}w}{\cut{y}{}{\link{y}{z}}{\cut{x}{}{\link{w}{x}}{\tocp{\sigma}(\tocp{M}y)}}} \\
-\rto^* (\text{cut links and $\alpha$ rename}) \\
+\bigcrto (\text{cut links and $\alpha$ rename}) \\
 \cut{x}{}{\tocp{V}x}{\tocp{\sigma}(\tocp{M}z)} \\
-= \quad (\text{by Lemma~\ref{lem:tocp-subst}}) \\
-\tocp{M(\{\bind x V\} \cup \sigma)}
+\bigrto \quad (\text{by Lemma~\ref{lem:tocp-subst}}) \\
+\tocp{M(\{\bind x V\} \uplus \sigma)}
 \el
 \]
 \end{itemize}
@@ -1582,7 +1599,7 @@ places its argument inside a prefix.\qed
 
 \begin{theorem}\label{thm:gv-reduction-simulated}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-\Longrightarrow \tocp{D}z$ where $\Longrightarrow ~\defeq~ (\equiv\rto\equiv)^*$.
+\bigrto \tocp{D}z$.
 \end{theorem}
 \begin{proof}
 By induction on the derivation of $C \ceval D$. Here we show the base cases. The inductive cases
@@ -1609,7 +1626,7 @@ follow straightforwardly from the compositionality of the definitions.
        [z \mapsto \cut{y}{}
           {\link{x}{y}}
           {y(v).\cut{w}{}{\link{y}{w}}{z\sd{v}.\link{w}{z}}}]z} \\
-\Longrightarrow (\text{cut links}) \\
+\bigcrto (\text{cut links}) \\
 \quad
   \nu x(
     {\tocp{\Fx}
@@ -1618,7 +1635,7 @@ follow straightforwardly from the compositionality of the definitions.
 \qquad \mid
     {\tocp{\Fx'}
        [z \mapsto x(v).\cut{w}{}{\link{x}{w}}{z\sd{v}.\link{w}{z}}]z} \\
-\Longrightarrow (\text{cut send against receive}) \\
+\bigcrto (\text{cut send against receive}) \\
 \quad
   \cut{x}{}
     {\tocp{\Fx}
@@ -1751,10 +1768,10 @@ follow straightforwardly from the compositionality of the definitions.
 = \\
 \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{\link w y}]z}
                {\cut{y}{}{\link x y}{y[]}} \\
-\Longrightarrow (\text{cut links}) \\
+\bigcrto (\text{cut links}) \\
 \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \link x y]z}
                {x[]} \\
-\Longrightarrow (\text{cut link}) \\
+\bigcrto (\text{cut link}) \\
 %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
 %% = \\
 \quad \tocp{\Fx}[y \mapsto y[]]z \\
@@ -1777,7 +1794,7 @@ follow straightforwardly from the compositionality of the definitions.
               {\tocp{\sigma}(y(x).\tocp{M}y)}
               {\cut{w}{}{y\sd{x}.\link y w}{w[]}}}]z \\
 
-\Longrightarrow (\text{cut send against receive}) \\
+\bigcrto (\text{cut send against receive}) \\
 %% \quad \tocp{\Fx}[x \mapsto
 %%          \cut{v}{}{\tocp{v}x}
 %%            {\cut{y}{}
@@ -1812,7 +1829,7 @@ follow straightforwardly from the compositionality of the definitions.
 %%         {\tocp{\Fx}[\tocp{x}]z}
 %%         {\tocp{\sigma}(\tocp{\wcirc}[\tocp{M}]z)} \\
 = \\
-\quad \tocp{(\nu x)(\Fx[x] \parallel M\sigma)}z \\
+\quad \tocp{(\nu x)(\Fx[x] \parallel M \sigma)}z \\
 \el
 \]
 
@@ -1843,7 +1860,7 @@ follow straightforwardly from the compositionality of the definitions.
                              {\link{x}{x'}}
                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
          {\tocp{\Fx'}[\tocp{M}]z}) \\
-\Longrightarrow (\text{cut links}) \\
+\bigcrto (\text{cut links}) \\
 \quad \cut{x}{}
          {\tocp{\Fx}[z \mapsto 
                        \cut{v}{}{\link v z}
@@ -1917,193 +1934,12 @@ Alas, $P$ does not reduce to $Q$.
 %
 Notice that we could reduce $P$ to $Q$ if we were allowed to reduce under a prefix.
 
-As we have shown previously, we can translate a term $P$ from CP to GV and back, perform some
-reductions, and arrive back at $P$.
-\begin{theorem}
-$\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
-\end{theorem}
-
-%% \paragraph{Some results that hold, but may be of no use}
-
+%% As we have shown previously, we can translate a term $P$ from CP to GV and back, perform some
+%% reductions, and arrive back at $P$.
 %% \begin{theorem}
-%% If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}v$.
-%% \end{theorem}
-%% %
-%% The following lemmas can be made to hold, by construction.
-%% %
-%% \begin{lemma}
-%% $\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
-%% \end{lemma}
-
-%% \begin{lemma}
-%% $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
-%% \end{lemma}
-
-%% \begin{lemma}
-%% $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
-%% \end{lemma}
-
-%% \paragraph{A whole load of results that do not hold}
-
-%% \begin{lemma}
-%% $\cut{x}{}{\tocp{M}z}{\tocp{V}x} \rto^* \tocp{M[V/x]}z$
-%% \end{lemma}
-
-%% \begin{theorem}
-%% If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
-%% \rto^* \tocp{N}v$.
+%% $\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
 %% \end{theorem}
 
-%% \begin{theorem}
-%% If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
-%% \rto^* \tocp{D}v$.
-%% \end{theorem}
-
-
-
-%% OK. Bugger this. The substitution lemma is false.
-
-%%     nu x.([[\y.wait y; x]]z | [[()]]x)
-%%   =
-%%     nu x.(z(y).y().x <-> z | x[])
-
-%% But
-
-%%   [[\y.wait; ()]]z = z(y).y().z[]
-
-%% Similarly, the main theorem is false.
-
-%%     [[(\x.\y.wait y; x)()]]z
-%%   -->*
-%%     nu x(z(y).y().x <-> z | x[])
-
-%% But
-
-%%   [[\y.wait y; ()]]z = z(y).y.z[]
-
-%% \subsection{Indirect Translation from GV to CP}
-%%
-%%
-%% \todo{ANF translation.}
-%%
-%% \todo{Ensure that the definition of $\equiv$ is appropriate for the theorems.}
-%%
-%% \todo{Show that the A-normalisation rules are sound (easy).}
-%%
-%% Attempt at the ANF syntax.  Should we pick a new letter for ANF terms? [SL: No.]
-%%
-%% [SL: I fixed some bugs in the ANF syntax]
-%%
-%% \begin{syntax}
-%%   \text{Terms} & M,N & ::= & V \mid \gvlet{x}{V \app W}{N} \\
-%%   & & \mid & \gvlet{(x,y)}{V \app W}{N} \mid \gvletunit{V \app W}{N} \\
-%%   & & \mid & \gvcase{V}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
-%%   & & \mid & \gvconst{absurd} \app V \\
-%% \end{syntax}
-%%
-%% \small\[
-%% \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c}
-%% \begin{eqs}
-%% \tocp{T + U} &=& \tocp{T} \with \tocp{U} \\
-%% \tocp{T \times U} &=& \tocp{T} \parr \tocp{U} \\
-%% \tocp{T \lto U} &=& \cpdual{\tocp{T}} \otimes \tocp U
-%% \end{eqs}
-%% &
-%% \begin{eqs}
-%% \tocp{\zero} &=& \top \\
-%% \tocp{\one} &=& \bot
-%% \end{eqs}
-%% &
-%% \begin{eqs}
-%% \tocp{\gvout{T}{S}}        &=& \cpdual{\tocp{T}} \otimes \tocp{S} \\
-%% \tocp{\gvin{T}{S}}         &=& \tocp{T} \parr \tocp{S} \\
-%% \end{eqs}
-%% &
-%% \begin{eqs}
-%% \tocp{\outterm}            &=& 1 \\
-%% \tocp{\interm}             &=& \bot \\
-%% \end{eqs}
-%% %&
-%% %\begin{eqs}
-%% %\tocp{\oplus \{l_i:S_i \}_i} &=& \oplus \{l_i:\tocp{S_i}\}_i \\
-%% %\tocp{\with \{l_i:S_i \}_i}  &=& \with \{l_i:\tocp{S_i}\}_i \\
-%% %\tocp{\gvservice{S}}       &=& \cpquery{\tocp{S}} \\
-%% %\tocp{\gvserver{S}}        &=& \cpbang{\tocp{S}} \\
-%% %\end{eqs}
-%% \ea
-%% \]\normalsize
-%%
-%% \small\begin{equations}
-%% \tocp{x}z &=& \link{x}{z} \\
-%% \tocp{\lambda x.N}z &=& z(x).\tocp{N}z \\
-%% \tocp{\gvlet{y}{V \app W}{N}}z &=&
-%%   \bl
-%%     \cut y {} {\cut x {} {\tocp{V}x} {x[z].(\tocp{W}z \mid \link x y)}} {\tocp{N}z} \\
-%%     \text{if $V$ is not a constant $K$}
-%%   \el \\
-%% \tocp{(V,W)}z &=& z[y].(\tocp{V}y \mid \tocp{W}z) \\
-%% \tocp{\gvlet{(x,y)}{V}{N}}z &=& \cut y {} {\tocp{V}y} {y(x).\tocp{N}z} \\
-%% \tocp{\mkwd {inl} \app V}z &=& z[\mkwd{inl}].\tocp{V}z\\
-%% \tocp{\gvcase V {\mkwd {inl} \app x \mapsto M; \mkwd {inr} \app x \mapsto N}}z &=&
-%%    \cut x {} {\tocp{V}x} {\mkwd{case} \app x \app \{ \mkwd{inl} \mapsto \tocp{M}z; \mkwd{inr} \mapsto \tocp{N}z \}} \\
-%% \tocp{\mkwd{absurd} \app V}z &=& \cut x {} {\tocp{V}x} {\mkwd{case}\app x \app \{ \}} \\
-%% \tocp{\gvlet{x}{\gvsend{(V,W)}}{N}}z &=& \cut{x}{}{\tocp{W}x}{\cut y {} {\tocp{V}y} {x[y].\tocp{N}z}} \\
-%% \tocp{\gvlet{(x,y)}{\gvreceive{V}}{N}}z &=& \cut{y}{}{\tocp{V}y}{y(x).\tocp{N}z} \\
-%% \tocp{\gvlet{()}{\gvconst{wait} \app V}{N}}z &=& \cut y {} {\tocp{V}y} {y().\tocp{N}z} \\
-%% \tocp{\gvlet{x}{\gvfork{x}{M}}{N}}z &=& \cut{x}{}{\cut{y}{}{\tocp{M}y}{y[].0}}{\tocp{N}z} \\
-%% \tocp{\gvlet{x}{\gvlink{V}{W}}{N}}z &=& \cut x {} {x().\cut y {} {\tocp{V}y} {\tocp{W}y}} {\tocp{N}z} \\
-%% \end{equations}\normalsize
-%%
-%% \begin{theorem}
-%%   If $\Gamma \vdash M: T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\tocp{T}^\perp$.
-%% \end{theorem}
-%%
-%% \begin{proof}
-%%   By structural induction on the derivation of $\Gamma \vdash M: T$.  Representative cases follow.
-%%   \begin{itemize}
-%%   \item In case $M = x$, we must have $\Gamma = \{x:T\}$; we can directly conclude that $\link x z
-%%     \vdash x:T,z:\cpdual T$.
-%%   \item In case $M = \lambda x.N$, where $T = U \lto U'$, the induction hypothesis provides that
-%%     $\tocp{N}z \vdash \tocp{\Gamma},x:\tocp{U},z:\cpdual{\tocp{U'}}$.  Therefore, from the rule for
-%%     $\parr$ and the observation that $\cpdual{\tocp{U \lto U'}} = \tocp U \parr \cpdual{\tocp {U'}}$, we can
-%%     conclude that $z(x).\tocp{N}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U \lto U'}}$.
-%%   \item In case $M = \mkwd{inl} \app V$, where $T = U + U'$, the induction hypothesis provides that
-%%     $\tocp{V}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U}}$.  Therefore, from the rule for $\oplus$
-%%     and the observation that $\cpdual{\tocp{U + U'}} = \cpdual{\tocp{U}} \oplus \cpdual{\tocp{U'}}$,
-%%     we have that $z[\mkwd{inl}].\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{U + U'}}$.
-%%   \end{itemize}
-%% \end{proof}
-%%
-%% \small\begin{equations}
-%% \tocp{M}z &=& \tocp{M}z \\
-%% \tocp{\distinguish M}z &=& \tocp{M}z \\
-%% \tocp{(\nu x)C}z &=& \tocp{C}z \\
-%% \tocpbig{
-%%   \inferrule
-%%     {\Gamma,x:S \vdash^{\phi} C \\
-%%      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
-%%     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
-%%   \left\{
-%%     \ba{l}
-%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {x().\link y z}} \\
-%%     \qquad\text{if $\phi' = \bcirc$;} \\
-%%     \cut x {} {\tocp{C}x} {\cut y {} {\tocp{C'}y} {y().\link x z}} \\
-%%     \qquad\text{otherwise.}
-%%     \ea \right.
-%% \end{equations}\normalsize
-%%
-%% \begin{theorem}
-%%   If $\Gamma \vdash P$, then there is some $T$ such that $\tocp{P}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
-%% \end{theorem}
-%%
-%% \begin{theorem}
-%%   If $M, N$ are GV-ANF terms and $M \equiv N$, then $\tocp{M}z \equiv \tocp{N}z$.
-%% \end{theorem}
-%%
-%% \begin{theorem}
-%%   If $M$ is a GV-ANF term and $M \rto N$, then $\tocp{M}z \rto^+ \tocp{N}z$.
-%% \end{theorem}
-%%
 \section{Extending GV}\label{sec:extend}
 
 In this section, we consider two extensions of our core calculus.  The first unifies the session
