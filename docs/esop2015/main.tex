@@ -1046,14 +1046,14 @@ Typing:
 \caption{CP syntax and typing}\label{fig:cp-typing}
 \end{figure}
 
-\figref{cp-typing} gives the syntax and typing rules for the multiplicative-additive fragment of CP.
-The types and duality relation are the standard propositions of classical linear logic, while the
-terms are based on a subset of the $\pi$-calculus.  The types $\with$ and $\oplus$ are interpreted
-as external and internal choice; the types $\parr$ and $\otimes$ are interpreted as input and
-output, while their units $\bot$ and $1$ are interpreted as nullary input and output.  Note that
-CP's typing rules implicitly rebind identifiers: for example, in the hypotheses of the rule for
-$\parr$, $x$ identifies a proof of $B$, while in the conclusion it identifies a proof of $A \parr
-B$.
+\figref{cp-typing} gives the syntax and typing rules for the multiplicative-additive fragment of CP;
+we let $\Delta$ range over typing environments.  The types and duality relation are the standard
+propositions of classical linear logic, while the terms are based on a subset of the $\pi$-calculus.
+The types $\with$ and $\oplus$ are interpreted as external and internal choice; the types $\parr$
+and $\otimes$ are interpreted as input and output, while their units $\bot$ and $1$ are interpreted
+as nullary input and output.  Note that CP's typing rules implicitly rebind identifiers: for
+example, in the hypotheses of the rule for $\parr$, $x$ identifies a proof of $B$, while in the
+conclusion it identifies a proof of $A \parr B$.
 
 CP includes two rules that are logically derivable: the axiom rule at arbitrary propositions, which
 is interpreted as channel forwarding, and the cut rule, which is interpreted as process composition.
@@ -1063,6 +1063,8 @@ having distinct name restriction and composition operators, CP provides one comb
 syntactically captures the restriction that composed processes must share exactly one channel.  The
 second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, and name restriction
 (the name $y$ designates a new channel, bound in $P$).
+
+\subsubsection{Cut elimination.}
 
 \begin{figure}[t]
 Structural congruence:
@@ -1095,25 +1097,8 @@ Commuting conversions:
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
 \end{equations}
-\caption{CP congurences and cut reduction}\label{fig:beta-reduction}
+\caption{CP congurences and cut reduction}\label{fig:cp-reduction}
 \end{figure}
-
-Cut elimination corresponds to synchronous process reduction.  The principal cut reductions are
-given in Fig.~\ref{fig:beta-reduction}. These are quite standard; for instance, cut reduction of
-$\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
-
-\begin{mathpar}
-\inferrule
-  { }
-  { }
-\end{mathpar}
-
-\begin{figure}[float]
-
-\caption{Commuting Conversions}\label{fig:commuting}
-\end{figure}
-
-\subsubsection{Cut elimination.}
 
 The semantics of CP terms are given by cut reduction, as shown in \figref{cp-reduction}.  We write
 $\fv(P)$ for the free names of process $P$.  Terms are identified up to structural congruence
@@ -1158,7 +1143,7 @@ where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note 
 \end{equations}
 as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
 $x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
-original with one application of the commuting conversions.  However, the two formulations are not
+original by one application of the commuting conversions.  However, the two formulations are not
 quite identical. Let us consider the possible reductions of the two terms.  Notice that in $x[y].(P
 \mid Q)$, both $P$ and $Q$ are blocked on $x$; however, the same is not true for $\cut y {} P
 {x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronizing on $x$.
@@ -1231,9 +1216,10 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
 
 \subsection{Translation from CP to GV}
 
-We now present the translation $\togv{-}$ from CP to GV. On types:
+\begin{figure}[float]
+On types:
 \[
-\ba{@{}c@{\qquad}c@{\qquad}c@{}}
+\ba{@{}c@{\quad}c@{\quad}c@{\quad}c}
 \begin{eqs}
 \togv{A \otimes B} &=& \gvout{\gvdual{\togv{A}}}{\togv{B}} \\
 \togv{A \parr B}   &=& \gvin{\togv{A}}{\togv{B}} \\
@@ -1245,63 +1231,90 @@ We now present the translation $\togv{-}$ from CP to GV. On types:
 \end{eqs}
 &
 \begin{eqs}
-\togv{+\{l_i:A_i\}_i}     &=& +\{l_i:\togv{A_i}\}_i  \\
-\togv{\with\{l_i:A_i\}_i} &=& \with\{l_i:\togv{A_i}\}_i \\
+\togv{A \oplus B} &=& \togv{A} \oplus \togv{B} \\
+\togv{A \with B}  &=& \togv{A} \with \togv{B}
+\end{eqs}
+&
+\begin{eqs}
+\togv{0}    &=& \gvout{\zero}{\outterm} \\
+\togv{\top} &=& \gvin{\zero}{\interm}
 \end{eqs}
 \ea
 \]
-%
-The translation on type environments is defined pointwise. Figure~\ref{fig:fromcp} gives a
-translation from CP terms to GV terms ($\togv{-}$) and a translation from CP terms to GV
-configurations ($\togvc{-}$).
-
-\begin{figure}[float]
+On terms:
 \begin{equations}
   \togv{\cut{x}{}{P}{Q}} &=&
     \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
-  \togv{\link{x}{y}} &=& \gvlet{z}{\gvlink{x}{y}}{z} \\
-  %% \togv{x[y].(P \mid Q)} &=&
-  %%   \gvlet{y}{\gvfork{y}{\togv{P}}}{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}} \\
-  \togv{x[y].P} &=&
-    \gvlet{x}{\gvsend{(y, x)}}{\togv{P}} \\
+  \togv{\link{x}{y}} &=& \gvlink{x}{y} \\
+  \togv{x[y].(P \mid Q)} &=&
+    \gvlet{x}{\gvsend{(\gvfork{y}{\togv{P}}, x)}}{\togv{Q}} \\
+%%   \togv{x[y].P} &=&
+%%     \gvlet{x}{\gvsend{(y, x)}}{\togv{P}} \\
   \togv{x(y).P} &=&
     \gvlet{(y,x)}{\gvreceive{x}}{\togv{P}} \\
   \togv{x[].0} &=& x \\
   \togv{x().P} &=& \gvlet{()}{\gvwait{x}}{\togv{P}} \\
   \togv{\sel{x}{\mathit{l}}.P} &=&
     \gvlet{x}{\gvselect{l}{x}}{\togv{P}} \\
-  \togv{\case{x}{l_i.P_i}_i} &=&
-    \gvcase{x}{l_i.\togv{P_i}}_i
+  \togv{\case{x}{P;Q}} &=&
+    \mkwd{offer} \: x \: \{ \mkwd{inl} \app x \mapsto \togv P; \mkwd{inr} \app x \mapsto \togv Q \} \\
+  \togv{\case{x}{}} &=& \gvlet{(y,x)}{\gvreceive{x}}{\mkwd{absurd}\app y}
 \medskip
 \\
   \togvc{\cut{x}{}{P}{Q}} &=&
     (\nu x)(\togvc{P} \parallel \togvc{Q}) \\
-  \togvc{P} &=& \togv{P}, \quad \text{$P$ is not a cut} \\
-  %% \togvc{x[y].(P \mid Q)} &=&
-  %%   (\nu y)(\togvc{P} \parallel \distinguish{\gvlet{x}{\gvsend{(y, x)}}{\togv{Q}}}) \\
-  %% \togvc{P} &=& \distinguish{\togv{P}}, \quad \text{$P$ is not a cut or a send} \\
+  \togvc{P} &=& \thread \togv{P}, \quad \text{$P$ is not a cut} \\
 \end{equations}%
-
-\caption{Translation of CP Terms into GV}\label{fig:fromcp}
+\caption{Translation of CP Terms into GV}\label{fig:from-cp}
 \end{figure}
 
-As CP processes have no return value, a CP judgement is translated to a non-returning configuration.
+In this section, we show that CP can be simulated in GV.  \figref{from-cp} gives the translation of
+CP types and terms into GV; we translate typing environments by the pointwise extension of the
+translation on types.  We rely on our encoding of branching and choice in GV~\secref{gv-static} in
+the translations of both types and terms; for example, expanding the translation of $\with$ would
+give $\togv{A \with B} = \gvin{(\togv{A} + \togv{B})}{\interm}.$ In translating CP terms to GV
+terms, the key observation is that CP terms contain their continuations; thus, for example, the
+translation of input includes both a call to \gvconst{receive} and the translation of the
+continuation.  Additionally, the rebinding that is implicit in CP syntax is made explicit in GV.
+The translation $\togvc{-}$ translates top-level composition (i.e., composition not under any
+prefix) to GV configurations; cuts that appear under prefixes (and thus in GV terms) are translated
+to applications of \gvconst{fork}.  As CP processes do not have return values, we translated each
+process to a thread returning $\outterm$; consequently, the translation of a CP process contains no
+main thread.
 
+It is a straightforward verification that the translation preserves typing; note that the channels
+in the CP typing environment become free variables in its GV translation.
+%
 \begin{theorem}
-If $P \vdash \Gamma$ then $\togv{\Gamma} \vdash^\wcirc \togvc{P}$.
+If $P \vdash \Delta$ then $\togv{\Delta} \vdash^\wcirc \togvc{P}$.
 \end{theorem}
-
-Structural equivalence is preserved by the translation.
-
+%
+Structural congruence in CP is a subset of the structural congruence relation for GV configurations;
+thus the translation trivially preserves congruence.
+%
 \begin{theorem}
 If $P \equiv Q$, then $\togvc{P} \equiv \togvc{Q}$.
 \end{theorem}
-
-Every CP reduction can be simulated by one or more GV reductions.
-
+%
+Finally, observe that the translation of any prefixed CP term is a GV thread of either the form $F[K
+\app M]$ for $K \in \{ \gvconst{send}, \gvconst{receive}, \gvconst{wait} \}$ or is $\wcirc x$ for
+some variable $x$.  Thus, we can see that any cut reduction immediately possible for a process $P$
+is similarly possible for $\togv{P}$.  Following such a reduction, however, several additional GV
+reductions may be necessary to expose the next possible communication---for example, substituting
+the received values into the continuation in the case of the translation of input, or spawning new
+threads in the translation of composition.
+%
 \begin{theorem}\label{thm:cp-reduction-simulated}
-If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
+If $P \vdash \Gamma$ and $P \crto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{theorem}
+%
+\begin{proof}
+  By induction on $P$; the cases are all straightforward.
+\end{proof}
+%
+The commuting conversions in CP do not expose additional reductions, but are only necessary to
+assure that the result of evaluation does not have a cut at the top level.  Our characterization of
+deadlock freedom in GV has no such requirement, so we have no need of corresponding steps in GV.
 
 
 %% \subsection{Functions as Processes}
@@ -1391,6 +1404,8 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
 \end{equations}
 
+\todo{Explain $\parallel_x$ notation; do we actually use this anywhere else?}
+
 \todo{Sort out how we deal with constants. Currently our translation of fork doesn't make sense - it
   should be a translation of fork M. The translations of link (M, N) and send (M, N) are OK if we
   insist constants are always fully applied. But perhaps we can reasonably change them to
@@ -1402,7 +1417,7 @@ If $P \vdash \Gamma$ and $P \rto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \todo{In fact we can get away with the simpler definition for wait - perhaps we should?}
 
 \begin{equations}
-\tocp{M}z                &=& \cut{y}{}{\tocp{M}y}{y[]} \\
+\tocp{\thread M}z        &=& \cut{y}{}{\tocp{M}y}{y[]} \\
 \tocp{\distinguish M}z   &=& \tocp{M}z \\
 \tocp{(\nu x)C}z         &=& \tocp{C}z \\
 \tocp{C \parallel_x C'}z &=& \cut{x}{}{\tocp{C}z}{\tocp{C'}z} \\
@@ -1772,7 +1787,7 @@ By induction on the derivation of $C \ceval D$. Here we show the case of send/re
 %%                  {\tocp{x}z})]z \\
 %% \equiv \\
 %% \quad \tocp{\Fx}[
-%%         z \mapsto 
+%%         z \mapsto
 %%           \cut{x}{}
 %%             {\tocp{x}z}
 %%             {\tocp{\cut{y}{}{\tocp{\sigma}(\tocp{M}y)}{y[]}}} \\
@@ -2250,6 +2265,11 @@ and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
 
 Something about connection to Carbone et al.  Their progress property requires that every
 communication will eventually take place.  This is hopefully an easy consequence of ours.
+
+\subsubsection{Linear logic and session types.}
+
+\subsubsection{Progress and deadlock freedom.}
+
 
 \section{Conclusions and Future Work}\label{sec:conclusion}
 
