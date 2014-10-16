@@ -348,10 +348,11 @@ it simplifies the core calculus with no loss of expressivity.
 
 \subsection{Evaluation}\label{sec:gv-eval}
 
-\newcommand{\distinguish}[1]{\langle #1 \rangle}
-
 \newcommand{\wcirc}{{\mathord{\circ}}}
 \newcommand{\bcirc}{{\mathord{\bullet}}}
+\newcommand{\distinguish}[1]{\bcirc #1}
+\newcommand{\thread}[1]{\wcirc #1}
+
 
 \begin{figure}[t]
 \begin{syntax}
@@ -362,8 +363,8 @@ it simplifies the core calculus with no loss of expressivity.
   \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid \gvletunit{\Ex}{M} \\
   & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
   & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
-  & \Fx & ::= & \Ex \mid \distinguish \Ex \\
-  \text{Configurations} & C,D & ::= & M \mid \distinguish M \mid C \parallel C' \mid (\nu x) C \\
+  & \Fx & ::= & \phi \Ex \\
+  \text{Configurations} & C,D & ::= & \phi M \mid C \parallel C' \mid (\nu x) C \\
   \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
@@ -381,8 +382,7 @@ To preserve a close connection between the semantics of our term language and cu
 linear logic, we define term reduction using weak explicit substitutions~\cite{}.  In this approach,
 we capture substitutions at $\lambda$-terms rather than immediately applying them to the body of the
 term.  Our language of terms, therefore, includes closures $\lambda^\sigma x.M$, where $\sigma$
-provides the captured substitution.  We extend the typing relation on terms to include closures, as
-follows:
+provides the captured substitution.  We extend the typing judgement to include closures, as follows:
 \[
 \inferrule
   {\Gamma, x:T \vdash M\sigma : U \\
@@ -427,8 +427,8 @@ The grammar of configurations includes the usual $\pi$-calculus forms for compos
 restriction.  However, because we are beginning with a functional language, in which computations
 may return values (which may, in turn, contain channels), it is important to distinguish between the
 ``main'' thread (which returns a meaningful value) and the threads created by \gvconst{fork} (which
-do not).  We designate the main thread in a configuration by surrounding it in brackets
-$\distinguish M$.
+do not).  We designate the main thread in a configuration by $\bcirc M$ and forked threads by
+$\wcirc M$.
 
 \subsubsection{Reduction.}
 
@@ -468,8 +468,7 @@ Configuration reduction:
 \inferrule
   [Fork]
   {\text{$x$ is a fresh channel name}}
-  {\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})] \ceval (\nu x)(\Fx[x] \parallel M\sigma)}
-%%  {\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})] \ceval (\nu x)(\Fx[x] \parallel M(\{\bind x x\} \uplus \sigma)}
+  {\Fx[\gvconst{fork} \app (\clos{\sigma}{y}{M})] \ceval (\nu x)(\Fx[x] \parallel M(\{\bind y x\} \uplus \sigma)}
   %% [Fork]
   %% {\text{$x$ fresh}}
   %% {\Fx[\gvconst{fork} \app V] \ceval (\nu x)(\Fx[x] \parallel (V\,x))}
@@ -477,8 +476,8 @@ Configuration reduction:
 \inferrule
   [Wait]
   { }
-  {(\nu x)(\phi E[\gvconst{wait} \app x] \parallel \phi' x)
-       \ceval (\phi + \phi')\Fx[()]}
+  {(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \phi x) \ceval
+       \Fx[()]}
 
 \inferrule
    [Link]
@@ -518,12 +517,13 @@ equivalence in reduction; we will return to the treatment of equivalence at the 
 Configuration typing:
 \begin{mathpar}
 \inferrule
-  {\Gamma \vdash M: T}
+  {\Gamma \vdash M: T \\
+   T \not= \outterm}
   {\Gamma \vdash^\bcirc \distinguish M}
 
 \inferrule
   {\Gamma \vdash M: \outterm}
-  {\Gamma \vdash^\wcirc M}
+  {\Gamma \vdash^\wcirc \thread M}
 
 \inferrule
   {\Gamma, x:\channel{S} \vdash^\phi C}
@@ -806,9 +806,8 @@ produce a value.
 A process $C$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
 terms $M_1,\dots,M_n$ such that
 \[
-  C = (\nu x_1)(M_1 \parallel (\nu x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel C_n)\dots)),
+  C = (\nu x_1)(\thread {M_1} \parallel (\nu x_2)(\thread {M_2} \parallel \dots \parallel (\nu x_{n-1})(\thread{M_{n-1}} \parallel \phi M_n)\dots)).
 \]
-where either $C_n = M_n$ or $C_n = \distinguish M_n$.
 \end{definition}
 
 Note that canonical forms need not be unique.  For example, consider the configuration $\vdash (\nu
@@ -830,10 +829,10 @@ can order the threads by the channels they share.
   exactly one $\nu$-bound variable $x_j$ where $x_j \in \fv(M_i)$.  (That there must be such an
   $M_i$ and $x_j$ can be established by a standard counting argument, together with
   \lemref{procs-share-one-channel}.)  Now, construct $D$ from $C$ by the homomorphic extension of
-  the mapping $(\nu x_j)E \mapsto E$ and $E \parallel M_i \mapsto E$.  From the assumption that
+  the mapping $(\nu x_j)E \mapsto E$ and $E \parallel \phi M_i \mapsto E$.  From the assumption that
   $\Gamma \vdash C$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$ such
   that $\Gamma',x:S \vdash D$.  By the induction hypothesis, there is some $D' \equiv D$ in
-  canonical form.  Finally, let $C' = (\nu x_j)(M_i \parallel D')$; we can see that
+  canonical form.  Finally, let $C' = (\nu x_j)(\phi M_i \parallel D')$; we can see that
   straightforwardly that $C'$ is in canonical form; that $C \equiv C'$; and, that $\Gamma \vdash
   C'$. \qed
 \end{proof}
@@ -843,15 +842,14 @@ variables; of course, each thread must be blocked either on some previous $\nu$-
 one of the free variables.
 %
 \begin{theorem}\label{thm:progress-open}
-  Let $\Gamma \vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
-  x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel D)\dots))$ be
-  a canonical form of $C$.  Then:
+  Let $\Gamma \vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(\thread M_1 \parallel (\nu
+  x_2)(\thread M_2 \parallel \dots \parallel (\nu x_{n-1})(\thread M_{n-1} \parallel \phi M_n)\dots))$ be a
+  canonical form of $C$.  Then:
   \begin{enumerate}
   \item For $1 \leq i \leq n - 1$ either $\blockedp(x_j,M_i)$ where $j \leq i$ or $\blockedp(y,M_i)$
     for some $y \in \dom(\Gamma)$; and,
-  \item There is a term $M_n$ such either $D = M_n$ or $D = \distinguish{M_n}$ and either $M_n$ is a
-    value or $\blockedp(y,M_n)$ for some $y \in \{ x_i \mid i \leq i \leq n - 1 \} \cup
-    \dom(\Gamma)$.
+  \item Either $M_n$ is a value or $\blockedp(y,M_n)$ for some $y \in \{ x_i \mid i \leq i \leq n -
+    1 \} \cup \dom(\Gamma)$.
   \end{enumerate}
 \end{theorem}
 %
@@ -867,12 +865,12 @@ were it blocked on $x_1$, it could reduce with thread $M_1$; we can conclude it 
 Generalizing this observation gives the following progress result.
 %
 \begin{corollary}\label{thm:progress}
-  Let $\vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(M_1 \parallel (\nu
-  x_2)(M_2 \parallel \dots \parallel (\nu x_{n-1})(M_{n-1} \parallel \distinguish{M_n})\dots))$ be
-  a canonical form of $C$.  Then:
+  Let $\vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(\thread M_1 \parallel (\nu
+  x_2)(\thread M_2 \parallel \dots \parallel (\nu x_{n-1})(\thread M_{n-1} \parallel
+  \phi M_n)\dots))$ be a canonical form of $C$.  Then:
   \begin{enumerate}
   \item For $1 \leq i \leq n - 1$, $\blockedp(x_i,M_i)$; and,
-  \item There is a value $V$ such that either $M_n = \distinguish V$ or $M_n = V$.
+  \item $M_n$ is a value.
   \end{enumerate}
 \end{corollary}
 %
@@ -883,8 +881,6 @@ Generalizing this observation gives the following progress result.
 Finally, observe that some subset of the variables $x_1,\dots,x_n$ must appear in the result $V$.
 Therefore, if the original expression returns a value that does not contain any channels, it will
 evaluate to a configuration with no blocked threads.
-
-\todo{End of revised text}
 
 %% \subsection{Direct GV semantics}
 %%
@@ -983,16 +979,42 @@ evaluate to a configuration with no blocked threads.
 %% $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 %% involving $x$.
 
-
-
 \section{Linear Logic}\label{sec:cp}
 
 \subsection{CP}
 
-\todo{This section (particularly the text) needs quite a bit of tidying}
-
 \begin{figure}[float]
-
+Syntax:
+\begin{syntax}
+  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
+  \text{Terms} & P,Q & ::= & \link x y \mid \cut y {} P Q \mid x(y).P \mid x[y].(P \mid Q) \\
+   & & \mid & x[in_i].P \mid \case{x}{P;Q} \mid x().P \mid x[].0 \mid \case{x}{} \\
+\end{syntax}
+Duality:
+\[
+\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
+\begin{eqs}
+  \cpdual{(A \otimes B)} &=& \cpdual{A} \parr \cpdual{B} \\
+  \cpdual{(A \parr B)} &=& \cpdual{A} \otimes \cpdual{B} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{1} &=& \bot \\
+  \cpdual{\bot} &=& 1 \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{(A \oplus B)} &=& \cpdual{A} \with \cpdual{B} \\
+  \cpdual{(A \with B)} &=& \cpdual{A} \oplus \cpdual{B} \\
+\end{eqs}
+&
+\begin{eqs}
+  \cpdual{\top} &=& 0 \\
+  \cpdual{0} &=& \top \\
+\end{eqs}
+\ea
+\]
+Typing:
 \begin{mathpar}
 \inferrule{ }{\cptyp{\link{x}{w}}{x:A,w:\cpdual{A}}}
 
@@ -1021,209 +1043,174 @@ evaluate to a configuration with no blocked threads.
 
 \inferrule{ }{\cptyp{\case{x}{}}{\Gamma,x:\top}}
 \end{mathpar}
-
-\caption{Typing Rules for CP}\label{fig:cp-typing}
+\caption{CP syntax and typing}\label{fig:cp-typing}
 \end{figure}
 
-The types of CP are the propositions of classical linear logic.
-%
-\[\begin{array}{@{}l@{~}r@{~}c@{~}l@{}}
-  \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
-\end{array}\]
-CP adopts the standard notion of classical linear logic duality:
-\[
-\ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
-\begin{eqs}
-  \cpdual{(A \otimes B)} &=& \cpdual{A} \parr \cpdual{B} \\
-  \cpdual{(A \parr B)} &=& \cpdual{A} \otimes \cpdual{B} \\
-\end{eqs}
-&
-\begin{eqs}
-  \cpdual{1} &=& \bot \\
-  \cpdual{\bot} &=& 1 \\
-\end{eqs}
-&
-\begin{eqs}
-  \cpdual{(A \oplus B)} &=& \cpdual{A} \with \cpdual{B} \\
-  \cpdual{(A \with B)} &=& \cpdual{A} \oplus \cpdual{B} \\
-\end{eqs}
-&
-\begin{eqs}
-  \cpdual{\top} &=& 0 \\
-  \cpdual{0} &=& \top \\
-\end{eqs}
-\ea
-\]
-where $X^{\perp\perp} = X$.
-%
-We let $\Gamma, \Delta$ range over type environments. The judgement $\cptyp{P}{\Gamma}$ states that
-process $P$ uses channels $\Gamma$.
-%
-Typing rules for CP terms are given in Fig.~\ref{fig:cp-typing}. We write $fv(P)$ for the free
-variables used in process $P$; in the typing rules, new bound variables are designated $y$.
+\figref{cp-typing} gives the syntax and typing rules for the multiplicative-additive fragment of CP.
+The types and duality relation are the standard propositions of classical linear logic, while the
+terms are based on a subset of the $\pi$-calculus.  The types $\with$ and $\oplus$ are interpreted
+as external and internal choice; the types $\parr$ and $\otimes$ are interpreted as input and
+output, while their units $\bot$ and $1$ are interpreted as nullary input and output.  Note that
+CP's typing rules implicitly rebind identifiers: for example, in the hypotheses of the rule for
+$\parr$, $x$ identifies a proof of $B$, while in the conclusion it identifies a proof of $A \parr
+B$.
 
-\paragraph{Structural Rules.}
+CP includes two rules that are logically derivable: the axiom rule at arbitrary propositions, which
+is interpreted as channel forwarding, and the cut rule, which is interpreted as process composition.
 
-CP has two structural rules, axiom and cut. We interpret the axiom $\link{x}{w}$ as channel
-forwarding: actions on channel $x$ are mirrored on $w$, and vice versa. Thus, $x$ and $w$ must have
-dual type. Cut $\cut{y}{A}{P}{Q}$ is interpreted as communication between processes $P$ and $Q$ on
-channel $y$; the duality of the typing of $y$ assures that its uses in $P$ and $Q$ are
-compatible. We identify CP terms up to structural equivalence:
-%
-
-We take $\equiv$ to be the least equivalence relation that is closed under these rules.
-
-\paragraph{Input and Output.}
-
-The multiplicative connectives $\parr$ and $\otimes$ are interpreted as input and output. The
-process $x(y).P$ inputs channel $y$ on channel $x$, and continues as $P$. The process $x[y].(P \mid
-Q)$ is interpreted as bound output: it sends a fresh variable $y$ along $x$, spawns a process $P$ in
-which $y$ is used, and continues as process $Q$ in which $x$ is used.  It amounts to the
-$\pi$-calculus term $(\nu y) \overline{x}(y).(P \mid Q)$. We write $x[y].P$ as syntactic sugar for
-$x[y'].(\link{y}{y'} \mid P)$. The units of $\parr$ and $\otimes$, $\bot$ and $1$, are interpreted
-as nullary input and nullary output, respectively.
-
-\paragraph{Selection and Choice.}
-
-The additive connectives $\oplus$ and $\with$ are interpreted as selection and choice. The process
-$\case{x}{P_1;P_2}$ offers a choice of processes $P_1$ and $P_2$; dually, the process
-$\sel{x}{in_i}.P_i$ chooses the $i$-th alternative. The unit for choice is $0$, indicating
-absurdity. Note that there is no term proving $0$. The dual of absurdity is $\top$, and provides
-arbitrary behavior; as there is no term proving $0$, no term relying on $\top$ can reduce.
-
-\subsection{Cut Elimination}
-
+Two of CP's terms differ from standard $\pi$-calculus terms.  The first is com\-pos\-i\-tion---rather than
+having distinct name restriction and composition operators, CP provides one combined operator.  This
+syntactically captures the restriction that composed processes must share exactly one channel.  The
+second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, and name restriction
+(the name $y$ designates a new channel, bound in $P$).
 
 \begin{figure}[t]
 Structural congruence:
 \begin{equations}
   \link{x}{w} &\equiv& \link{w}{x} \\
   \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
-  \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in fv(R)$} \\
+  \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in \fv(R)$} \\
 \cut{x}{}{P_1}{Q} &\equiv& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \equiv P_2$}
 \end{equations}
 Primary cut reduction rules:
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
-  &\rto& P[w/x] \\
+  &\crto& P[w/x] \\
 \cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}
-  &\rto&
-    \cut{y}{A}{Q}{\cut{x}{B}{P}{R}} \\
+  &\crto&
+    \cut{x}{A}{Q}{\cut{y}{B}{P}{R}} \\
 \cptyp{\cut{x}{1}{x[].0}{x().P}}{\Gamma}
-  &\rto&
+  &\crto&
     P \\
 \cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
-  &\rto&
+  &\crto&
     \cut{x}{A}{P}{Q_i} \\
-\cut{x}{}{P_1}{Q} &\rto& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \rto P_2$}
+\cut{x}{}{P_1}{Q} &\crto& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \crto P_2$}
 \end{equations}%
 Commuting conversions:
 \begin{equations}
-  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in fv(Q)$} \\
-  \cut{z}{A}{x[y].(P \mid Q)}{R} &\rto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in fv(P)$} \\
-  \cut{z}{A}{x(y).P}{Q} &\rto& x(y).\cut{z}{A}{P}{Q} \\
-  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\rto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
-  \cut{z}{A}{\case{x}{P;Q}}{R} &\rto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in \fv(Q)$} \\
+  \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in \fv(P)$} \\
+  \cut{z}{A}{x(y).P}{Q} &\ccto& x(y).\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
+  \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
 \end{equations}
-\caption{CP congurences and cut reduction}\label{fig:beta-reduction}
+\caption{CP congurences and cut reduction}\label{fig:cp-reduction}
 \end{figure}
 
-Cut elimination corresponds to synchronous process reduction.  The principal cut reductions are
-given in Fig.~\ref{fig:beta-reduction}. These are quite standard; for instance, cut reduction of
-$\with$ against $\oplus$ corresponds to picking one of the offered alternatives.
+\subsubsection{Cut elimination.}
 
-\begin{mathpar}
-\inferrule
-  {}
-  {}
-\end{mathpar}
+The semantics of CP terms are given by cut reduction, as shown in \figref{cp-reduction}.  We write
+$\fv(P)$ for the free names of process $P$.  Terms are identified up to structural congruence
+$\equiv$.  Note that, as name restriction and composition are combined into one form, composition is
+not associative.  The majority of the cut reduction rules correspond closely to the synchronous
+reductions in $\pi$-calculus---for example, the reduction of $\with$ against $\oplus$ corresponds to
+the synchronization of an internal and external choice.  The rule for reduction of $\parr$ against
+$\otimes$ is more complex than the usual synchronization of input and output, as it must also
+manipulate the implicit name restriction and composition in CP's output term.  The commuting
+conversions allow composition to be moved under prefixes; they do not correspond to any reduction
+rule in $\pi$-calculus.  We define $\bigcrto$ to be the reflexive, transitive closure of
+$\equiv\crto\equiv$, and $\bigccto$ as $\bigcrto\ccto^\star$.
 
-\begin{figure}[float]
+Just as cut elimination in logic can be used to show that any proof can be transformed to a proof
+that does not make use of cut, the reduction rules of CP transform any term into a term blocked on
+an external communication---that is to say, if $P \vdash \Delta$, then $P \bigccto P'$ where $P'
+\not= \cut x {} Q {Q'}$ for any $x,Q,Q'$. Note that the commuting conversions play a central role in
+this transformation, moving any further internal communication beneath the external communication.
 
-\caption{Commuting Conversions}\label{fig:commuting}
-\end{figure}
-
-The commuting conversions push communication under process prefixes, and are given in
-Fig.~\ref{fig:commuting}.
-
-\todo{Think carefully about what to do with commuting conversions.}
-
-\subsection{A Simpler Send}
-
-\todo{Make this description clearer}
+\subsubsection{A simpler send.}
 
 The CP send rule is appealing because if one erases the terms it is exactly the classical linear
 logic rule for tensor. However, this correspondence comes at a price. Operationally, the process
 $x[y].(P \mid Q)$ does three things: it introduces a fresh variable $y$, it sends $y$ to a freshly
-spawned process $P$, and in parallel it continues as process $Q$.
-%
-This is painful on many levels, but in particular it complicates our attempts to relate the
-semantics of CP with that of GV (whose send operator only does one thing: performing a send).
+spawned process $P$, and in parallel it continues as process $Q$.  This complicates both the
+reduction semantics of CP (as the cut reduction of $\otimes$ against $\parr$ must account for all
+three behaviors) and the equivalence of CP and GV (where the behavior of \gvconst{send} is simpler).
 
-Fortunately, we can give an alternative rule for send, corresponding with the send operator of GV,
-and which gives rise to a system which is entirely equivalent to CP, apart from having a slightly
-different syntax.
-%
+We can give an alternative formulation of send, avoiding the additional name restriction and
+composition, as follows:
 \begin{mathpar}
 \inferrule
   {\cptyp{P}{\Gamma,x:B,y:A}}
-  {\cptyp{x[y].P}{\Gamma,x:A \otimes B,y:\cpdual{A}}}
+  {\cptyp{x\sd{y}.P}{\Gamma,x:A \otimes B,y:\cpdual{A}}}
 \end{mathpar}
-The cut rule for a send against a receive is straightforward:
+where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note that
 \begin{equations}
-\cut{x}{A \otimes B}{x[y].P}{x(y).Q} &\rto& \cut{x}{B}{P}{Q} \\
+  \cut x {} {x\sd{y}.P}{x(z).Q}
+     &=& \cut x {} {x[z].(\link y z \mid P)} {x(z).Q} \\
+     &\crto& \cut z {} {\link y z} {\cut x {} P {Q}} \\
+     &\crto& \cut x {} P {Q \{ y/z \}}
 \end{equations}
-%
-For clarity let us refer to the original form as cut-send, and the one we have just defined as send.
+as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
+$x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
+original with one application of the commuting conversions.  However, the two formulations are not
+quite identical. Let us consider the possible reductions of the two terms.  Notice that in $x[y].(P
+\mid Q)$, both $P$ and $Q$ are blocked on $x$; however, the same is not true for $\cut y {} P
+{x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronizing on $x$.
 
-It we take send as primitive, then we can express cut-send as a macro:
-\[
-x[y].P \defeq x[z].(\link{y}{z} \mid P)
-\]
-Conversely, if we take cut-send as primitive, then we can express send as a macro:
-\[
-x[y].(P \mid Q) \defeq \cut{y}{}{P}{x[y].Q}
-\]
+\todo{End of revised text}
 
-With cut-send as primitive we can simulate a cut of a send against a receive in two steps.
-\begin{equations}
-  \cut{x}{}{x[y].P}{x(y).Q}
-    &\defeq& \cut{x}{}{x[z].(\link{y}{z} \mid P)}{x(y).Q} \\
-    &\rto& \cut{z}{}{\link{y}{z}}{\cut{x}{}{P}{Q}} \\
-    &\rto& \cut{x}{}{P}{Q} \\
-\end{equations}
-
-With send as primitive we can simulate a cut of a cut-send against a receive in one step.
-\begin{equations}
-  \cut{x}{}{x[y].(P \mid Q)}{x(y).R}
-    &\defeq& \cut{x}{}{\cut{y}{}{P}{x[y].Q}}{x(y).R} \\
-    &\equiv& \cut{y}{}{P}{\cut{x}{}{x[y].Q}{x(y).R}} \\
-    &\rto& \cut{y}{}{P}{\cut{x}{}{Q}{R}} \\
-\end{equations}
-
-Using these two observations it is straightforward to show that CP with send is equivalent to CP
-with cut-send. In order to simplify our formal development, we will work with CP with send from now
-on.
-
-\todo{I'm not sure whether or not we want to include the next bit.}
-
-However, there is a slightly subtlety.
-%
-Let us consider the possible reductions on the representation of cut-send in terms of send. Let $P_1
-= x[y].(P \mid Q)$ and $P_2 = \cut{y}{}{P}{x[y].Q}$. Notice that $P_1$ is blocked, but $P_2$ may not
-be as it allows reductions to take place inside $P$.
-%
-Now let us consider the possible reductions on the representation of send in terms of cut-send. Let
-$Q_1 = x[y].P$ and $Q_2 = x[z].(\link{y}{z} \mid P)$. Clearly both $Q_1$ and $Q_2$ are blocked.
-%
-This discrepancy, suggests that perhaps we should have added the following congruence rule to CP in
-the first place:
-\begin{mathpar}
-\inferrule
-  {P_1 \longrightarrow P_2}
-  {x[y].(P_1 \mid Q) \longrightarrow x[y].(P_2 \mid Q)}
-\end{mathpar}
-%
+%% on the representation of cut-send in terms of send. Let $P_1 = x[y].(P \mid Q)$ and $P_2 =
+%% \cut{y}{}{P}{x[y].Q}$. Notice that $P_1$ is blocked, but $P_2$ may not be as it allows reductions to
+%% take place inside $P$.
+%% %
+%% Now let us consider the possible reductions on the representation of send in terms of cut-send. Let
+%% $Q_1 = x[y].P$ and $Q_2 = x[z].(\link{y}{z} \mid P)$. Clearly both $Q_1$ and $Q_2$ are blocked.
+%%
+%% This is painful on many levels, but in particular it complicates our attempts to relate the
+%% semantics of CP with that of GV (whose send operator only does one thing: performing a send).
+%%
+%% Fortunately, we can give an alternative rule for send, corresponding with the send operator of GV,
+%% and which gives rise to a system which is entirely equivalent to CP, apart from having a slightly
+%% different syntax.
+%% %
+%%
+%% The cut rule for a send against a receive is straightforward:
+%% \begin{equations}
+%% \cut{x}{A \otimes B}{x[y].P}{x(y).Q} &\rto& \cut{x}{B}{P}{Q} \\
+%% \end{equations}
+%% %
+%% For clarity let us refer to the original form as cut-send, and the one we have just defined as send.
+%%
+%% It we take send as primitive, then we can express cut-send as a macro:
+%% \[
+%% x[y].P \defeq x[z].(\link{y}{z} \mid P)
+%% \]
+%% Conversely, if we take cut-send as primitive, then we can express send as a macro:
+%% \[
+%% x[y].(P \mid Q) \defeq \cut{y}{}{P}{x[y].Q}
+%% \]
+%%
+%% With cut-send as primitive we can simulate a cut of a send against a receive in two steps.
+%% \begin{equations}
+%%   \cut{x}{}{x[y].P}{x(y).Q}
+%%     &\defeq& \cut{x}{}{x[z].(\link{y}{z} \mid P)}{x(y).Q} \\
+%%     &\rto& \cut{z}{}{\link{y}{z}}{\cut{x}{}{P}{Q}} \\
+%%     &\rto& \cut{x}{}{P}{Q} \\
+%% \end{equations}
+%%
+%% With send as primitive we can simulate a cut of a cut-send against a receive in one step.
+%% \begin{equations}
+%%   \cut{x}{}{x[y].(P \mid Q)}{x(y).R}
+%%     &\defeq& \cut{x}{}{\cut{y}{}{P}{x[y].Q}}{x(y).R} \\
+%%     &\equiv& \cut{y}{}{P}{\cut{x}{}{x[y].Q}{x(y).R}} \\
+%%     &\rto& \cut{y}{}{P}{\cut{x}{}{Q}{R}} \\
+%% \end{equations}
+%%
+%% Using these two observations it is straightforward to show that CP with send is equivalent to CP
+%% with cut-send. In order to simplify our formal development, we will work with CP with send from now
+%% on.
+%%
+%% However, there is a slightly subtlety.
+%%
+%% This discrepancy, suggests that perhaps we should have added the following congruence rule to CP in
+%% the first place:
+%% \begin{mathpar}
+%% \inferrule
+%%   {P_1 \longrightarrow P_2}
+%%   {x[y].(P_1 \mid Q) \longrightarrow x[y].(P_2 \mid Q)}
+%% \end{mathpar}
+%% %
 
 \todo{Do we want to state anything more formal relating CP-cut-send with CP-send?}
 
@@ -2060,7 +2047,7 @@ update evaluation rules for the extended language.  In addition to a new rule fo
 \begin{figure}
 Extended configuration equivalence:
 \begin{mathpar}
-C \parallel () \equiv C
+C \parallel \wcirc () \equiv C
 \end{mathpar}
 Extended reduction rules (all other reduction rules apply as in GV)
 \begin{mathpar}
