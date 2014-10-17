@@ -544,16 +544,22 @@ Configuration reduction:
 \end{figure}
 
 Reduction rules for terms and configurations, and equivalences for configurations, are given in
-\figref{gv-reduction}.  Term reduction is typical call-by-value left-to-right evaluation; the only
-complication is that application not only substitutes for the $\lambda$-bound variables, but also
-applies any substitution captured by the closure.  Configuration equivalence is also relatively
-standard.  We provide an additional equivalence observing that \gvconst{link} is symmetric; this
-reduces the number of reduction rules.  Communication is provided by rule \textsc{Send} and session
-initiation is provided by rule \textsc{Fork}.  Rule \textsc{Wait} combines syncronization of closed
-channels with garbage collection of the associated name restriction.  Rule \textsc{Link} is
-complicated by the need to produce a session of type $\outterm$; the inserted \gvconst{wait}
-synchronizes with the produced session.  Atypically, we do not include a structural rule, including
-equivalence in reduction; we will return to the treatment of equivalence at the end of the section.
+\figref{gv-reduction}. Term reduction ($\teval$) is typical call-by-value left-to-right evaluation;
+the only complication is that application not only substitutes for the $\lambda$-bound variables,
+but also applies any substitution captured by the closure. Configuration equivalence ($\equiv$) is
+also relatively standard. We provide an additional equivalence observing that \gvconst{link} is
+symmetric; this reduces the number of reduction rules. Communication is provided by rule
+\textsc{Send} and session initiation is provided by rule \textsc{Fork}. Rule \textsc{Wait} combines
+syncronization of closed channels with garbage collection of the associated name restriction.  Rule
+\textsc{Link} is complicated by the need to produce a session of type $\outterm$; the inserted
+\gvconst{wait} synchronizes with the produced session. Atypically, we do not include a structural
+rule, including equivalence in reduction; we will return to the treatment of equivalence at the end
+of the section.
+
+\paragraph{Relation Notation}
+We write $R\,R'$ for the sequential composition of relations $R$ and $R'$, $R \cup R'$ for the union
+of relations $R$ and $R'$, $R^+$ for the transitive closure of relation $R$, and $R^*$ for the
+reflexive, transitive closure of relation $R$.
 
 \subsubsection{Configuration typing.}
 
@@ -1056,7 +1062,8 @@ evaluate to a configuration with no blocked threads.
 %% $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 %% involving $x$.
 
-\section{Linear Logic}\label{sec:cp}
+\section{Classical Linear Logic}
+\label{sec:cp}
 
 \subsection{CP}
 
@@ -1181,23 +1188,22 @@ second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, an
 The semantics of CP terms are given by cut reduction, as shown in \figref{cp-reduction}.  We write
 $\fv(P)$ for the free names of process $P$.  Terms are identified up to structural congruence
 $\equiv$. We write $\crto$ for the cut reduction relation, $\ccto$ for the commuting conversion
-relation, $\rto$ for $\crto \cup \ccto$, and juxtaposition for sequential composition of relations,
-and $R^*$ for the reflexive, transitive closure of relation $R$. Note that, as name restriction and
-composition are combined into one form, composition is not associative.  The majority of the cut
-reduction rules correspond closely to the synchronous reductions in $\pi$-calculus---for example,
-the reduction of $\with$ against $\oplus$ corresponds to the synchronization of an internal and
-external choice.  The rule for reduction of $\parr$ against $\otimes$ is more complex than the usual
-synchronization of input and output, as it must also manipulate the implicit name restriction and
-composition in CP's output term. The commuting conversions allow composition to be moved under
-prefixes; they do not correspond to any reduction rule in $\pi$-calculus. We write $\bigrto$ for
-$(\equiv\rto\equiv)^*$, $\bigcrto$ for $(\equiv\crto\equiv)^*$, and $\bigccto$ for
-$\bigcrto(\ccto^\star)$.
+relation, and $\rto$ for $\crto \cup \ccto$. Note that, as name restriction and composition are
+combined into one form, composition is not associative. The majority of the cut reduction rules
+correspond closely to the synchronous reductions in $\pi$-calculus---for example, the reduction of
+$\with$ against $\oplus$ corresponds to the synchronization of an internal and external choice.  The
+rule for reduction of $\parr$ against $\otimes$ is more complex than the usual synchronization of
+input and output, as it must also manipulate the implicit name restriction and composition in CP's
+output term. The commuting conversions allow composition to be moved under prefixes; they do not
+correspond to any reduction rule in $\pi$-calculus. We write $\bigrto$ for $(\equiv\rto\equiv)^+$,
+$\bigcrto$ for $(\equiv\crto\equiv)^+$, and $\bigccto$ for $\bigcrto(\ccto^\star)$.
 
 Just as cut elimination in logic can be used to show that any proof can be transformed to a proof
 that does not make use of cut, the reduction rules of CP transform any term into a term blocked on
 an external communication---that is to say, if $P \vdash \Delta$, then $P \bigccto P'$ where $P'
-\not= \cut x {} Q {Q'}$ for any $x,Q,Q'$. Note that the commuting conversions play a central role in
-this transformation, moving any further internal communication beneath the external communication.
+\not= \cut x {} Q {Q'}$ for any $x,Q,Q'$. Note that the final commuting conversions play a central
+role in this transformation, moving any further internal communication beneath the external
+communication.
 
 \subsubsection{A simpler send.}
 
@@ -1361,7 +1367,7 @@ The translation on session types is homomorphic except for output, where the out
 dualised. This accounts for the discrepancy between $\gvdual{!T.S} = ?T.S$ and $\cpdual{(A \otimes
   B)} = \cpdual{A} \parr \cpdual{B}$.
 %
-Following our previous work~\cite{places}, the translation on functional types is factored through
+Following our previous work~\cite{LindleyM14}, the translation on functional types is factored through
 an auxiliary translation $\tocpflip{-}$. The key intuition is that the translation $\tocp{T}$ of a
 functional type $T$ is the type of the \emph{interface} to $T$, whereas $\tocpflip{T}$ is the type
 of the \emph{implementation} of $T$.
@@ -1373,7 +1379,7 @@ value.
 \todo{Explain the translation on terms}
 
 The translation on terms presented here, diverges somewhat from the old translation of our previous
-work~\cite{jfp,places}. One problem with the old translation is that they it does not reflect
+work~\cite{Wadler14,LindleyM14}. One problem with the old translation is that they it does not reflect
 $\beta$-reduction. The fundamental reason for this is that CP cannot simulate substitution under a
 lambda abstraction, and this is why we adapted GV to use weak explicit substitutions.
 %
@@ -1643,7 +1649,7 @@ context follows straightforwardly by observing that the translation of an evalua
 places its argument inside a prefix.\qed
 \end{proof}
 
-Finally, we prove that all reductions in GV are preserved by $\tocp{C}$.
+Finally, we prove that all reductions in GV are preserved by $\tocp{-}$.
 %
 \begin{theorem}
 \label{th:gv-reduction-simulated}
@@ -2231,7 +2237,7 @@ exactly corresponds to the proof system for the dual intuitionistic linear logic
 to congruence) cut reductions corresponds to process reductions or process equivalences.  Toninho et
 al.~\cite{ToninhoCP12} consider embeddings of the $\lambda$-calculus into session-typed
 $\pi$-calculus; their focus is on expressing the concurrency inherent in $\lambda$-calculus terms,
-rather than simulating standard reduction.  Wadler~\cite{Wadler12} adapts the approach of Caires and
+rather than simulating standard reduction.  Wadler~\cite{Wadler14} adapts the approach of Caires and
 Pfenning to classical (rather than intuitionistic) linear logic, and gives a translation from a
 simple functional calculus (inspired by that of Gay and Vasconcelos) to his process calculus.  He
 does not give a direct semantics of his functional calculus.
