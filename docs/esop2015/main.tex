@@ -55,12 +55,12 @@
 
 \section{Introduction}\label{sec:intro}
 
-From massively distributed programs, running across entire datacenters, to apps running on handheld
-devices, reliant on remote services for functionality, concurrency has become a central problems in
-program correctness. Assuring correct concurrent behavior requires reasoning not just about the
-types of data communicated, but the order in which the communication takes place. For a simplistic
-example, the exchange between an SMTP client and server is all textual; however, a client that sends
-the recipient's address before the sender's address is still in violation of the protocol, despite
+From massively distributed programs running across entire datacenters, to handheld apps reliant on
+remote services for functionality, concurrency has become a central problem in program
+correctness. Assuring correct concurrent behavior requires reasoning not just about the types of
+data communicated, but the order in which the communication takes place. For a simplistic example,
+the exchange between an SMTP client and server is all textual; however, a client that sends the
+recipient's address before the sender's address is still in violation of the protocol, despite
 sending the correct type of data.
 
 Session types, originally proposed by Honda~\cite{Honda93}, provide a mechanism to reason about the
@@ -71,8 +71,8 @@ client as
   \gvout{SenderAddress}{\gvout{RcptAddress}{\gvout{Message}{\gvend}}},
 \]
 where $\gvout T S$ denotes the expectation that the process will send a value of type $T$, then
-continue with the behavior specified by $S$. An important property of session types is duality: from
-the type of the SMTP client, we can immediately derive the type of the server:
+continue with the behavior specified by $S$. An important property of session types is duality: we
+can derive the type of an SMTP server session from the client's session type:
 \[
   \gvin{SenderAddress}{\gvin{RcptAddress}{\gvin{Message}{\gvend}}},
 \]
@@ -95,19 +95,18 @@ CP); however, he gives no semantics for GV besides the semantics of the translat
 
 In this paper, we develop a minimal, session-typed functional language, also called GV.  (Our
 language shares most of the distinctive features of Wadler's, although it differs in some of the
-details.) We present a small-step operational semantics for GV, factored into $\lambda$-calculus and
+details.) We present a small-step operational semantics for GV, factored into functional and
 concurrent portions following the approach of Gay and Vasconcelos~\cite{GayVasconcelos10}. The
-$\lambda$-calculus portion of our semantics differs from standard presentations of CBV reduction
-only in that we adopt a weak form of explicit substitution to maintain a connection with cut
-reduction. The concurrent portion of our semantics includes the typical reductions and equivalences
-of $\pi$-calculus-like systems. We develop a characterization of deadlock-free programs in our
-setting; this is somewhat non-trivial because closed expressions may return channels, so we cannot
-simply require that all possible communication take place. We show that well-typed GV programs are
+functional portion of our semantics differs from standard presentations of CBV reduction only in
+that we adopt a weak form of explicit substitution to maintain a connection with cut reduction. The
+concurrent portion of our semantics includes the typical reductions and equivalences of
+$\pi$-calculus-like systems. We develop a characterization of deadlock-free programs in our setting;
+this is somewhat non-trivial because closed expressions may return channels, so we cannot simply
+require that all possible communication take place. We show that well-typed GV programs are
 deadlock-free, deterministic, and terminating. We give translations between our language GV and
-Wadler's calculus CP, and show that these translations preserve not just typing, but reduction.
-Finally, we show that GV is a useful basis for further language development, by giving two
-extensions of GV and showing that our deadlock freedom results transfer easily to the extended
-languages.
+Wadler's calculus CP, and show that these translations preserve reduction as well as typing.
+Finally, we show that GV is a useful basis for further language development by giving two extensions
+of GV and showing that our deadlock freedom results transfer easily to the extended languages.
 
 The paper proceeds as follows.
 \begin{itemize}
@@ -247,15 +246,15 @@ We conclude by discussing related~\secref{related} and future~\secref{conclusion
 \caption{Syntax of GV terms and types}\label{fig:gv-syntax}
 \end{figure}
 
-\figref{gv-syntax} gives the syntax of GV types and terms.  The types $T$ include 0-ary and binary
-(linear) sums and pairs, and linear implication $T \lto U$.  We write $\gvletunit{M}{N}$ as the
+\figref{gv-syntax} gives the syntax of GV types and terms.  The types $T$ include nullary and binary
+sums and pairs, and linear implication $T \lto U$.  We frequently write $\gvletunit{M}{N}$ as the
 elimination form of $\one$, rather than the more verbose $\gvlet{()}{M}{N}$.  Session types $S$
 include input (\gvin T S), output (\gvout T S), and closed channels ($\interm$, $\outterm$).  We
 also include a type $\channel S$ of channels; values of channel type cannot be used directly in
 terms, but will appear in the typing of thread configurations.  The terms are the standard terms of
-a (linear) lambda calculus, augmented with construction and deconstruction of 0-ary and binary pairs
-and sums (there is, of course, no term to construct a 0-ary sum).  Typing rules, including the type
-schema for the constants $K$, are given in \figref{gv-typing}.
+the $\lambda$-calculus, augmented with construction and deconstruction of pairs and sums (there is
+no term to construct a nullary sum).  Typing rules and type schema for the constants $K$ are given
+in \figref{gv-typing}.
 
 \begin{figure}[th]
 \vspace{1ex}
@@ -334,45 +333,41 @@ schema for the constants $K$, are given in \figref{gv-typing}.
 
 \subsubsection{Concurrency.}
 
-Concurrent behavior is provided by the constants $K$.  Communication is provided by \gvconst{send}
-and \gvconst{receive}.  For example, assuming an extension of our core language with numbers and
-arithmetic operators, a computation that received a pair of numbers along a channel $z$ and then
+Concurrent behavior is provided by the constants.  Communication is provided by \gvconst{send} and
+\gvconst{receive}.  For example (assuming an extension of our core language with numbers and
+arithmetic operators), a computation $M$ that received a pair of numbers along a channel $z$ and then
 sent their sum along the same channel could be expressed by
 %
-\[\bl
-  \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-  \gvsend{(x + y,z)}
-\el\]
+\[
+M \defeq
+  \bl
+    \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
+    \gvsend{(x + y,z)}
+  \el
+\]
 %
 (where the interpretation of nested patterns by sequences of bindings is standard).  Sessions are
 treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value (the pair of
 $x$ and $y$) but also a new copy of the session used for receiving ($z$); similarly, \gvconst{send}
-returns a copy of the session used for sending.  The term above, therefore, requires that $z :
-\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}$ at its start, and evaluates to a session of type
-$S$. Session initiation is provided by \gvconst{fork}.  If $f$ is a function from a session of type
-$S$ to a closed session (of type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a
-session to communicate with it.  For example, the term
+returns a copy of the session used for sending.  Thus, the term above is well-tped $z : \gvin{(Int
+  \gvtimes Int)}{\gvout{Int}{S}}$, and evaluates to a session of type $S$. Session initiation is
+provided by \gvconst{fork}.  If $f$ is a function from a session of type $S$ to a closed session (of
+type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a session to communicate with
+it.  For example, the term $\gvconst{fork} \app (\lambda z. M)$ returns a channel of type
+$\gvout{(Int \gvtimes Int)}{\gvin{Int}{\interm}}$.  In a process created by $\gvconst{fork} \app f$,
+the session returned from $f$ is closed by $\gvconst{fork}$; however, the other end of the channel
+must be closed by calling \gvconst{wait}.  A client of the process above could be
 %
-\[\bl
- \gvconst{fork} \app (\lambda z.
- \bl
-   \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-   \gvsend{(x + y,z)}) \el
-\el\]
-%
-returns a channel of type $\gvout{(Int \gvtimes Int)}{\gvin{Int}{\interm}}$.  In a process created
-by $\gvconst{fork} \app f$, the session returned from $f$ is closed by $\gvconst{fork}$; however,
-the other end of the channel must be closed by calling \gvconst{wait}.  A client of the process
-above could be
-%
-\[\bl
+\[N \defeq
+  \bl
   \gvlet{z}{\gvsend{((6,7),z)}}{} \\
   \gvlet{(x,z)}{\gvreceive{z}}{} \\
   \gvletunit{\gvconst{wait}\app z}{x}
 \el\]
 %
-The combination of these processes would evaluate to 13.  Finally $\gvconst{link} \app (x, y)$
-causes messages sent on $x$ to be received on $y$ and vice versa.
+The combination of these processes ($\gvlet{x}{\gvconst{fork}\app(\lambda z.M)}{N}$) would evaluate
+to 13.  Finally $\gvconst{link} \app (x, y)$ causes messages sent on $x$ to be received on $y$ and
+vice versa.
 
 \subsubsection{Choice.}
 
@@ -405,10 +400,10 @@ session to take; for example, we could extend the preceding example as follows:
 \el
 \]
 %
-In GV, we do not provide primitives for selection and branching in sessions; rather, we show that
-they are macro-expressible using the term-level sum construct.  The intuition is that selection is
-implemented by sending a suitably tagged process, while branching is implemented by a term-level
-branch on a received value.  Concretely, we define the types by
+While we would expect a surface language to include selection and branching, we omit them from our
+core calculus.  Instead, we show that they are macro-expressible using the term-level sum construct.
+The intuition is that selection is implemented by sending a suitably tagged process, while branching
+is implemented by a term-level branch on a received value.  Concretely, we define the types by
 \begin{mathpar}
 S_1 \with S_2 \defeq \gvin{(S_1 \gvplus S_2)}{\interm}
 
@@ -423,10 +418,6 @@ Note that we have the expected duality relationship: $\gvdual{S_1 \with S_2} = \
   \gvconst{offer} \app M \,\{ \mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q \}
     &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\gvcase{x}{\mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q}}} \el
 \end{align*}
-%
-While we would expect a surface language to include selection and branching, we will omit them, as
-it simplifies the core calculus with no loss of expressivity.
-
 
 \subsection{Evaluation}\label{sec:gv-eval}
 
@@ -484,9 +475,11 @@ $M$ less $\{x\}$; concretely:
   \el
 \el
 \]
-(Note that the $\sigma$ annotation on the lambda abstraction is an object language construct that
-binds the variables in the domain of $\sigma$ inside the body of the lambda abstraction, whereas
-$M\sigma'$ is a meta-language application of the substitution $\sigma'$ to $M$.)
+%% GM: useful discussion, but not sure it's necessary to understand closures.
+%%
+%% (Note that the $\sigma$ annotation on the lambda abstraction is an object language construct that
+%% binds the variables in the domain of $\sigma$ inside the body of the lambda abstraction, whereas
+%% $M\sigma'$ is a meta-language application of the substitution $\sigma'$ to $M$.)
 
 %% We will implicitly treat substitutions $\sigma$ as sets of bindings.  We define the application of
 %% one substitution $\sigma$ to another $\sigma'$ by
@@ -516,11 +509,9 @@ $M\sigma'$ is a meta-language application of the substitution $\sigma'$ to $M$.)
 \subsubsection{Configurations.}
 
 The grammar of configurations includes the usual $\pi$-calculus forms for composition and name
-restriction.  However, because we are beginning with a functional language, in which computations
-may return values (which may, in turn, contain channels), it is important to distinguish between the
-``main'' thread (which returns a meaningful value) and the threads created by \gvconst{fork} (which
-do not).  We designate the main thread in a configuration by $\distinguish M$ and forked threads by
-$\thread M$.
+restriction.  However, because functional computations return values (which may, in turn, contain
+channels), we distinguish between the ``main'' thread $\distinguish M$ (which returns a meaningful
+value) and the threads $\thread M$ created by \gvconst{fork} (which do not).
 
 \subsubsection{Reduction.}
 
@@ -597,13 +588,12 @@ Reduction rules for terms and configurations, and equivalences for configuration
 the only complication is that application not only substitutes for the $\lambda$-bound variables,
 but also applies any substitution captured by the closure. Configuration equivalence ($\equiv$) is
 also relatively standard. We provide an additional equivalence observing that \gvconst{link} is
-symmetric; this reduces the number of reduction rules. Communication is provided by rule
-\textsc{Send} and session initiation is provided by rule \textsc{Fork}. Rule \textsc{Wait} combines
+symmetric to simplify the definition of reduction. Communication is provided by rule \textsc{Send}
+and session initiation is provided by rule \textsc{Fork}. Rule \textsc{Wait} combines
 synchronization of closed channels with garbage collection of the associated name restriction.  Rule
 \textsc{Link} is complicated by the need to produce a session of type $\outterm$; the inserted
-\gvconst{wait} synchronizes with the produced session. Atypically, we do not include a structural
-rule, including equivalence in reduction; we will return to the treatment of equivalence at the end
-of the section.
+\gvconst{wait} synchronizes with the produced session. We do not incorporate equivalence directly in
+reduction; we will return to the treatment of equivalence at the end of the section.
 
 \subsubsection{Relation Notation.}
 We write $R\,R'$ for the sequential composition of relations $R$ and $R'$, $R \cup R'$ for the union
@@ -612,7 +602,7 @@ of $R$, and $R^\star$ for the reflexive, transitive closure of $R$.
 
 \subsubsection{Configuration typing.}
 
-\begin{figure}[t]
+\begin{figure}
 \vspace{1ex}
 ~Configuration typing
 \begin{mathpar}
@@ -686,12 +676,11 @@ significant differences.
   restricts standard type systems for linear $\pi$-calculus, which allow an arbitrary number of
   processes (including none) to be shared at a composition of processes.
 \end{itemize}
-We can see that none of the earlier examples are well-typed in this type system: $(\nu xy)M$ is
-ill-typed because $y$ must have a type $\channel S$ in $M$; $(\nu xy)(M \parallel M)$ is ill-typed
-because there is no type $\channel S$ such that both $S$ and $\gvdual{S}$ are of the form
-$\gvin{T}{S'}$, as required by \gvconst{request}, and $(\nu xy)(M \parallel N)$ is ill-typed because
-both $x$ and $y$ must be shared between $M$ and $N$, but the typing rule for composition only allows
-one channel to be shared.
+We see that the earlier stuck examples are ill-typed in this system: $(\nu xy)M$ because $y$ must
+have a type $\channel S$ in $M$; $(\nu xy)(M \parallel M)$ because there is no type $\channel S$
+such that both $S$ and $\gvdual{S}$ are of the form $\gvin{T}{S'}$, as required by
+\gvconst{request}; and, $(\nu xy)(M \parallel N)$ because both $x$ and $y$ must be shared between
+$M$ and $N$, but the typing rule for composition only allows one channel to be shared.
 
 Observe that reduction may transform the types of sessions---for example, if $\Gamma \vdash
 F[\gvconst{send}\app(V,x)] \parallel F'[\gvconst{receive}\app x]$, then $\Gamma$ must contain an
