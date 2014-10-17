@@ -1,6 +1,16 @@
  % -*- fill-column: 100 -*-
 \documentclass[oribibl,orivec,envcountsame]{llncs}
 
+\renewcommand\floatpagefraction{.9}
+\renewcommand\dblfloatpagefraction{.9} % for two column documents
+\renewcommand\topfraction{.9}
+\renewcommand\dbltopfraction{.9} % for two column documents
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+
 \usepackage{amsmath,amssymb,centernot,colortbl,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem,bm}
 \usepackage[table]{xcolor}
 \addtolength{\jot}{-3px}
@@ -232,7 +242,7 @@ We conclude by discussing related~\secref{related} and future~\secref{conclusion
 
 \subsection{Syntax and Typing}\label{sec:gv-static}
 
-\begin{figure}[t]
+\begin{figure}[float]
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \interm \mid \outterm \mid \channel{S} \\
   \text{Types} & T,U & ::= & S \mid T \gvtimes U \mid \one \mid T \gvplus U \mid \zero \mid T \lto U
@@ -256,7 +266,7 @@ the $\lambda$-calculus, augmented with construction and deconstruction of pairs 
 no term to construct a nullary sum).  Typing rules and type schema for the constants $K$ are given
 in \figref{gv-typing}.
 
-\begin{figure}[th]
+\begin{figure}[float]
 \vspace{1ex}
 ~Typing rules
 \begin{mathpar}
@@ -421,7 +431,7 @@ Note that we have the expected duality relationship: $\gvdual{S_1 \with S_2} = \
 
 \subsection{Evaluation}\label{sec:gv-eval}
 
-\begin{figure}[t]
+\begin{figure}[float]
 \begin{syntax}
   \text{Values} & V,W & ::= & x \mid K \mid \lambda^\sigma x.M \\
   & & \mid & () \mid (V,W) \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
@@ -515,7 +525,7 @@ value) and the threads $\thread M$ created by \gvconst{fork} (which do not).
 
 \subsubsection{Reduction.}
 
-\begin{figure}[t]
+\begin{figure}[float]
 \vspace{1ex}
 ~Term reduction
 \begin{align*}
@@ -602,7 +612,7 @@ of $R$, and $R^\star$ for the reflexive, transitive closure of $R$.
 
 \subsubsection{Configuration typing.}
 
-\begin{figure}
+\begin{figure}[float]
 \vspace{1ex}
 ~Configuration typing
 \begin{mathpar}
@@ -663,9 +673,9 @@ define the terms $M$ and $N$ by
 \end{align*}
 given suitable terms $M'$ and $N'$, then it is apparent that configurations such as $(\nu xy)M$,
 $(\nu xy)(M \parallel M)$ and $(\nu xy)(M \parallel N)$ cannot reduce further, even though $M$ and
-$N$ can be individually well-typed.  \figref{gv-conf-typing} gives our typing discipline for
-configurations.  It is based on type systems for linear $\pi$-calculus~\cite{Kobayashi96} with two
-significant differences.
+$N$ can be individually well-typed.  To exclude such cases, we give a typing discipline for
+configurations (\figref{gv-conf-typing}). It is based on type systems for linear
+$\pi$-calculus~\cite{Kobayashi96} with two significant differences.
 \begin{itemize}
 \item First, we seek to assure that there is at most one main thread.  This is done by the flags
   ($\bcirc$ and $\wcirc$) on the derivations: a derivation $\Gamma \vdash^\bcirc C$ indicates that
@@ -727,7 +737,8 @@ configuration to expose possible reductions.
   the possible equivalences in each case. \qed
 \end{proof}
 %
-Finally, we define $\cevalstar$ as the transitive closure of $\equiv\ceval\equiv$.
+We extend \thmref{preservation-equiv} to sequences of reductios, defining $\cevalstar$ as
+$(\equiv\ceval\equiv)^\star$.
 %
 \begin{corollary}
   $\Gamma \vdash C$ and $C \cevalstar D$, there are some $\Gamma',D'$ such that $\Gamma
@@ -736,12 +747,12 @@ Finally, we define $\cevalstar$ as the transitive closure of $\equiv\ceval\equiv
 
 \subsection{Determinism and Termination}\label{sec:determinism}
 
-It is straightforward to show that GV is deterministic. In fact, GV enjoys a rather strong form of
-determinism, namely the \emph{diamond property}.
+It is straightforward to show that GV is deterministic. In fact, GV enjoys a strong form of
+determinism, called the diamond property.
 \begin{theorem}
-For well typed terms, the relation $\equiv\ceval\equiv$ satisfies the diamond property: if $\Gamma
-\vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then there exists $D_3$ such
-that $D_1 \equiv\ceval\equiv D_3$, and $D_2 \equiv\ceval\equiv D_3$.
+% For well typed terms, the relation $\equiv\ceval\equiv$ satisfies the diamond property:
+  If $\Gamma \vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then there
+  exists $D_3$ such that $D_1 \equiv\ceval\equiv D_3$, and $D_2 \equiv\ceval\equiv D_3$.
 \end{theorem}
 \begin{proof}
 First, we observe that $\teval$ is deterministic, and furthermore configuration reductions always
@@ -753,7 +764,7 @@ configuration reduction is linear in the existing redexes, so we can straightfor
 reductions in either order. \qed
 \end{proof}
 %
-It is not hard to see that the system remains deterministic, if we extend the functional part of GV
+It is not hard to see that the system remains deterministic if we extend the functional part of GV
 with any well-typed confluent reduction rules at all.
 
 \begin{theorem}[Strong normalization]
@@ -770,16 +781,16 @@ argument suffices. Strong normalization also follows as a direct corollary of
 \newcommand{\depp}{\mathsf{depends}}
 \newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
 
-In the previous section, we showed several examples of deadlocked terms, and showed that they were
+In the previous section, we gave several examples of deadlocked terms, and showed that they were
 rejected by our type system.  This section generalizes that observation: we characterize deadlocked
 configurations, and show that well-typed configurations do not evaluate to deadlocked
 configurations.
 
 We begin by observing that many examples of stuck configurations are already excluded by existing
 session-typing disciplines: in particular, those configurations in which either too many or too few
-threads attempt to synchronize on a given channel.  The cases of interest to us are those in which
+threads attempt to synchronize on a given session.  The cases of interest to us are those in which
 the threads individually obey the session-typing discipline, but the order of synchronizations in
-the threads creates deadlock.  We say that a thread $M$ is blocked on a channel $x$, written
+the threads creates deadlock.  We say that a thread $M$ is blocked on a session $x$, written
 $\blockedp(x,M)$, if $M$ has evaluated to some context surrounding a communication primitive applied
 to $x$:
 %
@@ -790,31 +801,30 @@ to $x$:
 \end{array}\]
 %
 In such a case, $M$ can only reduce further in composition with another thread blocked on $x$, and
-any synchronization on other channels in $M$ will be delayed until a synchronization on $x$ has
+any communication on other sessions in $M$ will be delayed until a communication on $x$ has
 occurred.  We capture this by saying that $y$ depends on $x$ in $M$, written $\depp(x,y,M)$, $M$ is
 blocked on $x$, but has $y$ as one of its (other) free variables.  We extend this notion of
 dependency from single threads to configurations of threads, with the observation that in a larger
-configuration there may be intermediate channels in the dependency.
+configuration there may be intermediate sessions in the dependency.
 \[\begin{array}{rcl}
   \depp(x,y,\Ex[M]) &\defiff& \blockedp(x,M) \land y \in \fv(\Ex) \\
   \depp(x,y,C) &\defiff& (C \equiv \Cx[M] \land \depp(x,y,M)) \lor \, (C \equiv \Cx[D \parallel D'] \\
   && \quad \land \, (\exists z. \depp(x,z,D) \land \depp(z,y,D')))
 \end{array}\]
 %
-We now have a natural definition of deadlocked configurations as being those with a cycle of
-dependencies:
+We now define deadlocked configurations as those with cyclic dependencies:
 %
 \[
 \deadlockp(C) \defiff C \equiv \Cx[D \parallel D'] \land \exists x,y. \depp(x,y,D) \land \depp(y,x,D').
 \]
 %
-Because the definition of dependency permits intermediate channels, this definition encompasses
-cycles involving an arbitrary number of channels.  Finally, we say that a configuration $C$ is
+Because the definition of dependency permits intermediate sessions, this definition encompasses
+cycles involving an arbitrary number of sessions.  Finally, we say that a configuration $C$ is
 deadlock free if, for all $D$ such that $C \cevalstar D$, $\lnot\deadlockp(D)$.  Observe that if
 $C \equiv D$, then $\deadlockp(C) \iff \deadlockp(D)$.
 
 At this point, we can observe that in any deadlocked configuration, there must be a composition of
-configurations that shares more than one channel.  This is precisely the situation that is excluded
+configurations that shares more than one session.  This is precisely the situation that is excluded
 by our configuration type system.
 
 \begin{lemma}\label{lem:procs-share-one-channel}
@@ -830,7 +840,7 @@ by our configuration type system.
 
 To extend this observation to deadlock freedom, we must take equivalence into account.  While it is
 true that equivalence need not preserve typing, there are no equivalence rules that affect the free
-variables of individual threads.  Thus, cycles of dependent channels are preserved by equivalence.
+variables of individual threads.  Thus, cycles of dependent sessions are preserved by equivalence.
 
 \begin{lemma}\label{lem:typed-configs-df}
   If $\Gamma \vdash C$ then $\lnot \deadlockp(C)$.
@@ -875,9 +885,9 @@ the result of evaluation is a configuration equivalent to
 \[
   (\nu x)(\distinguish{x} \parallel \thread{\gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)}}).
 \]
-Clearly, no more evaluation is possible, yet we would not describe this configuration itself as a
-value.  However, we can give strong results about the configurations resulting from the evaluation
-of closed term, and so to conclude that evaluation of terms that do not return channels does always
+Clearly, no more evaluation is possible, even though the configuration still contains blocked
+threads.  However, we can give strong results about the configurations resulting from the evaluation
+of closed term, and so to conclude that evaluation of terms that do not return sessions does always
 produce a value.
 
 \begin{definition}
@@ -893,17 +903,16 @@ xy)(C \parallel D \parallel E)$ where $x \in \fv(C), y \in \fv(D), \text{ and } 
 Both $(\nu x)(C \parallel (\nu y)(D \parallel E))$ and $(\nu y)(D \parallel (\nu x)(C \parallel E))$
 are canonical forms of the original configuration.  We can show that any well-typed term must be
 equivalent to a term in canonical form; again, the key insight is that captured by
-\lemref{procs-share-one-channel}: if any two subconfigurations share at most one channel, then we
-can order the threads by the channels they share.
+\lemref{procs-share-one-channel}: if any two subconfigurations share at most one session, then we
+can order the threads by the sessions they share.
 
 \begin{lemma}\label{lem:canonical}
   If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
   canonical form.
 \end{lemma}
 
-We can now state some simple progress results.  We begin with configurations that may have free
-variables; of course, each thread must be blocked either on some previous $\nu$-bound variable or on
-one of the free variables.
+We can now state some progress results.  We begin with open configurations: each thread must be
+blocked on either a free variable or a $\nu$-bound variable.
 %
 \begin{theorem}\label{thm:progress-open}
   Let $\Gamma \vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(\thread M_1 \parallel (\nu
@@ -943,7 +952,7 @@ Generalizing this observation gives the following progress result.
 \end{proof}
 %
 Finally, observe that some subset of the variables $x_1,\dots,x_n$ must appear in the result $V$.
-Therefore, if the original expression returns a value that does not contain any channels, it will
+Therefore, if the original expression returns a value that does not contain any sessions, it will
 evaluate to a configuration with no blocked threads.
 
 %% \subsection{Direct GV semantics}
@@ -1048,7 +1057,7 @@ evaluate to a configuration with no blocked threads.
 \subsection{CP}
 \label{sec:cp}
 
-\begin{figure}
+\begin{figure}[float]
 \vspace{1ex}
 ~Syntax
 \begin{syntax}
@@ -1113,16 +1122,16 @@ evaluate to a configuration with no blocked threads.
 \end{figure}
 
 \figref{cp-typing} gives the syntax and typing rules for the multiplicative-additive fragment of CP;
-we let $\Delta$ range over typing environments.  The types and duality relation are the standard
-propositions of classical linear logic, while the terms are based on a subset of the $\pi$-calculus.
-The types $\with$ and $\oplus$ are interpreted as external and internal choice; the types $\parr$
-and $\otimes$ are interpreted as input and output, while their units $\bot$ and $1$ are interpreted
-as nullary input and output.  Note that CP's typing rules implicitly rebind identifiers: for
-example, in the hypotheses of the rule for $\parr$, $x$ identifies a proof of $B$, while in the
-conclusion it identifies a proof of $A \parr B$.
+we let $\Delta$ range over typing environments.  CP types and duality are the standard propositions
+and duality function of classical linear logic, while the terms are based on a subset of the
+$\pi$-calculus.  The types $\with$ and $\oplus$ are interpreted as external and internal choice; the
+types $\parr$ and $\otimes$ are interpreted as input and output, while their units $\bot$ and $1$
+are interpreted as nullary input and output.  Note that CP's typing rules implicitly rebind
+identifiers: for example, in the hypotheses of the rule for $\parr$, $x$ identifies a proof of $B$,
+while in the conclusion it identifies a proof of $A \parr B$.
 
-CP includes two rules that are logically derivable: the axiom rule at arbitrary propositions, which
-is interpreted as channel forwarding, and the cut rule, which is interpreted as process composition.
+CP includes two rules that are logically derivable: the axiom rule, which is interpreted as channel
+forwarding, and the cut rule, which is interpreted as process composition.
 
 Two of CP's terms differ from standard $\pi$-calculus terms.  The first is
 com\-pos\-i\-tion---rather than having distinct name restriction and composition operators, CP
@@ -1133,7 +1142,7 @@ will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$
 
 \subsubsection{Cut elimination.}
 
-\begin{figure}[t]
+\begin{figure}[float]
 \vspace{1ex}
 ~Structural congruence
 \begin{equations}
@@ -1170,23 +1179,22 @@ will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$
 
 The semantics of CP terms are given by cut reduction, as shown in \figref{cp-reduction}.  We write
 $\fv(P)$ for the free names of process $P$.  Terms are identified up to structural congruence
-$\equiv$. We write $\crto$ for the cut reduction relation, $\ccto$ for the commuting conversion
-relation, and $\rto$ for $\crto \cup \ccto$. Note that, as name restriction and composition are
-combined into one form, composition is not associative. The majority of the cut reduction rules
-correspond closely to the synchronous reductions in $\pi$-calculus---for example, the reduction of
+$\equiv$ (as name restriction and composition are combined into one form, composition is not always
+associative). We write $\crto$ for the cut reduction relation, $\ccto$ for the commuting conversion
+relation, and $\rto$ for $\crto \cup \ccto$. Note that,. The majority of the cut reduction rules
+correspond closely to synchronous reductions in $\pi$-calculus---for example, the reduction of
 $\with$ against $\oplus$ corresponds to the synchronization of an internal and external choice.  The
-rule for reduction of $\parr$ against $\otimes$ is more complex than the usual synchronization of
-input and output, as it must also manipulate the implicit name restriction and composition in CP's
-output term. The commuting conversions allow composition to be moved under prefixes; they do not
-correspond to any reduction rule in $\pi$-calculus. We write $\bigrto$ for $(\equiv\rto\equiv)^+$,
-$\bigcrto$ for $(\equiv\crto\equiv)^+$, and $\bigccto$ for $\bigcrto(\ccto^\star)$.
+rule for reduction of $\parr$ against $\otimes$ is more complex than synchronization of input and
+output, as it must also manipulate the implicit name restriction and composition in CP's output
+term. The commuting conversions do not correspond to any reduction rule in $\pi$-calculus. We write
+$\bigrto$ for $(\equiv\rto\equiv)^+$, $\bigcrto$ for $(\equiv\crto\equiv)^+$, and $\bigccto$ for
+$\bigcrto(\ccto^\star)$.
 
-Just as cut elimination in logic can be used to show that any proof can be transformed to a proof
-that does not make use of cut, the reduction rules of CP transform any term into a term blocked on
-an external communication---that is to say, if $P \vdash \Delta$, then $P \bigccto P'$ where $P'
-\not= \cut x {} Q {Q'}$ for any $x,Q,Q'$. Note that the final commuting conversions play a central
-role in this transformation, moving any further internal communication beneath the external
-communication.
+Just as cut elimination in logic shows that any proof can be transformed to one that does not make
+use cut, the reduction rules of CP transform any term into a term blocked on an external
+communication---that is to say, if $P \vdash \Delta$, then $P \bigccto P'$ where $P' \not= \cut x {}
+Q {Q'}$ for any $x,Q,Q'$. Note that the final commuting conversions play a central role in this
+transformation, moving any further internal communication behind the external communication.
 
 \subsection{Translation from CP to GV}\label{sec:togv}
 
@@ -1211,8 +1219,8 @@ communication.
 \end{eqs}
 &
 \begin{eqs}
-\togv{0}    &=& \gvout{\zero}{\outterm} \\
-\togv{\top} &=& \gvin{\zero}{\interm}
+\togv{0}    &=& \oplus \{ \} \\
+\togv{\top} &=& \with \{ \}
 \end{eqs}
 \ea
 \]
@@ -1243,22 +1251,25 @@ communication.
 \caption{Translation of CP Terms into GV}\label{fig:from-cp}
 \end{figure}
 
-In this section, we show that GV can simulated CP. \figref{from-cp} gives the translation of CP
-types and terms into GV; we translate typing environments by the pointwise extension of the
-translation on types. We rely on our encoding of branching and choice in GV~\secref{gv-static} in
-the translations of both types and terms; for example, expanding the translation of $\with$ would
-give $\togv{A \with B} = \gvin{(\togv{A} \gvplus \togv{B})}{\interm}$. In translating CP terms to GV
-terms, the key observation is that CP terms contain their continuations; thus, for example, the
-translation of input includes both a call to \gvconst{receive} and the translation of the
-continuation.  Additionally, the rebinding that is implicit in CP syntax is made explicit in GV.
-The translation $\togvc{-}$ translates top-level composition (i.e., composition not under any
-prefix) to GV configurations; cuts that appear under prefixes (and thus in GV terms) are translated
-to applications of \gvconst{fork}.  As CP processes do not have return values, we translated each
-process to a thread returning $\outterm$; consequently, the translation of a CP process contains no
-main thread.
+In this section, we show that GV can simulated CP. \figref{from-cp} gives the translation of CP into
+GV; we translate typing environments by the pointwise extension of the translation on types.  We
+rely on our encoding of branching and choice in GV~\secref{gv-static}, extended to nullary branching
+and choice as follows:
+\begin{mathpar}
+\with \{ \} \defeq \gvin{\zero}{\interm}
 
-It is a straightforward verification that the translation preserves typing; note that the channels
-in the CP typing environment become free variables in its GV translation.
+\oplus \{ \} \defeq \gvout \zero \outterm
+\end{mathpar}
+In translating CP terms to GV terms, the key observation is that CP terms contain their
+continuations; for example, the translation of input includes both a call to \gvconst{receive} and
+the translation of the continuation.  Additionally, the rebinding that is implicit in CP syntax is
+made explicit in GV.  The translation $\togvc{-}$ translates top-level composition (i.e.,
+composition not under any prefix) to GV configurations; cuts that appear under prefixes are
+translated to applications of \gvconst{fork}.  As CP processes do not have return values, the
+translation of a CP process contains no main thread.
+
+It is straightforward to see that the translation preserves typing; note that the channels in the CP
+typing environment become free variables in its translation.
 %
 \begin{theorem}
 If $P \vdash \Delta$ then $\togv{\Delta} \vdash^\wcirc \togvc{P}$.
@@ -1274,10 +1285,10 @@ If $P \equiv Q$, then $\togvc{P} \equiv \togvc{Q}$.
 Finally, observe that the translation of any prefixed CP term is a GV thread of either the form $F[K
 \app M]$ for $K \in \{ \gvconst{send}, \gvconst{receive}, \gvconst{wait} \}$ or is $\wcirc x$ for
 some variable $x$.  Thus, we can see that any cut reduction immediately possible for a process $P$
-is similarly possible for $\togv{P}$.  Following such a reduction, however, several additional GV
-reductions may be necessary to expose the next possible communication---for example, substituting
-the received values into the continuation in the case of the translation of input, or spawning new
-threads in the translation of composition.
+is similarly possible for $\togv{P}$.  Following such a reduction, several additional GV reductions
+may be necessary to expose the next possible communication, such as substituting the received values
+into the continuation in the case of the translation of input, or spawning new threads in the
+translation of composition.
 %
 \begin{theorem}\label{thm:cp-reduction-simulated}
 If $P \vdash \Delta$ and $P \crto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
@@ -1443,13 +1454,13 @@ the results to the return channel. Injections are simulated by injections. Each 
 continuation until the a value has been computed to pass to it.
 
 The translation of configurations is quite direct. We write $C \parallel_x C'$ to indicate that the
-variables $x$ is shared by $C$ and $C'$; in a well-typed GV configuration, there will always be
+variable $x$ is shared by $C$ and $C'$; in a well-typed GV configuration, there will always be
 exactly one such variable, so the translation is unambiguous.
 
 Our translation differs from both Wadler's~\cite{Wadler14} and our previous one~\cite{LindleyM14},
-neither of which simulate even plain $\beta$-reduction. The fundamental reason for this is that the
-obvious translation to CP cannot simulate substitution under a lambda abstraction, which is why we
-adapted GV to use weak explicit substitutions.
+neither of which simulate even plain $\beta$-reduction. This is because the obvious translation to
+CP cannot simulate substitution under a lambda abstraction, motivating our use of weak explicit
+substitution.
 %
 Indeed, others have taken advantage explicit substitutions in order simulate small-step semantics of
 $\lambda$-calculi in the full $\pi$-calculus~\cite{BakelV09}.
@@ -1543,12 +1554,13 @@ into the hole, and an output channel.
 %
 \begin{lemma}
 \label{lem:compositional-contexts}
-~
-\begin{enumerate}
-\item $\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
-\item $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
-\item $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
-\end{enumerate}
+For $X \in \{ \Ex, \Fx, \Cx \}$, $\tocp{X[M]}z = \tocp{X}[\tocp M]z$
+%% ~
+%% \begin{enumerate}
+%% \item $\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
+%% \item $\tocp{\Fx[M]}z = \tocp{\Fx}[\tocp{M}]z$
+%% \item $\tocp{\Cx[C]}z = \tocp{\Cx}[\tocp{C}]z$
+%% \end{enumerate}
 \end{lemma}
 %
 We will make implicit use of \lemref{compositional-contexts} throughout our proofs. We write
@@ -1590,8 +1602,8 @@ By induction on the structure of $M$. Here we show the cases for variables and c
 \]
 \end{itemize}
 Each of the remaining non-binding form cases follows straightforwardly using the induction
-hypothesis. Each of the remaining binding form cases requires a commuting conversion in order to
-push the appropriate substitution through a prefix.\qed
+hypothesis. Each of the remaining binding form cases requires a commuting conversion to push the
+appropriate substitution through a prefix.\qed
 \end{proof}
 
 %% [INLINED]
@@ -1604,7 +1616,7 @@ push the appropriate substitution through a prefix.\qed
 %% places its argument inside a prefix.
 %% \end{proof}
 
-Using the substitution lemma, we prove that functional reduction is preserved by $\tocp{-}$.
+Using the substitution lemma, we prove that $\tocp -$ preserves functional reduction.
 %
 \begin{theorem}
 \label{thm:teval-preserved}
@@ -1990,7 +2002,7 @@ systems are deadlock free.
 
 \subsection{Unifying $\interm$ and $\outterm$}\label{sec:gv-end}
 
-\begin{figure}
+\begin{figure}[float]
 Syntax:
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvend \mid \channel{S} \\
@@ -2025,7 +2037,7 @@ updated evaluation rules for the extended language.  In addition to a new rule f
 (replacing the rule for \gvconst{wait}), the rule for \gvconst{link} can be simplified significantly
 (as it can now return a unit value instead of a closed channel).
 
-\begin{figure}
+\begin{figure}[float]
 Extended configuration equivalence:
 \begin{mathpar}
 C \parallel \thread () \equiv C
@@ -2073,9 +2085,8 @@ multiple possible typings of composition:
   If $\Gamma \vdash C$ and $C = \Cx[D \parallel D']$, then $\fv(D) \cap \fv(D')$ is either empty or
   the singleton set $\{x\}$ for some variable $x$.
 \end{lemma}
-The proof is again by induction on the derivation of $\Gamma \vdash C$.  However, note that this has
-no consequence for the proof of deadlock freedom (which depended on their being two channels shared
-among processes).  Thus we can conclude that
+The proof is again by induction on the derivation of $\Gamma \vdash C$.  Clearly, this change does
+not allow the introduction of cyclic dependencies.
 \begin{theorem}
   If $\Gamma \vdash M: T$ then $\distinguish M$ is deadlock free.
 \end{theorem}
@@ -2083,13 +2094,11 @@ among processes).  Thus we can conclude that
 \subsection{Adding Unlimited Types}\label{sec:gv-repl}
 
 So far, we have limited GV to containing only linear types.  In this section, we consider one
-standard approach to extending the term language to include unlimited types (i.e., types subject to
-contraction and weakening).  It is unsurprising that this does not introduce deadlock, as it is
-purely at the term level.  However, we will then show we can encode replicated processes using
-term-level contraction and weakening, similarly to the encoding of session-level choice using sums.
-Finally, we will show that our encoding is equivalent to the replicated processes in CP.
+standard approach to extending the term language to include unlimited types.  We will then show we
+can encode replicated processes using term-level contraction and weakening.  Finally, we will show
+that our encoding is equivalent to the replicated processes in CP.
 
-\begin{figure}
+\begin{figure}[float]
 Syntactic extensions:
 \begin{syntax}
   \text{Types} & T & ::= & \gvforever T \mid \dots \\
@@ -2128,13 +2137,13 @@ Reduction:
 
 \figref{gv-repl} gives the extension of GV.  We begin by adding a new class of types, $\gvforever
 T$, representing unlimited types.  (The typical notation for such types in linear logic, ${!T}$,
-clashes with the notation for output in session types.)  As usual, we will write $T \to U$ to
-abbreviate $\gvforever{(T \lto U)}$.  We add terms to construct and deconstruct values of type
-$\gvforever T$; we write $\gvforever \Gamma$ to denote that every type in $\Gamma$ must be of the
-form $\gvforever U$ for some type $U$.  Finally, we allow values of type $\gvforever T$ to be
-weakened (discarded) and contracted (duplicated).  The reduction rule for $\gvforever T$ values is
-unsurprising---however, unlike in the other reductions, $x$ may appear multiple times in $M$.  The
-extension of the deadlock freedom results to this calculus are immediate.
+clashes with the notation for output in session types.)  We will write $T \to U$ to abbreviate
+$\gvforever{(T \lto U)}$.  We add terms to construct and deconstruct values of type $\gvforever T$;
+$\gvforever \Gamma$ denotes that every type in $\Gamma$ must be of the form $\gvforever U$ for some
+type $U$.  Finally, we allow values of type $\gvforever T$ to be weakened (discarded) and contracted
+(duplicated).  The reduction rule for $\gvforever T$ values is unsurprising---however, unlike in the
+other reductions, $x$ be used non-linearly in $M$.  The extension of deadlock freedom to this
+calculus is immediate.
 
 Wadler's CP calculus provides unlimited service channels, which can be used to obtain arbitrarily
 many copies of some concurrent behavior.  We can encode such channels as follows.  First, we
@@ -2143,14 +2152,15 @@ introduce new, dual session type constructors $Service(S)$ and $Server(S)$, defi
   Server(S) &\defeq \gvout{(\gvdual S \to \outterm)}{\outterm} &
   Service(S) &\defeq \gvin{(S \to \outterm)}{\outterm}
 \end{align*}
-Note that $\gvdual{Server(S)} = Service(\gvdual S)$.  (We do not, however, extend our type system to
-treat $Service(S)$ channels themselves as unlimited.)  Note the parallel between the encoding of
-session-level sums using value-level sums and the encoding of session-level replication using
-value-level replication---in each case, the key is ``trivial'' channels $\gvout{T}{\outterm}$ for
-suitable $T$.  We then introduce new constants \gvconst{replicate} and \gvconst{request}, with the
-types
+Note that $\gvdual{Server(S)} = Service(\gvdual S)$.
+%% (We do not, however, extend our type system to
+%% treat $Service(S)$ channels themselves as unlimited.)
+Note the parallel between the encoding of session-level sums using value-level sums and the encoding
+of session-level replication using value-level replication---in each case, the key is ``trivial''
+channels $\gvout{T}{\outterm}$ for suitable $T$.  We then introduce new constants
+\gvconst{replicate} and \gvconst{request}, with the types
 \begin{mathpar}
-\gvconst{replicate} : (\gvdual S \to \outterm) \lto Server(S)
+\gvconst{replicate} : (S \to \outterm) \lto Server(S)
 
 \gvconst{request} : Service(S) \lto S
 \end{mathpar}
@@ -2208,8 +2218,8 @@ choice; Dardha et al.~\cite{Dardha12} extend his approach to subtyping and polym
 
 \subsubsection{Linear logic and session types.}
 
-When he originally described linear logic~\cite{Girard87}, Girard proposed that it might be useful
-for reasoning about concurrent programs.  Abramsky~\cite{Abramsky92} and Bellin and
+When he originally described linear logic, Girard~\cite{Girard87} suggested that it would be suited
+to reasoning about concurrency.  Abramsky~\cite{Abramsky92} and Bellin and
 Scott~\cite{BellinScott94} give embeddings of linear logic proofs in $\pi$-calculus, and show that
 cut reduction is simulated by $\pi$-calculus reduction.  Their work is not intended to provide a
 type system for $\pi$-calculus: there are many processes which are not the image of some proof.
@@ -2238,8 +2248,8 @@ this allows them to directly identify cycles in the session interactions.  They 
 possible interactions eventually take place in cycle-free processes.  Carbone et
 al.~\cite{CarboneDM14} show similar results for well-typed processes under Kobayashi's type system
 for deadlock freedom; their approach accommodates processes with open channels by defining a
-type-directed closure of a process, and showing that open processes make progress only if their
-typed closures make progress.
+type-directed closure of a process, and showing that open processes progress only if their typed
+closures progress.
 
 \section{Future Work}\label{sec:conclusion}
 
