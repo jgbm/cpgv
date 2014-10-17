@@ -1248,9 +1248,9 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
 \caption{Translation of CP Terms into GV}\label{fig:from-cp}
 \end{figure}
 
-In this section, we show that CP can be simulated in GV.  \figref{from-cp} gives the translation of
-CP types and terms into GV; we translate typing environments by the pointwise extension of the
-translation on types.  We rely on our encoding of branching and choice in GV~\secref{gv-static} in
+In this section, we show that GV can simulated CP. \figref{from-cp} gives the translation of CP
+types and terms into GV; we translate typing environments by the pointwise extension of the
+translation on types. We rely on our encoding of branching and choice in GV~\secref{gv-static} in
 the translations of both types and terms; for example, expanding the translation of $\with$ would
 give $\togv{A \with B} = \gvin{(\togv{A} \gvplus \togv{B})}{\interm}$. In translating CP terms to GV
 terms, the key observation is that CP terms contain their continuations; thus, for example, the
@@ -1315,21 +1315,86 @@ deadlock freedom in GV has no such requirement, so we have no need of correspond
 %% \end{equations}
 %%
 %%
-\subsection{Direct Translation from GV to CP}
+\subsection{Translation from GV to CP}
 
-\newcommand{\tocpflip}[1]{\llceil{#1}\rrceil}
+In this section, we show that CP can simulated GV. \figref{from-gv} gives the translation of GV
+types and terms into CP; we translate typing environments by the pointwise extension of the
+translation on types.
+%
+The translation on session types is homomorphic except for output, where the output type is
+dualised. This accounts for the discrepancy between $\gvdual{!T.S} = ?T.S$ and $\cpdual{(A \otimes
+  B)} = \cpdual{A} \parr \cpdual{B}$.
+%
+Following our previous work~\cite{places}, the translation on functional types is factored through
+an auxiliary translation $\tocpflip{-}$. The key intuition is that the translation $\tocp{T}$ of a
+functional type $T$ is the type of the \emph{interface} to $T$, whereas $\tocpflip{T}$ is the type
+of the \emph{implementation} of $T$.
 
-Types:
+As CP processes do not have return values, the translation $\tocp{M}z$ of a term $M$ of type $T$
+includes the additional argument $z:\cpdual{\tocp{T}}$, which is a channel for simulating the return
+value.
+
+\todo{Explain the translation on terms}
+
+The translation on terms presented here, diverges somewhat from the old translation of our previous
+work~\cite{jfp,places}. One problem with the old translation is that they it does not reflect
+$\beta$-reduction. The fundamental reason for this is that CP cannot simulate substitution under a
+lambda abstraction, and this is why we adapted GV to use weak explicit substitutions.
+%
+As a concrete example, consider the following $\beta$-reduction using implicit substitution:
+\[
+(\lambda x.\lambda y.\gvwait{y}; x) \app () \teval \lambda y.\gvwait{y}; ()
+\]
+The old translation on the left-hand side yields a CP term $P$ that reduces to:
+\[
+z(y).y().\cut{x}{}{x[]}{\link{x}{z}}
+\]
+and the old translation on the right-hand side yields a CP term $Q$:
+\[
+z(y).y().z[]
+\]
+There is no way of reducing $P$ to $Q$ as the remaining cut is inside a prefix.
+%
+In contrast, with closures, the $\beta$-reduction becomes:
+\[
+(\lambda x.\lambda y.\gvwait{y}; x) \app () \teval \lambda y^{x \mapsto ()}.\gvwait{y}; x
+\]
+The new translation on the left-hand side yields a CP term that reduces to:
+\[
+\cut{x}{}{x[]}{z(y).\cut{v}{}{\cut{w}{}{\link y w}{\link v w}}{v().\link x z}}
+\]
+and the new translation on the right-hand side yields this term directly.
+%
+Another departure from our previous work is that, despite the call-by-value semantics of GV, our
+translation is more in the spirit of call-by-name. For instance, in the translation of an
+application $L \app M$, the evaluation of $L$ and $M$ can happen in parallel, and $\beta$-reduction
+can occur before $M$ has reduced to a value. The old translation hides the evaluation of $M$ behind
+the prefix $y\sd{x}$, which means reduction of $M$ can get stuck in the case that $L$ is a free
+variable.
+%
+Short of performing a CPS transformation on the transformation, our new approach seems necessary in
+order to ensure that $\tocp{-}$ preserves reduction.
+
+
+
+
+
+\begin{figure}
+\vspace{1ex}
+~Session types
 \[
 \bl
 \tocp{\gvout{T}{S}}        = \cpdual{\tocp{T}} \otimes \tocp{S} \qquad
 \tocp{\gvin{T}{S}}         = \tocp{T} \parr \tocp{S} \qquad
 \tocp{\outterm}            = 1 \qquad
 \tocp{\interm}             = \bot \\
-\tocp{T} = \cpdual{\tocpflip{T}}, \quad \text{if $T$ is not a session type} \\
 \el
 \]
-
+~Functional types
+\[
+\tocp{T} = \cpdual{\tocpflip{T}}, \quad \text{if $T$ is not a session type}
+\]
+%
 \[
 \ba{@{}c@{\qquad}c@{\qquad}c}
 \begin{eqs}
@@ -1346,9 +1411,9 @@ Types:
 \begin{equations}
 \tocpflip{T \lto U} &=& \cpdual{\tocpflip{T}} \parr \tocpflip U \\
 \tocpflip{S} &=& \tocp{S} \\
-\end{equations}
+\end{equations}%
 
-Session terms:
+~Session terms
 \begin{equations}
 \tocp{\gvconst{fork}\:M}z &=&
   \cut{w}{}{\link w z}{\cut{x}{}{\tocp{M}x}{\cut{y}{}{x\sd{w}.\link x y}{y[]}}} \\
@@ -1357,8 +1422,8 @@ Session terms:
 %% \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link x y}} \\
 \tocp{\gvlink{M}{N}}z &=&
   \nu v\:(\link v z \mid
-    \nu w\:(\link v w \mid \\
-&& \quad
+    \nu w\:(\link v w \mid %\\
+%&& \quad
       {\cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{w().\link x y}}})) \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link x z}} \\
@@ -1372,7 +1437,7 @@ Session terms:
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
 \end{equations}%
-Functional terms:
+~Functional terms
 \begin{equations}
 \tocp{x}z &=& \link x z \\
 \tocp{\lambda^\sigma x.M}z                         &=& \tocp{\sigma}(z(x).\tocp{M}z) \\
@@ -1390,70 +1455,38 @@ Functional terms:
                                    \mkwd{inr} \mapsto \tocp{N}z}} \\
 \tocp{\mkwd{absurd} \app L}z                     &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}}
 \end{equations}%
-Substitutions:
+~Substitutions
 \begin{equations}
-\tocp{\{\bind{x_i}{V_i}\}} &=& \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)_i[P] \medskip\\
-%% \tocp{\{\}}(P) &=& P \\
-%% \tocp{\{\bind{x}{x}\} \uplus \sigma}(P) &=& \tocp{\sigma}(P) \\
-%% \tocp{\{\bind{x}{V}\} \uplus \sigma}(P) &=& \tocp{\sigma}(P) \\
-%%   \left\{
-%%     \ba{l}
-%%       \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)[P] \\
-%%       \hat{
+\tocp{\{\bind{x_i}{V_i}\}}(P) &=& \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)_i[P] \medskip\\
 \hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
-\end{equations}
-
-\todo{Explain $\parallel_x$ notation; do we actually use this anywhere else?}
-
-\todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
-  enforce left-to-right evaluation of applications and pairs. Is this what we want?}
-
+\end{equations}%
+~Configurations
 \begin{equations}
 \tocp{\thread M}z        &=& \cut{y}{}{\tocp{M}y}{y[]} \\
 \tocp{\distinguish M}z   &=& \tocp{M}z \\
 \tocp{(\nu x)C}z         &=& \tocp{C}z \\
 \tocp{C \parallel_x C'}z &=& \cut{x}{}{\tocp{C}z}{\tocp{C'}z} \\
-%% \tocpbig{
-%%   \inferrule
-%%     {\Gamma,x:S \vdash^{\phi} C \\
-%%      \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
-%%     {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}}z &=&
-%%     \bl
-%%     \cut{x}{}{\tocp{C_1}z}{\cut{y}{}{\tocp{C_2}y}{y[]}} \\
-%%     \quad \text{where }C_1,C_2 =
-%%     \left\{
-%%       \ba{l}
-%%        C,C' \quad \text{if }\phi = \bcirc \\
-%%        C',C \quad \text{otherwise} \\
-%%       \ea \right. \\
-%%     \el \\
-  %% \left\{
-  %%   \ba{l}
-  %%   \cut{x}{}{\cut{y}{}{\tocp{C}y}{y[]}}{\tocp{C'}z} \\
-  %%   \qquad\text{if $\phi' = \bcirc$;} \\
-  %%   \cut{x}{}{\tocp{C}z}{\cut{y}{}{\tocp{C'}y}{y[]}} \\
-  %%   \qquad\text{otherwise.}
-  %%   \ea \right.
 \end{equations}
+\caption{Translation of GV Terms into CP}\label{fig:from-gv}
+\end{figure}
 
-\paragraph{Type soundness}
+\todo{Explain $\parallel_x$ notation; do we actually use this anywhere else? Yes, in the proofs.}
 
+It is straightforward to show that the translation preserves typing.
 \begin{theorem}
-  If $\Gamma \vdash M : T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
+~
+\begin{enumerate}
+\item If $\Gamma \vdash M : T$, then $\tocp{M}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
+\item If $\Gamma \vdash C$, then $\tocp{C}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
+\end{enumerate}
 \end{theorem}
 \begin{proof}
-By induction on the derivation of $\Gamma \vdash M : T$.\qed
+By induction on derivations.\qed
 \end{proof}
 
-\begin{theorem}
-  If $\Gamma \vdash C$, then $\tocp{C}z \vdash \tocp{\Gamma}, z:\cpdual{\tocp{T}}$.
-\end{theorem}
-\begin{proof}
-By induction on the derivation of $\Gamma \vdash C$.\qed
-\end{proof}
-
-\paragraph{Semantic soundness}
-
+We will now show that reduction in GV is preserved by reduction in CP. First, we observe that
+structural equivalence is preserved.
+%
 \begin{theorem}
 If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}z$.
 \end{theorem}
@@ -1479,6 +1512,7 @@ into the hole, and an output channel.
 %% The following lemmas can be made to hold, by construction.
 %
 \begin{lemma}
+\label{lem:compositional-contexts}
 ~
 \begin{enumerate}
 \item $\tocp{\Ex[M]}z = \tocp{\Ex}[\tocp{M}]z$
@@ -1487,11 +1521,12 @@ into the hole, and an output channel.
 \end{enumerate}
 \end{lemma}
 %
-We write $x \mapsto P$ for a function that maps a name $x$ to a process $P$ that depends on $x$.
+We will make implicit use of Lemma~\ref{lem:compositional-contexts} throughout our proofs. We write
+$x \mapsto P$ for a function that maps a name $x$ to a process $P$ that depends on $x$.
 
 \todo{Perhaps include the full definitions in an appendix?}
 
-In order to prove that reduction is preserved by the translation we need a substitution lemma.
+We now show that substitution commutes with $\tocp{-}$.
 \begin{lemma}
 \label{lem:tocp-subst}
 If $\Gamma \vdash M : T$, $\Gamma \vdash \sigma : \Delta$, and $z \notin \dom(\sigma)$, then
@@ -1541,7 +1576,10 @@ push the appropriate substitution through a prefix.\qed
 %% places its argument inside a prefix.
 %% \end{proof}
 
+Using the substitution lemma, we prove that functional reduction is preserved by $\tocp{-}$.
+%
 \begin{theorem}
+\label{th:teval-preserved}
 If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
 \bigrto \tocp{N}v$.
 \end{theorem}
@@ -1569,13 +1607,16 @@ context follows straightforwardly by observing that the translation of an evalua
 places its argument inside a prefix.\qed
 \end{proof}
 
+Finally, we prove that all reductions in GV are preserved by $\tocp{C}$.
+%
 \begin{theorem}\label{thm:gv-reduction-simulated}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
 \bigrto \tocp{D}z$.
 \end{theorem}
 \begin{proof}
-By induction on the derivation of $C \ceval D$. Here we show the base cases. The inductive cases
-follow straightforwardly from the compositionality of the definitions.
+By induction on the derivation of $C \ceval D$. The inductive cases follow straightforwardly from
+the compositionality of the definitions and Theorem~\ref{th:teval-preserved}. We now enumerate the
+base cases.
 \begin{itemize}
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
   \parallel \Fx'[(V,x)]$.
@@ -1859,7 +1900,6 @@ follow straightforwardly from the compositionality of the definitions.
 \quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
 \el
 \]
-
 \end{itemize}
 \qed
 \end{proof}
@@ -1867,50 +1907,50 @@ follow straightforwardly from the compositionality of the definitions.
 
 
 
-\paragraph{Why we need closures}
+%% \paragraph{Why we need closures}
 
-One might hope that reduction in GV without closures would be preserved by the translation to
-CP. However, it turns out that this is not the case. Consider the following straightforward
-$\beta$-reduction:
-\[
-  \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \teval \lambda y.\gvwait{y}; ()
-\]
-Translating the left-hand side yields:
-\[
-\bl
-\quad \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \\
-= \\
-\quad \cut{w}{}{w(x).\tocp{\lambda y.\gvwait{y; x}w}}{\cut{x}{}{\tocp{()}x}{y[x].\link{y}{z}}} \\
-\equiv \\
-\quad \cut{w}{}{w(x).w(y).y().\link{x}{w}}{\cut{x}{}{x[]}{w[x].\link{w}{z}}} \\
-\equiv \\
-\quad \cut{x}{}{x[]}{\cut{w}{}{w(x).w(y).y().\link{x}{w}}{w[x].\link{w}{z}}} \\
-\rto \\
-\quad \cut{x}{}{x[]}{\cut{w}{}{w(y).y().\link{x}{w}}{\link{w}{z}}} \\
-\rto \\
-\quad \cut{x}{}{x[]}{z(y).y().\link{x}{z}} \\
-\rto^* (\text{commuting conversions}) \\
-\quad z(y).y().\cut{x}{}{x[]}{\link{x}{z}} = P \\
-\el
-\]
-Translating the right-hand side yields:
-\[
-\bl
-\quad \tocp{\lambda y.\gvwait{y}; ()} \\
-= \\
-\quad z(y).y().z[] = Q
-\el
-\]
+%% One might hope that reduction in GV without closures would be preserved by the translation to
+%% CP. However, it turns out that this is not the case. Consider the following straightforward
+%% $\beta$-reduction:
+%% \[
+%%   \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \teval \lambda y.\gvwait{y}; ()
+%% \]
+%% Translating the left-hand side yields:
+%% \[
+%% \bl
+%% \quad \tocp{(\lambda x.\lambda y.\gvwait{y}; x) \app ()}z \\
+%% = \\
+%% \quad \cut{w}{}{w(x).\tocp{\lambda y.\gvwait{y; x}w}}{\cut{x}{}{\tocp{()}x}{y[x].\link{y}{z}}} \\
+%% \equiv \\
+%% \quad \cut{w}{}{w(x).w(y).y().\link{x}{w}}{\cut{x}{}{x[]}{w[x].\link{w}{z}}} \\
+%% \equiv \\
+%% \quad \cut{x}{}{x[]}{\cut{w}{}{w(x).w(y).y().\link{x}{w}}{w[x].\link{w}{z}}} \\
+%% \rto \\
+%% \quad \cut{x}{}{x[]}{\cut{w}{}{w(y).y().\link{x}{w}}{\link{w}{z}}} \\
+%% \rto \\
+%% \quad \cut{x}{}{x[]}{z(y).y().\link{x}{z}} \\
+%% \rto^* (\text{commuting conversions}) \\
+%% \quad z(y).y().\cut{x}{}{x[]}{\link{x}{z}} = P \\
+%% \el
+%% \]
+%% Translating the right-hand side yields:
+%% \[
+%% \bl
+%% \quad \tocp{\lambda y.\gvwait{y}; ()} \\
+%% = \\
+%% \quad z(y).y().z[] = Q
+%% \el
+%% \]
 
-Alas, $P$ does not reduce to $Q$.
-%
-Notice that we could reduce $P$ to $Q$ if we were allowed to reduce under a prefix.
+%% Alas, $P$ does not reduce to $Q$.
+%% %
+%% Notice that we could reduce $P$ to $Q$ if we were allowed to reduce under a prefix.
 
-%% As we have shown previously, we can translate a term $P$ from CP to GV and back, perform some
-%% reductions, and arrive back at $P$.
-%% \begin{theorem}
-%% $\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
-%% \end{theorem}
+%% %% As we have shown previously, we can translate a term $P$ from CP to GV and back, perform some
+%% %% reductions, and arrive back at $P$.
+%% %% \begin{theorem}
+%% %% $\cut{z}{}{\togv{\tocp{P}}z}{z[]} \rto^* P$
+%% %% \end{theorem}
 
 \section{Extending GV}\label{sec:extend}
 
