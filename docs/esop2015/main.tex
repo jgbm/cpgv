@@ -56,12 +56,13 @@
 
 \section{Introduction}\label{sec:intro}
 
-From the biggest programs, running across entire datacenters, to programs running on handheld
+From massively distributed programs, running across entire datacenters, to apps running on handheld
 devices, reliant on remote services for functionality, concurrency has become a central problems in
-program correctness.  Assuring correct concurrent behavior requires reasoning not just about the
-types of data commuicated, but the order in which the communication takes place.  For a simplistic
+program correctness. Assuring correct concurrent behavior requires reasoning not just about the
+types of data communicated, but the order in which the communication takes place. For a simplistic
 example, the exchange between an SMTP client and server is all textual; however, a client that sends
-the receipient's address before the sender's address is still in violation of the protocol.
+the recipient's address before the sender's address is still in violation of the protocol, despite
+sending the correct type of data.
 
 Session types, originally proposed by Honda~\cite{Honda93}, provide a mechanism to reason about the
 state of communications.  The type of a session captures the expected behavior of a process
@@ -71,66 +72,68 @@ client as
   \gvout{SenderAddress}{\gvout{RcptAddress}{\gvout{Message}{\gvend}}},
 \]
 where $\gvout T S$ denotes the expectation that the process will send a value of type $T$, then
-continue with the behavior specified by $S$.  One important property of session types is duality:
-from the type of the SMTP client, we can immediately derive the type of the server:
+continue with the behavior specified by $S$. An important property of session types is duality: from
+the type of the SMTP client, we can immediately derive the type of the server:
 \[
   \gvin{SenderAddress}{\gvin{RcptAddress}{\gvin{Message}{\gvend}}},
 \]
 where $\gvin T S$ denotes the expectation that the process will send a value of type $T$, then
 continue with the behavior specified by $S$.
 
-Session types were originally developed for process calculi, such as the $\pi$-calculus.  Some
-recent work has adapting session types to more practical programming languages.  In this paper, we
-are particularly interested in the use of session types for concurrency in functional programming
-languages, a developed by Vasconcelos et al.~\cite{VasconcelosGR06} and by Gay and
+\todo{perhaps improve the following paragraph}
+
+Session types were originally developed for process calculi, such as the $\pi$-calculus. Recent work
+has adapted session types to more practical programming languages. In this paper, we are
+particularly interested in the use of session types for concurrency in functional programming
+languages, as developed by Vasconcelos et al.~\cite{VasconcelosGR06} and by Gay and
 Vasconcelos~\cite{GayVasconcelos10}.
 
-Session type systems are crucially substructural---if processes could freely discard or duplicate
+Session type systems are necessarily substructural---if processes could freely discard or duplicate
 sessions, the type system could provide no guarantee that the observable messages on sessions
 matched the expectations established by their types.  Recent work has sought to establish a
 correspondence between session types and linear logic, the archetypal substructural logic for
 reasoning about state.  Caires and Pfenning~\cite{CairesPfenning10} developed a strong
 correspondence between cut elimination in intuitionistic linear logic and process reduction in a
-session-typed process calculus.  Walder~\cite{Wadler12} adapted their approach to classical linear
-logic, emphasizing the role of duality in the typing rules; the semantics of his system are given
-directly by the cut elimination rules for classical linear logic.  He also gave a type-preserving
+session-typed process calculus. Wadler~\cite{Wadler14} adapted their approach to classical linear
+logic, emphasizing the role of duality in the typing rules; the semantics of his system is given
+directly by the cut elimination rules for classical linear logic. He also gives a type-preserving
 translation from a simple functional calculus (which he called GV) to his process calculus (called
 CP); however, he gives no semantics for GV besides the semantics of the translated terms.
 
 In this paper, we develop a minimal, session-typed functional language, also called GV.  (Our
-language shares many of the distinctive features of Wadler's, although it differs in some
-not-insigificant details.)  We develop a small-step operational semantics for GV, factored into
-$\lambda$-calculus and concurrent portions following the approach of Gay and
-Vasconcelos~\cite{GayVasconcelos10}.  The $\lambda$-calculus portion of our semantics differs from
-standard presentations of CBV reduction only in that we need a weak form of explicit substitution to
-maintain a connection with cut reduction.  The concurrent portion of our semantics includes the
-typical reductions and equivalences of $\pi$-calculus-like systems.  We develop a characterization
-of deadlock-free programs in our setting; this is complicated because closed expressions may return
-channels, so we cannot simply require that all possible communication take place.  We show that
-well-typed GV programs are deadlock-free, deterministic, and terminating.  We give translations
-between our language GV and Wadler's calculus CP, and show that these translations preserve not just
-typing, but reduction.  Finally, we show that GV is a useful basis for further language development,
-by giving two extensions of GV and showing that our deadlock freedom results transfer easily to the
-extended languages.
+language shares most of the distinctive features of Wadler's, although it differs in some of the
+details.) We present a small-step operational semantics for GV, factored into $\lambda$-calculus and
+concurrent portions following the approach of Gay and Vasconcelos~\cite{GayVasconcelos10}. The
+$\lambda$-calculus portion of our semantics differs from standard presentations of CBV reduction
+only in that we adopt a weak form of explicit substitution to maintain a connection with cut
+reduction. The concurrent portion of our semantics includes the typical reductions and equivalences
+of $\pi$-calculus-like systems. We develop a characterization of deadlock-free programs in our
+setting; this is somewhat non-trivial because closed expressions may return channels, so we cannot
+simply require that all possible communication take place. We show that well-typed GV programs are
+deadlock-free, deterministic, and terminating. We give translations between our language GV and
+Wadler's calculus CP, and show that these translations preserve not just typing, but reduction.
+Finally, we show that GV is a useful basis for further language development, by giving two
+extensions of GV and showing that our deadlock freedom results transfer easily to the extended
+languages.
 
 The paper proceeds as follows.
 \begin{itemize}
 \item We define a core linearly-typed functional language, by extending linear lambda calculus with
-  session-typed communication primitives~\secref{gv-static}.  We present an (untyped) synchronous
-  operational semantics for our core language~\secref{gv-eval}.  We show that GV is deterministic
+  session-typed communication primitives~\secref{gv-static}. We present an (untyped) synchronous
+  operational semantics for our core language~\secref{gv-eval}. We show that GV is deterministic
   and terminating~\secref{determinism} We characterize deadlock and normal forms; we show that typed
   terms are deadlock-free, and that closed typed terms evaluate to normal
   forms~\secref{gv-deadlock}.
 \item We connect our language to the interpretation of session types as linear logic propositions,
-  by establishing a correspondence between the semantics of our language and that of Wadler's
-  calculus CP.  We begin by introducing CP~\secref{cp}.  We show that we can simulate CP reduction
-  in GV~\secref{togv}, and GV reduction in CP~\secref{tocp}.  As process calculi provide
-  substitution only for names, not entire process expressions, the latter depends crucially on the
-  use of weak explicit substitutions in the semantics of GV $\lambda$ terms.
+  by establishing a correspondence between the semantics of our language and that of Wadler's CP. We
+  begin by introducing CP~\secref{cp}. We show that we can simulate CP reduction in
+  GV~\secref{togv}, and GV reduction in CP~\secref{tocp}. As process calculi provide substitution
+  only for names, not entire process expressions, the latter depends crucially on the use of weak
+  explicit substitutions in the semantics of GV $\lambda$ terms.
 \item We consider two extensions of our core language: one which has a single, self-dual closed
   channel, harmonizing the treatment of closed channels with their treatment in other session-typed
   calculi~\secref{gv-end}, and another which adds unlimited types and replicated
-  behavior~\secref{gv-repl}.  We show that these extensions preserve the essential deadlock-freedom
+  behavior~\secref{gv-repl}. We show that these extensions preserve the essential deadlock-freedom
   properties of the core language.
 \end{itemize}
 Finally, we discuss related work~\secref{related} and conclude~\secref{conclusion}.
