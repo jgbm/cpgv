@@ -16,16 +16,41 @@
 
 \input{preamble.tex}
 
-\title{Session Freedom in a Functional Deadlock-typed Language}
-\author{J. Garrett Morris \and Sam Lindley \and Philip Wadler}
+\title{A Semantics for Sessions as Propositions}
+%\title{Deadlock-Freedom in a Session-Typed Functional Language}
+\author{Sam Lindley \and J. Garrett Morris \and Philip Wadler}
 \institute{The University of Edinburgh \\
-           \email{\{Garrett.Morris,Sam.Lindley,Philip.Wadler\}@ed.ac.uk} \vspace{-5mm}}
+           \email{\{Sam.Lindley,Garrett.Morris,Philip.Wadler\}@ed.ac.uk} \vspace{-5mm}}
 
 \begin{document}
 
 \maketitle
 
+%% Recently, Wadler presented a continuation-passing translation from a session-typed functional
+%% language, GV, to a process calculus based on classical linear logic, CP. However, this translation
+%% is one-way: CP is more expressive than GV. We propose an extension of GV, called HGV, and give
+%% translations showing that it is as expressive as CP. The new translations shed light both on the
+%% original translation from GV to CP, and on the limitations in expressiveness of GV.
+
+
 \begin{abstract}
+We introduce a small-step operational semantics for a minimal session-typed functional language, GV,
+in which all well-typed programs are deadlock-free, deterministic, and terminating.
+%
+
+...something about deadlock...
+
+%
+We define translations back and forth between GV and CP, a process calculus in which the
+propositions of classical linear logic correspond to session types and the semantics is defined by
+classical cut-reduction.
+%
+We prove that each translation preserves reduction. Previous translations from GV to CP did not
+preserve $\beta$-reduction. Crucially, we make use of a weak form of explicit substitutions in order
+to ensure reduction is preserved.
+%
+
+...extensions...
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
