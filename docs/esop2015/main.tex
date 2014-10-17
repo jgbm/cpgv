@@ -1812,135 +1812,7 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 %% \el
 %% \]
 %%
-%% \item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x) \ceval \Fx[()]$.
-%% \[
-%% \bl
-%% \quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x)}z \\
-%% %% = \\
-%% %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
-%% %%                {\tocp{\wcirc}[\tocp{x}]z} \\
-%% = \\
-%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{\link w y}]z}
-%%                {\cut{y}{}{\link x y}{y[]}} \\
-%% \bigcrto (\text{cut links}) \\
-%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \link x y]z}
-%%                {x[]} \\
-%% \bigcrto (\text{cut link}) \\
-%% %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
-%% %% = \\
-%% \quad \tocp{\Fx}[y \mapsto y[]]z \\
-%% = \\
-%% \quad \tocp{\Fx[()]}z \\
-%% \el
-%% \]
-%%
-%% \item Case $\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]
-%%                       \ceval (\nu x)(\Fx[x] \parallel M\sigma)$.
-%% \[
-%% \bl
-%% \quad \tocp{\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]}z \\
-%% = \\
-%% \quad \tocp{\Fx}[\tocp{\gvconst{fork} \app (\clos{\sigma}{x}{M})}]z \\
-%% = \\
-%% \quad \tocp{\Fx}[z \mapsto
-%%          \cut{x}{}{\tocp{x}z}
-%%            {\cut{y}{}
-%%               {\tocp{\sigma}(y(x).\tocp{M}y)}
-%%               {\cut{w}{}{y\sd{x}.\link y w}{w[]}}}]z \\
-%%
-%% \bigcrto (\text{cut send against receive}) \\
-%% %% \quad \tocp{\Fx}[x \mapsto
-%% %%          \cut{v}{}{\tocp{v}x}
-%% %%            {\cut{y}{}
-%% %%               {\tocp{\sigma}(\tocp{M}y)}
-%% %%               {\cut{w}{}{\link y w}{w[]}}}]z \\
-%% %% = \\
-%% \quad \tocp{\Fx}[z \mapsto
-%%          \cut{x}{}{\tocp{x}z}
-%%            {\cut{y}{}
-%%              {\tocp{\sigma}(\tocp{M}y)}
-%%              {y[]}}]z \\
-%%
-%% %% = \\
-%% %% \quad \tocp{\Fx}[z \mapsto
-%% %%          \tocp{\sigma}
-%% %%             (\cut{x}{}
-%% %%                {\cut{y}{}
-%% %%                  {\tocp{M}{y}}{y[]}}
-%% %%                  {\tocp{x}z})]z \\
-%% %% \equiv \\
-%% %% \quad \tocp{\Fx}[
-%% %%         z \mapsto
-%% %%           \cut{x}{}
-%% %%             {\tocp{x}z}
-%% %%             {\tocp{\cut{y}{}{\tocp{\sigma}(\tocp{M}y)}{y[]}}} \\
-%% \equiv \\
-%% \quad \cut{x}{}
-%%         {\tocp{\Fx}[\tocp{x}]z}
-%%         {\tocp{\sigma}(\tocp{\cut{y}{}{\tocp{M}y}{y[]}})} \\
-%% %% = \\
-%% %% \quad \cut{x}{}
-%% %%         {\tocp{\Fx}[\tocp{x}]z}
-%% %%         {\tocp{\sigma}(\tocp{\wcirc}[\tocp{M}]z)} \\
-%% = \\
-%% \quad \tocp{(\nu x)(\Fx[x] \parallel M \sigma)}z \\
-%% \el
-%% \]
-%%
-%% \item Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
-%%           (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
-%% \[
-%% \bl
-%% \quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
-%% = \\
-%% \quad \cut{x}{}
-%%          {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
-%%          {\tocp{\Fx'}[\tocp{M}]z} \\
-%% = \\
-%% %% \quad \cut{x}{}
-%% %%          {\tocp{\Fx}[z \mapsto
-%% %%                        \cut{w}{}{\link w z}
-%% %%                          {\cut{v}{}{\link v w}
-%% %%                            {\cut{x'}{}
-%% %%                              {\link{x}{x'}}
-%% %%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}}]z}
-%% %%          {\tocp{\Fx'}[\tocp{M}]z} \\
-%% \quad \nu x
-%%          (\tocp{\Fx}[z \mapsto
-%%                        \nu v (\link v z \mid
-%%                          \nu w (\link v w \mid \\
-%% \qquad
-%%                            {\cut{x'}{}
-%%                              {\link{x}{x'}}
-%%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
-%%          {\tocp{\Fx'}[\tocp{M}]z}) \\
-%% \bigcrto (\text{cut links}) \\
-%% \quad \cut{x}{}
-%%          {\tocp{\Fx}[z \mapsto
-%%                        \cut{v}{}{\link v z}
-%%                          {\cut{w}{}{\link v w}
-%%                             {w().\link{x}{y}}}]z}
-%%          {\tocp{\Fx'}[\tocp{M}]z} \\
-%% \equiv \\
-%% \quad \cut{v}{}
-%%          {\tocp{\Fx}[z \mapsto \link v z]z}
-%%          {\cut{x}{}
-%%            {\cut{w}{}
-%%               {\link v w}
-%%               {w().\link{x}{y}}}
-%%            {\tocp{\Fx'}[\tocp{M}]z}} \\
-%% \equiv \\
-%% \quad
-%%   \cut{v}{}
-%%     {\tocp{\Fx}[z \mapsto \link v z]z}
-%%     {\tocp{\Fx'}[z \mapsto
-%%                   \cut{w}{}
-%%                      {\link v w}
-%%                      {w().\cut{x}{}{\link x y}{\tocp{M}z}}]z} \\
-%% = \\
-%% \quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
-%% \el
-%% \]
+
 \end{itemize}
 \qed
 \end{proof}
@@ -2306,11 +2178,14 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
 
 \section{Proofs of Selected Results}
 
+\newenvironment{fake}[1]{\noindent\textbf{#1}\textit{}{}\ignorespacesafterend}
 
-\noindent
-\textbf{Theorem \ref{thm:preservation}.}
-\textit{If $\Gamma \vdash C$ and $C \ceval C'$ then there is some $\Gamma'$ such that $\Gamma
-  \ceval^?  \Gamma'$ and $\Gamma' \vdash C'$.}
+
+
+\begin{fake}{Theorem \ref{thm:preservation}.}
+  If $\Gamma \vdash C$ and $C \ceval C'$ then there is some $\Gamma'$ such that $\Gamma \ceval^?
+  \Gamma'$ and $\Gamma' \vdash C'$.
+\end{fake}
 
 \begin{proof}
   By induction on the derivation of $C \ceval C'$.  We include several representative cases.
@@ -2350,11 +2225,10 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
   \end{itemize}
 \end{proof}
 
-
-\noindent
-\textbf{Lemma \ref{lem:canonical}.}
-\textit{If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
-  canonical form.}
+\begin{fake}{Lemma \ref{lem:canonical}.}
+  If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
+  canonical form.
+\end{fake}
 
 \begin{proof}
   Let $x_1,\dots,x_{n-1}$ be the $\nu$-bound variables in $C$ and $M_1,\dots,M_n$ be the terms in
@@ -2370,5 +2244,146 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
   C'$. \qed
 \end{proof}
 
+\begin{fake}{Theorem \ref{thm:gv-reduction-simulated}.}
+  If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
+  \bigrto \tocp{D}z$.
+\end{fake}
+
+\begin{proof}
+  By induction on the derivation of $C \ceval D$. The inductive cases follow straightforwardly from
+  the compositionality of the definitions and \thmref{teval-preserved}.  The case for \gvconst{send}
+  against \gvconst{receive} is included in the main body.  The remaining cases follow.
+  \begin{itemize}
+  \item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x) \ceval \Fx[()]$.
+    \[
+    \bl
+    \quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x)}z \\
+    %% = \\
+    %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
+    %% {\tocp{\wcirc}[\tocp{x}]z} \\
+    = \\
+    \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{\link w y}]z}
+                   {\cut{y}{}{\link x y}{y[]}} \\
+    \bigcrto (\text{cut links}) \\
+    \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \link x y]z}
+                   {x[]} \\
+    \bigcrto (\text{cut link}) \\
+    %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
+    %% = \\
+    \quad \tocp{\Fx}[y \mapsto y[]]z \\
+    = \\
+    \quad \tocp{\Fx[()]}z \\
+    \el
+    \]
+
+  \item Case $\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]
+                          \ceval (\nu x)(\Fx[x] \parallel M\sigma)$.
+    \[
+    \bl
+    \quad \tocp{\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]}z \\
+    = \\
+    \quad \tocp{\Fx}[\tocp{\gvconst{fork} \app (\clos{\sigma}{x}{M})}]z \\
+    = \\
+    \quad \tocp{\Fx}[z \mapsto
+             \cut{x}{}{\tocp{x}z}
+               {\cut{y}{}
+                  {\tocp{\sigma}(y(x).\tocp{M}y)}
+                  {\cut{w}{}{y\sd{x}.\link y w}{w[]}}}]z \\
+
+    \bigcrto (\text{cut send against receive}) \\
+    %% \quad \tocp{\Fx}[x \mapsto
+    %%          \cut{v}{}{\tocp{v}x}
+    %%            {\cut{y}{}
+    %%               {\tocp{\sigma}(\tocp{M}y)}
+    %%               {\cut{w}{}{\link y w}{w[]}}}]z \\
+    %% = \\
+    \quad \tocp{\Fx}[z \mapsto
+             \cut{x}{}{\tocp{x}z}
+               {\cut{y}{}
+                 {\tocp{\sigma}(\tocp{M}y)}
+                 {y[]}}]z \\
+
+    %% = \\
+    %% \quad \tocp{\Fx}[z \mapsto
+    %%          \tocp{\sigma}
+    %%             (\cut{x}{}
+    %%                {\cut{y}{}
+    %%                  {\tocp{M}{y}}{y[]}}
+    %%                  {\tocp{x}z})]z \\
+    %% \equiv \\
+    %% \quad \tocp{\Fx}[
+    %%         z \mapsto
+    %%           \cut{x}{}
+    %%             {\tocp{x}z}
+    %%             {\tocp{\cut{y}{}{\tocp{\sigma}(\tocp{M}y)}{y[]}}} \\
+    \equiv \\
+    \quad \cut{x}{}
+            {\tocp{\Fx}[\tocp{x}]z}
+            {\tocp{\sigma}(\tocp{\cut{y}{}{\tocp{M}y}{y[]}})} \\
+    %% = \\
+    %% \quad \cut{x}{}
+    %%         {\tocp{\Fx}[\tocp{x}]z}
+    %%         {\tocp{\sigma}(\tocp{\wcirc}[\tocp{M}]z)} \\
+    = \\
+    \quad \tocp{(\nu x)(\Fx[x] \parallel M \sigma)}z \\
+    \el
+    \]
+
+  \item Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
+              (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
+    \[
+    \bl
+    \quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
+    = \\
+    \quad \cut{x}{}
+             {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
+             {\tocp{\Fx'}[\tocp{M}]z} \\
+    = \\
+    %% \quad \cut{x}{}
+    %%          {\tocp{\Fx}[z \mapsto
+    %%                        \cut{w}{}{\link w z}
+    %%                          {\cut{v}{}{\link v w}
+    %%                            {\cut{x'}{}
+    %%                              {\link{x}{x'}}
+    %%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}}]z}
+    %%          {\tocp{\Fx'}[\tocp{M}]z} \\
+    \quad \nu x
+             (\tocp{\Fx}[z \mapsto
+                           \nu v (\link v z \mid
+                             \nu w (\link v w \mid \\
+    \qquad
+                               {\cut{x'}{}
+                                 {\link{x}{x'}}
+                                 {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
+             {\tocp{\Fx'}[\tocp{M}]z}) \\
+    \bigcrto (\text{cut links}) \\
+    \quad \cut{x}{}
+             {\tocp{\Fx}[z \mapsto
+                           \cut{v}{}{\link v z}
+                             {\cut{w}{}{\link v w}
+                                {w().\link{x}{y}}}]z}
+             {\tocp{\Fx'}[\tocp{M}]z} \\
+    \equiv \\
+    \quad \cut{v}{}
+             {\tocp{\Fx}[z \mapsto \link v z]z}
+             {\cut{x}{}
+               {\cut{w}{}
+                  {\link v w}
+                  {w().\link{x}{y}}}
+               {\tocp{\Fx'}[\tocp{M}]z}} \\
+    \equiv \\
+    \quad
+      \cut{v}{}
+        {\tocp{\Fx}[z \mapsto \link v z]z}
+        {\tocp{\Fx'}[z \mapsto
+                      \cut{w}{}
+                         {\link v w}
+                         {w().\cut{x}{}{\link x y}{\tocp{M}z}}]z} \\
+    = \\
+    \quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
+    \el
+    \]
+\end{itemize}
+\end{proof}
 
 \end{document}
