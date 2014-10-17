@@ -1406,10 +1406,13 @@ deadlock freedom in GV has no such requirement, so we have no need of correspond
 %%
 \subsection{Translation from GV to CP}\label{sec:tocp}
 
-In this section, we show that CP can simulated GV. \figref{from-gv} gives the translation of GV
-types and terms into CP; we translate typing environments by the pointwise extension of the
-translation on types.
+In this section, we show that CP can simulate GV. Our translation differs from both that of
+Wadler's~\cite{Wadler14} and our prior work~\cite{LindleyM14}. We will elaborate on the differences
+below. \figref{from-gv-types} gives the translation on types and \figref{from-gv-terms} gives the
+translation on terms, substitutions, and configurations; we translate typing environments by the
+pointwise extension of the translation on types.
 %
+
 The translation on session types is homomorphic except for output, where the output type is
 dualized. This accounts for the discrepancy between $\gvdual{!T.S} = ?T.S$ and $\cpdual{(A \otimes
   B)} = \cpdual{A} \parr \cpdual{B}$.
@@ -1426,13 +1429,41 @@ variable, so the translation is unambiguous.
 As CP processes do not have return values, the translation $\tocp{M}z$ of a term $M$ of type $T$
 includes the additional argument $z:\cpdual{\tocp{T}}$, which is a channel for simulating the return
 value.
+%
+The translation on session terms is somewhat complicated by the need to include apparently trivial
+axiom cuts. We have highlighted these in grey in the definition. We included them in order to ensure
+that the proof goes through.
+%
+The output in the translation of $\mkwd{fork}$ arises from the need to apply the argument to a
+freshly generated channel (notice that application is simulated by an output). The $\mkwd{send}$
+operation is simulated by output as one might expect; $\mkwd{receive}$ is simulated by input
+composed with outputting the result to the return channel. The $\mkwd{wait}$ operation is simulated
+by simply connecting the result to the return channel.
+
+\todo{SL: still half way through doing this...}
+
+Variables are linked to the return channel $z$. Closures are simulated by input, subject to an
+appropriate substitution, and application by output. Unit values are simulated by empty output to
+the return channel. Pairs are simulated by evaluating both components in parallel and transmitting
+the results to the return channel. Injections are simulated by injections. Each elimination form
+(other than application) guards the continuation with a suitable prefix, delaying reduction of the
+continuation until the a value has been computed to pass to it.
+
+
+
+
+The translation preserves typing.
+\begin{theorem}
+If $\Gamma \vdash M : T$ then $\tocp{M}z \vdash \tocp{G}, z:\tocp{T}$.
+\end{theorem}
 
 \todo{Explain the translation on terms}
 
-The translation on terms presented here, diverges somewhat from the old translation of our previous
-work~\cite{Wadler14,LindleyM14}. One problem with the old translation is that they it does not reflect
-$\beta$-reduction. The fundamental reason for this is that CP cannot simulate substitution under a
-lambda abstraction, and this is why we adapted GV to use weak explicit substitutions.
+
+The translation on terms presented here, diverges somewhat from the old translation presented
+previously~\cite{Wadler14,LindleyM14}. One problem with the old translation is that it does not
+reflect $\beta$-reduction. The fundamental reason for this is that CP cannot simulate substitution
+under a lambda abstraction, and this is why we adapted GV to use weak explicit substitutions.
 %
 As a concrete example, consider the following $\beta$-reduction using implicit substitution:
 \[
@@ -1505,27 +1536,31 @@ order to ensure that $\tocp{-}$ preserves reduction.
 \tocpflip{T \lto U} &=& \cpdual{\tocpflip{T}} \parr \tocpflip U \\
 \tocpflip{S} &=& \tocp{S} \\
 \end{equations}
+\caption{Translation of GV Types into CP}\label{fig:from-gv-types}
+\end{figure}
 
+\begin{figure}[float]
+\vspace{1ex}
 ~Session terms
 \begin{equations}
 \tocp{\gvconst{fork}\:M}z &=&
-  \cut{w}{}{\link w z}{\cut{x}{}{\tocp{M}x}{\cut{y}{}{x\sd{w}.\link x y}{y[]}}} \\
+  \boringcut{w}{}{\link w z}{\cut{x}{}{\tocp{M}x}{\cut{y}{}{x\sd{w}.\link x y}{y[]}}} \\
 %% \tocp{\gvconst{fork}\:(\clos{\sigma}{x}{M})}z &=&
 %%   \tocp{\sigma}(\cut{x}{}{\cut{y}{}{\tocp{M}{y}}{y[]}}{\link x z}) \\
 %% \tocp{\gvlink{M}{N}}z &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z().\link x y}} \\
 \tocp{\gvlink{M}{N}}z &=&
-  \nu v\:(\link v z \mid
-    \nu w\:(\link v w \mid %\\
+  \boringcut{v}{}{\link v z}
+    {\boringcut{w}{}{\link v w}
 %&& \quad
-      {\cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{w().\link x y}}})) \\
+      {\cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{w().\link x y}}}} \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link x z}} \\
 %% SL: we need these eta-expanded definitions for receive and wait
 %% in order for the simulation theorem to hold
 \tocp{\gvreceive{M}}z &=&
-  \cut{y}{}{\tocp{M}y}{y(x).\cut{w}{}{\link w y}{z\sd{x}.\link w z}} \\
+  \cut{y}{}{\tocp{M}y}{y(x).\boringcut{w}{}{\link w y}{z\sd{x}.\link w z}} \\
 \tocp{\gvwait{M}}z    &=&
-  \cut{y}{}{\tocp{M}y}{\link y z} \\
+  \boringcut{y}{}{\link y z}{\tocp{M}y} \\
 %  \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
@@ -1540,12 +1575,12 @@ order to ensure that $\tocp{-}$ preserves reduction.
 \tocp{\gvlet{()}{M}{N}}z                         &=& \cut{y}{}{\tocp{M}y} {y().\tocp{N}z} \\
 \tocp{(M,N)}z                                    &=& \cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{z\sd{x}.\link y z}} \\
 \tocp{\gvlet{(x,y)}{M}{N}}z                      &=& \cut{y}{}{\tocp{M}y}{y(x).\tocp{N}z} \\
-\tocp{\mkwd {inl} \app M}z                       &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inl}].\link x z} \\
-\tocp{\mkwd {inr} \app M}z                       &=& \cut{x}{}{\tocp{M}x}{z[\mkwd{inr}].\link x z} \\
+\tocp{\mkwd {inl} \app M}z                       &=& \cut{x}{}{\tocp{M}x}{z[in_1].\link x z} \\
+\tocp{\mkwd {inr} \app M}z                       &=& \cut{x}{}{\tocp{M}x}{z[in_2].\link x z} \\
 \tocp{\gvcase{L}{\mkwd {inl} \app x \mapsto M;
                  \mkwd {inr} \app x \mapsto N}}z &=&
-   \cut x {} {\tocp{L}x} {\case{x}{\mkwd{inl} \mapsto \tocp{M}z;
-                                   \mkwd{inr} \mapsto \tocp{N}z}} \\
+   \cut x {} {\tocp{L}x} {\case{x}{\tocp{M}z;
+                                   \tocp{N}z}} \\
 \tocp{\mkwd{absurd} \app L}z                     &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}}
 \end{equations}
 ~Substitutions
@@ -1560,7 +1595,7 @@ order to ensure that $\tocp{-}$ preserves reduction.
 \tocp{(\nu x)C}z         &=& \tocp{C}z \\
 \tocp{C \parallel_x C'}z &=& \cut{x}{}{\tocp{C}z}{\tocp{C'}z} \\
 \end{equations}
-\caption{Translation of GV terms and configurations into CP}\label{fig:from-gv}
+\caption{Translation of GV Terms, Substitutions, and Configurations into CP}\label{fig:from-gv-terms}
 \end{figure}
 
 It is straightforward to show that the translation preserves typing.
