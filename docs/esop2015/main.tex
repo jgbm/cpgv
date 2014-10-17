@@ -731,6 +731,39 @@ configurations, and of $\ceval^?$ on typing environments.
   \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
 \end{corollary}
 
+\subsection{Determinism and Termination}
+
+It is straightforward to show that GV is deterministic. In fact, GV enjoys a rather strong form of
+determinism, namely the \emph{diamond property}.
+\begin{theorem}
+For well typed terms, the relation $\equiv\ceval\equiv$ satisfies the diamond property: if $\Gamma
+\vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then there exists $D_3$ such
+that $D_1 \equiv\ceval\equiv D_3$, and $D_2 \equiv\ceval\equiv D_3$.
+\end{theorem}
+\begin{proof}
+First, we observe that $\teval$ is deterministic, and furthermore configuration reductions always
+treat $\teval$ redexes linearly. This means we need only consider the interaction between different
+configuration reductions.
+%
+Linear typing ensures that two configuration reductions cannot overlap. Furthermore, each
+configuration reduction is linear in the existing redexes, so we can straightforwardly perform the
+reductions in either order. \qed
+\end{proof}
+%
+It is not hard to see that the system remains deterministic, if we extend the functional part of GV
+with any well-typed confluent reduction rules at all.
+
+GV is terminating; specifically, GV is strongly normalising.
+\begin{theorem}
+GV is strongly normalising: if $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$
+reduction sequences beginning from $C$.
+\end{theorem}
+In order to prove strong normalisation for plain GV without replication and other features, one can
+use an elementary argument based on linearity. When we add replication (as we do in
+Section~\ref{sec:extend}) and other features, a standard logical relations argument suffices. Strong
+normalisation also follows as a direct corollary of Theorem~\ref{th:gv-reduction-simulated} and the
+cut-elimination theorem for classical linear logic.
+
 \subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
 \newcommand{\blockedp}{\mathsf{blocked}}
 \newcommand{\depp}{\mathsf{depends}}
@@ -1612,7 +1645,8 @@ places its argument inside a prefix.\qed
 
 Finally, we prove that all reductions in GV are preserved by $\tocp{C}$.
 %
-\begin{theorem}\label{thm:gv-reduction-simulated}
+\begin{theorem}
+\label{th:gv-reduction-simulated}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
 \bigrto \tocp{D}z$.
 \end{theorem}
