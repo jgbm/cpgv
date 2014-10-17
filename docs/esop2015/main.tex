@@ -133,7 +133,7 @@ The paper proceeds as follows.
   behavior~\secref{gv-repl}.  We show that these extensions preserve the essential deadlock-freedom
   properties of the core language.
 \end{itemize}
-Finally, we discuss related work~\secref{related} and conclude~\secref{conclusion}.
+We conclude by discussing related~\secref{related} and future~\secref{conclusion} work.
 
 %% \section{GV by Example}\label{sec:examples}
 %%
@@ -339,8 +339,9 @@ schema for the constants $K$, are given in \figref{gv-typing}.
 \subsubsection{Concurrency.}
 
 Concurrent behavior is provided by the constants $K$.  Communication is provided by \gvconst{send}
-and \gvconst{receive}.  For example, a computation that received a pair of numbers along a channel
-$z$ and then sent their sum along the same channel could be expressed by
+and \gvconst{receive}.  For example, assuming an extension of our core language with numbers and
+arithmetic operators, a computation that received a pair of numbers along a channel $z$ and then
+sent their sum along the same channel could be expressed by
 %
 \[\bl
   \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
@@ -700,11 +701,9 @@ Observe that reduction may transform the types of sessions---for example, if $\G
 F[\gvconst{send}\app(V,x)] \parallel F'[\gvconst{receive}\app x]$, then $\Gamma$ must contain an
 assignment $x : \channel{(\gvout{T}{S})}$ for some type $T$ and session type $S$.  However, after
 reduction, for $F[x] \parallel F'[(V,x)]$ to be well-typed we need $x:\channel S$.  We capture this
-with the reduction relation $\Gamma \ceval \Gamma'$.  As long all reductions require evolution of
-the type environment, we introduce the shorthand
-\[
-  \Gamma \ceval^? \Gamma' \defiff (\Gamma \ceval \Gamma') \lor (\Gamma = \Gamma').
-\]
+with the reduction relation $\Gamma \ceval \Gamma'$.  We write $\Gamma \ceval^? \Gamma'$ for the
+reflexive closure of $\ceval$.
+
 Finally, we can show that reduction preserves typing.  We begin with term reduction.
 %
 \begin{lemma}\label{thm:term-preservation}
@@ -1712,8 +1711,8 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 \end{theorem}
 \begin{proof}
 By induction on the derivation of $C \ceval D$. The inductive cases follow straightforwardly from
-the compositionality of the definitions and \thmref{teval-preserved}. We now enumerate the
-base cases.
+the compositionality of the definitions and \thmref{teval-preserved}. We give a representive
+example of the base cases.
 \begin{itemize}
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
   \parallel \Fx'[(V,x)]$.
@@ -1867,136 +1866,136 @@ base cases.
 %% \quad \tocp{x \parallel \distinguish{(V,x)}} \\
 %% \el
 %% \]
-
-\item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x) \ceval \Fx[()]$.
-\[
-\bl
-\quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x)}z \\
+%%
+%% \item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x) \ceval \Fx[()]$.
+%% \[
+%% \bl
+%% \quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x)}z \\
+%% %% = \\
+%% %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
+%% %%                {\tocp{\wcirc}[\tocp{x}]z} \\
 %% = \\
-%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
-%%                {\tocp{\wcirc}[\tocp{x}]z} \\
-= \\
-\quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{\link w y}]z}
-               {\cut{y}{}{\link x y}{y[]}} \\
-\bigcrto (\text{cut links}) \\
-\quad \cut{x}{}{\tocp{\Fx}[y \mapsto \link x y]z}
-               {x[]} \\
-\bigcrto (\text{cut link}) \\
-%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
+%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \cut{w}{}{\link w x}{\link w y}]z}
+%%                {\cut{y}{}{\link x y}{y[]}} \\
+%% \bigcrto (\text{cut links}) \\
+%% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \link x y]z}
+%%                {x[]} \\
+%% \bigcrto (\text{cut link}) \\
+%% %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto y[]]z}{x[]} \\
+%% %% = \\
+%% \quad \tocp{\Fx}[y \mapsto y[]]z \\
 %% = \\
-\quad \tocp{\Fx}[y \mapsto y[]]z \\
-= \\
-\quad \tocp{\Fx[()]}z \\
-\el
-\]
-
-\item Case $\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]
-                      \ceval (\nu x)(\Fx[x] \parallel M\sigma)$.
-\[
-\bl
-\quad \tocp{\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]}z \\
-= \\
-\quad \tocp{\Fx}[\tocp{\gvconst{fork} \app (\clos{\sigma}{x}{M})}]z \\
-= \\
-\quad \tocp{\Fx}[z \mapsto
-         \cut{x}{}{\tocp{x}z}
-           {\cut{y}{}
-              {\tocp{\sigma}(y(x).\tocp{M}y)}
-              {\cut{w}{}{y\sd{x}.\link y w}{w[]}}}]z \\
-
-\bigcrto (\text{cut send against receive}) \\
-%% \quad \tocp{\Fx}[x \mapsto
-%%          \cut{v}{}{\tocp{v}x}
-%%            {\cut{y}{}
-%%               {\tocp{\sigma}(\tocp{M}y)}
-%%               {\cut{w}{}{\link y w}{w[]}}}]z \\
+%% \quad \tocp{\Fx[()]}z \\
+%% \el
+%% \]
+%%
+%% \item Case $\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]
+%%                       \ceval (\nu x)(\Fx[x] \parallel M\sigma)$.
+%% \[
+%% \bl
+%% \quad \tocp{\Fx[\gvconst{fork} \app (\clos{\sigma}{x}{M})]}z \\
 %% = \\
-\quad \tocp{\Fx}[z \mapsto
-         \cut{x}{}{\tocp{x}z}
-           {\cut{y}{}
-             {\tocp{\sigma}(\tocp{M}y)}
-             {y[]}}]z \\
-
+%% \quad \tocp{\Fx}[\tocp{\gvconst{fork} \app (\clos{\sigma}{x}{M})}]z \\
 %% = \\
 %% \quad \tocp{\Fx}[z \mapsto
-%%          \tocp{\sigma}
-%%             (\cut{x}{}
-%%                {\cut{y}{}
-%%                  {\tocp{M}{y}}{y[]}}
-%%                  {\tocp{x}z})]z \\
+%%          \cut{x}{}{\tocp{x}z}
+%%            {\cut{y}{}
+%%               {\tocp{\sigma}(y(x).\tocp{M}y)}
+%%               {\cut{w}{}{y\sd{x}.\link y w}{w[]}}}]z \\
+%%
+%% \bigcrto (\text{cut send against receive}) \\
+%% %% \quad \tocp{\Fx}[x \mapsto
+%% %%          \cut{v}{}{\tocp{v}x}
+%% %%            {\cut{y}{}
+%% %%               {\tocp{\sigma}(\tocp{M}y)}
+%% %%               {\cut{w}{}{\link y w}{w[]}}}]z \\
+%% %% = \\
+%% \quad \tocp{\Fx}[z \mapsto
+%%          \cut{x}{}{\tocp{x}z}
+%%            {\cut{y}{}
+%%              {\tocp{\sigma}(\tocp{M}y)}
+%%              {y[]}}]z \\
+%%
+%% %% = \\
+%% %% \quad \tocp{\Fx}[z \mapsto
+%% %%          \tocp{\sigma}
+%% %%             (\cut{x}{}
+%% %%                {\cut{y}{}
+%% %%                  {\tocp{M}{y}}{y[]}}
+%% %%                  {\tocp{x}z})]z \\
+%% %% \equiv \\
+%% %% \quad \tocp{\Fx}[
+%% %%         z \mapsto
+%% %%           \cut{x}{}
+%% %%             {\tocp{x}z}
+%% %%             {\tocp{\cut{y}{}{\tocp{\sigma}(\tocp{M}y)}{y[]}}} \\
 %% \equiv \\
-%% \quad \tocp{\Fx}[
-%%         z \mapsto
-%%           \cut{x}{}
-%%             {\tocp{x}z}
-%%             {\tocp{\cut{y}{}{\tocp{\sigma}(\tocp{M}y)}{y[]}}} \\
-\equiv \\
-\quad \cut{x}{}
-        {\tocp{\Fx}[\tocp{x}]z}
-        {\tocp{\sigma}(\tocp{\cut{y}{}{\tocp{M}y}{y[]}})} \\
-%% = \\
 %% \quad \cut{x}{}
 %%         {\tocp{\Fx}[\tocp{x}]z}
-%%         {\tocp{\sigma}(\tocp{\wcirc}[\tocp{M}]z)} \\
-= \\
-\quad \tocp{(\nu x)(\Fx[x] \parallel M \sigma)}z \\
-\el
-\]
-
-\item Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
-          (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
-\[
-\bl
-\quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
-= \\
-\quad \cut{x}{}
-         {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
-         {\tocp{\Fx'}[\tocp{M}]z} \\
-= \\
+%%         {\tocp{\sigma}(\tocp{\cut{y}{}{\tocp{M}y}{y[]}})} \\
+%% %% = \\
+%% %% \quad \cut{x}{}
+%% %%         {\tocp{\Fx}[\tocp{x}]z}
+%% %%         {\tocp{\sigma}(\tocp{\wcirc}[\tocp{M}]z)} \\
+%% = \\
+%% \quad \tocp{(\nu x)(\Fx[x] \parallel M \sigma)}z \\
+%% \el
+%% \]
+%%
+%% \item Case $(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
+%%           (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])$.
+%% \[
+%% \bl
+%% \quad \tocp{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M])}z \\
+%% = \\
 %% \quad \cut{x}{}
-%%          {\tocp{\Fx}[z \mapsto
-%%                        \cut{w}{}{\link w z}
-%%                          {\cut{v}{}{\link v w}
+%%          {\tocp{\Fx}[\tocp{\gvconst{link} \app (x, y)}]z}
+%%          {\tocp{\Fx'}[\tocp{M}]z} \\
+%% = \\
+%% %% \quad \cut{x}{}
+%% %%          {\tocp{\Fx}[z \mapsto
+%% %%                        \cut{w}{}{\link w z}
+%% %%                          {\cut{v}{}{\link v w}
+%% %%                            {\cut{x'}{}
+%% %%                              {\link{x}{x'}}
+%% %%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}}]z}
+%% %%          {\tocp{\Fx'}[\tocp{M}]z} \\
+%% \quad \nu x
+%%          (\tocp{\Fx}[z \mapsto
+%%                        \nu v (\link v z \mid
+%%                          \nu w (\link v w \mid \\
+%% \qquad
 %%                            {\cut{x'}{}
 %%                              {\link{x}{x'}}
-%%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}}]z}
+%%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
+%%          {\tocp{\Fx'}[\tocp{M}]z}) \\
+%% \bigcrto (\text{cut links}) \\
+%% \quad \cut{x}{}
+%%          {\tocp{\Fx}[z \mapsto
+%%                        \cut{v}{}{\link v z}
+%%                          {\cut{w}{}{\link v w}
+%%                             {w().\link{x}{y}}}]z}
 %%          {\tocp{\Fx'}[\tocp{M}]z} \\
-\quad \nu x
-         (\tocp{\Fx}[z \mapsto
-                       \nu v (\link v z \mid
-                         \nu w (\link v w \mid \\
-\qquad
-                           {\cut{x'}{}
-                             {\link{x}{x'}}
-                             {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
-         {\tocp{\Fx'}[\tocp{M}]z}) \\
-\bigcrto (\text{cut links}) \\
-\quad \cut{x}{}
-         {\tocp{\Fx}[z \mapsto
-                       \cut{v}{}{\link v z}
-                         {\cut{w}{}{\link v w}
-                            {w().\link{x}{y}}}]z}
-         {\tocp{\Fx'}[\tocp{M}]z} \\
-\equiv \\
-\quad \cut{v}{}
-         {\tocp{\Fx}[z \mapsto \link v z]z}
-         {\cut{x}{}
-           {\cut{w}{}
-              {\link v w}
-              {w().\link{x}{y}}}
-           {\tocp{\Fx'}[\tocp{M}]z}} \\
-\equiv \\
-\quad
-  \cut{v}{}
-    {\tocp{\Fx}[z \mapsto \link v z]z}
-    {\tocp{\Fx'}[z \mapsto
-                  \cut{w}{}
-                     {\link v w}
-                     {w().\cut{x}{}{\link x y}{\tocp{M}z}}]z} \\
-= \\
-\quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
-\el
-\]
+%% \equiv \\
+%% \quad \cut{v}{}
+%%          {\tocp{\Fx}[z \mapsto \link v z]z}
+%%          {\cut{x}{}
+%%            {\cut{w}{}
+%%               {\link v w}
+%%               {w().\link{x}{y}}}
+%%            {\tocp{\Fx'}[\tocp{M}]z}} \\
+%% \equiv \\
+%% \quad
+%%   \cut{v}{}
+%%     {\tocp{\Fx}[z \mapsto \link v z]z}
+%%     {\tocp{\Fx'}[z \mapsto
+%%                   \cut{w}{}
+%%                      {\link v w}
+%%                      {w().\cut{x}{}{\link x y}{\tocp{M}z}}]z} \\
+%% = \\
+%% \quad \tocp{(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}z
+%% \el
+%% \]
 \end{itemize}
 \qed
 \end{proof}
@@ -2313,9 +2312,20 @@ for deadlock freedom; their approach accomodates processes with open channels by
 type-directed closure of a process, and showing that open processes make progress only if their
 typed closures make progress.
 
-\section{Conclusions and Future Work}\label{sec:conclusion}
+\section{Future Work}\label{sec:conclusion}
 
-Asynchrony and recursion.
+We have described GV, a minimal session-typed functional language.  We have shown that it is
+deadlock-free, deterministic, and terminating, and have demonstrated a strong connection between our
+language and a process calculus based on linear logic.  Finally, we have argued that GV a suitable
+basis for future language development by showing two extensions of GV, and demonstrating that our
+proof of deadlock freedom extends easily to these cases.
+
+In closing, we identify two important directions of future work.  The first is recursion.  Recursion
+is essential both for sessions (to capture repeating behavior, such as adding recipients to a mail
+message) and for programming.  Adding unchecked recursion to GV would clearly compromise termination
+and introduce the possibility of livelock; we hope that adapting approaches used for fixed points in
+linear logic could mitigate these problems.  The second is asynchrony; we hope to follow the
+approach used by Gay and Vasconcelos~\cite{GayVasconcelos10} in their similar calculus.
 
 \label{sec:bib}
 \bibliographystyle{abbrv}
