@@ -2,7 +2,7 @@
 
 \documentclass[orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem}
+\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem,bm}
 \usepackage[table]{xcolor}
 \usepackage{colortbl}
 \addtolength{\jot}{-3px}
@@ -181,7 +181,7 @@ I'm intentionally ignoring CP polymorphism forever.
 \begin{figure}[t]
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \interm \mid \outterm \mid \channel{S} \\
-  \text{Types} & T,U & ::= & S \mid T \times U \mid \one \mid T + U \mid \zero \mid T \lto U \\ % \mid {!T} \\
+  \text{Types} & T,U & ::= & S \mid T \gvtimes U \mid \one \mid T \gvplus U \mid \zero \mid T \lto U \\ % \mid {!T} \\
   \text{Terms} & M,N & ::= & x \mid K \mid \lambda x.M \mid M\,N \\
   & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
   & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
@@ -221,19 +221,19 @@ Typing rules:
 \inferrule
   {\Gamma \vdash M: T \\
    \Gamma' \vdash N: U}
-  {\Gamma,\Gamma' \vdash (M,N): T \times U}
+  {\Gamma,\Gamma' \vdash (M,N): T \gvtimes U}
 
 \inferrule
-  {\Gamma \vdash M: T \times T' \\
+  {\Gamma \vdash M: T \gvtimes T' \\
    \Gamma',x:T,y:T' \vdash N: U}
   {\Gamma,\Gamma' \vdash \gvlet{(x,y)}{M}{N} : U}
 
 \inferrule
   {\Gamma \vdash M: T}
-  {\Gamma \vdash \mkwd{inl}\,M: T+U}
+  {\Gamma \vdash \mkwd{inl}\,M: T \gvplus U}
 
 \inferrule
-  {\Gamma \vdash M: T+T' \\
+  {\Gamma \vdash M: T \gvplus T' \\
    \Gamma',x:T \vdash N: U \\
    \Gamma',x:T' \vdash N': U}
   {\Gamma,\Gamma' \vdash \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} : U}
@@ -253,15 +253,15 @@ Typing rules:
 \end{mathpar}
 Type schemas for constants:
 \begin{mathpar}
-\gvconst{send} : T \times \gvout{T}{S} \lto S
+\gvconst{send} : T \gvtimes \gvout{T}{S} \lto S
 
-\gvconst{receive} : \gvin{T}{S} \lto T \times S
+\gvconst{receive} : \gvin{T}{S} \lto T \gvtimes S
 
 \gvconst{fork} : (S \lto \outterm) \lto \gvdual{S}
 
 \gvconst{wait} : \interm \lto \one
 
-\gvconst{link} : S \times \gvdual{S} \lto \outterm
+\gvconst{link} : S \gvtimes \gvdual{S} \lto \outterm
 \end{mathpar}
 Duality:
 \begin{mathpar}
@@ -284,14 +284,14 @@ $z$ and then sent their sum along the same channel could be expressed by
 %
 \[\bl
   \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-  \gvsend{(x+y,z)}
+  \gvsend{(x + y,z)}
 \el\]
 %
 (where the interpretation of nested patterns by sequences of bindings is standard).  Sessions are
 treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value (the pair of
 $x$ and $y$) but also a new copy of the session used for receiving ($z$); similarly, \gvconst{send}
 returns a copy of the session used for sending.  The term above, therefore, requires that $z :
-\gvin{(Int \times Int)}{\gvout{Int}{S}}$ at its start, and evaluates to a session of type $S$. Session
+\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}$ at its start, and evaluates to a session of type $S$. Session
 initiation is provided by \gvconst{fork}.  If $f$ is a function from a session of type $S$ to a
 closed session (of type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a session (of
 type $\gvdual S$) to communicate with it.  For example, the term
@@ -300,10 +300,10 @@ type $\gvdual S$) to communicate with it.  For example, the term
  \gvconst{fork} \app (\lambda z. \\
  \quad \bl
    \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-   \gvsend{(x+y,z)}) \el
+   \gvsend{(x + y,z)}) \el
 \el\]
 %
-returns a channel of type $\gvout{(Int \times Int)}{\gvin{Int}{\interm}}$.  In a process created by
+returns a channel of type $\gvout{(Int \gvtimes Int)}{\gvin{Int}{\interm}}$.  In a process created by
 $\gvconst{fork} \app f$, the session returned from $f$ is implicitly closed by $\gvconst{fork}$;
 however, the other end of the channel must be explicity closed by calling \gvconst{wait}.  So a
 client of the process above might look like
@@ -330,14 +330,14 @@ negate one:
   \bl
      \mkwd{inl} \app z \mapsto \bl
        \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-       \gvsend{(x+y,z)} \el \\
+       \gvsend{(x + y,z)} \el \\
      \mkwd{inr} \app z \mapsto \bl
        \gvlet{(x, z)}{\gvreceive{z}}{} \\
        \gvsend{(-x,z)} \: \} \el \\
   \el
 \el\]
 %
-This term initially requires $z : (\gvin{(Int \times Int)}{\gvout{Int}{S}}) \with
+This term initially requires $z : (\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}) \with
 (\gvin{Int}{\gvout{Int}{S}})$.  A client of this process would begin by choosing which branch of the
 session to take; for example, we could extend the preceding example as follows:
 %
@@ -353,9 +353,9 @@ they are macro-expressable using the term-level sum construct.  The intuition is
 implemented by sending a suitably tagged process, while branching is implemented by a term-level
 branch on a received value.  Concretely, we define the types by
 \begin{mathpar}
-S_1 \with S_2 \defeq \gvin{(S_1 + S_2)}{\interm}
+S_1 \with S_2 \defeq \gvin{(S_1 \gvplus S_2)}{\interm}
 
-S_1 \oplus S_2 \defeq \gvout{(\gvdual{S_1} + \gvdual{S_2})}{\outterm}
+S_1 \oplus S_2 \defeq \gvout{(\gvdual{S_1} \gvplus \gvdual{S_2})}{\outterm}
 \end{mathpar}
 Note that we have the expected duality relationship: $\gvdual{S_1 \with S_2} = \gvdual{S_1} \oplus
 \gvdual{S_2}$.  We can implement the \gvconst{select} and \gvconst{offer} primitives as follows
@@ -667,7 +667,7 @@ preservation of configuration typing under reduction.
     $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
     $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app (V,x)]$,
     $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash \Fx'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
-    \times \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app
+    \gvtimes \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app
     (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash \Fx[x]$.  By a similar argument, we conclude
     that $\Gamma_2,x:\gvdual{S'} \vdash \Fx'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
     \channel{S}$, $\Gamma_1,\Gamma_2,x:\channel{(\gvout T S)} \ceval
@@ -1250,7 +1250,7 @@ In this section, we show that CP can be simulated in GV.  \figref{from-cp} gives
 CP types and terms into GV; we translate typing environments by the pointwise extension of the
 translation on types.  We rely on our encoding of branching and choice in GV~\secref{gv-static} in
 the translations of both types and terms; for example, expanding the translation of $\with$ would
-give $\togv{A \with B} = \gvin{(\togv{A} + \togv{B})}{\interm}.$ In translating CP terms to GV
+give $\togv{A \with B} = \gvin{(\togv{A} \gvplus \togv{B})}{\interm}$. In translating CP terms to GV
 terms, the key observation is that CP terms contain their continuations; thus, for example, the
 translation of input includes both a call to \gvconst{receive} and the translation of the
 continuation.  Additionally, the rebinding that is implicit in CP syntax is made explicit in GV.
@@ -1332,12 +1332,12 @@ Types:
 \ba{@{}c@{\qquad}c@{\qquad}c}
 \begin{eqs}
 \tocpflip{\zero} &=& \tocpflip{0} \\
-\tocpflip{T + U} &=& \tocpflip{T} \oplus \tocpflip{U} \\
+\tocpflip{T \gvplus U} &=& \tocpflip{T} \oplus \tocpflip{U} \\
 \end{eqs}
 &
 \begin{eqs}
 \tocpflip{\one} &=& \tocpflip{1} \\
-\tocpflip{T \times U} &=& \tocpflip{T} \otimes \tocpflip{U} \\
+\tocpflip{T \gvtimes U} &=& \tocpflip{T} \otimes \tocpflip{U} \\
 \end{eqs}
 \ea
 \]%
@@ -1945,7 +1945,7 @@ Type schemas for constants:
 
 \gvconst{close} : \gvend \lto \one
 
-\gvconst{link} : S \times \gvdual S \lto \one
+\gvconst{link} : S \gvtimes \gvdual S \lto \one
 \end{mathpar}
 \caption{Syntax and typing rules for combined closed channels.}\label{fig:gv-end-syntax}
 \end{figure}
