@@ -36,23 +36,26 @@
 
 
 \begin{abstract}
-We introduce a small-step operational semantics for a minimal session-typed functional language, GV,
-in which all well-typed programs are deadlock-free, deterministic, and terminating.
+  Session types provide a mechanism for statically guaranteeing that concurrent programs follow
+  communication protocols.  Recent work has developed a correspondence between session types and the
+  propositions of linear logic, particularly in the $\pi$-calculus setting.
 %
-
-...something about deadlock...
-
+  We show a strong connection between this approach and session-typed concurrency in a functional
+  setting.
 %
-We define translations back and forth between GV and CP, a process calculus in which the
-propositions of classical linear logic correspond to session types and the semantics is defined by
-classical cut-reduction.
+  We begin by presenting a minimal session-typed functional language, which we call GV.  We give a
+  small-step operational semantics for GV.  We develop a characterization of deadlock suitable for a
+  functional setting, based on existing approaches for capturing deadlock in $\pi$-calculus, and
+  show that all well-typed GV programs are deadlock-free, deterministic and terminating.
 %
-We prove that each translation preserves reduction. Previous translations from GV to CP did not
-preserve $\beta$-reduction. Crucially, we make use of a weak form of explicit substitutions in order
-to ensure reduction is preserved.
+  We relate GV to linear logic by giving translations between GV and CP, a process calculus with a
+  type system and semantics based on classical linear logic.  We prove that both directions of our
+  translation preserve reduction; previous translations from GV to CP, in contrast, failed to
+  preserve $\beta$-reduction. Crucially, we use a weak form of explicit substitutions in the
+  semantics of GV to maintain equivalence with cut reduction.
 %
-
-...extensions...
+  Finally, to show the modularity of our approach, we define two extensions of GV and show that they
+  preserve deadlock freedom.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -297,8 +300,8 @@ closed session (of type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and r
 type $\gvdual S$) to communicate with it.  For example, the term
 %
 \[\bl
- \gvconst{fork} \app (\lambda z. \\
- \quad \bl
+ \gvconst{fork} \app (\lambda z.
+ \bl
    \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
    \gvsend{(x + y,z)}) \el
 \el\]
