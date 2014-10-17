@@ -1,5 +1,4 @@
  % -*- fill-column: 100 -*-
-
 \documentclass[oribibl,orivec,envcountsame]{llncs}
 
 \usepackage{amsmath,amssymb,centernot,colortbl,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem,bm}
@@ -349,10 +348,10 @@ sent their sum along the same channel could be expressed by
 treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value (the pair of
 $x$ and $y$) but also a new copy of the session used for receiving ($z$); similarly, \gvconst{send}
 returns a copy of the session used for sending.  The term above, therefore, requires that $z :
-\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}$ at its start, and evaluates to a session of type $S$. Session
-initiation is provided by \gvconst{fork}.  If $f$ is a function from a session of type $S$ to a
-closed session (of type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a session (of
-type $\gvdual S$) to communicate with it.  For example, the term
+\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}$ at its start, and evaluates to a session of type
+$S$. Session initiation is provided by \gvconst{fork}.  If $f$ is a function from a session of type
+$S$ to a closed session (of type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a
+session to communicate with it.  For example, the term
 %
 \[\bl
  \gvconst{fork} \app (\lambda z.
@@ -362,9 +361,9 @@ type $\gvdual S$) to communicate with it.  For example, the term
 \el\]
 %
 returns a channel of type $\gvout{(Int \gvtimes Int)}{\gvin{Int}{\interm}}$.  In a process created
-by $\gvconst{fork} \app f$, the session returned from $f$ is implicitly closed by $\gvconst{fork}$;
-however, the other end of the channel must be explicitly closed by calling \gvconst{wait}.  So a
-client of the process above might look like
+by $\gvconst{fork} \app f$, the session returned from $f$ is closed by $\gvconst{fork}$; however,
+the other end of the channel must be closed by calling \gvconst{wait}.  A client of the process
+above could be
 %
 \[\bl
   \gvlet{z}{\gvsend{((6,7),z)}}{} \\
@@ -372,9 +371,8 @@ client of the process above might look like
   \gvletunit{\gvconst{wait}\app z}{x}
 \el\]
 %
-The combination of these processes would evaluate to 13.  Finally, \gvconst{link} is used for
-session forwarding; evaluating $\gvconst{link} \app (x, y)$ results in messages sent on $x$ being
-received on $y$ and vice versa.
+The combination of these processes would evaluate to 13.  Finally $\gvconst{link} \app (x, y)$
+causes messages sent on $x$ to be received on $y$ and vice versa.
 
 \subsubsection{Choice.}
 
@@ -383,8 +381,7 @@ internal ($S_1 \oplus S_2$) and external ($S_1 \with S_2$) choice (also called s
 branching, respectively).  For example, we could write a process that can either sum two numbers or
 negate one:
 %
-\[\begin{array}{l@{\quad\vrule\quad}l}
-\bl
+\[\bl
   \mkwd{offer} \: z \: \{ \:
   \bl
      \mkwd{inl} \app z \mapsto \bl
@@ -394,19 +391,19 @@ negate one:
        \gvlet{(x, z)}{\gvreceive{z}}{} \\
        \gvsend{(-x,z)} \: \} \el \\
   \el
-\el
- &
+\el\]
+%
+This term initially requires $z : (\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}) \with
+(\gvin{Int}{\gvout{Int}{S}})$.  A client of this process would begin by choosing which branch of the
+session to take; for example, we could extend the preceding example as follows:
+\[
 \bl
   \gvlet{z}{\gvselect{\mkwd{inl}}{z}}{} \\
   \gvlet{z}{\gvsend{((6,7),z)}}{} \\
   \gvlet{(x,z)}{\gvreceive{z}}{} \\
   \gvletunit{\gvconst{wait}\app z}{x}
 \el
-\end{array}\]
-%
-This term initially requires $z : (\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}) \with
-(\gvin{Int}{\gvout{Int}{S}})$.  A client of this process would begin by choosing which branch of the
-session to take; for example, we could extend the preceding example as follows:
+\]
 %
 In GV, we do not provide primitives for selection and branching in sessions; rather, we show that
 they are macro-expressible using the term-level sum construct.  The intuition is that selection is
@@ -489,7 +486,7 @@ $M$ less $\{x\}$; concretely:
 \]
 (Note that the $\sigma$ annotation on the lambda abstraction is an object language construct that
 binds the variables in the domain of $\sigma$ inside the body of the lambda abstraction, whereas
-$M\sigma'$ is a meta language application of the substitution $\sigma'$ to $M$.)
+$M\sigma'$ is a meta-language application of the substitution $\sigma'$ to $M$.)
 
 %% We will implicitly treat substitutions $\sigma$ as sets of bindings.  We define the application of
 %% one substitution $\sigma$ to another $\sigma'$ by
@@ -703,7 +700,7 @@ reduction, for $F[x] \parallel F'[(V,x)]$ to be well-typed we need $x:\channel S
 with the reduction relation $\Gamma \ceval \Gamma'$.  Finally, we can show that reduction preserves
 typing.  We begin with term reduction.
 %
-\begin{lemma}\label{thm:term-preservation}
+\begin{lemma}\label{lem:term-preservation}
   If $\Gamma \vdash M: T$ and $M \teval M'$, then $\Gamma \vdash M': T$
 \end{lemma}
 %
@@ -715,43 +712,6 @@ preservation of configuration typing under reduction.
   \Gamma'$ and $\Gamma' \vdash C'$.
 \end{theorem}
 %
-\begin{proof}
-  By induction on the derivation of $C \ceval C'$.  We include several representative cases.
-  \begin{itemize}
-%%   \item Case \textsc{Lift} is immediate by the induction hypothesis.
-%%   \item Case \textsc{LiftV} follows from \lemref{term-preservation}.
-  \item In case \textsc{Send}, from the assumption $\Gamma \vdash \Fx[\mkwd{send}\,(V,x)] \parallel
-    \Fx'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
-    $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
-    $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app (V,x)]$,
-    $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash \Fx'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
-    \gvtimes \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app
-    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash \Fx[x]$.  By a similar argument, we conclude
-    that $\Gamma_2,x:\gvdual{S'} \vdash \Fx'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
-    \channel{S}$, $\Gamma_1,\Gamma_2,x:\channel{(\gvout T S)} \ceval
-    \Gamma_1,\Gamma_2,x:\channel{S}$, and we can recompose the resulting processes concluding that
-    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash \Fx[x] \parallel \Fx'[(V,x)]$.
-  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash \Fx[\gvconst{fork} \app V]$, we
-    can conclude that $\Gamma$ splits as $\Gamma_1,\Gamma_2$ and there is some $S$ such that
-    $\Gamma_1,x:S \vdash \Fx[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
-    $\Gamma,x:S \vdash \Fx[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(\Fx[x] \parallel V \app
-    x)$.
-%%   \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(\Fx[\gvconst{wait} \app
-%%     x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash \Fx[\gvconst{wait} \app x]$ and
-%%     thus, from the typing of \gvconst{wait}, that $\Gamma \vdash \Fx[()]$.
-%%   \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (\Fx[\gvconst{link} \app
-%%     (x, y)] \parallel \Fx'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
-%%     $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash \Fx[\gvconst{link} \app (x,
-%%     y)]$ and $\Gamma_2,x:S \vdash \Fx'[M]$.  (Note that the free variable assumption on the
-%%     reduction rule for \gvconst{fork} allows us to assume that neither $\Fx$ nor $\Fx'$ binds $x$ or
-%%     $y$.)  From the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash \Fx[x]$;
-%%     similarly, from $x \in \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash \Fx'[M\{\bind x y\}]$.
-%%     Finally, from the typing rule for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash
-%%     \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{\bind x y\}}]$, and that $\Gamma \vdash (\nu
-%%     x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{\bind x y\}}])$
-    \qed
-  \end{itemize}
-\end{proof}
 
 \subsubsection{Typing and configuration equivalence.}
 
@@ -883,7 +843,7 @@ To extend this observation to deadlock freedom, we must take equivalence into ac
 true that equivalence need not preserve typing, there are no equivalence rules that affect the free
 variables of individual threads.  Thus, cycles of dependent channels are preserved by equivalence.
 
-\begin{lemma}\label{thm:typed-configs-df}
+\begin{lemma}\label{lem:typed-configs-df}
   If $\Gamma \vdash C$ then $\lnot \deadlockp(C)$.
 \end{lemma}
 
@@ -947,24 +907,10 @@ equivalent to a term in canonical form; again, the key insight is that captured 
 \lemref{procs-share-one-channel}: if any two subconfigurations share at most one channel, then we
 can order the threads by the channels they share.
 
-\begin{lemma}\label{thm:canonical}
+\begin{lemma}\label{lem:canonical}
   If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
   canonical form.
 \end{lemma}
-
-\begin{proof}
-  Let $x_1,\dots,x_{n-1}$ be the $\nu$-bound variables in $C$ and $M_1,\dots,M_n$ be the terms in
-  $P$; the proof is by induction on $n$.  If $n > 1$, then pick some $M_i$ such that there is
-  exactly one $\nu$-bound variable $x_j$ where $x_j \in \fv(M_i)$.  (That there must be such an
-  $M_i$ and $x_j$ can be established by a standard counting argument, together with
-  \lemref{procs-share-one-channel}.)  Now, construct $D$ from $C$ by the homomorphic extension of
-  the mapping $(\nu x_j)E \mapsto E; E \parallel \phi M_i \mapsto E$.  From the assumption
-  that $\Gamma \vdash C$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$
-  such that $\Gamma',x_j:S \vdash D$.  By the induction hypothesis, there is some $D' \equiv D$ in
-  canonical form.  Finally, let $C' = (\nu x_j)(\phi M_i \parallel D')$; we can see that
-  straightforwardly that $C'$ is in canonical form; that $C \equiv C'$; and, that $\Gamma \vdash
-  C'$. \qed
-\end{proof}
 
 We can now state some simple progress results.  We begin with configurations that may have free
 variables; of course, each thread must be blocked either on some previous $\nu$-bound variable or on
@@ -1189,11 +1135,12 @@ conclusion it identifies a proof of $A \parr B$.
 CP includes two rules that are logically derivable: the axiom rule at arbitrary propositions, which
 is interpreted as channel forwarding, and the cut rule, which is interpreted as process composition.
 
-Two of CP's terms differ from standard $\pi$-calculus terms.  The first is com\-pos\-i\-tion---rather than
-having distinct name restriction and composition operators, CP provides one combined operator.  This
-syntactically captures the restriction that composed processes must share exactly one channel.  The
-second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, and name restriction
-(the name $y$ designates a new channel, bound in $P$).
+Two of CP's terms differ from standard $\pi$-calculus terms.  The first is
+com\-pos\-i\-tion---rather than having distinct name restriction and composition operators, CP
+provides one combined operator.  This syntactically captures the restriction that composed processes
+must share exactly one channel.  The second is output: the CP term $x[y].(P \mid Q)$ includes
+output, composition, and name restriction (the name $y$ designates a new channel, bound in $P$).  We
+will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$
 
 \subsubsection{Cut elimination.}
 
@@ -1251,36 +1198,6 @@ an external communication---that is to say, if $P \vdash \Delta$, then $P \bigcc
 \not= \cut x {} Q {Q'}$ for any $x,Q,Q'$. Note that the final commuting conversions play a central
 role in this transformation, moving any further internal communication beneath the external
 communication.
-
-\subsubsection{A simpler send.}
-
-The CP send rule is appealing because if one erases the terms it is exactly the classical linear
-logic rule for tensor. However, this correspondence comes at a price. Operationally, the process
-$x[y].(P \mid Q)$ does three things: it introduces a fresh variable $y$, it sends $y$ to a freshly
-spawned process $P$, and in parallel it continues as process $Q$.  This complicates both the
-reduction semantics of CP (as the cut reduction of $\otimes$ against $\parr$ must account for all
-three behaviors) and the equivalence of CP and GV (where the behavior of \gvconst{send} is simpler).
-
-We can give an alternative formulation of send, avoiding the additional name restriction and
-composition, as follows:
-\begin{mathpar}
-\inferrule
-  {\cptyp{P}{\Delta,x:B,y:A}}
-  {\cptyp{x\sd{y}.P}{\Delta,x:A \otimes B,y:\cpdual{A}}}
-\end{mathpar}
-where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note that
-\begin{equations}
-  \cut x {} {x\sd{y}.P}{x(z).Q}
-     &=& \cut x {} {x[z].(\link y z \mid P)} {x(z).Q} \\
-     &\crto& \cut z {} {\link y z} {\cut x {} P {Q}} \\
-     &\crto& \cut x {} P {Q \{ y/z \}}
-\end{equations}
-as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
-$x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
-original by one application of the commuting conversions.  However, the two formulations are not
-quite identical. Let us consider the possible reductions of the two terms.  Notice that in $x[y].(P
-\mid Q)$, both $P$ and $Q$ are blocked on $x$; however, the same is not true for $\cut y {} P
-{x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronizing on $x$.
 
 \subsection{Translation from CP to GV}\label{sec:togv}
 
@@ -2352,8 +2269,109 @@ and introduce the possibility of livelock; we hope that adapting approaches used
 linear logic could mitigate these problems.  The second is asynchrony; we hope to follow the
 approach used by Gay and Vasconcelos~\cite{GayVasconcelos10} in their similar calculus.
 
+\small
 \label{sec:bib}
 \bibliographystyle{abbrv}
 \bibliography{main}
+\normalsize
+
+\appendix
+
+\section{A Simpler Send}
+
+The CP send rule is appealing because if one erases the terms it is exactly the classical linear
+logic rule for tensor. However, this correspondence comes at a price. Operationally, the process
+$x[y].(P \mid Q)$ does three things: it introduces a fresh variable $y$, it sends $y$ to a freshly
+spawned process $P$, and in parallel it continues as process $Q$.  This complicates both the
+reduction semantics of CP (as the cut reduction of $\otimes$ against $\parr$ must account for all
+three behaviors) and the equivalence of CP and GV (where the behavior of \gvconst{send} is simpler).
+
+We can give an alternative formulation of send, avoiding the additional name restriction and
+composition, as follows:
+\begin{mathpar}
+\inferrule
+  {\cptyp{P}{\Delta,x:B,y:A}}
+  {\cptyp{x\sd{y}.P}{\Delta,x:A \otimes B,y:\cpdual{A}}}
+\end{mathpar}
+where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note that
+\begin{equations}
+  \cut x {} {x\sd{y}.P}{x(z).Q}
+     &=& \cut x {} {x[z].(\link y z \mid P)} {x(z).Q} \\
+     &\crto& \cut z {} {\link y z} {\cut x {} P {Q}} \\
+     &\crto& \cut x {} P {Q \{ y/z \}}
+\end{equations}
+as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
+$x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
+original by one application of the commuting conversions.  However, the two formulations are not
+quite identical. Let us consider the possible reductions of the two terms.  Notice that in $x[y].(P
+\mid Q)$, both $P$ and $Q$ are blocked on $x$; however, the same is not true for $\cut y {} P
+{x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronizing on $x$.
+
+\section{Proofs of Selected Results}
+
+
+\noindent
+\textbf{Theorem \ref{thm:preservation}.}
+\textit{If $\Gamma \vdash C$ and $C \ceval C'$ then there is some $\Gamma'$ such that $\Gamma
+  \ceval^?  \Gamma'$ and $\Gamma' \vdash C'$.}
+
+\begin{proof}
+  By induction on the derivation of $C \ceval C'$.  We include several representative cases.
+  \begin{itemize}
+  \item Case \textsc{Lift} is immediate by the induction hypothesis.
+  \item Case \textsc{LiftV} follows from \lemref{term-preservation}.
+  \item In case \textsc{Send}, from the assumption $\Gamma \vdash \Fx[\mkwd{send}\,(V,x)] \parallel
+    \Fx'[\gvconst{receive} \app x]$, we can assume that $\Gamma$ partitions as
+    $\Gamma_1,\Gamma_2,x:\channel{S}$ such that $S = \gvout{T}{S'}$, $V$ has type $T$, and
+    $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app (V,x)]$,
+    $\Gamma_2,x:\gvin{T}{\gvdual{S'}} \vdash \Fx'[\gvconst{receive} \app x]$.  As $\gvconst{send} : T
+    \gvtimes \gvout{T}{S'} \lto S'$ and $\Gamma_1,x:\gvout{T}{S'} \vdash \Fx[\gvconst{send} \app
+    (V,x)]$, we can conclude that $\Gamma_1,x:S' \vdash \Fx[x]$.  By a similar argument, we conclude
+    that $\Gamma_2,x:\gvdual{S'} \vdash \Fx'[(V,x)]$. Finally, as $\channel{(\gvout{T}{S})} \ceval
+    \channel{S}$, $\Gamma_1,\Gamma_2,x:\channel{(\gvout T S)} \ceval
+    \Gamma_1,\Gamma_2,x:\channel{S}$, and we can recompose the resulting processes concluding that
+    $\Gamma_1,\Gamma_2,x:\channel{S} \vdash \Fx[x] \parallel \Fx'[(V,x)]$.
+  \item In case \textsc{Fork}, from the assumption $\Gamma \vdash \Fx[\gvconst{fork} \app V]$, we
+    can conclude that $\Gamma$ splits as $\Gamma_1,\Gamma_2$ and there is some $S$ such that
+    $\Gamma_1,x:S \vdash \Fx[x]$ and $\Gamma_2,x:\gvdual{S} \vdash V \app x$.  Thus we have that
+    $\Gamma,x:S \vdash \Fx[x] \parallel V \app x$ and $\Gamma \vdash (\nu x)(\Fx[x] \parallel V \app
+    x)$.
+  \item In case \textsc{Wait}, from the assumption $\Gamma \vdash (\nu x)(\Fx[\gvconst{wait} \app
+    x] \parallel x)$, we can conclude that $\Gamma,x:\interm \vdash \Fx[\gvconst{wait} \app x]$ and
+    thus, from the typing of \gvconst{wait}, that $\Gamma \vdash \Fx[()]$.
+  \item In case \textsc{Link}, from the assumptions $\Gamma \vdash (\nu x) (\Fx[\gvconst{link} \app
+    (x, y)] \parallel \Fx'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
+    $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash \Fx[\gvconst{link} \app (x,
+    y)]$ and $\Gamma_2,x:S \vdash \Fx'[M]$.  (Note that the free variable assumption on the
+    reduction rule for \gvconst{fork} allows us to assume that neither $\Fx$ nor $\Fx'$ binds $x$ or
+    $y$.)  From the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash \Fx[x]$;
+    similarly, from $x \in \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash \Fx'[M\{\bind x y\}]$.
+    Finally, from the typing rule for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash
+    \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{\bind x y\}}]$, and that $\Gamma \vdash (\nu
+    x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{\bind x y\}}])$
+  \qed
+  \end{itemize}
+\end{proof}
+
+
+\noindent
+\textbf{Lemma \ref{lem:canonical}.}
+\textit{If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
+  canonical form.}
+
+\begin{proof}
+  Let $x_1,\dots,x_{n-1}$ be the $\nu$-bound variables in $C$ and $M_1,\dots,M_n$ be the terms in
+  $P$; the proof is by induction on $n$.  If $n > 1$, then pick some $M_i$ such that there is
+  exactly one $\nu$-bound variable $x_j$ where $x_j \in \fv(M_i)$.  (That there must be such an
+  $M_i$ and $x_j$ can be established by a standard counting argument, together with
+  \lemref{procs-share-one-channel}.)  Now, construct $D$ from $C$ by the homomorphic extension of
+  the mapping $(\nu x_j)E \mapsto E; E \parallel \phi M_i \mapsto E$.  From the assumption
+  that $\Gamma \vdash C$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$
+  such that $\Gamma',x_j:S \vdash D$.  By the induction hypothesis, there is some $D' \equiv D$ in
+  canonical form.  Finally, let $C' = (\nu x_j)(\phi M_i \parallel D')$; we can see that
+  straightforwardly that $C'$ is in canonical form; that $C \equiv C'$; and, that $\Gamma \vdash
+  C'$. \qed
+\end{proof}
+
 
 \end{document}
