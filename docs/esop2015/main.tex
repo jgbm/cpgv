@@ -1,11 +1,13 @@
  % -*- fill-column: 100 -*-
 
-\documentclass[orivec,envcountsame]{llncs}
+\documentclass[oribibl,orivec,envcountsame]{llncs}
 
-\usepackage{amsmath,amssymb,centernot,hyperref,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem,bm}
+\usepackage{amsmath,amssymb,centernot,colortbl,hyperref,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem,bm}
 \usepackage[table]{xcolor}
-\usepackage{colortbl}
 \addtolength{\jot}{-3px}
+
+\usepackage[numbers,sort&compress,sectionbib,square]{natbib}
+\renewcommand{\bibname}{References}
 
 \usepackage{mathpartir}
 \mprset{sep=1em}
@@ -74,107 +76,105 @@ In this paper, we make the following contributions.
 \end{itemize}
 Finally, we discuss related work~\secref{related} and conclude~\secref{conclusion}.
 
-\section{GV by Example}\label{sec:examples}
-
-\subsection{Books and Stores Therefore}
-
-\todo{This ended up being a bit long.  There are a couple of points that it makes tho:
-  \begin{itemize}
-  \item Transmission of channels (sending client channel to bank).
-  \item Sending structured values along channels.
-  \end{itemize}
-  And it has a motivation.  However, I'm not sure that either of these is important enough to
-  justify the length.  We could, for example, do the calculator with structured values and not take
-  nearly as much space.}
-
-\begin{code}
-Client \defeq \lambda c.
-  \bl
-  \gvlet{c}{\gvsend{(\text{``A Tale of Two Cities"}, c)}}{} \\
-  \gvlet{(price,c)}{\gvreceive{c}}{} \\
-  \mkwd{if}\ price \leq 20\ \mkwd{then} \\
-  \quad\bl
-    \gvlet{c}{\gvselect{purchase}{c}}{}\\
-    \gvlet{c}{\gvsend{((ccName, ccNumber), c)}}{} \\
-    \mkwd{offer}\,c\,\{ \\
-    \quad \bl
-      accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
-      decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \\
-      challenge\,c \mapsto \\
-      \quad \bl
-        \gvlet{c}{\gvsend{(response, c)}}{} \\
-        \mkwd{offer}\,c\,\{ \\
-        \quad \bl
-          accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
-          decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \} \}
-        \el
-      \el
-    \el
-  \el \\
-  \mkwd{else} \\
-  \quad \bl
-    \gvlet{c}{\gvselect{stop}{c}}{} \\
-    \gvconst{wait} \app c
-    \el
-  \el
-\end{code}
-
-\begin{code}
-Store \defeq \lambda b. \lambda c. \bl
-  \gvlet{(product, c)}{\gvreceive{c}}{} \\
-  \gvlet{c}{\gvsend{(price(product), c)}}{} \\
-  \mkwd{offer}\,c\,\{ \\
-  \quad \bl
-    purchase\,c \mapsto \\
-    \quad \bl
-      \gvlet{((ccName, ccNumber), c)}{\gvreceive{c}}{} \\
-      \gvlet{b}{\gvsend{((ccName, ccNumber, price(product), c), b)}}{} \\
-      \mkwd{offer}\,b \, \{\\
-      \quad \bl
-        accept\,b \mapsto
-          \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; \dots; c} \\
-        reject\,b \mapsto
-          \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; c} \}
-      \el
-    \el \\
-    stop\,c \mapsto c \}
-  \el
-\el\end{code}
-
-\begin{code}
-Bank \defeq \lambda b. \bl
-  \gvlet{((ccName, ccNumber, amount, c), b)}{\gvreceive{b}}{} \\
-  \mkwd{if}\ suspicious(ccNumber, amount)\ \mkwd{then} \\
-  \quad\bl
-    \gvlet{c}{\gvselect{challenge}{c}}{} \\
-    \gvlet{(response, c)}{\gvreceive{c}}{} \\
-    \mkwd{if}\ passes(response)\ \mkwd{then} \\
-    \quad \bl
-      \gvlet{c}{\gvselect{accept}{c}}{} \\
-      \gvlet{b}{\gvselect{accept}{b}}{} \\
-      \gvlet{b}{\gvsend{(c,b)}}{} \\
-      \dots; c \el \\
-    \mkwd{else} \\
-    \quad \bl
-      \gvlet{c}{\gvselect{reject}{c}}{} \\
-      \gvlet{b}{\gvselect{reject}{b}}{} \\
-      \gvlet{b}{\gvsend{(c,b)}}{} \\
-      c \el
-  \el
-\el
-\end{code}
-
-\begin{code}
-System \defeq \bl
-  \gvlet{bank}{\gvconst{fork} \app Bank}{} \\
-  \gvlet{store}{\gvconst{fork} \app (Store \app bank)}{} \\
-  Client \app store
-\el
-\end{code}
-
+%% \section{GV by Example}\label{sec:examples}
+%%
+%% \subsection{Books and Stores Therefore}
+%%
+%% \todo{This ended up being a bit long.  There are a couple of points that it makes tho:
+%%   \begin{itemize}
+%%   \item Transmission of channels (sending client channel to bank).
+%%   \item Sending structured values along channels.
+%%   \end{itemize}
+%%   And it has a motivation.  However, I'm not sure that either of these is important enough to
+%%   justify the length.  We could, for example, do the calculator with structured values and not take
+%%   nearly as much space.}
+%%
+%% \begin{code}
+%% Client \defeq \lambda c.
+%%   \bl
+%%   \gvlet{c}{\gvsend{(\text{``A Tale of Two Cities"}, c)}}{} \\
+%%   \gvlet{(price,c)}{\gvreceive{c}}{} \\
+%%   \mkwd{if}\ price \leq 20\ \mkwd{then} \\
+%%   \quad\bl
+%%     \gvlet{c}{\gvselect{purchase}{c}}{}\\
+%%     \gvlet{c}{\gvsend{((ccName, ccNumber), c)}}{} \\
+%%     \mkwd{offer}\,c\,\{ \\
+%%     \quad \bl
+%%       accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
+%%       decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \\
+%%       challenge\,c \mapsto \\
+%%       \quad \bl
+%%         \gvlet{c}{\gvsend{(response, c)}}{} \\
+%%         \mkwd{offer}\,c\,\{ \\
+%%         \quad \bl
+%%           accept\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:)"} \\
+%%           decline\,c \mapsto \gvconst{wait} \app c; \gvconst{print} \app \text{``:("} \} \}
+%%         \el
+%%       \el
+%%     \el
+%%   \el \\
+%%   \mkwd{else} \\
+%%   \quad \bl
+%%     \gvlet{c}{\gvselect{stop}{c}}{} \\
+%%     \gvconst{wait} \app c
+%%     \el
+%%   \el
+%% \end{code}
+%%
+%% \begin{code}
+%% Store \defeq \lambda b. \lambda c. \bl
+%%   \gvlet{(product, c)}{\gvreceive{c}}{} \\
+%%   \gvlet{c}{\gvsend{(price(product), c)}}{} \\
+%%   \mkwd{offer}\,c\,\{ \\
+%%   \quad \bl
+%%     purchase\,c \mapsto \\
+%%     \quad \bl
+%%       \gvlet{((ccName, ccNumber), c)}{\gvreceive{c}}{} \\
+%%       \gvlet{b}{\gvsend{((ccName, ccNumber, price(product), c), b)}}{} \\
+%%       \mkwd{offer}\,b \, \{\\
+%%       \quad \bl
+%%         accept\,b \mapsto
+%%           \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; \dots; c} \\
+%%         reject\,b \mapsto
+%%           \gvlet{(c,b)}{\gvreceive{b}}{\gvconst{wait} \app b; c} \}
+%%       \el
+%%     \el \\
+%%     stop\,c \mapsto c \}
+%%   \el
+%% \el\end{code}
+%%
+%% \begin{code}
+%% Bank \defeq \lambda b. \bl
+%%   \gvlet{((ccName, ccNumber, amount, c), b)}{\gvreceive{b}}{} \\
+%%   \mkwd{if}\ suspicious(ccNumber, amount)\ \mkwd{then} \\
+%%   \quad\bl
+%%     \gvlet{c}{\gvselect{challenge}{c}}{} \\
+%%     \gvlet{(response, c)}{\gvreceive{c}}{} \\
+%%     \mkwd{if}\ passes(response)\ \mkwd{then} \\
+%%     \quad \bl
+%%       \gvlet{c}{\gvselect{accept}{c}}{} \\
+%%       \gvlet{b}{\gvselect{accept}{b}}{} \\
+%%       \gvlet{b}{\gvsend{(c,b)}}{} \\
+%%       \dots; c \el \\
+%%     \mkwd{else} \\
+%%     \quad \bl
+%%       \gvlet{c}{\gvselect{reject}{c}}{} \\
+%%       \gvlet{b}{\gvselect{reject}{b}}{} \\
+%%       \gvlet{b}{\gvsend{(c,b)}}{} \\
+%%       c \el
+%%   \el
+%% \el
+%% \end{code}
+%%
+%% \begin{code}
+%% System \defeq \bl
+%%   \gvlet{bank}{\gvconst{fork} \app Bank}{} \\
+%%   \gvlet{store}{\gvconst{fork} \app (Store \app bank)}{} \\
+%%   Client \app store
+%% \el
+%% \end{code}
+%%
 \section{A Session-Typed Functional Language}\label{sec:gv}
-
-I'm intentionally ignoring CP polymorphism forever.
 
 \subsection{Syntax and Typing}\label{sec:gv-static}
 
@@ -396,10 +396,10 @@ it simplifies the core calculus with no loss of expressivity.
 \caption{Syntax of values, configurations, and contexts}\label{fig:gv-eval-syntax}
 \end{figure}
 
-Following Gay and Vasconcelos~\cite{}, we factor the semantics of GV into a (deterministic)
-reduction relation on terms (called $\teval$) and a (non-deterministic) reduction on configurations
-of processes (called $\ceval$).  \figref{gv-eval-syntax} gives the syntax of values, configurations,
-and evaluation and configuration contexts.
+Following Gay and Vasconcelos~\cite{GayVasconcelos10}, we factor the semantics of GV into a
+(deterministic) reduction relation on terms (called $\teval$) and a (non-deterministic) reduction on
+configurations of processes (called $\ceval$).  \figref{gv-eval-syntax} gives the syntax of values,
+configurations, and evaluation and configuration contexts.
 
 \subsubsection{Terms.}
 
@@ -615,8 +615,8 @@ define the terms $M$ and $N$ by
 given suitable terms $M'$ and $N'$, then it is apparent that configurations such as $(\nu xy)M$,
 $(\nu xy)(M \parallel M)$ and $(\nu xy)(M \parallel N)$ cannot reduce further, even though $M$ and
 $N$ can be individually well-typed.  \figref{gv-conf-typing} gives our typing discipline for
-configurations.  It is based on type systems for linear $\pi$-calculus~\cite{} with two significant
-differences.
+configurations.  It is based on type systems for linear $\pi$-calculus~\cite{Kobayashi96} with two
+significant differences.
 \begin{itemize}
 \item First, we seek to assure that there is at most one main thread.  This is done by the flags
   ($\bcirc$ and $\wcirc$) on the derivations: a derivation $\Gamma \vdash^\bcirc C$ indicates that
@@ -1356,7 +1356,7 @@ Session terms:
 \tocp{\gvlink{M}{N}}z &=&
   \nu v\:(\link v z \mid
     \nu w\:(\link v w \mid \\
-&& \quad 
+&& \quad
       {\cut{x}{}{\tocp{M}x}{\cut{y}{}{\tocp{N}y}{w().\link x y}}})) \\
 \tocp{\gvsend{(M,N)}}z &=&
   \cut{x}{}{\tocp{N}x}{\cut{y}{}{\tocp{M}y}{x\sd{y}.\link x z}} \\
@@ -1819,7 +1819,7 @@ follow straightforwardly from the compositionality of the definitions.
          {\tocp{\Fx'}[\tocp{M}]z} \\
 = \\
 %% \quad \cut{x}{}
-%%          {\tocp{\Fx}[z \mapsto 
+%%          {\tocp{\Fx}[z \mapsto
 %%                        \cut{w}{}{\link w z}
 %%                          {\cut{v}{}{\link v w}
 %%                            {\cut{x'}{}
@@ -1827,17 +1827,17 @@ follow straightforwardly from the compositionality of the definitions.
 %%                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}}]z}
 %%          {\tocp{\Fx'}[\tocp{M}]z} \\
 \quad \nu x
-         (\tocp{\Fx}[z \mapsto 
+         (\tocp{\Fx}[z \mapsto
                        \nu v (\link v z \mid
                          \nu w (\link v w \mid \\
-\qquad 
+\qquad
                            {\cut{x'}{}
                              {\link{x}{x'}}
                              {\cut{y'}{}{\link{y}{y'}}{w().\link{x'}{y'}}}}))]z \mid
          {\tocp{\Fx'}[\tocp{M}]z}) \\
 \bigcrto (\text{cut links}) \\
 \quad \cut{x}{}
-         {\tocp{\Fx}[z \mapsto 
+         {\tocp{\Fx}[z \mapsto
                        \cut{v}{}{\link v z}
                          {\cut{w}{}{\link v w}
                             {w().\link{x}{y}}}]z}
@@ -1851,7 +1851,7 @@ follow straightforwardly from the compositionality of the definitions.
               {w().\link{x}{y}}}
            {\tocp{\Fx'}[\tocp{M}]z}} \\
 \equiv \\
-\quad 
+\quad
   \cut{v}{}
     {\tocp{\Fx}[z \mapsto \link v z]z}
     {\tocp{\Fx'}[z \mapsto
@@ -2127,19 +2127,63 @@ and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
 
 \section{Related Work}\label{sec:related}
 
-Something about connection to Carbone et al.  Their progress property requires that every
-communication will eventually take place.  This is hopefully an easy consequence of ours.
+
+\subsubsection{Session types and functional languages.}
+
+Session types were originally proposed by Honda~\cite{Honda93}, and later extended by Takeuchi el
+al.~\cite{Takeuchi94} and by Honda et al.~\cite{Honda98}.  Honda's system relies on a substructural
+type system (in which sessions cannot be duplicated or discarded) and adopts the syntax $\with$ and
+$\oplus$ for choice; however, he does not draw a connection between his type system and the
+connectives of linear logic, and his system includes a single, self-dual closed channel.
+Vasconcelos et al.~\cite{VasconcelosGR06} develop a language that integrates session-typed
+communication primitives and a functional language.  Gay and Vasconcelos~\cite{GayVasconcelos10}
+extend the approach to describe asynchronous communication with statically-bounded buffers.  Their
+approach provides a more flexible mechanism of session initiation, distinct from their construct for
+thread creation, and they do not consider deadlock.  Kobayashi~\cite{Kobayashi02} describes an
+embedding of session-typed $\pi$-calculus in polyadic linear $\pi$-calculus, relying on
+multi-argument send and receive to capture the state of a communication and variant types to capture
+choice; Dardha et al.~\cite{Dardha12} extend his approach to subtyping and polymorphism.
 
 \subsubsection{Linear logic and session types.}
 
-\subsubsection{Progress and deadlock freedom.}
+When he originally described linear logic~\cite{Girard87}, Girard proposed that it might be useful
+for reasoning about concurrent programs.  Abramsky~\cite{Abramsky92} and Bellin and
+Scott~\cite{BellinScott94} give embeddings of linear logic proofs in $\pi$-calculus, and show that
+cut reduction is simulated by $\pi$-calculus reduction.  Their work is not intended to provide a
+type system for $\pi$-calculus: there are many processes which are not the image of some proof.
 
+Caires and Pfenning~\cite{CairesPfenning10} present a session type system for $\pi$-calculus that
+exactly corresponds to the proof system for the dual intuitionistic linear logic, and show that (up
+to congruence) cut reductions corresponds to process reductions or process equivalences.  Toninho et
+al.~\cite{ToninhoCP12} consider embeddings of the $\lambda$-calculus into session-typed
+$\pi$-calculus; their focus is on expressing the concurrency inherent in $\lambda$-calculus terms,
+rather than simulating standard reduction.  Wadler~\cite{Wadler12} adapts the approach of Caires and
+Pfenning to classical (rather than intuitionistic) linear logic, and gives a translation from a
+simple functional calculus (inspired by that of Gay and Vasconcelos) to his process calculus.  He
+does not give a direct semantics of his functional calculus.
+
+\subsubsection{Deadlock freedom and progress.}
+
+There have been several approaches to guarantee deadlock freedom in $\pi$-calculus.
+Kobayashi~\cite{Kobayashi06} and Padovani~\cite{Padovani14} give type systems that guarantee
+deadlock freedom.  Their approaches capturing priority information in types, restricting the order
+in which channels are used, and thus statically eliminating the possibility of cyclic dependencies.
+Their approaches can be seen as developments of linear $\pi$-calculus---they do not directly address
+the evolution of types provided by session types.
+
+Carbone and Debois~\cite{Carbone10} give a graphical characterization of session-typed processes;
+this allows them to directly identify cycles in the session interactions.  They show that all
+possible interactions eventually take place in cycle-free processes.  Carbone et
+al.~\cite{CarboneDM14} show similar results for well-typed processes under Kobayashi's type system
+for deadlock freedom; their approach accomodates processes with open channels by defining a
+type-directed closure of a process, and showing that open processes make progress only if their
+typed closures make progress.
 
 \section{Conclusions and Future Work}\label{sec:conclusion}
 
 Asynchrony and recursion.
 
-\label{sect:bib}
+\label{sec:bib}
 \bibliographystyle{abbrv}
 \bibliography{main}
 
