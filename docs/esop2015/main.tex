@@ -1184,79 +1184,13 @@ where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note 
      &=& \cut x {} {x[z].(\link y z \mid P)} {x(z).Q} \\
      &\crto& \cut z {} {\link y z} {\cut x {} P {Q}} \\
      &\crto& \cut x {} P {Q \{ y/z \}}
-\end{equations}
+\end{equations}%
 as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
 $x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
 original by one application of the commuting conversions.  However, the two formulations are not
 quite identical. Let us consider the possible reductions of the two terms.  Notice that in $x[y].(P
 \mid Q)$, both $P$ and $Q$ are blocked on $x$; however, the same is not true for $\cut y {} P
 {x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronizing on $x$.
-
-\todo{End of revised text}
-
-%% on the representation of cut-send in terms of send. Let $P_1 = x[y].(P \mid Q)$ and $P_2 =
-%% \cut{y}{}{P}{x[y].Q}$. Notice that $P_1$ is blocked, but $P_2$ may not be as it allows reductions to
-%% take place inside $P$.
-%% %
-%% Now let us consider the possible reductions on the representation of send in terms of cut-send. Let
-%% $Q_1 = x[y].P$ and $Q_2 = x[z].(\link{y}{z} \mid P)$. Clearly both $Q_1$ and $Q_2$ are blocked.
-%%
-%% This is painful on many levels, but in particular it complicates our attempts to relate the
-%% semantics of CP with that of GV (whose send operator only does one thing: performing a send).
-%%
-%% Fortunately, we can give an alternative rule for send, corresponding with the send operator of GV,
-%% and which gives rise to a system which is entirely equivalent to CP, apart from having a slightly
-%% different syntax.
-%% %
-%%
-%% The cut rule for a send against a receive is straightforward:
-%% \begin{equations}
-%% \cut{x}{A \otimes B}{x[y].P}{x(y).Q} &\rto& \cut{x}{B}{P}{Q} \\
-%% \end{equations}
-%% %
-%% For clarity let us refer to the original form as cut-send, and the one we have just defined as send.
-%%
-%% It we take send as primitive, then we can express cut-send as a macro:
-%% \[
-%% x[y].P \defeq x[z].(\link{y}{z} \mid P)
-%% \]
-%% Conversely, if we take cut-send as primitive, then we can express send as a macro:
-%% \[
-%% x[y].(P \mid Q) \defeq \cut{y}{}{P}{x[y].Q}
-%% \]
-%%
-%% With cut-send as primitive we can simulate a cut of a send against a receive in two steps.
-%% \begin{equations}
-%%   \cut{x}{}{x[y].P}{x(y).Q}
-%%     &\defeq& \cut{x}{}{x[z].(\link{y}{z} \mid P)}{x(y).Q} \\
-%%     &\rto& \cut{z}{}{\link{y}{z}}{\cut{x}{}{P}{Q}} \\
-%%     &\rto& \cut{x}{}{P}{Q} \\
-%% \end{equations}
-%%
-%% With send as primitive we can simulate a cut of a cut-send against a receive in one step.
-%% \begin{equations}
-%%   \cut{x}{}{x[y].(P \mid Q)}{x(y).R}
-%%     &\defeq& \cut{x}{}{\cut{y}{}{P}{x[y].Q}}{x(y).R} \\
-%%     &\equiv& \cut{y}{}{P}{\cut{x}{}{x[y].Q}{x(y).R}} \\
-%%     &\rto& \cut{y}{}{P}{\cut{x}{}{Q}{R}} \\
-%% \end{equations}
-%%
-%% Using these two observations it is straightforward to show that CP with send is equivalent to CP
-%% with cut-send. In order to simplify our formal development, we will work with CP with send from now
-%% on.
-%%
-%% However, there is a slightly subtlety.
-%%
-%% This discrepancy, suggests that perhaps we should have added the following congruence rule to CP in
-%% the first place:
-%% \begin{mathpar}
-%% \inferrule
-%%   {P_1 \longrightarrow P_2}
-%%   {x[y].(P_1 \mid Q) \longrightarrow x[y].(P_2 \mid Q)}
-%% \end{mathpar}
-%% %
-
-\todo{Do we want to state anything more formal relating CP-cut-send with CP-send?}
 
 \subsection{Translation from CP to GV}
 
