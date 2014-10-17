@@ -206,7 +206,8 @@ and sums (there is, of course, no term to construct a 0-ary sum).  Typing rules,
 
 
 \begin{figure}[h]
-Typing rules:
+\vspace{1ex}
+~Typing rules
 \begin{mathpar}
 \inferrule
   {T \not= \channel{S}}
@@ -254,7 +255,7 @@ Typing rules:
   {\Gamma \vdash M: \zero}
   {\Gamma, \Gamma' \vdash \gvconst{absurd} \app M : T}
 \end{mathpar}
-Type schemas for constants:
+~Type schemas for constants
 \begin{mathpar}
 \gvconst{send} : T \gvtimes \gvout{T}{S} \lto S
 
@@ -266,7 +267,7 @@ Type schemas for constants:
 
 \gvconst{link} : S \gvtimes \gvdual{S} \lto \outterm
 \end{mathpar}
-Duality:
+~Duality
 \begin{mathpar}
 \gvdual{\gvout{T}{S}} = \gvin{T}{\gvdual S}
 
@@ -477,7 +478,8 @@ $\wcirc M$.
 \subsubsection{Reduction.}
 
 \begin{figure}[t]
-Term reduction:
+\vspace{1ex}
+~Term reduction
 \begin{align*}
   (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \uplus \sigma) \\
   \gvletunit{()}{M} &\teval M \\
@@ -485,7 +487,7 @@ Term reduction:
   \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N \{ \bind x V \} \\
   E[M] &\teval E[M'] \qquad \text{if $M \teval M'$}
 \end{align*}
-Configuration equivalence:
+~Configuration equivalence
 \begin{mathpar}
 \Fx[\mathsf{link}\,(x,y)] \equiv \Fx[\mathsf{link}\,(y,x)]
 
@@ -497,7 +499,7 @@ C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 
 \Cx[C] \equiv \Cx[D] \text{ if $C \equiv D$}
 \end{mathpar}
-Configuration reduction:
+~Configuration reduction
 \begin{mathpar}
 \inferrule
   [Send]
@@ -556,7 +558,7 @@ syncronization of closed channels with garbage collection of the associated name
 rule, including equivalence in reduction; we will return to the treatment of equivalence at the end
 of the section.
 
-\paragraph{Relation Notation}
+\subsubsection{Relation Notation.}
 We write $R\,R'$ for the sequential composition of relations $R$ and $R'$, $R \cup R'$ for the union
 of relations $R$ and $R'$, $R^+$ for the transitive closure of relation $R$, and $R^*$ for the
 reflexive, transitive closure of relation $R$.
@@ -564,7 +566,8 @@ reflexive, transitive closure of relation $R$.
 \subsubsection{Configuration typing.}
 
 \begin{figure}[t]
-Configuration typing:
+\vspace{1ex}
+~Configuration typing
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T \\
@@ -584,7 +587,7 @@ Configuration typing:
    \Gamma',x:\gvdual{S} \vdash^{\phi'} C'}
   {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}
 \end{mathpar}
-Combination of flags:
+~Combination of flags
 \begin{mathpar}
   \wcirc + \wcirc = \wcirc
 
@@ -594,7 +597,7 @@ Combination of flags:
 
   \bcirc + \bcirc \text{ undefined}
 \end{mathpar}
-Reduction of configuration typing environments:
+~Reduction of configuration typing environments
 \begin{mathpar}
 \inferrule
   { }
@@ -1067,14 +1070,15 @@ evaluate to a configuration with no blocked threads.
 
 \subsection{CP}
 
-\begin{figure}[float]
-Syntax:
+\begin{figure}
+\vspace{1ex}
+~Syntax
 \begin{syntax}
   \text{Types} & A,B & ::= & A \otimes B \mid A \parr B \mid 1 \mid \bot \mid A \oplus B \mid A \with B \mid 0 \mid \top \\
   \text{Terms} & P,Q & ::= & \link x y \mid \cut y {} P Q \mid x(y).P \mid x[y].(P \mid Q) \\
    & & \mid & x[in_i].P \mid \case{x}{P;Q} \mid x().P \mid x[].0 \mid \case{x}{} \\
 \end{syntax}
-Duality:
+~Duality
 \[
 \ba{@{}c@{\qquad}c@{\qquad}c@{\qquad}c@{}}
 \begin{eqs}
@@ -1098,7 +1102,7 @@ Duality:
 \end{eqs}
 \ea
 \]
-Typing:
+~Typing
 \begin{mathpar}
 \inferrule{ }{\cptyp{\link{x}{w}}{x:A,w:\cpdual{A}}}
 
