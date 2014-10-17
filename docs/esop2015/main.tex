@@ -78,15 +78,9 @@ the type of the SMTP client, we can immediately derive the type of the server:
   \gvin{SenderAddress}{\gvin{RcptAddress}{\gvin{Message}{\gvend}}},
 \]
 where $\gvin T S$ denotes the expectation that the process will send a value of type $T$, then
-continue with the behavior specified by $S$.
-
-\todo{perhaps improve the following paragraph}
-
-Session types were originally developed for process calculi, such as the $\pi$-calculus. Recent work
-has adapted session types to more practical programming languages. In this paper, we are
-particularly interested in the use of session types for concurrency in functional programming
-languages, as developed by Vasconcelos et al.~\cite{VasconcelosGR06} and by Gay and
-Vasconcelos~\cite{GayVasconcelos10}.
+continue with the behavior specified by $S$.  Honda originally defined session types for process
+calculi; recent work~\cite{VasconcelosGR06,GayVasconcelos10} has investigated the use of session
+types for concurrency in functional languages.
 
 Session type systems are necessarily substructural---if processes could freely discard or duplicate
 sessions, the type system could provide no guarantee that the observable messages on sessions
@@ -389,7 +383,8 @@ internal ($S_1 \oplus S_2$) and external ($S_1 \with S_2$) choice (also called s
 branching, respectively).  For example, we could write a process that can either sum two numbers or
 negate one:
 %
-\[\bl
+\[\begin{array}{l@{\quad\vrule\quad}l}
+\bl
   \mkwd{offer} \: z \: \{ \:
   \bl
      \mkwd{inl} \app z \mapsto \bl
@@ -399,18 +394,19 @@ negate one:
        \gvlet{(x, z)}{\gvreceive{z}}{} \\
        \gvsend{(-x,z)} \: \} \el \\
   \el
-\el\]
-%
-This term initially requires $z : (\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}) \with
-(\gvin{Int}{\gvout{Int}{S}})$.  A client of this process would begin by choosing which branch of the
-session to take; for example, we could extend the preceding example as follows:
-%
-\[\bl
+\el
+ &
+\bl
   \gvlet{z}{\gvselect{\mkwd{inl}}{z}}{} \\
   \gvlet{z}{\gvsend{((6,7),z)}}{} \\
   \gvlet{(x,z)}{\gvreceive{z}}{} \\
   \gvletunit{\gvconst{wait}\app z}{x}
-\el\]
+\el
+\end{array}\]
+%
+This term initially requires $z : (\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}) \with
+(\gvin{Int}{\gvout{Int}{S}})$.  A client of this process would begin by choosing which branch of the
+session to take; for example, we could extend the preceding example as follows:
 %
 In GV, we do not provide primitives for selection and branching in sessions; rather, we show that
 they are macro-expressible using the term-level sum construct.  The intuition is that selection is
@@ -428,7 +424,7 @@ Note that we have the expected duality relationship: $\gvdual{S_1 \with S_2} = \
 \begin{align*}
   \gvconst{select} \app \ell \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell \app x, M)) \\
   \gvconst{offer} \app M \,\{ \mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q \}
-    &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\\\gvcase{x}{\mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q}}} \el
+    &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\gvcase{x}{\mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q}}} \el
 \end{align*}
 %
 While we would expect a surface language to include selection and branching, we will omit them, as
@@ -614,8 +610,8 @@ of the section.
 
 \subsubsection{Relation Notation.}
 We write $R\,R'$ for the sequential composition of relations $R$ and $R'$, $R \cup R'$ for the union
-of relations $R$ and $R'$, $R^+$ for the transitive closure of relation $R$, and $R^*$ for the
-reflexive, transitive closure of relation $R$.
+of relations $R$ and $R'$, $R^?$ for the reflexive closure of $R$, $R^+$ for the transitive closure
+of $R$, and $R^\star$ for the reflexive, transitive closure of $R$.
 
 \subsubsection{Configuration typing.}
 
@@ -624,8 +620,8 @@ reflexive, transitive closure of relation $R$.
 ~Configuration typing
 \begin{mathpar}
 \inferrule
-  {\Gamma \vdash M: T \\
-   T \not= \outterm}
+  { \Gamma \vdash M: T \\
+    T \not= \outterm }
   {\Gamma \vdash^\bcirc \distinguish M}
 
 \inferrule
@@ -673,7 +669,7 @@ define the terms $M$ and $N$ by
 \begin{align*}
   M &\defeq \bl
     \gvlet{(z,y)}{\gvreceive{y}}{} \\
-    \gvlet{x}{\gvsend{(z,x)}}{M'} \el \\
+    \gvlet{x}{\gvsend{(z,x)}}{M'} \el &
   N &\defeq \bl
     \gvlet{(z,x)}{\gvreceive{x}}{} \\
     \gvlet{y}{\gvsend{(z,y)}}{N'} \el
@@ -704,10 +700,8 @@ Observe that reduction may transform the types of sessions---for example, if $\G
 F[\gvconst{send}\app(V,x)] \parallel F'[\gvconst{receive}\app x]$, then $\Gamma$ must contain an
 assignment $x : \channel{(\gvout{T}{S})}$ for some type $T$ and session type $S$.  However, after
 reduction, for $F[x] \parallel F'[(V,x)]$ to be well-typed we need $x:\channel S$.  We capture this
-with the reduction relation $\Gamma \ceval \Gamma'$.  We write $\Gamma \ceval^? \Gamma'$ for the
-reflexive closure of $\ceval$.
-
-Finally, we can show that reduction preserves typing.  We begin with term reduction.
+with the reduction relation $\Gamma \ceval \Gamma'$.  Finally, we can show that reduction preserves
+typing.  We begin with term reduction.
 %
 \begin{lemma}\label{thm:term-preservation}
   If $\Gamma \vdash M: T$ and $M \teval M'$, then $\Gamma \vdash M': T$
@@ -770,7 +764,7 @@ starting from a well-typed configuration, we need never rely on an ill-typed equ
 configuration to expose possible reductions.
 %
 \begin{theorem}\label{thm:preservation-equiv}
-  If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, then there are some $\Gamma',D$ such that
+  If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, there are some $\Gamma',D$ such that
   $\Gamma \ceval^? \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D$.
 \end{theorem}
 %
@@ -784,11 +778,10 @@ configuration to expose possible reductions.
   the possible equivalences in each case. \qed
 \end{proof}
 %
-Finally, we define $\ceval^\star$ as the reflexive, transitive closure of $\equiv\ceval\equiv$ on
-configurations, and of $\ceval^?$ on typing environments.
+Finally, we define $\cevalstar$ as the transitive closure of $\equiv\ceval\equiv$.
 %
 \begin{corollary}
-  $\Gamma \vdash C$ and $C \ceval^\star D$, there are some $\Gamma',D'$ such that $\Gamma
+  $\Gamma \vdash C$ and $C \cevalstar D$, there are some $\Gamma',D'$ such that $\Gamma
   \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
 \end{corollary}
 
@@ -814,16 +807,14 @@ reductions in either order. \qed
 It is not hard to see that the system remains deterministic, if we extend the functional part of GV
 with any well-typed confluent reduction rules at all.
 
-GV is terminating; specifically, GV is strongly normalising.
-\begin{theorem}
-GV is strongly normalising: if $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$
-reduction sequences beginning from $C$.
+\begin{theorem}[Strong normalization]
+  If $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$ reduction sequences
+  beginning from $C$.
 \end{theorem}
-In order to prove strong normalisation for plain GV without replication and other features, one can
-use an elementary argument based on linearity. When we add replication (as we do in
-Section~\ref{sec:extend}) and other features, a standard logical relations argument suffices. Strong
-normalisation also follows as a direct corollary of \thmref{gv-reduction-simulated} and the
-cut-elimination theorem for classical linear logic.
+To prove strong normalization for core GV, one can use an elementary argument based on
+linearity. When we add replication~\secref{gv-repl} and other features, a standard logical relations
+argument suffices. Strong normalization also follows as a direct corollary of
+\thmref{gv-reduction-simulated} and the cut-elimination theorem for classical linear logic.
 
 \subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
 \newcommand{\blockedp}{\mathsf{blocked}}
@@ -870,14 +861,14 @@ dependencies:
 %
 Because the definition of dependency permits intermediate channels, this definition encompasses
 cycles involving an arbitrary number of channels.  Finally, we say that a configuration $C$ is
-deadlock free if, for all $D$ such that $C \ceval^\star D$, $\lnot\deadlockp(D)$.  Observe that if
+deadlock free if, for all $D$ such that $C \cevalstar D$, $\lnot\deadlockp(D)$.  Observe that if
 $C \equiv D$, then $\deadlockp(C) \iff \deadlockp(D)$.
 
 At this point, we can observe that in any deadlocked configuration, there must be a composition of
 configurations that shares more than one channel.  This is precisely the situation that is excluded
 by our configuration type system.
 
-\begin{lemma}\label{thm:procs-share-one-channel}
+\begin{lemma}\label{lem:procs-share-one-channel}
   If $\Gamma \vdash C$, and $C = \Cx[D \parallel D']$, then there is some variable $x$ such that
   $\fv(D) \cap \fv(D') = \{ x \}$.
 \end{lemma}
@@ -915,7 +906,7 @@ terms never evaluate to deadlocked configurations.
 
 \begin{proof}
   If $\Gamma \vdash M: T$, then $\Gamma \vdash \distinguish{M}$, and so
-  $\lnot\deadlockp(\distinguish M)$ and, for any $D$ such that $\distinguish M \ceval^\star D$, we
+  $\lnot\deadlockp(\distinguish M)$ and, for any $D$ such that $\distinguish M \cevalstar D$, we
   know that there is a well-typed $D' \equiv D$, and so $\lnot\deadlockp(D)$. \qed
 \end{proof}
 
@@ -967,9 +958,9 @@ can order the threads by the channels they share.
   exactly one $\nu$-bound variable $x_j$ where $x_j \in \fv(M_i)$.  (That there must be such an
   $M_i$ and $x_j$ can be established by a standard counting argument, together with
   \lemref{procs-share-one-channel}.)  Now, construct $D$ from $C$ by the homomorphic extension of
-  the mapping $(\nu x_j)E \mapsto E$ and $E \parallel \phi M_i \mapsto E$.  From the assumption that
-  $\Gamma \vdash C$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$ such
-  that $\Gamma',x:S \vdash D$.  By the induction hypothesis, there is some $D' \equiv D$ in
+  the mapping $(\nu x_j)E \mapsto E; E \parallel \phi M_i \mapsto E$.  From the assumption
+  that $\Gamma \vdash C$, we can conclude that there is some $\Gamma' \subseteq \Gamma$ and type $S$
+  such that $\Gamma',x_j:S \vdash D$.  By the induction hypothesis, there is some $D' \equiv D$ in
   canonical form.  Finally, let $C' = (\nu x_j)(\phi M_i \parallel D')$; we can see that
   straightforwardly that $C'$ is in canonical form; that $C \equiv C'$; and, that $\Gamma \vdash
   C'$. \qed
@@ -1159,8 +1150,8 @@ evaluate to a configuration with no blocked threads.
 \inferrule{ }{\cptyp{\link{x}{w}}{x:A,w:\cpdual{A}}}
 
 \inferrule{\cptyp{P}{\Delta,y:A} \\
-           \cptyp{Q}{\Delta,y:\cpdual{A}}}
-          {\cptyp{\cut{y}{A}{P}{Q}}{\Delta,\Delta}}
+           \cptyp{Q}{\Delta',y:\cpdual{A}}}
+          {\cptyp{\cut{y}{A}{P}{Q}}{\Delta,\Delta'}}
 
 \inferrule{ }{\cptyp{x[].0}{x:1}}
 
@@ -1168,8 +1159,8 @@ evaluate to a configuration with no blocked threads.
           {\cptyp{x(y).P}{\Delta,x:A \parr B}}
 
 \inferrule{\cptyp{P}{\Delta,y:A} \\
-           \cptyp{Q}{\Delta,x:B}}
-          {\cptyp{x[y].(P \mid Q)}{\Delta,\Delta,x:A \otimes B}}
+           \cptyp{Q}{\Delta',x:B}}
+          {\cptyp{x[y].(P \mid Q)}{\Delta,\Delta',x:A \otimes B}}
 
 \inferrule{\cptyp{P}{\Delta}}
           {\cptyp{x().P}{\Delta,x:\bot}}
@@ -1214,7 +1205,7 @@ second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, an
   \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
   \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in \fv(R)$} \\
 \cut{x}{}{P_1}{Q} &\equiv& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \equiv P_2$}
-\end{equations}%
+\end{equations}
 ~Primary cut reduction rules
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
@@ -1229,7 +1220,7 @@ second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, an
   &\crto&
     \cut{x}{A}{P}{Q_i} \\
 \cut{x}{}{P_1}{Q} &\crto& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \crto P_2$}
-\end{equations}%
+\end{equations}
 ~Commuting conversions
 \begin{equations}
   \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in \fv(Q)$} \\
@@ -1237,7 +1228,7 @@ second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, an
   \cut{z}{A}{x(y).P}{Q} &\ccto& x(y).\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
-\end{equations}%
+\end{equations}
 \caption{CP congruences and cut reduction}\label{fig:cp-reduction}
 \end{figure}
 
@@ -1283,7 +1274,7 @@ where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note 
      &=& \cut x {} {x[z].(\link y z \mid P)} {x(z).Q} \\
      &\crto& \cut z {} {\link y z} {\cut x {} P {Q}} \\
      &\crto& \cut x {} P {Q \{ y/z \}}
-\end{equations}%
+\end{equations}
 as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
 $x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
 original by one application of the commuting conversions.  However, the two formulations are not
@@ -1342,7 +1333,7 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
   \togvc{\cut{x}{}{P}{Q}} &=&
     (\nu x)(\togvc{P} \parallel \togvc{Q}) \\
   \togvc{P} &=& \thread \togv{P}, \quad \text{$P$ is not a cut} \\
-\end{equations}%
+\end{equations}
 \caption{Translation of CP Terms into GV}\label{fig:from-cp}
 \end{figure}
 
@@ -1513,7 +1504,7 @@ order to ensure that $\tocp{-}$ preserves reduction.
 \begin{equations}
 \tocpflip{T \lto U} &=& \cpdual{\tocpflip{T}} \parr \tocpflip U \\
 \tocpflip{S} &=& \tocp{S} \\
-\end{equations}%
+\end{equations}
 
 ~Session terms
 \begin{equations}
@@ -1538,7 +1529,7 @@ order to ensure that $\tocp{-}$ preserves reduction.
 %  \cut{y}{}{\tocp{M}y}{y().z[]} \\
 %% \tocp{\gvreceive{M}}z &=& \tocp{M}z \\
 %% \tocp{\gvwait{M}}z    &=& \tocp{M}z \\
-\end{equations}%
+\end{equations}
 ~Functional terms
 \begin{equations}
 \tocp{x}z &=& \link x z \\
@@ -1556,12 +1547,12 @@ order to ensure that $\tocp{-}$ preserves reduction.
    \cut x {} {\tocp{L}x} {\case{x}{\mkwd{inl} \mapsto \tocp{M}z;
                                    \mkwd{inr} \mapsto \tocp{N}z}} \\
 \tocp{\mkwd{absurd} \app L}z                     &=& \cut x {} {\tocp{L}x} {\mkwd{case}\app x \app \{ \}}
-\end{equations}%
+\end{equations}
 ~Substitutions
 \begin{equations}
 \tocp{\{\bind{x_i}{V_i}\}}(P) &=& \hat{\nu}(x_i \mapsto \tocp{V_i}x_i)_i[P] \medskip\\
 \hat{\nu}(x_i \mapsto P_i)_i[P] &\defeq& \cut{x_1}{}{P_1}{\dots \cut{x_n}{}{P_n}{P}\dots}
-\end{equations}%
+\end{equations}
 ~Configurations
 \begin{equations}
 \tocp{\thread M}z        &=& \cut{y}{}{\tocp{M}y}{y[]} \\
@@ -1571,8 +1562,6 @@ order to ensure that $\tocp{-}$ preserves reduction.
 \end{equations}
 \caption{Translation of GV terms and configurations into CP}\label{fig:from-gv}
 \end{figure}
-
-\todo{Explain $\parallel_x$ notation; do we actually use this anywhere else? Yes, in the proofs.}
 
 It is straightforward to show that the translation preserves typing.
 \begin{theorem}
@@ -2055,14 +2044,10 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 
 \section{Extending GV}\label{sec:extend}
 
-In this section, we consider two extensions of our core calculus.  The first unifies the session
-types $\interm$ and $\outterm$ to have a single, self-dual session type $\gvend$; this more closely
-mirrors other developments of session types, but results in a system that no longer corresponds to
-Wadler's CP calculus.  The second introduces unlimited types in the term calculus; we show how they
-can be lifted to provide replicated sessions, analogously to lifting term-level sums to provide
-session-level choice, and that the resulting system is equivalent to the replicated channels in CP.
-In both cases, we are able to directly apply our characterizations of deadlock and deadlock freedom
-to show that the extended systems are deadlock free.
+In this section, we consider two extensions of our core calculus: in the first, we have a single,
+self-dual closed channel; in the second, we support unlimited types.  In both cases, we are able to
+directly apply our characterizations of deadlock and deadlock freedom to show that the extended
+systems are deadlock free.
 
 \subsection{Unifying $\interm$ and $\outterm$}\label{sec:gv-end}
 
@@ -2085,6 +2070,7 @@ Type schemas for constants:
 
 \gvconst{link} : S \gvtimes \gvdual S \lto \one
 \end{mathpar}
+\vspace{-4mm}
 \caption{Syntax and typing rules for combined closed channels.}\label{fig:gv-end-syntax}
 \end{figure}
 
@@ -2096,7 +2082,7 @@ sessions of type $\gvend$ are treated as unlimited, subject to weakening, rather
 explicit \gvconst{close}.  We have left \gvconst{close} explicit to simplify the presentation.)  The
 type schemas for \gvconst{fork} and \gvconst{link} have been simplified, as we no longer need to
 build the elimination of closed sessions into \gvconst{fork}.  \figref{gv-end-conf-eval} gives the
-update evaluation rules for the extended language.  In addition to a new rule for \gvconst{close}
+updated evaluation rules for the extended language.  In addition to a new rule for \gvconst{close}
 (replacing the rule for \gvconst{wait}), the rule for \gvconst{link} can be simplified significantly
 (as it can now return a unit value instead of a closed channel).
 
@@ -2117,18 +2103,16 @@ Extended reduction rules (all other reduction rules apply as in GV)
   {x \in \fv(P)}
   {F[\gvconst{link} \app (x,y)] \parallel C \ceval F[()] \parallel C\{y/x\}}
 \end{mathpar}
+\vspace{-2mm}
 \caption{Updated configuration evaluation rules}\label{fig:gv-end-conf-eval}
 \end{figure}
 
 Our extended language is, perhaps surprisingly, strictly more expressive than GV.  To see this, we
-can consider the following term (assuming sessions $x$ and $y$ are in scope):
+can consider the following term (assuming well-typed $M,N$):
 %
 \[\bl
-  \mkwd{let}\:{w} = \gvconst{fork} \app (\lambda w.\:
-    \bl \gvletunit{\gvconst{close}\app w}{} \\
-        \gvlet{(z,x)}{\gvreceive{x}}{M}) \:\mkwd{in}\el \\
-  \gvletunit{\gvconst{close}\app w}{} \\
-  \gvlet{(z,y)}{\gvreceive{y}}{N}
+  \gvlet{w}{\gvconst{fork} \app (\lambda w. \gvletunit{\gvconst{close}\app w}{M})}{} \\
+  \gvletunit{\gvconst{close}\app w}{N}
 \el\]
 %
 Initially, the forked thread and its parent share (only) session $w$.  After both threads close
@@ -2198,6 +2182,7 @@ Reduction:
 \begin{mathpar}
 \gvlet{{!x}}{{!V}}{M} \teval M \{ \bind x V \}
 \end{mathpar}
+\vspace{-5mm}
 \caption{GV extensions for unlimited types}
 \label{fig:gv-repl}
 \end{figure}
@@ -2216,7 +2201,7 @@ Wadler's CP calculus provides unlimited service channels, which can be used to o
 many copies of some concurrent behavior.  We can encode such channels as follows.  First, we
 introduce new, dual session type constructors $Service(S)$ and $Server(S)$, defined by
 \begin{align*}
-  Server(S) &\defeq \gvout{(\gvdual S \to \outterm)}{\outterm} \\
+  Server(S) &\defeq \gvout{(\gvdual S \to \outterm)}{\outterm} &
   Service(S) &\defeq \gvin{(S \to \outterm)}{\outterm}
 \end{align*}
 Note that $\gvdual{Server(S)} = Service(\gvdual S)$.  (We do not, however, extend our type system to
@@ -2242,9 +2227,7 @@ Finally, we can give translations from GV into CP.
   \tocp{{!M}}z &\defeq& \cut{x} {} {\replicate z y.\link y x}{\tocp{M}x} \\
   \tocp{\gvlet{{!x}}{V}{M}}z &\defeq& \cut y {} {\tocp{V}y} {\derelict{y}{x}.\tocp{M}z}
 \end{equations}
-And similarly translation from CP into GV.  The translation from CP into GV emphasizes that, while
-weakening and contraction are implicit in CP syntax, they play a central role in the CP semantics of
-exponentials, and thus have non-trivial translation to GV.
+And similarly translation from CP into GV.
 \begin{equations}
 \togv{\replicate{s}{x}.P} &\defeq& \gvconst{replicate} \app (\lambda x. \togv{P}) \\
   \togv{\derelict{s}{x}.P} &\defeq& \gvlet{x}{\gvconst{request} \app s}{\togv{P}} \\
@@ -2259,7 +2242,9 @@ exponentials, and thus have non-trivial translation to GV.
       {P[x/y] \vdash \Delta,x:\cpquery{A}}} &\defeq&
     \ba{l} \gvlet{f}{\gvconst{request}\app x}{\\\gvlet{x}{\gvconst{replicate}\app f}{\\\gvlet{y}{\gvconst{replicate}\app f}{\togv{P}}}} \ea
 \end{equations}
-Finally, the extensions of Theorems~\ref{thm:cp-reduction-simulated}
+The translation from CP into GV emphasizes that, while weakening and contraction are implicit in CP
+syntax, they play a central role in the CP semantics of exponentials, and thus have non-trivial
+translation to GV.  Finally, the extensions of Theorems~\ref{thm:cp-reduction-simulated}
 and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
 
 
