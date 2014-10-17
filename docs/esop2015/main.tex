@@ -377,12 +377,6 @@ it simplifies the core calculus with no loss of expressivity.
 
 \subsection{Evaluation}\label{sec:gv-eval}
 
-\newcommand{\wcirc}{{\mathord{\circ}}}
-\newcommand{\bcirc}{{\mathord{\bullet}}}
-\newcommand{\distinguish}[1]{\bcirc #1}
-\newcommand{\thread}[1]{\wcirc #1}
-
-
 \begin{figure}[t]
 \begin{syntax}
   \text{Values} & V,W & ::= & x \mid K \mid \lambda^\sigma x.M \\
@@ -472,8 +466,8 @@ The grammar of configurations includes the usual $\pi$-calculus forms for compos
 restriction.  However, because we are beginning with a functional language, in which computations
 may return values (which may, in turn, contain channels), it is important to distinguish between the
 ``main'' thread (which returns a meaningful value) and the threads created by \gvconst{fork} (which
-do not).  We designate the main thread in a configuration by $\bcirc M$ and forked threads by
-$\wcirc M$.
+do not).  We designate the main thread in a configuration by $\distinguish M$ and forked threads by
+$\thread M$.
 
 \subsubsection{Reduction.}
 
@@ -770,7 +764,7 @@ reduction sequences beginning from $C$.
 In order to prove strong normalisation for plain GV without replication and other features, one can
 use an elementary argument based on linearity. When we add replication (as we do in
 Section~\ref{sec:extend}) and other features, a standard logical relations argument suffices. Strong
-normalisation also follows as a direct corollary of Theorem~\ref{th:gv-reduction-simulated} and the
+normalisation also follows as a direct corollary of \thmref{gv-reduction-simulated} and the
 cut-elimination theorem for classical linear logic.
 
 \subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
@@ -875,13 +869,13 @@ well-typed term would always produce a value; however, this is complicated by th
 terms that return sessions.  For a simple example, consider the term
 %
 \[
-  \gvconst{fork} \app (\lambda x. \gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)})
+  \distinguish{\gvconst{fork} \app (\lambda x. \gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)})}
 \]
 %
 This term spawns a thread (which simply echoes once), and then returns the resulting session; thus,
 the result of evaluation is a configuration equivalent to
 \[
-  (\nu x)(\distinguish x \parallel \gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)}).
+  (\nu x)(\distinguish{x} \parallel \thread{\gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)}}).
 \]
 Clearly, no more evaluation is possible, yet we would not describe this configuration itself as a
 value.  However, we can give strong results about the configurations resulting from the evaluation
@@ -1567,7 +1561,7 @@ into the hole, and an output channel.
 \end{enumerate}
 \end{lemma}
 %
-We will make implicit use of Lemma~\ref{lem:compositional-contexts} throughout our proofs. We write
+We will make implicit use of \lemref{compositional-contexts} throughout our proofs. We write
 $x \mapsto P$ for a function that maps a name $x$ to a process $P$ that depends on $x$.
 
 \todo{Perhaps include the full definitions in an appendix?}
@@ -1625,7 +1619,7 @@ push the appropriate substitution through a prefix.\qed
 Using the substitution lemma, we prove that functional reduction is preserved by $\tocp{-}$.
 %
 \begin{theorem}
-\label{th:teval-preserved}
+\label{thm:teval-preserved}
 If $\Gamma \vdash M$, $\Gamma \vdash N$, and $M \teval N$, then $\tocp{M}z
 \bigrto \tocp{N}v$.
 \end{theorem}
@@ -1643,7 +1637,7 @@ By induction on the derivation of $M \teval N$. Here we show the case of $\beta$
 \quad \cut{w}{}{\tocp{V}w}{\cut{y}{}{\link{y}{z}}{\cut{x}{}{\link{w}{x}}{\tocp{\sigma}(\tocp{M}y)}}} \\
 \bigcrto (\text{cut links and $\alpha$ rename}) \\
 \cut{x}{}{\tocp{V}x}{\tocp{\sigma}(\tocp{M}z)} \\
-\bigrto \quad (\text{by Lemma~\ref{lem:tocp-subst}}) \\
+\bigrto \quad (\text{by \lemref{tocp-subst}}) \\
 \tocp{M(\{\bind x V\} \uplus \sigma)}
 \el
 \]
@@ -1656,13 +1650,13 @@ places its argument inside a prefix.\qed
 Finally, we prove that all reductions in GV are preserved by $\tocp{-}$.
 %
 \begin{theorem}
-\label{th:gv-reduction-simulated}
+\label{thm:gv-reduction-simulated}
 If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D$, then $\tocp{C}z
 \bigrto \tocp{D}z$.
 \end{theorem}
 \begin{proof}
 By induction on the derivation of $C \ceval D$. The inductive cases follow straightforwardly from
-the compositionality of the definitions and Theorem~\ref{th:teval-preserved}. We now enumerate the
+the compositionality of the definitions and \thmref{teval-preserved}. We now enumerate the
 base cases.
 \begin{itemize}
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
@@ -1818,10 +1812,10 @@ base cases.
 %% \el
 %% \]
 
-\item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \wcirc\,x) \ceval \Fx[()]$.
+\item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x) \ceval \Fx[()]$.
 \[
 \bl
-\quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \wcirc\,x)}z \\
+\quad \tocp{(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x)}z \\
 %% = \\
 %% \quad \cut{x}{}{\tocp{\Fx}[y \mapsto \tocp{\gvconst{wait} \app x}y]z}
 %%                {\tocp{\wcirc}[\tocp{x}]z} \\
@@ -2049,7 +2043,7 @@ update evaluation rules for the extended language.  In addition to a new rule fo
 \begin{figure}
 Extended configuration equivalence:
 \begin{mathpar}
-C \parallel \wcirc () \equiv C
+C \parallel \thread () \equiv C
 \end{mathpar}
 Extended reduction rules (all other reduction rules apply as in GV)
 \begin{mathpar}

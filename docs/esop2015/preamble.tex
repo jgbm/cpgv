@@ -136,9 +136,14 @@
 \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 
 \newcommand{\secref}[1]{(\S\ref{sec:#1})}
-\newcommand{\lemref}[1]{Lemma~\ref{thm:#1}}
+\newcommand{\lemref}[1]{Lemma~\ref{lem:#1}}
 \newcommand{\thmref}[1]{Theorem~\ref{thm:#1}}
 \newcommand{\figref}[1]{Figure~\ref{fig:#1}}
 
 \newcommand{\todo}[1]{{\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{TODO:} #1}}}}
 \newcommand{\nqed}{\ensuremath{\centernot\qed}}
+
+\newcommand{\wcirc}{{\mathord{\circ}}}
+\newcommand{\bcirc}{{\mathord{\bullet}}}
+\newcommand{\distinguish}[1]{\bcirc\,#1}
+\newcommand{\thread}[1]{\wcirc\,#1}
