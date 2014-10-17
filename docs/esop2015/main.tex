@@ -1108,14 +1108,15 @@ second is output: the CP term $x[y].(P \mid Q)$ includes output, composition, an
 \subsubsection{Cut elimination.}
 
 \begin{figure}[t]
-Structural congruence:
+\vspace{1ex}
+~Structural congruence
 \begin{equations}
   \link{x}{w} &\equiv& \link{w}{x} \\
   \cut{y}{A}{P}{Q} &\equiv& \cut{y}{\cpdual{A}}{Q}{P} \\
   \cut{y}{A}{P}{\cut{z}{B}{Q}{R}} &\equiv& \cut{z}{B}{\cut{y}{A}{P}{Q}}{R}, \quad \text{if $y \not\in \fv(R)$} \\
 \cut{x}{}{P_1}{Q} &\equiv& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \equiv P_2$}
-\end{equations}
-Primary cut reduction rules:
+\end{equations}%
+~Primary cut reduction rules
 \begin{equations}
 \cut{x}{A}{\link{w}{x}}{P}
   &\crto& P[w/x] \\
@@ -1130,14 +1131,14 @@ Primary cut reduction rules:
     \cut{x}{A}{P}{Q_i} \\
 \cut{x}{}{P_1}{Q} &\crto& \cut{x}{}{P_2}{Q}, \quad \text{if $P_1 \crto P_2$}
 \end{equations}%
-Commuting conversions:
+~Commuting conversions
 \begin{equations}
   \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in \fv(Q)$} \\
   \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in \fv(P)$} \\
   \cut{z}{A}{x(y).P}{Q} &\ccto& x(y).\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
-\end{equations}
+\end{equations}%
 \caption{CP congurences and cut reduction}\label{fig:cp-reduction}
 \end{figure}
 
@@ -1195,7 +1196,8 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
 \subsection{Translation from CP to GV}
 
 \begin{figure}[float]
-On types:
+\vspace{1ex}
+~On types
 \[
 \ba{@{}c@{\quad}c@{\quad}c@{\quad}c}
 \begin{eqs}
@@ -1219,7 +1221,7 @@ On types:
 \end{eqs}
 \ea
 \]
-On terms:
+~On terms
 \begin{equations}
   \togv{\cut{x}{}{P}{Q}} &=&
     \gvlet{x}{\gvfork{x}{\togv{P}}}{\togv{Q}} \\
@@ -1402,11 +1404,6 @@ Substitutions:
 \end{equations}
 
 \todo{Explain $\parallel_x$ notation; do we actually use this anywhere else?}
-
-\todo{Sort out how we deal with constants. Currently our translation of fork doesn't make sense - it
-  should be a translation of fork M. The translations of link (M, N) and send (M, N) are OK if we
-  insist constants are always fully applied. But perhaps we can reasonably change them to
-  translations of link M and send M.}
 
 \todo{Actually, this translation is looser than we need. It captures call-by-value, but doesn't
   enforce left-to-right evaluation of applications and pairs. Is this what we want?}
