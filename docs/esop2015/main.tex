@@ -30,7 +30,7 @@
 
 \input{preamble.tex}
 
-\title{A Semantics for Sessions as Propositions}
+\title{A Semantics for Propositions as Sessions}
 %\title{Deadlock-Freedom in a Session-Typed Functional Language}
 \author{Sam Lindley \and J. Garrett Morris}
 \institute{The University of Edinburgh \\
@@ -41,26 +41,27 @@
 \maketitle
 
 \begin{abstract}
-  Session types provide a mechanism for statically guaranteeing that concurrent programs follow
-  communication protocols.  Recent work has developed a correspondence between session types and the
-  propositions of linear logic, particularly in the $\pi$-calculus setting.
+  Session types provide a static guarantee that concurrent programs respect communication
+  protocols. Recently Caires, Pfenning, and Toninho, and Wadler, have developed a correspondence
+  between the propositions of linear logic and session typed $\pi$-calculus processes.
 %
-  We show a strong connection between this approach and session-typed concurrency in a functional
-  setting.
+  We relate the cut-elimination semantics of this approach to a concurrent operational semantics for
+  session-typed concurrency in a functional language.
 %
-  We begin by presenting a minimal session-typed functional language, which we call GV.  We give a
-  small-step operational semantics for GV.  We develop a characterization of deadlock suitable for a
+  We begin by presenting a variant of Wadler's minimal session-typed functional language, GV. We
+  give a small-step operational semantics for GV. We develop a suitable notion of deadlock for our
   functional setting, based on existing approaches for capturing deadlock in $\pi$-calculus, and
   show that all well-typed GV programs are deadlock-free, deterministic and terminating.
 %
   We relate GV to linear logic by giving translations between GV and CP, a process calculus with a
   type system and semantics based on classical linear logic.  We prove that both directions of our
   translation preserve reduction; previous translations from GV to CP, in contrast, failed to
-  preserve $\beta$-reduction. Crucially, we use a weak form of explicit substitutions in the
-  semantics of GV to maintain equivalence with cut reduction.
+  preserve $\beta$-reduction. Crucially, we use a weak form of explicit substitutions, effectively
+  generalising lambda abstractions to closures, in order to maintain a correspondence with cut
+  reduction.
 %
-  Finally, to show the modularity of our approach, we define two extensions of GV and show that they
-  preserve deadlock freedom.
+  Finally, to demonstrate the modularity of our approach, we define two extensions of GV, and show
+  that they preserve deadlock freedom.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -68,10 +69,10 @@
 From massively distributed programs running across entire datacenters, to handheld apps reliant on
 remote services for functionality, concurrency has become a central problem in program
 correctness. Assuring correct concurrent behavior requires reasoning not just about the types of
-data communicated, but the order in which the communication takes place. For a simplistic example,
-the exchange between an SMTP client and server is all textual; however, a client that sends the
-recipient's address before the sender's address is still in violation of the protocol, despite
-sending the correct type of data.
+data communicated, but the order in which the communication takes place. For example, the messages
+between an SMTP client and server are all strings, but a client that sends the recipient's address
+before the sender's address is still in violation of the protocol, despite sending the correct type
+of data.
 
 Session types, originally proposed by Honda~\cite{Honda93}, provide a mechanism to reason about the
 state of communications.  The type of a session captures the expected behavior of a process
@@ -91,32 +92,32 @@ continue with the behavior specified by $S$.  Honda originally defined session t
 calculi; recent work~\cite{VasconcelosGR06,GayVasconcelos10} has investigated the use of session
 types for concurrency in functional languages.
 
-Session type systems are necessarily substructural---if processes could freely discard or duplicate
-sessions, the type system could provide no guarantee that the observable messages on sessions
-matched the expectations established by their types.  Recent work has sought to establish a
-correspondence between session types and linear logic, the archetypal substructural logic for
-reasoning about state.  Caires and Pfenning~\cite{CairesPfenning10} developed a strong
-correspondence between cut elimination in intuitionistic linear logic and process reduction in a
-session-typed process calculus. Wadler~\cite{Wadler14} adapted their approach to classical linear
-logic, emphasizing the role of duality in the typing rules; the semantics of his system is given
-directly by the cut elimination rules for classical linear logic. He also gives a type-preserving
-translation from a simple functional calculus (which he called GV) to his process calculus (called
-CP); however, he gives no semantics for GV besides the semantics of the translated terms.
+Session type systems are necessarily substructural---if processes can freely discard or duplicate
+sessions, then the type system can provide no guarantee that the observable messages on sessions
+match the expectations of their types. Recent work has sought to establish a correspondence between
+session types and linear logic, the archetypal substructural logic for reasoning about state.
+Caires and Pfenning~\cite{CairesPfenning10} developed a correspondence between cut elimination in
+intuitionistic linear logic and process reduction in a session-typed process
+calculus. Wadler~\cite{Wadler14} adapted their approach to classical linear logic, emphasizing the
+role of duality in the typing rules; the semantics of his system is given directly by the cut
+elimination rules of classical linear logic. He also gives a type-preserving translation from a
+simple functional calculus (GV) to a process calculus (CP); however, he gives no semantics for GV
+besides the semantics of the translated terms.
 
 In this paper, we develop a minimal, session-typed functional language, also called GV.  (Our
 language shares most of the distinctive features of Wadler's, although it differs in some of the
 details.) We present a small-step operational semantics for GV, factored into functional and
 concurrent portions following the approach of Gay and Vasconcelos~\cite{GayVasconcelos10}. The
-functional portion of our semantics differs from standard presentations of CBV reduction only in
-that we adopt a weak form of explicit substitution to maintain a connection with cut reduction. The
-concurrent portion of our semantics includes the typical reductions and equivalences of
-$\pi$-calculus-like systems. We develop a characterization of deadlock-free programs in our setting;
-this is somewhat non-trivial because closed expressions may return channels, so we cannot simply
-require that all possible communication take place. We show that well-typed GV programs are
-deadlock-free, deterministic, and terminating. We give translations between our language GV and
-Wadler's calculus CP, and show that these translations preserve reduction as well as typing.
-Finally, we show that GV is a useful basis for further language development by giving two extensions
-of GV and showing that our deadlock freedom results transfer easily to the extended languages.
+functional portion of our semantics differs from standard presentations of call-by-value reduction
+only in that we adopt a weak form of explicit substitution to maintain a connection with cut
+reduction. The concurrent portion of our semantics includes the typical reductions and equivalences
+of $\pi$-calculus-like systems. We develop a characterization of deadlock-free programs in our
+setting; this is not completely trivial because closed expressions may return channels, so we cannot
+simply require that all possible communication take place. We show that well-typed GV programs are
+deadlock-free, deterministic, and terminating. We give translations between our variant of GV and
+Wadler's CP, and show that these translations preserve reduction as well as typing. Finally, we show
+that GV is a useful basis for further language development by giving two extensions of GV and
+showing that our deadlock freedom results transfer easily to the extended languages.
 
 The paper proceeds as follows.
 \begin{itemize}
@@ -127,11 +128,11 @@ The paper proceeds as follows.
   terms are deadlock-free, and that closed typed terms evaluate to normal
   forms~\secref{gv-deadlock}.
 \item We connect our language to the interpretation of session types as linear logic propositions,
-  by establishing a correspondence between the semantics of our language and that of Wadler's CP. We
-  begin by introducing CP~\secref{cp}. We show that we can simulate CP reduction in
-  GV~\secref{togv}, and GV reduction in CP~\secref{tocp}. As process calculi provide substitution
-  only for names, not entire process expressions, the latter depends crucially on the use of weak
-  explicit substitutions in the semantics of GV $\lambda$ terms.
+  by establishing a correspondence between the semantics of our language and that of CP. We begin by
+  introducing CP~\secref{cp}. We show that we can simulate CP reduction in GV~\secref{togv}, and GV
+  reduction in CP~\secref{tocp}. As process calculi provide substitution only for names, not entire
+  process expressions, the latter depends crucially on the use of weak explicit substitutions in the
+  semantics of GV lambda abstractions.
 \item We consider two extensions of our core language: one which has a single, self-dual closed
   channel, harmonizing the treatment of closed channels with their treatment in other session-typed
   calculi~\secref{gv-end}, and another which adds unlimited types and replicated
@@ -245,9 +246,9 @@ We conclude by discussing related~\secref{related} and future~\secref{conclusion
 \begin{figure}[float]
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \interm \mid \outterm \mid \channel{S} \\
-  \text{Types} & T,U & ::= & S \mid T \gvtimes U \mid \one \mid T \gvplus U \mid \zero \mid T \lto U
+  \text{Types} & T,U & ::= & S \mid \one \mid T \gvtimes U \mid \zero \mid T \gvplus U \mid T \lto U
   \\ % \mid {!T} \\
-  \text{Terms} & L,M,N & ::= & x \mid K \mid \lambda x.M \mid M\,N \\
+  \text{Terms} & L,M,N & ::= & x \mid K \app M \mid \lambda x.M \mid M\,N \\
   & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
   & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
   & & \mid & () \mid \gvletunit{M}{N} \mid \gvconst{absurd} \app M \\
@@ -256,15 +257,15 @@ We conclude by discussing related~\secref{related} and future~\secref{conclusion
 \caption{Syntax of GV terms and types}\label{fig:gv-syntax}
 \end{figure}
 
-\figref{gv-syntax} gives the syntax of GV types and terms.  The types $T$ include nullary and binary
-sums and pairs, and linear implication $T \lto U$.  We frequently write $\gvletunit{M}{N}$ as the
-elimination form of $\one$, rather than the more verbose $\gvlet{()}{M}{N}$.  Session types $S$
-include input (\gvin T S), output (\gvout T S), and closed channels ($\interm$, $\outterm$).  We
-also include a type $\channel S$ of channels; values of channel type cannot be used directly in
-terms, but will appear in the typing of thread configurations.  The terms are the standard terms of
-the $\lambda$-calculus, augmented with construction and deconstruction of pairs and sums (there is
-no term to construct a nullary sum).  Typing rules and type schema for the constants $K$ are given
-in \figref{gv-typing}.
+\figref{gv-syntax} gives the syntax of GV types and terms. The types $T$ include nullary ($\zero$)
+and binary ($T \gvplus U$) linear sums, nullary ($\one$) and binary ($T \times U$) linear products,
+and linear implication ($T \lto U$). We frequently write $\gvletunit{M}{N}$ as the elimination form
+of $\one$ in place of the more verbose $\gvlet{()}{M}{N}$. Session types $S$ include input ($\gvin T
+S$), output ($\gvout T S$), and closed channels ($\interm$, $\outterm$). We also include a type
+$\channel S$ of channels; values of channel type cannot be used directly in terms, but will appear
+in the typing of thread configurations. The terms are the standard $\lambda$-calculus terms,
+augmented with constructs for pairs and sums. Typing rules and type schema for the constants $K$ are
+given in \figref{gv-typing}.
 
 \begin{figure}[float]
 \vspace{1ex}
@@ -351,50 +352,51 @@ sent their sum along the same channel could be expressed by
 \[
 M \defeq
   \bl
-    \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-    \gvsend{(x + y,z)}
+    \gvlet{((x, y), z)}{\gvreceive{z}}
+    {\gvsend{(x + y,z)}}
   \el
 \]
 %
 (where the interpretation of nested patterns by sequences of bindings is standard).  Sessions are
-treated linearly in GV.  Thus, \gvconst{receive} returns not just the received value (the pair of
-$x$ and $y$) but also a new copy of the session used for receiving ($z$); similarly, \gvconst{send}
-returns a copy of the session used for sending.  Thus, the term above is well-tped $z : \gvin{(Int
-  \gvtimes Int)}{\gvout{Int}{S}}$, and evaluates to a session of type $S$. Session initiation is
-provided by \gvconst{fork}.  If $f$ is a function from a session of type $S$ to a closed session (of
-type $\outterm$), then $\gvconst{fork} \app f$ runs $f$ and returns a session to communicate with
-it.  For example, the term $\gvconst{fork} \app (\lambda z. M)$ returns a channel of type
-$\gvout{(Int \gvtimes Int)}{\gvin{Int}{\interm}}$.  In a process created by $\gvconst{fork} \app f$,
-the session returned from $f$ is closed by $\gvconst{fork}$; however, the other end of the channel
-must be closed by calling \gvconst{wait}.  A client of the process above could be
+treated linearly in GV. Thus, \gvconst{receive} returns not only the received value (the pair of $x$
+and $y$) but also a new copy of the session used for receiving ($z$); similarly, \gvconst{send}
+returns a copy of the session used for sending. Thus, the term above is well-typed in the context $z
+: \gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}$, and evaluates to a session of type $S$. Session
+initiation is provided by \gvconst{fork}. If $f$ is a function from a session of type $S$ to a
+closed session (of type $\outterm$), then $\gvconst{fork} \app f$ forks a new thread in which $f$
+is applied to a fresh session of type $S$, and returns a session of type $\gvdual{S}$ in order to
+communicate with the thread. For example, the term $\gvconst{fork} \app (\lambda z. M)$ returns a
+channel of type $\gvout{(Int \gvtimes Int)}{\gvin{Int}{\interm}}$. Given a thread created by
+$\gvconst{fork} \app f$, the session returned from $f$ is closed by $\gvconst{fork}$; however, the
+other end of the channel must be closed by calling \gvconst{wait}. A client of the process $M$ could
+be defined as follows:
 %
 \[N \defeq
   \bl
-  \gvlet{z}{\gvsend{((6,7),z)}}{} \\
-  \gvlet{(x,z)}{\gvreceive{z}}{} \\
-  \gvletunit{\gvconst{wait}\app z}{x}
+  \gvlet{z}{\gvsend{((6,7),z)}}
+  {\gvlet{(x,z)}{\gvreceive{z}}}
+  {\gvletunit{\gvconst{wait}\app z}{x}}
 \el\]
 %
-The combination of these processes ($\gvlet{x}{\gvconst{fork}\app(\lambda z.M)}{N}$) would evaluate
-to 13.  Finally $\gvconst{link} \app (x, y)$ causes messages sent on $x$ to be received on $y$ and
-vice versa.
+The combined process $\gvlet{x}{\gvconst{fork}\app(\lambda z.M)}{N}$ evaluates to 13. The form
+$\gvconst{link} \app (x, y)$ forwards messages sent on $x$ to be received on $y$ and vice versa.
 
 \subsubsection{Choice.}
 
-In addition to input and output, most session typed systems also provide session types representing
-internal ($S_1 \oplus S_2$) and external ($S_1 \with S_2$) choice (also called selection and
-branching, respectively).  For example, we could write a process that can either sum two numbers or
-negate one:
+In addition to input and output, typical session type systems also provide session types
+representing internal ($S_1 \oplus S_2$) and external ($S_1 \with S_2$) choice (also known as
+selection and branching, respectively). For example, we could write a process that can either sum
+two numbers or negate one:
 %
 \[\bl
   \mkwd{offer} \: z \: \{ \:
   \bl
      \mkwd{inl} \app z \mapsto \bl
-       \gvlet{((x, y), z)}{\gvreceive{z}}{} \\
-       \gvsend{(x + y,z)} \el \\
+       \gvlet{((x, y), z)}{\gvreceive{z}}
+       {\gvsend{(x + y,z)}} \el \\
      \mkwd{inr} \app z \mapsto \bl
-       \gvlet{(x, z)}{\gvreceive{z}}{} \\
-       \gvsend{(-x,z)} \: \} \el \\
+       \gvlet{(x, z)}{\gvreceive{z}}
+       {\gvsend{(-x,z)}} \: \} \el \\
   \el
 \el\]
 %
@@ -403,17 +405,17 @@ This term initially requires $z : (\gvin{(Int \gvtimes Int)}{\gvout{Int}{S}}) \w
 session to take; for example, we could extend the preceding example as follows:
 \[
 \bl
-  \gvlet{z}{\gvselect{\mkwd{inl}}{z}}{} \\
-  \gvlet{z}{\gvsend{((6,7),z)}}{} \\
-  \gvlet{(x,z)}{\gvreceive{z}}{} \\
-  \gvletunit{\gvconst{wait}\app z}{x}
+  \gvlet{z}{\gvselect{\mkwd{inl}}{z}}
+  {\gvlet{z}{\gvsend{((6,7),z)}}}
+  {\gvlet{(x,z)}{\gvreceive{z}}}
+  {\gvletunit{\gvconst{wait}\app z}{x}}
 \el
 \]
 %
 While we would expect a surface language to include selection and branching, we omit them from our
-core calculus.  Instead, we show that they are macro-expressible using the term-level sum construct.
-The intuition is that selection is implemented by sending a suitably tagged process, while branching
-is implemented by a term-level branch on a received value.  Concretely, we define the types by
+core calculus. Instead, we show that they are macro-expressible using the linear sum type. The
+intuition is that selection is implemented by sending a suitably tagged process, while branching is
+implemented by a term-level branch on a received value. Concretely, we define the types by:
 \begin{mathpar}
 S_1 \with S_2 \defeq \gvin{(S_1 \gvplus S_2)}{\interm}
 
@@ -421,13 +423,22 @@ S_1 \oplus S_2 \defeq \gvout{(\gvdual{S_1} \gvplus \gvdual{S_2})}{\outterm}
 \end{mathpar}
 Note that we have the expected duality relationship: $\gvdual{S_1 \with S_2} = \gvdual{S_1} \oplus
 \gvdual{S_2}$.  We can implement the \gvconst{select} and \gvconst{offer} primitives as follows
-(where $\ell$ ranges over $\{ \mkwd{inl}, \mkwd{inr} \}$)
+(where $\ell$ ranges over $\{ \mkwd{inl}, \mkwd{inr} \}$):
 %
 \begin{align*}
   \gvconst{select} \app \ell \app M &\defeq \gvconst{fork} (\lambda x. \gvsend(\ell \app x, M)) \\
   \gvconst{offer} \app M \,\{ \mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q \}
-    &\defeq \bl \gvlet{(y,m)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app m}{\gvcase{x}{\mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q}}} \el
+    &\defeq \bl \gvlet{(x,y)}{\gvreceive{M}}{\\\gvletunit{\gvconst{wait} \app y}{\gvcase{x}{\mkwd{inl} \app x \mapsto P; \mkwd{inr} \app x \mapsto Q}}} \el
 \end{align*}
+Correspondingly, nullary choice and selection may be encoded with the $\zero$ type:
+\begin{mathpar}
+\with \{\} \defeq \gvin{\zero}{\interm}
+
+\oplus \{\} \defeq \gvout{\zero}{\outterm}
+
+\gvconst{offer} \app M \,\{ \}
+  \defeq \gvlet{(x,y)}{\gvreceive{M}}{\gvletunit{\gvconst{wait} \app y}{\gvconst{absurd}\{ \}}}
+\end{mathpar}
 
 \subsection{Evaluation}\label{sec:gv-eval}
 
@@ -468,21 +479,21 @@ follows:
   {\Gamma \vdash \lambda^\sigma x.M : T \lto U}
 \]
 The free variables of a closure $\lambda^\sigma x.M$ are the free variables of the range of
-$\sigma$, not the free variables of $M$; application of substitution $M\sigma$ is then defined as
-usual on the free variables of terms. Note that the side condition on the domain of $\sigma$ is
-preserved under substitution. Finally, we will implicitly treat terms $\lambda x.M$ as closures
-$\lambda^\sigma x.M$ where $\sigma$ is a renaming substitution restricted to the free variables of
-$M$ less $\{x\}$; concretely:
+$\sigma$, not the free variables of $M$. The capture avoiding substitution $M\sigma$ of $\sigma$
+applied to $M$ is defined as usual on the free variables of $M$. Note that the side condition on the
+domain of $\sigma$ is preserved under substitution. We implicitly treat plain lambda abstractions
+$\lambda x.M$ as closures $\lambda^\sigma x.M$, where $\sigma$ is a renaming substitution restricted
+to the free variables of $M$ less $\{x\}$; concretely:
 \[
 \bl
 \lambda x.M \defeq \lambda^\sigma x.(M\sigma') \\
 \quad \text{where }
-  \bl
-  \fv(M)  = \{x_1, \dots, x_n\} \\
-  x'_1, \dots, x'_n \text{ are fresh variables} \\
-  \sigma  = \{\bind{x_1}{x'_1}, \dots, \bind{x_1}{x'_1}\} \\
-  \sigma' = \{\bind{x'_i}{x_i}, \dots, \bind{x'_n}{x_n}\} \\
-  \el
+  \ba[t]{l@{\qquad}l}
+  \fv(M)  = \{x_1, \dots, x_n\} &
+  y_1, \dots, y_n \text{ are fresh variables} \\
+  \sigma  = \{\bind{x_1}{y_1}, \dots, \bind{x_n}{y_n}\} &
+  \sigma' = \{\bind{y_1}{x_1}, \dots, \bind{y_n}{x_n}\} \\
+  \ea
 \el
 \]
 %% GM: useful discussion, but not sure it's necessary to understand closures.
@@ -594,16 +605,20 @@ C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 \end{figure}
 
 Reduction rules for terms and configurations, and equivalences for configurations, are given in
-\figref{gv-reduction}. Term reduction ($\teval$) is typical call-by-value left-to-right evaluation;
+\figref{gv-reduction}. Term reduction ($\teval$) is standard call-by-value left-to-right evaluation;
 the only complication is that application not only substitutes for the $\lambda$-bound variables,
 but also applies any substitution captured by the closure. Configuration equivalence ($\equiv$) is
 also relatively standard. We provide an additional equivalence observing that \gvconst{link} is
-symmetric to simplify the definition of reduction. Communication is provided by rule \textsc{Send}
-and session initiation is provided by rule \textsc{Fork}. Rule \textsc{Wait} combines
+symmetric in order to simplify the definition of reduction. Communication is provided by rule
+\textsc{Send} and session initiation is provided by rule \textsc{Fork}. Rule \textsc{Wait} combines
 synchronization of closed channels with garbage collection of the associated name restriction.  Rule
 \textsc{Link} is complicated by the need to produce a session of type $\outterm$; the inserted
-\gvconst{wait} synchronizes with the produced session. We do not incorporate equivalence directly in
-reduction; we will return to the treatment of equivalence at the end of the section.
+\gvconst{wait} synchronizes with the produced session.
+
+%% [SL: unnecessary?]
+%%
+%% We do not incorporate equivalence directly in reduction; we will return to the treatment of
+%% equivalence at the end of the section.
 
 \subsubsection{Relation Notation.}
 We write $R\,R'$ for the sequential composition of relations $R$ and $R'$, $R \cup R'$ for the union
@@ -673,15 +688,15 @@ define the terms $M$ and $N$ by
 \end{align*}
 given suitable terms $M'$ and $N'$, then it is apparent that configurations such as $(\nu xy)M$,
 $(\nu xy)(M \parallel M)$ and $(\nu xy)(M \parallel N)$ cannot reduce further, even though $M$ and
-$N$ can be individually well-typed.  To exclude such cases, we give a typing discipline for
+$N$ can be individually well-typed.  To exclude such cases, we provide a type discipline for
 configurations (\figref{gv-conf-typing}). It is based on type systems for linear
 $\pi$-calculus~\cite{Kobayashi96} with two significant differences.
 \begin{itemize}
-\item First, we seek to assure that there is at most one main thread.  This is done by the flags
-  ($\bcirc$ and $\wcirc$) on the derivations: a derivation $\Gamma \vdash^\bcirc C$ indicates that
-  configuration $C$ contains the main thread, while $\Gamma \vdash^\wcirc C$ indicates that $C$ does
-  not contain the main thread.  We will write $\Gamma \vdash C$ to abbreviate $\Gamma \vdash^\phi
-  C$, that is, that $C$ may contain a main thread.
+\item First, we seek to assure that there is at most one main thread. This constraint is enforced by
+  the flags ($\bcirc$ and $\wcirc$) on the derivations: a derivation $\Gamma \vdash^\bcirc C$
+  indicates that configuration $C$ contains the main thread, while $\Gamma \vdash^\wcirc C$
+  indicates that $C$ does not contain the main thread. We write $\Gamma \vdash C$ to abbreviate
+  $\exists \phi.\Gamma \vdash^\phi C$, that is, $C$ may include a main thread.
 \item Second, we require that exactly one channel is shared at each composition of processes.  This
   restricts standard type systems for linear $\pi$-calculus, which allow an arbitrary number of
   processes (including none) to be shared at a composition of processes.
@@ -689,15 +704,15 @@ $\pi$-calculus~\cite{Kobayashi96} with two significant differences.
 We see that the earlier stuck examples are ill-typed in this system: $(\nu xy)M$ because $y$ must
 have a type $\channel S$ in $M$; $(\nu xy)(M \parallel M)$ because there is no type $\channel S$
 such that both $S$ and $\gvdual{S}$ are of the form $\gvin{T}{S'}$, as required by
-\gvconst{request}; and, $(\nu xy)(M \parallel N)$ because both $x$ and $y$ must be shared between
+\gvconst{receive}; and, $(\nu xy)(M \parallel N)$ because both $x$ and $y$ must be shared between
 $M$ and $N$, but the typing rule for composition only allows one channel to be shared.
 
 Observe that reduction may transform the types of sessions---for example, if $\Gamma \vdash
 F[\gvconst{send}\app(V,x)] \parallel F'[\gvconst{receive}\app x]$, then $\Gamma$ must contain an
-assignment $x : \channel{(\gvout{T}{S})}$ for some type $T$ and session type $S$.  However, after
-reduction, for $F[x] \parallel F'[(V,x)]$ to be well-typed we need $x:\channel S$.  We capture this
-with the reduction relation $\Gamma \ceval \Gamma'$.  Finally, we can show that reduction preserves
-typing.  We begin with term reduction.
+assignment $x : \channel{(\gvout{T}{S})}$ for some type $T$ and session type $S$. However, after
+reduction, for $F[x] \parallel F'[(V,x)]$ to be well-typed we need $x:\channel S$. We capture this
+constraint with the reduction relation $\Gamma \ceval \Gamma'$. Now, we can show that reduction
+preserves typing. We begin with term reduction.
 %
 \begin{lemma}\label{lem:term-preservation}
   If $\Gamma \vdash M: T$ and $M \teval M'$, then $\Gamma \vdash M': T$
@@ -714,77 +729,45 @@ preservation of configuration typing under reduction.
 
 \subsubsection{Typing and configuration equivalence.}
 
-Unfortunately, our notion of typing is not preserved by configuration equivalence.  For a simple
-example, assume that $\Gamma \vdash (\nu x y)(C \parallel (D \parallel E))$, where $x \in \fv(C), y
-\in \fv(D), \text{ and } x,y \in \fv(E)$.  We have that $C \parallel (D \parallel E) \equiv
-(C \parallel D) \parallel E$, but $\Gamma \nvdash (\nu x y)((C \parallel D) \parallel E)$, as both
-$x$ and $y$ must be shared between the processes $C \parallel D$ and $E$.  However, we can show that
-starting from a well-typed configuration, we need never rely on an ill-typed equivalent
-configuration to expose possible reductions.
+Alas, our notion of typing is not preserved by configuration equivalence.  For example, assume that
+$\Gamma \vdash (\nu x y)(C \parallel (D \parallel E))$, where $x \in \fv(C), y \in \fv(D), \text{
+  and } x,y \in \fv(E)$.  We have that $C \parallel (D \parallel E) \equiv (C \parallel D) \parallel
+E$, but $\Gamma \nvdash (\nu x y)((C \parallel D) \parallel E)$, as both $x$ and $y$ must be shared
+between the processes $C \parallel D$ and $E$.  However, we can show that starting from a well-typed
+configuration, we need never rely on an ill-typed equivalent configuration to expose possible
+reductions.
 %
 \begin{theorem}\label{thm:preservation-equiv}
-  If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, there are some $\Gamma',D$ such that
+  If $\Gamma \vdash C$, $C \equiv C'$ and $C' \ceval D'$, then there exist $\Gamma',D$ such that
   $\Gamma \ceval^? \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D$.
 \end{theorem}
 %
 \begin{proof}
-  We begin by observing that if $\Gamma \vdash C$, then for any pair of terms $M_1, M_2$ appearing
-  in $C$, there are environments $\Gamma_1,\Gamma_2$ and types $T_1,T_2$ such that $\Gamma_1 \vdash
-  M_1 : T_1,\Gamma_2 \vdash M_2 : T_2$, and (because of the typing rule for composition) $\Gamma_1$
-  and $\Gamma_2$ share at most one variable.  From this, by examination of the reduction rules, we
-  can conclude that there are well-typed $C_0,D_0$ such that $C' = \Cx[C_0]$, $C_0 \ceval D_0$ and
-  $D' = \Cx[D_0]$.  The desired result is then obtained by structural induction on $C$, examining
-  the possible equivalences in each case. \qed
+  Observe that if $\Gamma \vdash C$, then for any pair of terms $M_1, M_2$ appearing in $C$, there
+  are environments $\Gamma_1,\Gamma_2$ and types $T_1,T_2$ such that $\Gamma_1 \vdash M_1 :
+  T_1,\Gamma_2 \vdash M_2 : T_2$, and (because of the typing rule for composition) $\Gamma_1$ and
+  $\Gamma_2$ share at most one variable. By examination of the reduction rules, we can conclude that
+  there are well-typed $C_0,D_0$ such that $C' = \Cx[C_0]$, $C_0 \ceval D_0$ and $D' = \Cx[D_0]$.
+  The result then follows by structural induction on $C$, examining the possible equivalences in
+  each case. \qed
 \end{proof}
 %
-We extend \thmref{preservation-equiv} to sequences of reductios, defining $\cevalstar$ as
+We extend \thmref{preservation-equiv} to sequences of reductions, defining $\cevalstar$ as
 $(\equiv\ceval\equiv)^\star$.
 %
 \begin{corollary}
-  $\Gamma \vdash C$ and $C \cevalstar D$, there are some $\Gamma',D'$ such that $\Gamma
+  If $\Gamma \vdash C$ and $C \cevalstar D$, then there exist $\Gamma',D'$ such that $\Gamma
   \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
 \end{corollary}
-
-\subsection{Determinism and Termination}\label{sec:determinism}
-
-It is straightforward to show that GV is deterministic. In fact, GV enjoys a strong form of
-determinism, called the diamond property.
-\begin{theorem}
-% For well typed terms, the relation $\equiv\ceval\equiv$ satisfies the diamond property:
-  If $\Gamma \vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then there
-  exists $D_3$ such that $D_1 \equiv\ceval\equiv D_3$, and $D_2 \equiv\ceval\equiv D_3$.
-\end{theorem}
-\begin{proof}
-First, we observe that $\teval$ is deterministic, and furthermore configuration reductions always
-treat $\teval$ redexes linearly. This means we need only consider the interaction between different
-configuration reductions.
-%
-Linear typing ensures that two configuration reductions cannot overlap. Furthermore, each
-configuration reduction is linear in the existing redexes, so we can straightforwardly perform the
-reductions in either order. \qed
-\end{proof}
-%
-It is not hard to see that the system remains deterministic if we extend the functional part of GV
-with any well-typed confluent reduction rules at all.
-
-\begin{theorem}[Strong normalization]
-  If $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$ reduction sequences
-  beginning from $C$.
-\end{theorem}
-To prove strong normalization for core GV, one can use an elementary argument based on
-linearity. When we add replication~\secref{gv-repl} and other features, a standard logical relations
-argument suffices. Strong normalization also follows as a direct corollary of
-\thmref{gv-reduction-simulated} and the cut-elimination theorem for classical linear logic.
 
 \subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
 \newcommand{\blockedp}{\mathsf{blocked}}
 \newcommand{\depp}{\mathsf{depends}}
 \newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
 
-In the previous section, we gave several examples of deadlocked terms, and showed that they were
-rejected by our type system.  This section generalizes that observation: we characterize deadlocked
-configurations, and show that well-typed configurations do not evaluate to deadlocked
-configurations.
+In \secref{gv-eval}, we saw several examples of deadlocked terms which were rejected by our type
+system. We now present a general account of deadlock: we characterize deadlocked configurations, and
+show that well-typed configurations do not evaluate to deadlocked configurations.
 
 We begin by observing that many examples of stuck configurations are already excluded by existing
 session-typing disciplines: in particular, those configurations in which either too many or too few
@@ -802,10 +785,11 @@ to $x$:
 %
 In such a case, $M$ can only reduce further in composition with another thread blocked on $x$, and
 any communication on other sessions in $M$ will be delayed until a communication on $x$ has
-occurred.  We capture this by saying that $y$ depends on $x$ in $M$, written $\depp(x,y,M)$, $M$ is
-blocked on $x$, but has $y$ as one of its (other) free variables.  We extend this notion of
-dependency from single threads to configurations of threads, with the observation that in a larger
-configuration there may be intermediate sessions in the dependency.
+occurred. In general, we abstract over the property that $y$ depends on $x$ in $M$, abbreviated
+$\depp(x,y,M)$; in other words, $M$ is blocked on $x$, but has $y$ as one of its (other) free
+variables. We extend this notion of dependency from single threads to configurations of threads,
+with the observation that in a larger configuration intermediate sessions may participate in the
+dependency.
 \[\begin{array}{rcl}
   \depp(x,y,\Ex[M]) &\defiff& \blockedp(x,M) \land y \in \fv(\Ex) \\
   \depp(x,y,C) &\defiff& (C \equiv \Cx[M] \land \depp(x,y,M)) \lor \, (C \equiv \Cx[D \parallel D'] \\
@@ -828,8 +812,8 @@ configurations that shares more than one session.  This is precisely the situati
 by our configuration type system.
 
 \begin{lemma}\label{lem:procs-share-one-channel}
-  If $\Gamma \vdash C$, and $C = \Cx[D \parallel D']$, then there is some variable $x$ such that
-  $\fv(D) \cap \fv(D') = \{ x \}$.
+  If $\Gamma \vdash C$, and $C = \Cx[D \parallel D']$, then there is exactly one variable $x$ such
+  that $\fv(D) \cap \fv(D') = \{ x \}$.
 \end{lemma}
 
 \begin{proof}
@@ -850,7 +834,7 @@ variables of individual threads.  Thus, cycles of dependent sessions are preserv
   By contradiction: suppose $\deadlockp(C)$.  Then we know there must be some variables
   $x_1,\dots,x_n$ and processes $M_1,\dots,M_n$ in $C$ such that
   \[
-    \blockedp(x_1,x_2,M_1) \land \blockedp(x_2,x_3,M_2) \land \cdots \land \blockedp(x_n,x_1,M_n).
+    \depp(x_1,x_2,M_1) \land \depp(x_2,x_3,M_2) \land \cdots \land \depp(x_n,x_1,M_n).
   \]
   But now there is no possible $\Gamma$ such that any $\Gamma \vdash C'$ for any process $C'$
   containing the $M_i$---such a $C'$ would violate \lemref{procs-share-one-channel}.  \qed
@@ -886,9 +870,10 @@ the result of evaluation is a configuration equivalent to
   (\nu x)(\distinguish{x} \parallel \thread{\gvlet{(y,x)}{\gvreceive{x}}{\gvsend(y,x)}}).
 \]
 Clearly, no more evaluation is possible, even though the configuration still contains blocked
-threads.  However, we can give strong results about the configurations resulting from the evaluation
-of closed term, and so to conclude that evaluation of terms that do not return sessions does always
-produce a value.
+threads.
+%
+However, it tursn out that we can show that evaluation of terms that do not return sessions must
+always produce a value.
 
 \begin{definition}
 A process $C$ is in canonical form if there is some sequence of variables $x_1,\dots,x_{n-1}$ and
@@ -1051,6 +1036,37 @@ evaluate to a configuration with no blocked threads.
 %%
 %% $\blockedp'(x, M)$ means either $M = x$ or $M$ is blocked on a send, receive, link, or wait
 %% involving $x$.
+
+\subsection{Determinism and Termination}\label{sec:determinism}
+
+It is straightforward to show that GV is deterministic. In fact, GV enjoys a strong form of
+determinism, called the diamond property~\cite{Barendregt84}.
+\begin{theorem}
+% For well typed terms, the relation $\equiv\ceval\equiv$ satisfies the diamond property:
+  If $\Gamma \vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then there
+  exists $D_3$ such that $D_1 \equiv\ceval\equiv D_3$, and $D_2 \equiv\ceval\equiv D_3$.
+\end{theorem}
+\begin{proof}
+First, observe that $\teval$ is deterministic, and furthermore configuration reductions always treat
+$\teval$ redexes linearly. This means we need only consider the interaction between different
+configuration reductions.
+%
+Linear typing ensures that two configuration reductions cannot overlap. Furthermore, each
+configuration reduction is linear in the existing redexes, so we can straightforwardly perform the
+reductions in either order. \qed
+\end{proof}
+%
+It is not hard to see that the system remains deterministic if we extend the functional part of GV
+with any well-typed confluent reduction rules at all.
+
+\begin{theorem}[Strong normalization]
+  If $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$ reduction sequences
+  beginning from $C$.
+\end{theorem}
+To prove strong normalization for core GV, one can use an elementary argument based on
+linearity. When we add replication~\secref{gv-repl} and other features, a standard logical relations
+argument suffices. Strong normalization also follows as a direct corollary of
+\thmref{gv-reduction-simulated} and the cut-elimination theorem for classical linear logic.
 
 \section{Classical Linear Logic}
 
