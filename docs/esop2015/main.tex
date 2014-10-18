@@ -51,7 +51,7 @@
   We begin by presenting a variant of Wadler's minimal session-typed functional language, GV. We
   give a small-step operational semantics for GV. We develop a suitable notion of deadlock for our
   functional setting, based on existing approaches for capturing deadlock in $\pi$-calculus, and
-  show that all well-typed GV programs are deadlock-free, deterministic and terminating.
+  show that all well-typed GV programs are deadlock-free, deterministic, and terminating.
 %
   We relate GV to linear logic by giving translations between GV and CP, a process calculus with a
   type system and semantics based on classical linear logic.  We prove that both directions of our
@@ -136,7 +136,7 @@ The paper proceeds as follows.
 \item We consider two extensions of our core language: one which has a single, self-dual type for
   closed sessions, harmonising the treatment of closed channels with their treatment in other
   session-typed calculi~\secref{gv-end}, and another which adds unlimited types and replicated
-  behavior~\secref{gv-repl}. We show that these extensions preserve the essential deadlock-freedom
+  behavior~\secref{gv-repl}. We show that these extensions preserve the essential deadlock freedom
   properties of the core language.
 \end{itemize}
 We conclude by discussing related~\secref{related} and future~\secref{conclusion} work.
@@ -254,7 +254,7 @@ We conclude by discussing related~\secref{related} and future~\secref{conclusion
   & & \mid & () \mid \gvletunit{M}{N} \mid \gvconst{absurd} \app M \\
   \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{wait} \mid \gvconst{link}\\
 \end{syntax}
-\caption{Syntax of GV terms and types}\label{fig:gv-syntax}
+\caption{Syntax of GV Terms and Types}\label{fig:gv-syntax}
 \end{figure}
 
 \figref{gv-syntax} gives the syntax of GV types and terms. The types $T$ include nullary ($\zero$)
@@ -276,6 +276,11 @@ schemas for the constants.
   {\{x:T\} \vdash x:T}
 
 \inferrule
+  {K : T \lto U \\
+   \Gamma \vdash M: T}
+  {\Gamma \vdash K\,M: U}
+\\
+\inferrule
   {\Gamma,x:T \vdash M:U}
   {\Gamma \vdash \lambda x.M : T \lto U}
 
@@ -283,7 +288,7 @@ schemas for the constants.
   {\Gamma \vdash M: T \lto U \\
    \Gamma' \vdash N: T}
   {\Gamma,\Gamma' \vdash M\,N: U}
-
+\\
 \inferrule
   {\Gamma \vdash M: T \\
    \Gamma' \vdash N: U}
@@ -311,7 +316,7 @@ schemas for the constants.
 \inferrule
   {\Gamma \vdash M: \one \\
    \Gamma' \vdash N: T}
-  {\Gamma,\Gamma' \vdash \gvletunit{M}{N}: T}
+  {\Gamma,\Gamma' \vdash \gvlet{()}{M}{N}: T}
 
 \inferrule
   {\Gamma \vdash M: \zero}
@@ -339,7 +344,7 @@ schemas for the constants.
 
 \gvdual{\outterm} = \interm
 \end{mathpar}
-\caption{GV typing rules}\label{fig:gv-typing}
+\caption{GV Typing Rules}\label{fig:gv-typing}
 \end{figure}
 
 \subsubsection{Concurrency.}
@@ -444,11 +449,11 @@ Correspondingly, nullary choice and selection may be encoded with the $\zero$ ty
 
 \begin{figure}[float]
 \begin{syntax}
-  \text{Values} & V,W & ::= & x \mid K \mid \lambda^\sigma x.M \\
+  \text{Values} & V,W & ::= & x \mid \lambda^\sigma x.M \\
   & & \mid & () \mid (V,W) \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
   \text{Substitutions} & \sigma & ::= & \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \} \\
   & & & \qquad\text{ where the $x_i$ are pairwise distinct} \\
-  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid \gvletunit{\Ex}{M} \\
+  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid K \app V \mid \gvletunit{\Ex}{M} \\
   & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
   & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
   & \Fx & ::= & \phi \Ex \\
@@ -456,7 +461,7 @@ Correspondingly, nullary choice and selection may be encoded with the $\zero$ ty
   \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
-\caption{Syntax of values, configurations, and contexts}\label{fig:gv-eval-syntax}
+\caption{Syntax of Values, Configurations, and Contexts}\label{fig:gv-eval-syntax}
 \end{figure}
 
 Following Gay and Vasconcelos~\cite{GayVasconcelos10}, we factor the semantics of GV into a
@@ -601,7 +606,7 @@ C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 %%    {\Cx[M] \ceval \Cx[M']}
 %%    {\Cx[\Fx[M]] \ceval \Cx[\Fx[M']]}
 \end{mathpar}
-\caption{Reduction rules and equivalences for terms and configurations}\label{fig:gv-reduction}
+\caption{Reduction Rules and Equivalences for Terms and Configurations}\label{fig:gv-reduction}
 \end{figure}
 
 Reduction rules for terms and configurations, and equivalences for configurations, are given in
@@ -620,12 +625,12 @@ synchronisation of closed channels with garbage collection of the associated nam
 %% We do not incorporate equivalence directly in reduction; we will return to the treatment of
 %% equivalence at the end of the section.
 
-\subsubsection{Relation notation.}
+\subsubsection{Relation Notation.}
 We write $R\,R'$ for the sequential composition of relations $R$ and $R'$, $R \cup R'$ for the union
 of relations $R$ and $R'$, $R^?$ for the reflexive closure of $R$, $R^+$ for the transitive closure
 of $R$, and $R^\star$ for the reflexive, transitive closure of $R$.
 
-\subsubsection{Configuration typing.}
+\subsubsection{Configuration Typing.}
 
 \begin{figure}[float]
 \vspace{1ex}
@@ -673,7 +678,7 @@ of $R$, and $R^\star$ for the reflexive, transitive closure of $R$.
   {T \ceval T'}
   {\Gamma,x:T \ceval \Gamma,x:T'}
 \end{mathpar}
-\caption{Configuration typing}\label{fig:gv-conf-typing}
+\caption{Configuration Typing}\label{fig:gv-conf-typing}
 \end{figure}
 
 Our syntax of configurations permits various forms of deadlocked configurations.  For example, if we
@@ -728,7 +733,7 @@ preservation of configuration typing under reduction.
 %
 The proof is in Appendix~\ref{sec:proofs}.
 
-\subsubsection{Typing and configuration equivalence.}
+\subsubsection{Typing and Configuration Equivalence.}
 
 Alas, our notion of typing is not preserved by configuration equivalence.  For example, assume that
 $\Gamma \vdash (\nu x y)(C \parallel (D \parallel E))$, where $x \in \fv(C), y \in \fv(D), \text{
@@ -857,7 +862,7 @@ terms never evaluate to deadlocked configurations.
   know that there is a well-typed $D' \equiv D$, and so $\lnot\deadlockp(D)$. \qed
 \end{proof}
 
-\subsubsection{Progress and canonical forms.}
+\subsubsection{Progress and Canonical Forms.}
 
 We conclude the section by describing a canonical form for configurations, and characterising the
 stuck terms resulting from the evaluation of well-typed terms.  One might hope that evaluation of a
@@ -1141,7 +1146,7 @@ argument suffices. Strong normalisation also follows as a direct corollary of
 
 \inferrule{ }{\cptyp{\case{x}{}}{\Delta,x:\top}}
 \end{mathpar}
-\caption{CP syntax and typing}\label{fig:cp-typing}
+\caption{CP Syntax and Typing}\label{fig:cp-typing}
 \end{figure}
 
 \figref{cp-typing} gives the syntax and typing rules for the multiplicative-additive fragment of CP;
@@ -1164,7 +1169,7 @@ output, composition, and name restriction (the name $y$ designates a new channel
 will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$ (see
 Appendix~\ref{sec:send} for more discussion of output in CP).
 
-\subsubsection{Cut elimination.}
+\subsubsection{Cut Elimination.}
 
 \begin{figure}[float]
 \vspace{1ex}
@@ -1908,11 +1913,11 @@ deadlock free.
   \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid
     \gvconst{close} \mid \gvconst{link}\\
 \end{syntax}
-Duality:
+~Changes to duality
 \[
   \gvdual \gvend = \gvend
 \]
-~Type schemas for constants
+~Changes to type schemas for constants
 \begin{mathpar}
 \gvconst{fork} : (S \lto \one) \lto \gvdual S
 
@@ -1921,7 +1926,7 @@ Duality:
 \gvconst{link} : S \gvtimes \gvdual S \lto \one
 \end{mathpar}
 \vspace{-4mm}
-\caption{Syntax and typing rules for combined closed channels.}\label{fig:gv-end-syntax}
+\caption{Syntax and Typing Rules for Combined Closed Channels}\label{fig:gv-end-syntax}
 \end{figure}
 
 We begin by defining a language, based on GV, but combining the types $\interm$ and $\outterm$ of
@@ -1955,7 +1960,7 @@ C \parallel \thread () \equiv C
   {F[\gvconst{link} \app (x,y)] \parallel C \ceval F[()] \parallel C\{y/x\}}
 \end{mathpar}
 \vspace{-2mm}
-\caption{Updated configuration evaluation rules}\label{fig:gv-end-conf-eval}
+\caption{Updated Configuration Evaluation Rules}\label{fig:gv-end-conf-eval}
 \end{figure}
 
 Our extended language is, perhaps surprisingly, strictly more expressive than GV.  To see this, we
@@ -2032,7 +2037,7 @@ that our encoding is equivalent to the replicated processes in CP.
 \gvlet{{!x}}{{!V}}{M} \teval M \{ \bind x V \}
 \end{mathpar}
 \vspace{-5mm}
-\caption{GV extensions for unlimited types}
+\caption{GV Extensions for Unlimited Types}
 \label{fig:gv-repl}
 \end{figure}
 
@@ -2102,7 +2107,7 @@ and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
 \section{Related Work}\label{sec:related}
 
 
-\subsubsection{Session types and functional languages.}
+\subsubsection{Session Types and Functional Languages.}
 
 Session types were originally proposed by Honda~\cite{Honda93}, and later extended by Takeuchi et
 al.~\cite{Takeuchi94} and by Honda et al.~\cite{Honda98}.  Honda's system relies on a substructural
@@ -2118,7 +2123,7 @@ embedding of session-typed $\pi$-calculus in polyadic linear $\pi$-calculus, rel
 multi-argument send and receive to capture the state of a communication and variant types to capture
 choice; Dardha et al.~\cite{Dardha12} extend his approach to subtyping and polymorphism.
 
-\subsubsection{Linear logic and session types.}
+\subsubsection{Linear Logic and Session Types.}
 
 When he originally described linear logic, Girard~\cite{Girard87} suggested that it would be suited
 to reasoning about concurrency.  Abramsky~\cite{Abramsky92} and Bellin and
@@ -2136,7 +2141,7 @@ Pfenning to classical (rather than intuitionistic) linear logic, and gives a tra
 simple functional calculus (inspired by that of Gay and Vasconcelos) to his process calculus.  He
 does not give a direct semantics of his functional calculus.
 
-\subsubsection{Deadlock freedom and progress.}
+\subsubsection{Deadlock Freedom and Progress.}
 
 There have been several approaches to guarantee deadlock freedom in $\pi$-calculus.
 Kobayashi~\cite{Kobayashi06} and Padovani~\cite{Padovani14} give type systems that guarantee
