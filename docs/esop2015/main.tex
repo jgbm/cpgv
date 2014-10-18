@@ -837,8 +837,9 @@ variables of individual threads.  Thus, cycles of dependent sessions are preserv
   \[
     \depp(x_1,x_2,M_1) \land \depp(x_2,x_3,M_2) \land \cdots \land \depp(x_n,x_1,M_n).
   \]
-  But now there is no possible $\Gamma$ such that any $\Gamma \vdash C'$ for any process $C'$
-  containing the $M_i$---such a $C'$ would violate \lemref{procs-share-one-channel}.  \qed
+  Since $n \geq 2$, any configuration $C'$ containing the $M_i$ must partition the cycle.  However,
+  any cut of the cycle is crossed by at least two channels, so such a $C'$ must be ill-typed by
+  \lemref{procs-share-one-channel}. \qed
 \end{proof}
 
 Finally, we can combine the previous result with preservation of typing to show that well-typed
