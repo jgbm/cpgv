@@ -760,7 +760,7 @@ $(\equiv\ceval\equiv)^\star$.
   \ceval^\star \Gamma'$, $D \equiv D'$, and $\Gamma' \vdash D'$.
 \end{corollary}
 
-\subsection{Deadlock and Its Absence}\label{sec:gv-deadlock}
+\subsection{Deadlock and its Absence}\label{sec:gv-deadlock}
 \newcommand{\blockedp}{\mathsf{blocked}}
 \newcommand{\depp}{\mathsf{depends}}
 \newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
@@ -1070,8 +1070,10 @@ argument suffices. Strong normalization also follows as a direct corollary of
 
 \section{Classical Linear Logic}
 
-\subsection{CP}
 \label{sec:cp}
+
+%% \subsection{CP}
+%% \label{sec:cp}
 
 \begin{figure}[float]
 \vspace{1ex}
@@ -1154,7 +1156,7 @@ com\-pos\-i\-tion---rather than having distinct name restriction and composition
 provides one combined operator.  This syntactically captures the restriction that composed processes
 must share exactly one channel.  The second is output: the CP term $x[y].(P \mid Q)$ includes
 output, composition, and name restriction (the name $y$ designates a new channel, bound in $P$).  We
-will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$
+will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$.
 
 \subsubsection{Cut elimination.}
 
@@ -1269,13 +1271,15 @@ transformation, moving any further internal communication behind the external co
 
 In this section, we show that GV can simulated CP. \figref{from-cp} gives the translation of CP into
 GV; we translate typing environments by the pointwise extension of the translation on types.  We
-rely on our encoding of branching and choice in GV~\secref{gv-static}, extended to nullary branching
-and choice as follows:
-\begin{mathpar}
-\with \{ \} \defeq \gvin{\zero}{\interm}
+rely on our encoding of branching and choice in GV~\secref{gv-static}.
+%% , extended to nullary branching
+%% and choice as follows:
+%% \begin{mathpar}
+%% \with \{ \} \defeq \gvin{\zero}{\interm}
 
-\oplus \{ \} \defeq \gvout \zero \outterm
-\end{mathpar}
+%% \oplus \{ \} \defeq \gvout \zero \outterm
+%% \end{mathpar}
+
 In translating CP terms to GV terms, the key observation is that CP terms contain their
 continuations; for example, the translation of input includes both a call to \gvconst{receive} and
 the translation of the continuation.  Additionally, the rebinding that is implicit in CP syntax is
@@ -1545,7 +1549,7 @@ We now show that reduction in GV is preserved by reduction in CP. First, we obse
 equivalence is preserved.
 %
 \begin{theorem}
-If $\Gamma \vdash C \equiv D$, then $\tocp{C}z \equiv \tocp{D}z$.
+If $\Gamma \vdash C$, $\Gamma \vdash D$, and $C \equiv D$, then $\tocp{C}z \equiv \tocp{D}z$.
 \end{theorem}
 %
 \begin{proof}
@@ -1632,7 +1636,7 @@ appropriate substitution through a prefix.\qed
 %% places its argument inside a prefix.
 %% \end{proof}
 
-Using the substitution lemma, we prove that $\tocp -$ preserves functional reduction.
+Using the substitution lemma, we prove that $\tocp -$ preserves reduction on terms.
 %
 \begin{theorem}
 \label{thm:teval-preserved}
@@ -1663,7 +1667,7 @@ context follows straightforwardly by observing that the translation of an evalua
 places its argument inside a prefix.\qed
 \end{proof}
 
-Finally, we prove that all reductions in GV are preserved by $\tocp{-}$.
+Finally, we prove that $\tocp{-}$ preserves reduction on configurations.
 %
 \begin{theorem}
 \label{thm:gv-reduction-simulated}
@@ -1891,7 +1895,8 @@ systems are deadlock free.
 \subsection{Unifying $\interm$ and $\outterm$}\label{sec:gv-end}
 
 \begin{figure}[float]
-Syntax:
+\vspace{1ex}
+~Syntax
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvend \mid \channel{S} \\
   \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid
@@ -1901,7 +1906,7 @@ Duality:
 \[
   \gvdual \gvend = \gvend
 \]
-Type schemas for constants:
+~Type schemas for constants
 \begin{mathpar}
 \gvconst{fork} : (S \lto \one) \lto \gvdual S
 
@@ -1926,11 +1931,12 @@ updated evaluation rules for the extended language.  In addition to a new rule f
 (as it can now return a unit value instead of a closed channel).
 
 \begin{figure}[float]
-Extended configuration equivalence:
+\vspace{1ex}
+~Extended configuration equivalence
 \begin{mathpar}
 C \parallel \thread () \equiv C
 \end{mathpar}
-Extended reduction rules (all other reduction rules apply as in GV)
+~Extended reduction rules (all other reduction rules apply as in GV)
 \begin{mathpar}
 \inferrule
   [Close]
@@ -1987,14 +1993,15 @@ can encode replicated processes using term-level contraction and weakening.  Fin
 that our encoding is equivalent to the replicated processes in CP.
 
 \begin{figure}[float]
-Syntactic extensions:
+\vspace{1ex}
+~Syntactic extensions
 \begin{syntax}
   \text{Types} & T & ::= & \gvforever T \mid \dots \\
   \text{Terms} & M,N & ::= & \gvlet{{!x}}{M}{N} \mid {!M} \mid \dots \\
   \text{Values} & V & ::= & {!V} \mid \dots \\
   \text{Evaluation contexts} & E & ::= & \gvlet{{!x}}{E}{M} \mid {!E} \mid \dots
 \end{syntax}
-Typing rules:
+~Typing rules
 \begin{mathpar}
 \inferrule
   {\Gamma \vdash M: T \\
@@ -2014,7 +2021,7 @@ Typing rules:
   {\Gamma,x:\gvforever T,x':\gvforever T \vdash M: U}
   {\Gamma,x:\gvforever T \vdash M \{ x/x' \}: T}
 \end{mathpar}
-Reduction:
+~Reduction
 \begin{mathpar}
 \gvlet{{!x}}{{!V}}{M} \teval M \{ \bind x V \}
 \end{mathpar}
@@ -2052,19 +2059,18 @@ channels $\gvout{T}{\outterm}$ for suitable $T$.  We then introduce new constant
 
 \gvconst{request} : Service(S) \lto S
 \end{mathpar}
-defined as follows
+defined as follows:
 \begin{align*}
- \\
   \gvconst{replicate} \app f &\defeq \gvconst{fork} \app (\lambda x. \gvsend{(f,x)}) \\
   \gvconst{request} \app s &\defeq
-    \bl \gvlet{(f,s)}{\gvreceive{s}}{\\\gvletunit{\gvconst{wait}\app s}{\\\gvlet{{!g}}{f}{g}}} \el
+    \gvlet{(f,s)}{\gvreceive{s}}{\gvletunit{\gvconst{wait}\app s}{\gvlet{{!g}}{f}{g}}}
 \end{align*}
-Finally, we can give translations from GV into CP.
+Now, we can extend the translation from GV into CP:
 \begin{equations}
   \tocp{{!M}}z &\defeq& \cut{x} {} {\replicate z y.\link y x}{\tocp{M}x} \\
   \tocp{\gvlet{{!x}}{V}{M}}z &\defeq& \cut y {} {\tocp{V}y} {\derelict{y}{x}.\tocp{M}z}
 \end{equations}
-And similarly translation from CP into GV.
+and similarly the translation from CP into GV:
 \begin{equations}
 \togv{\replicate{s}{x}.P} &\defeq& \gvconst{replicate} \app (\lambda x. \togv{P}) \\
   \togv{\derelict{s}{x}.P} &\defeq& \gvlet{x}{\gvconst{request} \app s}{\togv{P}} \\
@@ -2139,20 +2145,22 @@ for deadlock freedom; their approach accommodates processes with open channels b
 type-directed closure of a process, and showing that open processes progress only if their typed
 closures progress.
 
-\section{Future Work}\label{sec:conclusion}
+\section{Conclusion and Future Work}\label{sec:conclusion}
 
-We have described GV, a minimal session-typed functional language.  We have shown that it is
-deadlock-free, deterministic, and terminating, and have demonstrated a strong connection between our
-language and a process calculus based on linear logic.  Finally, we have argued that GV a suitable
-basis for future language development by showing two extensions of GV, and demonstrating that our
-proof of deadlock freedom extends easily to these cases.
+We have presented a small-step operational semantics for GV, a minimal session-typed functional
+language. We have shown that it is deadlock-free, deterministic, and terminating, and have
+established simulations both ways between our semantics for GV and cut-reduction in a process
+calculus based on linear logic. Finally, we have demonstrated that GV is a suitable basis for future
+modular language development by illustrating two extensions of GV, and observing that our proof of
+deadlock freedom extends directly to these cases.
 
-In closing, we identify two important directions of future work.  The first is recursion.  Recursion
-is essential both for sessions (to capture repeating behavior, such as adding recipients to a mail
-message) and for programming.  Adding unchecked recursion to GV would clearly compromise termination
-and introduce the possibility of livelock; we hope that adapting approaches used for fixed points in
-linear logic could mitigate these problems.  The second is asynchrony; we hope to follow the
-approach used by Gay and Vasconcelos~\cite{GayVasconcelos10} in their similar calculus.
+In closing, we identify two important directions for future work. The first direction is
+recursion. Recursion is essential both for sessions (to capture repeating behavior, such as adding
+recipients to a mail message) and for functional programming. Adding unchecked recursion to GV would
+clearly compromise termination and introduce the possibility of livelock; we hope that adapting
+approaches used for fixed points in linear logic might mitigate this issue. The second direction is
+asynchrony. We hope to develop the approach of Gay and Vasconcelos~\cite{GayVasconcelos10} and show
+a correspondence between synchronous and asynchronous semantics for GV.
 
 \small
 \label{sec:bib}
