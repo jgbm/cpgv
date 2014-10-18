@@ -2136,10 +2136,13 @@ exactly corresponds to the proof system for the dual intuitionistic linear logic
 to congruence) cut reductions corresponds to process reductions or process equivalences.  Toninho et
 al.~\cite{ToninhoCP12} consider embeddings of the $\lambda$-calculus into session-typed
 $\pi$-calculus; their focus is on expressing the concurrency inherent in $\lambda$-calculus terms,
-rather than simulating standard reduction.  Wadler~\cite{Wadler14} adapts the approach of Caires and
-Pfenning to classical (rather than intuitionistic) linear logic, and gives a translation from a
-simple functional calculus (inspired by that of Gay and Vasconcelos) to his process calculus.  He
-does not give a direct semantics of his functional calculus.
+rather than simulating standard reduction. Wadler~\cite{Wadler14} adapts the approach of Caires and
+Pfenning to classical (rather than intuitionistic) linear logic, and gives a translation from GV
+(his functional language) to CP (his process calculus). He does not give a direct semantics for
+GV. In previous work~\cite{LindleyM14}, we give a translation between CP and GV.
+%% , and show that
+%% post-composing with the translation from GV to CP yields a translation from full GV into the process
+%% fragment of GV.
 
 \subsubsection{Deadlock Freedom and Progress.}
 
