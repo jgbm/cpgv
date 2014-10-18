@@ -726,6 +726,7 @@ preservation of configuration typing under reduction.
   \Gamma'$ and $\Gamma' \vdash C'$.
 \end{theorem}
 %
+The proof is in Appendix~\ref{sec:proofs}.
 
 \subsubsection{Typing and configuration equivalence.}
 
@@ -832,13 +833,14 @@ variables of individual threads.  Thus, cycles of dependent sessions are preserv
 \end{lemma}
 
 \begin{proof}
-  By contradiction: suppose $\deadlockp(C)$.  Then we know there must be some variables
-  $x_1,\dots,x_n$ and processes $M_1,\dots,M_n$ in $C$ such that
+  By contradiction. Suppose $\deadlockp(C)$, then by expanding the definition of $\deadlockp$ we
+  know that there must exist variables $x_1,\dots,x_n$ and processes $M_1,\dots,M_n$ in $C$ such
+  that
   \[
     \depp(x_1,x_2,M_1) \land \depp(x_2,x_3,M_2) \land \cdots \land \depp(x_n,x_1,M_n).
   \]
-  Since $n \geq 2$, any configuration $C'$ containing the $M_i$ must partition the cycle.  However,
-  any cut of the cycle is crossed by at least two channels, so such a $C'$ must be ill-typed by
+  Either $n = 1$, which violates linearity, or configuration $C$ must partition the cycle. However,
+  any cut of the cycle is crossed by at least two channels, so $C$ must be ill-typed by
   \lemref{procs-share-one-channel}. \qed
 \end{proof}
 
@@ -897,6 +899,7 @@ can order the threads by the sessions they share.
   If $\Gamma \vdash C$, then there is some $C' \equiv C$ such that $\Gamma \vdash C'$ and $C'$ is in
   canonical form.
 \end{lemma}
+The proof is in Appendix~\ref{sec:proofs}.
 
 We can now state some progress results.  We begin with open configurations: each thread must be
 blocked on either a free variable or a $\nu$-bound variable.
@@ -1061,7 +1064,7 @@ reductions in either order. \qed
 It is not hard to see that the system remains deterministic if we extend the functional part of GV
 with any well-typed confluent reduction rules at all.
 
-\begin{theorem}[Strong normalization]
+\begin{theorem}[Strong normalisation]
   If $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$ reduction sequences
   beginning from $C$.
 \end{theorem}
@@ -1069,7 +1072,7 @@ To prove strong normalisation for core GV, one can use an elementary argument ba
 linearity. When we add replication~\secref{gv-repl} and other features, a standard logical relations
 argument suffices. Strong normalisation also follows as a direct corollary of
 \thmref{gv-reduction-simulated} and the cut-elimination theorem for classical linear logic.
-
+ 
 \section{Classical Linear Logic}
 
 \label{sec:cp}
@@ -1158,7 +1161,7 @@ com\-pos\-i\-tion---rather than having distinct name restriction and composition
 provides one combined operator.  This captures syntactically the restriction that composed processes
 must share exactly one channel.  The second is output: the CP term $x[y].(P \mid Q)$ includes
 output, composition, and name restriction (the name $y$ designates a new channel, bound in $P$).  We
-will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$ (but see
+will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$ (see
 Appendix~\ref{sec:send} for more discussion of output in CP).
 
 \subsubsection{Cut elimination.}
@@ -1474,7 +1477,7 @@ appropriate substitution, and application by output. Unit values are simulated b
 the return channel. Pairs are simulated by evaluating both components in parallel and transmitting
 the results to the return channel. Injections are simulated by injections. Each elimination form
 (other than application) guards the continuation with a suitable prefix, delaying reduction of the
-continuation until the a value has been computed to pass to it.
+continuation until a value has been computed to pass to it.
 
 The translation of configurations is quite direct. We write $C \parallel_x C'$ to indicate that the
 variable $x$ is shared by $C$ and $C'$; in a well-typed GV configuration, there will always be
@@ -1482,11 +1485,11 @@ exactly one such variable, so the translation is unambiguous.
 
 Our translation differs from both Wadler's~\cite{Wadler14} and our previous one~\cite{LindleyM14},
 neither of which simulate even plain $\beta$-reduction. This is because the obvious translation to
-CP cannot simulate substitution under a lambda abstraction, motivating our use of weak explicit
-substitution.
+CP cannot simulate substitution under a lambda abstraction, motivating our use of closures / weak
+explicit substitution.
 %
-Indeed, others have taken advantage explicit substitutions in order simulate small-step semantics of
-$\lambda$-calculi in the full $\pi$-calculus~\cite{BakelV09}.
+Indeed, others have taken advantage of full explicit substitutions in order simulate small-step
+semantics of $\lambda$-calculi in the full $\pi$-calculus~\cite{BakelV09}.
 
 Another departure from the previous translations to CP is that, despite the call-by-value semantics
 of GV, our translation is more in the spirit of call-by-name. For instance, in the translation of an
@@ -1680,7 +1683,7 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 \begin{proof}
   By induction on the derivation of $C \ceval D$. The inductive cases follow straightforwardly from
   the compositionality of the definitions and \thmref{teval-preserved}. We give a representative
-  example of the base cases.
+  example of the base cases. The other cases appear in Appendix~\ref{sec:proofs}.
 \begin{itemize}
 \item Case $\Fx[\gvconst{send} \app (V,x)] \parallel \Fx'[\gvconst{receive} \app x] \ceval \Fx[x]
   \parallel \Fx'[(V,x)]$.
@@ -2278,8 +2281,8 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
 
 \begin{proof}
   By induction on the derivation of $C \ceval D$. The inductive cases follow straightforwardly from
-  the compositionality of the definitions and \thmref{teval-preserved}.  The case for \gvconst{send}
-  against \gvconst{receive} is included in the main body.  The remaining cases follow.
+  the compositionality of the definitions and \thmref{teval-preserved}. The case for \gvconst{send}
+  against \gvconst{receive} is included in the main body of the paper. The remaining cases follow.
   \begin{itemize}
   \item Case $(\nu x)(\Fx[\gvconst{wait} \app x] \parallel \thread x) \ceval \Fx[()]$.
     \[
