@@ -66,9 +66,9 @@
 
 \section{Introduction}\label{sec:intro}
 
-From massively distributed programs running across entire datacenters, to handheld apps reliant on
+From massively distributed programs running across entire data centres, to hand-held apps reliant on
 remote services for functionality, concurrency has become a central problem in program
-correctness. Assuring correct concurrent behavior requires reasoning not just about the types of
+correctness. Assuring correct concurrent behaviour requires reasoning not just about the types of
 data communicated, but the order in which the communication takes place. For example, the messages
 between an SMTP client and server are all strings, but a client that sends the recipient's address
 before the sender's address is still in violation of the protocol, despite sending the correct type
@@ -98,7 +98,7 @@ match the expectations of their types. Recent work has sought to establish a cor
 session types and linear logic, the archetypal substructural logic for reasoning about state.
 Caires and Pfenning~\cite{CairesPfenning10} developed a correspondence between cut elimination in
 intuitionistic linear logic and process reduction in a session-typed process
-calculus. Wadler~\cite{Wadler14} adapted their approach to classical linear logic, emphasizing the
+calculus. Wadler~\cite{Wadler14} adapted their approach to classical linear logic, emphasising the
 role of duality in the typing rules; the semantics of his system is given directly by the cut
 elimination rules of classical linear logic. He also gives a type-preserving translation from a
 simple functional calculus (GV) to a process calculus (CP); however, he gives no semantics for GV
@@ -111,7 +111,7 @@ concurrent portions following the approach of Gay and Vasconcelos~\cite{GayVasco
 functional portion of our semantics differs from standard presentations of call-by-value reduction
 only in that we adopt a weak form of explicit substitution to maintain a connection with cut
 reduction. The concurrent portion of our semantics includes the typical reductions and equivalences
-of $\pi$-calculus-like systems. We develop a characterization of deadlock-free programs in our
+of $\pi$-calculus-like systems. We develop a characterisation of deadlock-free programs in our
 setting; this is not completely trivial because closed expressions may return channels, so we cannot
 simply require that all possible communication take place. We show that well-typed GV programs are
 deadlock-free, deterministic, and terminating. We give translations between our variant of GV and
@@ -124,7 +124,7 @@ The paper proceeds as follows.
 \item We define a core linearly-typed functional language, by extending linear lambda calculus with
   session-typed communication primitives~\secref{gv-static}. We present an (untyped) synchronous
   operational semantics for our core language~\secref{gv-eval}. We show that GV is deterministic
-  and terminating~\secref{determinism} We characterize deadlock and normal forms; we show that typed
+  and terminating~\secref{determinism} We characterise deadlock and normal forms; we show that typed
   terms are deadlock-free, and that closed typed terms evaluate to normal
   forms~\secref{gv-deadlock}.
 \item We connect our language to the interpretation of session types as linear logic propositions,
@@ -134,9 +134,9 @@ The paper proceeds as follows.
   process expressions, the latter depends crucially on the use of weak explicit substitutions in the
   semantics of GV lambda abstractions.
 \item We consider two extensions of our core language: one which has a single, self-dual closed
-  channel, harmonizing the treatment of closed channels with their treatment in other session-typed
+  channel, harmonising the treatment of closed channels with their treatment in other session-typed
   calculi~\secref{gv-end}, and another which adds unlimited types and replicated
-  behavior~\secref{gv-repl}. We show that these extensions preserve the essential deadlock-freedom
+  behavior~\secref{gv-re pl}. We show that these extensions preserve the essential deadlock-freedom
   properties of the core language.
 \end{itemize}
 We conclude by discussing related~\secref{related} and future~\secref{conclusion} work.
@@ -611,9 +611,9 @@ but also applies any substitution captured by the closure. Configuration equival
 also relatively standard. We provide an additional equivalence observing that \gvconst{link} is
 symmetric in order to simplify the definition of reduction. Communication is provided by rule
 \textsc{Send} and session initiation is provided by rule \textsc{Fork}. Rule \textsc{Wait} combines
-synchronization of closed channels with garbage collection of the associated name restriction.  Rule
+synchronisation of closed channels with garbage collection of the associated name restriction.  Rule
 \textsc{Link} is complicated by the need to produce a session of type $\outterm$; the inserted
-\gvconst{wait} synchronizes with the produced session.
+\gvconst{wait} synchronises with the produced session.
 
 %% [SL: unnecessary?]
 %%
@@ -766,13 +766,13 @@ $(\equiv\ceval\equiv)^\star$.
 \newcommand{\deadlockp}{\ensuremath{\mathsf{deadlocked}}}
 
 In \secref{gv-eval}, we saw several examples of deadlocked terms which were rejected by our type
-system. We now present a general account of deadlock: we characterize deadlocked configurations, and
+system. We now present a general account of deadlock: we characterise deadlocked configurations, and
 show that well-typed configurations do not evaluate to deadlocked configurations.
 
 We begin by observing that many examples of stuck configurations are already excluded by existing
 session-typing disciplines: in particular, those configurations in which either too many or too few
-threads attempt to synchronize on a given session.  The cases of interest to us are those in which
-the threads individually obey the session-typing discipline, but the order of synchronizations in
+threads attempt to synchronise on a given session.  The cases of interest to us are those in which
+the threads individually obey the session-typing discipline, but the order of synchronisations in
 the threads creates deadlock.  We say that a thread $M$ is blocked on a session $x$, written
 $\blockedp(x,M)$, if $M$ has evaluated to some context surrounding a communication primitive applied
 to $x$:
@@ -855,7 +855,7 @@ terms never evaluate to deadlocked configurations.
 
 \subsubsection{Progress and Canonical Forms.}
 
-We conclude the section by describing a canonical form for configurations, and characterizing the
+We conclude the section by describing a canonical form for configurations, and characterising the
 stuck terms resulting from the evaluation of well-typed terms.  One might hope that evaluation of a
 well-typed term would always produce a value; however, this is complicated by the possibility of
 terms that return sessions.  For a simple example, consider the term
@@ -872,7 +872,7 @@ the result of evaluation is a configuration equivalent to
 Clearly, no more evaluation is possible, even though the configuration still contains blocked
 threads.
 %
-However, it tursn out that we can show that evaluation of terms that do not return sessions must
+However, it turns out that we can show that evaluation of terms that do not return sessions must
 always produce a value.
 
 \begin{definition}
@@ -888,7 +888,7 @@ xy)(C \parallel D \parallel E)$ where $x \in \fv(C), y \in \fv(D), \text{ and } 
 Both $(\nu x)(C \parallel (\nu y)(D \parallel E))$ and $(\nu y)(D \parallel (\nu x)(C \parallel E))$
 are canonical forms of the original configuration.  We can show that any well-typed term must be
 equivalent to a term in canonical form; again, the key insight is that captured by
-\lemref{procs-share-one-channel}: if any two subconfigurations share at most one session, then we
+\lemref{procs-share-one-channel}: if any two sub-configurations share at most one session, then we
 can order the threads by the sessions they share.
 
 \begin{lemma}\label{lem:canonical}
@@ -920,7 +920,7 @@ To see why, consider just the first two threads of a configuration $(\nu x_1)(M_
 x_2)(M_2 \parallel \dots))$.  As there are no free variables, thread $M_1$ can only be blocked on
 $x_1$.  Now, from the previous result, thread $M_2$ can be blocked on either $x_1$ or $x_2$.  But,
 were it blocked on $x_1$, it could reduce with thread $M_1$; we can conclude it is blocked on $x_2$.
-Generalizing this observation gives the following progress result.
+Generalising this observation gives the following progress result.
 %
 \begin{corollary}\label{thm:progress}
   Let $\vdash C$, $C \centernot\ceval$ and let $C' = (\nu x_1)(\thread M_1 \parallel (\nu
@@ -1063,9 +1063,9 @@ with any well-typed confluent reduction rules at all.
   If $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$ reduction sequences
   beginning from $C$.
 \end{theorem}
-To prove strong normalization for core GV, one can use an elementary argument based on
+To prove strong normalisation for core GV, one can use an elementary argument based on
 linearity. When we add replication~\secref{gv-repl} and other features, a standard logical relations
-argument suffices. Strong normalization also follows as a direct corollary of
+argument suffices. Strong normalisation also follows as a direct corollary of
 \thmref{gv-reduction-simulated} and the cut-elimination theorem for classical linear logic.
 
 \section{Classical Linear Logic}
@@ -1192,7 +1192,7 @@ will frequently write $x\sd{y}.P$ to abbreviate $x[z].(\link y z \mid P)$.
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
 \end{equations}
-\caption{CP congruences and cut reduction}\label{fig:cp-reduction}
+\caption{CP Congruences and Cut Reduction}\label{fig:cp-reduction}
 \end{figure}
 
 The semantics of CP terms are given by cut reduction, as shown in \figref{cp-reduction}.  We write
@@ -1201,8 +1201,8 @@ $\equiv$ (as name restriction and composition are combined into one form, compos
 associative). We write $\crto$ for the cut reduction relation, $\ccto$ for the commuting conversion
 relation, and $\rto$ for $\crto \cup \ccto$. Note that,. The majority of the cut reduction rules
 correspond closely to synchronous reductions in $\pi$-calculus---for example, the reduction of
-$\with$ against $\oplus$ corresponds to the synchronization of an internal and external choice.  The
-rule for reduction of $\parr$ against $\otimes$ is more complex than synchronization of input and
+$\with$ against $\oplus$ corresponds to the synchronisation of an internal and external choice.  The
+rule for reduction of $\parr$ against $\otimes$ is more complex than synchronisation of input and
 output, as it must also manipulate the implicit name restriction and composition in CP's output
 term. The commuting conversions do not correspond to any reduction rule in $\pi$-calculus. We write
 $\bigrto$ for $(\equiv\rto\equiv)^+$, $\bigcrto$ for $(\equiv\crto\equiv)^+$, and $\bigccto$ for
@@ -1319,7 +1319,7 @@ If $P \vdash \Delta$ and $P \crto Q$, then $\togvc{P} \rto^+ \togvc{Q}$.
 \end{proof}
 %
 The commuting conversions in CP do not expose additional reductions, but are only necessary to
-assure that the result of evaluation does not have a cut at the top level.  Our characterization of
+assure that the result of evaluation does not have a cut at the top level.  Our characterisation of
 deadlock freedom in GV has no such requirement, so we have no need of corresponding steps in GV.
 
 
@@ -1443,7 +1443,7 @@ we translate typing environments by the pointwise extension of the translation o
 \end{figure}
 
 The translation on session types is homomorphic except for output, where the output type is
-dualized. This accounts for the discrepancy between $\gvdual{!T.S} = ?T.S$ and $\cpdual{(A \otimes
+dualised. This accounts for the discrepancy between $\gvdual{!T.S} = ?T.S$ and $\cpdual{(A \otimes
   B)} = \cpdual{A} \parr \cpdual{B}$.
 %
 Following our previous work~\cite{LindleyM14}, the translation on functional types is factored
@@ -1889,7 +1889,7 @@ If $\Gamma \vdash C$, $\Gamma' \vdash D$, $\Gamma \rto \Gamma'$, and $C \ceval D
 
 In this section, we consider two extensions of our core calculus: in the first, we have a single,
 self-dual closed channel; in the second, we support unlimited types.  In both cases, we are able to
-directly apply our characterizations of deadlock and deadlock freedom to show that the extended
+directly apply our characterisations of deadlock and deadlock freedom to show that the extended
 systems are deadlock free.
 
 \subsection{Unifying $\interm$ and $\outterm$}\label{sec:gv-end}
@@ -1961,8 +1961,8 @@ can consider the following term (assuming well-typed $M,N$):
 \el\]
 %
 Initially, the forked thread and its parent share (only) session $w$.  After both threads close
-session $w$, however, there can be no further synchronization between the threads; in contrast, in
-core GV, there is always a final synchronization with \gvconst{wait}.  To capture the increase in
+session $w$, however, there can be no further synchronisation between the threads; in contrast, in
+core GV, there is always a final synchronisation with \gvconst{wait}.  To capture the increase in
 expressivity, we must extend the existing configuration typing rules (\figref{gv-conf-typing}) with
 a rule for composition in which no threads are shared (such as after the reduction of
 $\gvconst{close}\app w$ in the example):
@@ -2085,7 +2085,7 @@ and similarly the translation from CP into GV:
       {P[x/y] \vdash \Delta,x:\cpquery{A}}} &\defeq&
     \ba{l} \gvlet{f}{\gvconst{request}\app x}{\\\gvlet{x}{\gvconst{replicate}\app f}{\\\gvlet{y}{\gvconst{replicate}\app f}{\togv{P}}}} \ea
 \end{equations}
-The translation from CP into GV emphasizes that, while weakening and contraction are implicit in CP
+The translation from CP into GV emphasises that, while weakening and contraction are implicit in CP
 syntax, they play a central role in the CP semantics of exponentials, and thus have non-trivial
 translation to GV.  Finally, the extensions of Theorems~\ref{thm:cp-reduction-simulated}
 and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
@@ -2096,7 +2096,7 @@ and~\ref{thm:gv-reduction-simulated} to unlimited channels is direct.
 
 \subsubsection{Session types and functional languages.}
 
-Session types were originally proposed by Honda~\cite{Honda93}, and later extended by Takeuchi el
+Session types were originally proposed by Honda~\cite{Honda93}, and later extended by Takeuchi et
 al.~\cite{Takeuchi94} and by Honda et al.~\cite{Honda98}.  Honda's system relies on a substructural
 type system (in which sessions cannot be duplicated or discarded) and adopts the syntax $\with$ and
 $\oplus$ for choice; however, he does not draw a connection between his type system and the
@@ -2137,7 +2137,7 @@ in which channels are used, and thus statically eliminating the possibility of c
 Their approaches can be seen as developments of linear $\pi$-calculus---they do not directly address
 the evolution of types provided by session types.
 
-Carbone and Debois~\cite{Carbone10} give a graphical characterization of session-typed processes;
+Carbone and Debois~\cite{Carbone10} give a graphical characterisation of session-typed processes;
 this allows them to directly identify cycles in the session interactions.  They show that all
 possible interactions eventually take place in cycle-free processes.  Carbone et
 al.~\cite{CarboneDM14} show similar results for well-typed processes under Kobayashi's type system
@@ -2177,7 +2177,7 @@ logic rule for tensor. However, this correspondence comes at a price. Operationa
 $x[y].(P \mid Q)$ does three things: it introduces a fresh variable $y$, it sends $y$ to a freshly
 spawned process $P$, and in parallel it continues as process $Q$.  This complicates both the
 reduction semantics of CP (as the cut reduction of $\otimes$ against $\parr$ must account for all
-three behaviors) and the equivalence of CP and GV (where the behavior of \gvconst{send} is simpler).
+three behaviours) and the equivalence of CP and GV (where the behavior of \gvconst{send} is simpler).
 
 We can give an alternative formulation of send, avoiding the additional name restriction and
 composition, as follows:
@@ -2193,12 +2193,12 @@ where $x\sd{y}.P$ is defined as $x[z].(\link y z \mid P)$.  In particular, note 
      &\crto& \cut z {} {\link y z} {\cut x {} P {Q}} \\
      &\crto& \cut x {} P {Q \{ y/z \}}
 \end{equations}
-as we would expect for synchronizing a send and a receive.  Similarly, we note that any process
+as we would expect for synchronising a send and a receive.  Similarly, we note that any process
 $x[y].(P \mid Q)$ can also be expressed as a process $\cut y {} P {x\sd{y}.Q}$, which reduces to the
 original by one application of the commuting conversions.  However, the two formulations are not
 quite identical. Let us consider the possible reductions of the two terms.  Notice that in $x[y].(P
 \mid Q)$, both $P$ and $Q$ are blocked on $x$; however, the same is not true for $\cut y {} P
-{x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronizing on $x$.
+{x\sd{y}.Q}$; the latter permits reductions in $P$ before synchronising on $x$.
 
 \section{Proofs of Selected Results}
 
@@ -2411,3 +2411,11 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
 \end{proof}
 
 \end{document}
+
+%%  LocalWords:  Caires Pfenning Toninho Wadler Wadler's GV CP modularity SMTP RcptAddress gv eval
+%%  LocalWords:  SenderAddress substructural intuitionistic Vasconcelos untyped cp togv tocp inl xy
+%%  LocalWords:  inr nullary schemas versa LiftV conf rcl procs redexes repl CP's pos tion dualised
+%%  LocalWords:  Congruences pointwise homomorphic compositional IH subst compositionality teval et
+%%  LocalWords:  expressivity typings exponentials Takeuchi al Kobayashi polyadic multi Dardha
+%%  LocalWords:  subtyping polymorphism Girard Abramsky Bellin embeddings Padovani Carbone Debois
+%%  LocalWords:  Kobayashi's livelock asynchrony
