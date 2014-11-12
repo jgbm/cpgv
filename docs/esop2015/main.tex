@@ -592,7 +592,7 @@ C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 \inferrule
    [Link]
    {x \in \fv(M)}
-   {(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
+   {\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M] \ceval \Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}]}
 
 \inferrule
    [LiftV]
@@ -1956,8 +1956,8 @@ C \parallel \thread () \equiv C
 
 \inferrule
 [Link]
-  {x \in \fv(P)}
-  {F[\gvconst{link} \app (x,y)] \parallel C \ceval F[()] \parallel C\{y/x\}}
+  { }
+  {(\nu x)(F[\gvconst{link} \app (x,y)] \parallel C) \ceval F[()] \parallel C\{y/x\}}
 \end{mathpar}
 \vspace{-2mm}
 \caption{Updated Configuration Evaluation Rules}\label{fig:gv-end-conf-eval}
