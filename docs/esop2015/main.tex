@@ -1219,11 +1219,11 @@ commuting conversions do not correspond to any reduction rule in $\pi$-calculus.
 for $(\equiv\rto\equiv)^+$, $\bigcrto$ for $(\equiv\crto\equiv)^+$, and $\bigccto$ for
 $\bigcrto(\ccto^\star)$.
 
-Just as cut elimination in logic shows that any proof can be transformed to one that does not make
-use cut, the reduction rules of CP transform any term into a term blocked on an external
+Just as cut elimination in logic ensures that any proof may be transformed into an equivalent
+cut-free proof, the reduction rules of CP transform any term into a term blocked only on external
 communication---that is to say, if $P \vdash \Delta$, then $P \bigccto P'$ where $P' \not= \cut x {}
-Q {Q'}$ for any $x,Q,Q'$.  The final commuting conversions play a central role in this
-transformation, moving any further internal communication behind the external communication.
+Q {Q'}$ for any $x,Q,Q'$. The final commuting conversions play a central role in this
+transformation, moving any remaining internal communication after an external communication.
 
 \subsection{Translation from CP to GV}\label{sec:togv}
 
