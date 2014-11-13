@@ -20,7 +20,7 @@
 \usepackage{fullpage}
 %\usepackage{mathptmx}
 \usepackage{newtxtext}
-\title{Asynchronous Semantics for Impatient GV}
+\title{Asynchronous Semantics for Impatient GV \\ Or an \emph{even less patient} GV}
 
 \date{\today}
 
@@ -129,9 +129,18 @@ C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \
 %
 \inferrule
    [Link]
-   {x \in \fv(M)}
-   {(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval 
-   (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
+   %{x \in \fv(M)}
+   { }
+   {
+    \Fx[\gvconst{link} \app (x, y)] \parallel
+    \gvendpoint{x'}{\gvbuf{}{U'}{}}{x}{\gvbuf{}{U}{}} \parallel
+    \gvendpoint{y}{\gvbuf{}{V}{}}{y'}{\gvbuf{}{V'}{}}
+    \ceval
+    \Fx[()] \parallel \gvendpoint{x'}{\overrightarrow{U'} \mdoubleplus \overrightarrow{V}}
+    {y'}{\overrightarrow{V} \mdoubleplus \overrightarrow{U}}
+   }
+   %{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval 
+   %(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
 
 \inferrule
    [LiftV]
