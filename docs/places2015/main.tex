@@ -1,0 +1,151 @@
+\documentclass[a4paper]{article}
+\usepackage{amsmath,amssymb,centernot,colortbl,mathwidth,scalerel,stmaryrd,url,xspace,mathrsfs,enumitem,bm}
+\usepackage[table]{xcolor}
+\addtolength{\jot}{-3px}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,citecolor=blue}
+
+\usepackage[numbers,sort&compress,sectionbib,square]{natbib}
+\renewcommand{\bibname}{References}
+
+\usepackage{mathpartir}
+\mprset{sep=1em}
+
+\usepackage{float}
+\floatstyle{boxed}
+\restylefloat{figure}
+
+\input{preamble}
+\usepackage{fullpage}
+%\usepackage{mathptmx}
+\usepackage{newtxtext}
+\title{Asynchronous Semantics for Impatient GV}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{figure}[float]
+\begin{syntax}
+  \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvconst{end} \mid \channel{S} \\
+  \text{Types} & T,U & ::= & S \mid \one \mid T \gvtimes U \mid \zero \mid T \gvplus U \mid T \lto U
+  \\ % \mid {!T} \\
+  \text{Terms} & L,M,N & ::= & x \mid K \app M \mid \lambda x.M \mid M\,N \\
+  & & \mid & (M,N) \mid \gvlet{(x,y)}{M}{N} \\
+  & & \mid & \mkwd{inl}\,M \mid \mkwd{inr}\,M \mid \gvcase{M}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N} \\
+  & & \mid & () \mid \gvletunit{M}{N} \mid \gvconst{absurd} \app M \\
+  %\text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{wait} \mid \gvconst{link}\\
+  \text{Constants} & K & ::= & \gvconst{send} \mid \gvconst{receive} \mid \gvconst{fork} \mid \gvconst{close} \mid \gvconst{link}\\
+\end{syntax}
+\caption{Syntax of GV Terms and Types}\label{fig:gv-syntax}
+\end{figure}
+
+\begin{figure}[float]
+\begin{syntax}
+  \text{Values} & V,W & ::= & x \mid \lambda^\sigma x.M \\
+  & & \mid & () \mid (V,W) \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
+  \text{Substitutions} & \sigma & ::= & \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \} \\
+  & & & \qquad\text{ where the $x_i$ are pairwise distinct} \\
+  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid K \app V \mid \gvletunit{\Ex}{M} \\
+  & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
+  & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
+  & \Fx & ::= & \phi \Ex \\
+  \text{Configurations} & C,D & ::= & \phi M \mid C \parallel C' \mid (\nu x y) C \mid \gvendpoint{x}{\gvbuf{}{V_1}{}}{y}{\gvbuf{}{V_2}{}} \\
+  \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x y)\Cx \\
+  \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
+\end{syntax}
+\caption{Syntax of Values, Configurations, and Contexts}\label{fig:gv-eval-syntax}
+\end{figure}
+
+\begin{figure}[float]
+\vspace{1ex}
+~Term reduction
+\begin{align*}
+  (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \uplus \sigma) \\
+  \gvletunit{()}{M} &\teval M \\
+  \gvlet{(x,y)}{(V,V')}{M} &\teval M \{ \bind x V, \bind y {V'} \} \\
+  \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N \{ \bind x V \} \\
+  E[M] &\teval E[M'] \qquad \text{if $M \teval M'$}
+\end{align*}
+~Configuration equivalence
+\begin{mathpar}
+\Fx[\mathsf{link}\,(x,y)] \equiv \Fx[\mathsf{link}\,(y,x)]
+
+C \parallel D \equiv D \parallel C
+
+C \parallel (D \parallel E) \equiv (C \parallel D) \parallel E
+
+% scope extrusion with endpoint name restriction...
+C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \fv(C)$}
+%C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
+
+\Cx[C] \equiv \Cx[D] \text{ if $C \equiv D$}
+
+% Channel symmetry
+\gvendpoint{x}{\gvbuf{}{V_1}{}}{y}{\gvbuf{}{V_2}{}} \equiv \gvendpoint{y}{\gvbuf{}{V_2}{}}{x}{\gvbuf{}{V_1}{}}
+
+\end{mathpar}
+~Configuration reduction
+\begin{mathpar}
+\inferrule
+  [Send]
+  { }
+  {\Fx[\gvconst{send} \app (V,x)] \parallel \gvendpoint{x}{\gvbuf{}{V_1}{}}{y}{\gvbuf{}{V_2}{}}
+    \ceval \Fx[x] \parallel
+    \gvendpoint{x}{\gvbuf{}{V_1}{}}{y}{\gvbuf{V}{V_2}{}} }
+    %\parallel \gvendpoint{y}{\gvbuf{V}{V}{}}{x}{\gvbuf{}{V\prime}{}}}
+
+\inferrule
+  [Receive]
+  { }
+  {\Fx[\gvconst{receive(x)}] \parallel \gvendpoint{x}{\gvbuf{}{V}{V}}{y}{V'} \ceval 
+    \Fx[(V, x)] \parallel \gvendpoint{x}{\gvbuf{}{V_1}{}}{y}{V_2} }
+
+\inferrule
+   [Lift]
+   {C \ceval C'}
+   {\Cx[C] \ceval \Cx[C']}
+
+\inferrule
+  [Fork]
+  {\text{$x, y$ are fresh endpoint names}}
+  {\Fx[\gvconst{fork} \app (\clos{\sigma}{z}{M})] \ceval 
+    (\nu x y)( % \Fx[a] \parallel 
+    \gvendpoint{x}{\epsilon}{y}{\epsilon}
+    \parallel M(\{\bind z y\} \uplus \sigma))}
+  %% [Fork]
+  %% {\text{$x$ fresh}}
+  %% {\Fx[\gvconst{fork} \app V] \ceval (\nu x)(\Fx[x] \parallel (V\,x))}
+
+%\inferrule
+% [Wait]
+% { }
+% {(\nu x y)(\Fx[\gvconst{wait} \app x] \parallel 
+% \gvendpoint{x}{\epsilon}{y}{\epsilon})
+%   \ceval
+%      \Fx[()]}
+%
+\inferrule
+   [Link]
+   {x \in \fv(M)}
+   {(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval 
+   (\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
+
+\inferrule
+   [LiftV]
+   {M \teval M'}
+   {\Cx[M] \ceval \Cx[M']}
+
+%% [Lift3] would allow us to slightly simplify [Send] and [Link]
+%%
+%% \inferrule
+%%    [Lift3]
+%%    {\Cx[M] \ceval \Cx[M']}
+%%    {\Cx[\Fx[M]] \ceval \Cx[\Fx[M']]}
+\end{mathpar}
+\caption{Reduction Rules and Equivalences for Terms and Configurations}\label{fig:gv-reduction}
+\end{figure}
+
+\end{document}
