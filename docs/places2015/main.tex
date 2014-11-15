@@ -30,6 +30,7 @@
 \begin{figure}[float]
 \begin{syntax}
   \text{Session types} & S & ::= & \gvout{T}{S} \mid \gvin{T}{S} \mid \gvconst{end} \mid \channel{S} \\
+%  \text{Buffer types} & B & ::= & \epsilon \mid T;B \\
   \text{Types} & T,U & ::= & S \mid \one \mid T \gvtimes U \mid \zero \mid T \gvplus U \mid T \lto U
   \\ % \mid {!T} \\
   \text{Terms} & L,M,N & ::= & x \mid K \app M \mid \lambda x.M \mid M\,N \\
@@ -63,7 +64,8 @@
 \vspace{1ex}
 ~Term reduction
 \begin{align*}
-  (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \uplus \sigma) \\
+%%  (\lambda^\sigma x.M)\,V &\teval M(\{\bind x V\} \uplus \sigma) \\
+  (\lambda x.M)\app V &\teval M \{\bind x V\} \\
   \gvletunit{()}{M} &\teval M \\
   \gvlet{(x,y)}{(V,V')}{M} &\teval M \{ \bind x V, \bind y {V'} \} \\
   \gvcase{(\mkwd{inl}\,V)}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} &\teval N \{ \bind x V \} \\
@@ -78,8 +80,8 @@ C \parallel D \equiv D \parallel C
 C \parallel (D \parallel E) \equiv (C \parallel D) \parallel E
 
 % scope extrusion with endpoint name restriction...
-C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \fv(C)$}
-%C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
+%C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \fv(C)$}
+C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 
 \Cx[C] \equiv \Cx[D] \text{ if $C \equiv D$}
 
@@ -100,7 +102,7 @@ C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \
 \inferrule
   [Receive]
   { }
-  {\Fx[\gvconst{receive(x)}] \parallel \gvendpoint{x}{\gvbuf{}{V}{V}}{y}{V'} \ceval 
+  {\Fx[\gvconst{receive(x)}] \parallel \gvendpoint{x}{\gvbuf{}{V}{V}}{y}{V'} \ceval
     \Fx[(V, x)] \parallel \gvendpoint{x}{\gvbuf{}{V_1}{}}{y}{V_2} }
 
 \inferrule
@@ -108,13 +110,19 @@ C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \
    {C \ceval C'}
    {\Cx[C] \ceval \Cx[C']}
 
+% \inferrule
+%   [Fork]
+%   {\text{$x, y$ are fresh endpoint names}}
+%   {\Fx[\gvconst{fork} \app (\clos{\sigma}{z}{M})] \ceval
+%     (\nu x y)( % \Fx[a] \parallel
+%     \gvendpoint{x}{\epsilon}{y}{\epsilon}
+%     \parallel M(\{\bind z y\} \uplus \sigma))}
 \inferrule
   [Fork]
-  {\text{$x, y$ are fresh endpoint names}}
-  {\Fx[\gvconst{fork} \app (\clos{\sigma}{z}{M})] \ceval 
-    (\nu x y)( % \Fx[a] \parallel 
-    \gvendpoint{x}{\epsilon}{y}{\epsilon}
-    \parallel M(\{\bind z y\} \uplus \sigma))}
+  {\text{$x,y$ fresh}}
+  {\Fx[\gvconst{fork} \app \lambda z.M] \ceval
+    (\nu x y)(\Fx[x] \parallel \gvendpoint{x}{\epsilon}{y}{\epsilon} \parallel M\{\bind z y\})}
+
   %% [Fork]
   %% {\text{$x$ fresh}}
   %% {\Fx[\gvconst{fork} \app V] \ceval (\nu x)(\Fx[x] \parallel (V\,x))}
@@ -122,7 +130,7 @@ C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \
 %\inferrule
 % [Wait]
 % { }
-% {(\nu x y)(\Fx[\gvconst{wait} \app x] \parallel 
+% {(\nu x y)(\Fx[\gvconst{wait} \app x] \parallel
 % \gvendpoint{x}{\epsilon}{y}{\epsilon})
 %   \ceval
 %      \Fx[()]}
@@ -139,7 +147,7 @@ C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \
     \Fx[()] \parallel \gvendpoint{x'}{\overrightarrow{U'} \mdoubleplus \overrightarrow{V}}
     {y'}{\overrightarrow{V} \mdoubleplus \overrightarrow{U}}
    }
-   %{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval 
+   %{(\nu x) (\Fx[\gvconst{link} \app (x, y)] \parallel \Fx'[M]) \ceval
    %(\nu x)(\Fx[x] \parallel \Fx'[\gvletunit{\gvconst{wait} \app x}{M\{y/x\}}])}
 
 \inferrule
@@ -155,6 +163,89 @@ C \parallel (\nu x y)D \equiv (\nu x y)(C \parallel D) \text{ if $x, y \not\in \
 %%    {\Cx[\Fx[M]] \ceval \Cx[\Fx[M']]}
 \end{mathpar}
 \caption{Reduction Rules and Equivalences for Terms and Configurations}\label{fig:gv-reduction}
+\end{figure}
+
+\begin{figure}
+\vspace{1ex}
+~Buffers and buffer types
+\begin{mathpar}
+\inferrule
+  { }
+  {S \compat \varepsilon}
+
+\inferrule
+  {S \compat \vec T}
+  {!U.S \compat \vec T}
+
+\inferrule
+  {S \compat \vec T}
+  {?T.S \compat T \vec T}
+
+\inferrule
+  { }
+  {\vdash \varepsilon : \varepsilon}
+
+\inferrule
+  {\Gamma \vdash V : T \\
+   \Gamma' \vdash \vec T : \vec T}
+  {\Gamma,\Gamma' \vdash V \vec V : T \vec T}
+\end{mathpar}
+~Configuration typing
+\begin{mathpar}
+\inferrule
+  { \Gamma \vdash M: T \\
+    T \not= \outterm }
+  {\Gamma \vdash^\bcirc \distinguish M}
+
+\inferrule
+  {\Gamma \vdash M: \outterm}
+  {\Gamma \vdash^\wcirc \thread M}
+
+\inferrule
+  {\Gamma \vdash \vec V: \vec T \\
+   \Gamma' \vdash \vec W: \vec U}
+  {\Gamma,\Gamma',x:\vec T,y:\vec U \vdash \gvendpoint{x}{\vec V}{y}{\vec W}}
+\\
+\inferrule
+  {\Gamma, x:\channel{S} \vdash^\phi C}
+  {\Gamma \vdash^\phi (\nu x) C}
+
+\inferrule
+  {\Gamma,x:S \vdash^{\phi} C \\
+   \Gamma',x:B \vdash^{\phi'} C' \\
+   S \compat B}
+  {\Gamma,\Gamma',x:\channel{S} \vdash^{\phi + \phi'} C \parallel C'}
+
+\inferrule
+  {\Gamma \vdash^{\phi} C \\
+   \Gamma' \vdash^{\phi'} C'}
+  {\Gamma,\Gamma' \vdash^{\phi + \phi'} C \parallel C'}
+\end{mathpar}
+~Combination of flags
+\begin{mathpar}
+  \wcirc + \wcirc = \wcirc
+
+  \wcirc + \bcirc = \bcirc
+
+  \bcirc + \wcirc = \bcirc
+
+  \bcirc + \bcirc \text{ undefined}
+\end{mathpar}
+~Reduction of configuration typing environments
+\begin{mathpar}
+\inferrule
+  { }
+  {\channel{(\gvout T S)} \ceval \channel S}
+
+\inferrule
+  { }
+  {\channel{(\gvin T S)} \ceval \channel S}
+
+\inferrule
+  {T \ceval T'}
+  {\Gamma,x:T \ceval \Gamma,x:T'}
+\end{mathpar}
+\caption{Configuration typing}
 \end{figure}
 
 \end{document}
