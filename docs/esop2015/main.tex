@@ -1203,6 +1203,7 @@ Appendix~\ref{sec:send} for more discussion of output in CP).
   \cut{z}{}{x().P}{Q} &\ccto& x().\cut{z}{}{P}{Q} \\
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
+  \cut{z}{A}{\case{x}{}}{Q} &\ccto& \case{x}{} \\
 \end{equations}
 \caption{CP Congruences and Cut Reduction}\label{fig:cp-reduction}
 \end{figure}
