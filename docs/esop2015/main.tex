@@ -1187,7 +1187,7 @@ Appendix~\ref{sec:send} for more discussion of output in CP).
 \cut{x}{A \otimes B}{x[y].(P \mid Q)}{x(y).R}
   &\crto&
     \cut{x}{A}{Q}{\cut{y}{B}{P}{R}} \\
-\cptyp{\cut{x}{1}{x[].0}{x().P}}{\Delta}
+\cut{x}{1}{x[].0}{x().P}
   &\crto&
     P \\
 \cut{x}{A \oplus B}{\sel{x}{in_i}.P}{\case{x}{Q_1; Q_2}}
@@ -1200,6 +1200,7 @@ Appendix~\ref{sec:send} for more discussion of output in CP).
   \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(\cut{z}{A}{P}{R} \mid Q), \qquad \text{if $z \not\in \fv(Q)$} \\
   \cut{z}{A}{x[y].(P \mid Q)}{R} &\ccto& x[y].(P \mid \cut{z}{A}{Q}{R}), \qquad \text{if $z \not\in \fv(P)$} \\
   \cut{z}{A}{x(y).P}{Q} &\ccto& x(y).\cut{z}{A}{P}{Q} \\
+  \cut{z}{}{x().P}{Q} &\ccto& x().\cut{z}{}{P}{Q} \\
   \cut{z}{A}{\sel{x}{in_i}.P}{Q} &\ccto& \sel{x}{in_i}.\cut{z}{A}{P}{Q} \\
   \cut{z}{A}{\case{x}{P;Q}}{R} &\ccto& \case{x}{\cut{z}{A}{P}{R}; \cut{z}{A}{Q}{R}} \\
 \end{equations}
