@@ -606,6 +606,9 @@ C \parallel (\nu x)D \equiv (\nu x)(C \parallel D) \text{ if $x \not\in \fv(C)$}
 %%    {\Cx[M] \ceval \Cx[M']}
 %%    {\Cx[\Fx[M]] \ceval \Cx[\Fx[M']]}
 \end{mathpar}
+
+\todo{Add $\nu$s back into reduction rules and get rid of reduction on type environments.}
+
 \caption{Reduction Rules and Equivalences for Terms and Configurations}\label{fig:gv-reduction}
 \end{figure}
 
@@ -1053,8 +1056,9 @@ It is straightforward to show that GV is deterministic. In fact, GV enjoys a str
 determinism, called the diamond property~\cite{Barendregt84}.
 \begin{theorem}
 % For well typed terms, the relation $\equiv\ceval\equiv$ satisfies the diamond property:
-  If $\Gamma \vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then there
-  exists $D_3$ such that $D_1 \equiv\ceval\equiv D_3$, and $D_2 \equiv\ceval\equiv D_3$.
+  If $\Gamma \vdash C$, $C \equiv\ceval\equiv D_1$, and $C \equiv\ceval\equiv D_2$, then either $D_1
+  \equiv D_2$ or there exists $D_3$ such that $D_1 \equiv\ceval\equiv D_3$, and $D_2
+  \equiv\ceval\equiv D_3$.
 \end{theorem}
 \begin{proof}
 First, observe that $\teval$ is deterministic, and furthermore configuration reductions always treat
@@ -1068,6 +1072,14 @@ reductions in either order. \qed
 %
 It is not hard to see that the system remains deterministic if we extend the functional part of GV
 with any well-typed confluent reduction rules at all.
+
+\todo{Remark on existing (partial) confluence results for linear pi calculus and sessions}
+
+%% Reviewer A:
+%%
+%%   It should also be remarked that (partial) confluence of communications on linear channels is a
+%%   known property already investigated in [14] for the linear pi calculus and, as a by product of
+%%   [7], extendable to communications on (binary) session channels
 
 \begin{theorem}[Strong normalisation]
   If $\Gamma \vdash C$, then there are no infinite $\equiv\ceval\equiv$ reduction sequences
@@ -1471,6 +1483,8 @@ value.
 The translation on session terms is somewhat complicated by the need to include apparently trivial
 axiom cuts (highlighted in grey).  These are needed to align with the translation of values, which
 permit further reduction inside the value constructors.
+%
+\todo{Try to give an example illustrating the need for the trivial axiom cuts.}
 %
 The output in the translation of a fork arises from the need to apply the argument to a freshly
 generated channel (notice that application is simulated by an output). Linking is simulated by a
@@ -1965,7 +1979,7 @@ C \parallel \thread () \equiv C
 \caption{Updated Configuration Evaluation Rules}\label{fig:gv-end-conf-eval}
 \end{figure}
 
-Our extended language is, perhaps surprisingly, strictly more expressive than GV.  To see this, we
+Our extended language is, perhaps surprisingly, strictly more expressive than GV. To see this, we
 can consider the following term (assuming well-typed $M,N$):
 %
 \[\bl
@@ -1973,11 +1987,11 @@ can consider the following term (assuming well-typed $M,N$):
   \gvletunit{\gvconst{close}\app w}{N}}
 \el\]
 %
-Initially, the forked thread and its parent share (only) session $w$.  After both threads close $w$,
+Initially, the forked thread and its parent share (only) channel $w$.  After both threads close $w$,
 however, there can be no further communication between the threads; in contrast, in core GV, there
-is always a final synchronisation with \gvconst{wait}.  To capture the increase in expressivity, we
+is always a final synchronisation with \gvconst{wait}. To capture the increase in expressivity, we
 must extend the existing configuration typing rules (\figref{gv-conf-typing}) with a rule for
-composition in which no threads are shared (such as after the reduction of $\gvconst{close}\app w$
+composition in which no channels are shared (such as after the reduction of $\gvconst{close}\app w$
 in the example):
 \[
 \inferrule
@@ -2058,7 +2072,7 @@ many copies of some concurrent behavior.  We can encode such channels as follows
 introduce new, dual session type constructors $Service(S)$ and $Server(S)$, defined by
 \begin{align*}
   Server(S) &\defeq \gvout{(\gvdual S \to \outterm)}{\outterm} &
-  Service(S) &\defeq \gvin{(S \to \outterm)}{\outterm}
+  Service(S) &\defeq \gvin{(S \to \outterm)}{\interm}
 \end{align*}
 Note that $\gvdual{Server(S)} = Service(\gvdual S)$.
 %% (We do not, however, extend our type system to
@@ -2255,7 +2269,7 @@ quite identical. Let us consider the possible reductions of the two terms.  Noti
     (x, y)] \parallel \Fx'[M]), x \in \fv(M)$, we can conclude that $\Gamma$ partitions as
     $\Gamma_1,\Gamma_2,y:S$ such that $\Gamma_1,y:S,x:\gvdual{S} \vdash \Fx[\gvconst{link} \app (x,
     y)]$ and $\Gamma_2,x:S \vdash \Fx'[M]$.  (Note that the free variable assumption on the
-    reduction rule for \gvconst{fork} allows us to assume that neither $\Fx$ nor $\Fx'$ binds $x$ or
+    reduction rule for \gvconst{link} allows us to assume that neither $\Fx$ nor $\Fx'$ binds $x$ or
     $y$.)  From the type of \gvconst{link}, we have that $\Gamma,x:\outterm \vdash \Fx[x]$;
     similarly, from $x \in \fv(M)$, we can conclude that $\Gamma_2,y:S \vdash \Fx'[M\{\bind x y\}]$.
     Finally, from the typing rule for \gvconst{wait}, we have that $\Gamma_2,x:\interm,y:S \vdash
