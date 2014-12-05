@@ -453,12 +453,12 @@ Correspondingly, nullary choice and selection may be encoded with the $\zero$ ty
   & & \mid & () \mid (V,W) \mid \mkwd{inl}\,V \mid \mkwd{inr}\,V  \\
   \text{Substitutions} & \sigma & ::= & \{ \bind {x_1} {V_1}, \dots, \bind {x_n} {V_n} \} \\
   & & & \qquad\text{ where the $x_i$ are pairwise distinct} \\
-  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid K \app V \mid \gvletunit{\Ex}{M} \\
+  \text{Evaluation contexts} & \Ex & ::= &  [~] \mid \Ex\,M \mid V\,\Ex \mid \gvletunit{\Ex}{M} \\
   & & \mid & (\Ex,M) \mid (V,\Ex) \mid \gvlet{(x,y)}{\Ex}{M} \\
   & & \mid & \mkwd{inl}\,\Ex \mid \mkwd{inr}\,\Ex \mid \gvcase{\Ex}{\mkwd{inl}\,x \mapsto N; \mkwd{inr}\,x \mapsto N'} \\
   & \Fx & ::= & \phi \Ex \\
   \text{Configurations} & C,D & ::= & \phi M \mid C \parallel C' \mid (\nu x) C \\
-  \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel P \mid (\nu x)\Cx \\
+  \text{Configuration contexts} & \Cx & ::= & [~] \mid \Cx \parallel C \mid (\nu x)\Cx \\
   \text{Flags} & \phi & ::= & \wcirc \mid \bcirc
 \end{syntax}
 \caption{Syntax of Values, Configurations, and Contexts}\label{fig:gv-eval-syntax}
