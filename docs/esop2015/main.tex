@@ -702,9 +702,9 @@ $\pi$-calculus~\cite{Kobayashi96} with two significant differences.
   indicates that configuration $C$ contains the main thread, while $\Gamma \vdash^\wcirc C$
   indicates that $C$ does not contain the main thread. We write $\Gamma \vdash C$ to abbreviate
   $\exists \phi.\Gamma \vdash^\phi C$, that is, $C$ may include a main thread.
-\item Second, we require that exactly one channel is shared at each composition of processes.  This
+\item Second, we require that exactly one channel is shared at each composition of processes. This
   restricts standard type systems for linear $\pi$-calculus, which allow an arbitrary number of
-  processes (including none) to be shared at a composition of processes.
+  channels (including none) to be shared at a composition of processes.
 \end{itemize}
 We see that the earlier stuck examples are ill-typed in this system: $(\nu xy)M$ because $y$ must
 have a type $\channel S$ in $M$; $(\nu xy)(M \parallel M)$ because there is no type $\channel S$
@@ -785,7 +785,7 @@ $\blockedp(x,M)$, if $M$ has evaluated to some context surrounding a communicati
 to $x$:
 %
 \[\begin{array}{rcl}
-  \blockedp(x,M) &\defiff& \exists N. \; M = \Ex[\gvconst{send} \app (N,x)] \\
+  \blockedp(x,M) &\defiff& \exists N. \; M = \Ex[\gvconst{send} \app (V,x)] \\
   && \quad \lor \, M = \Ex[\gvconst{receive} \app x] \\
   && \quad \lor \, M = \Ex[\gvconst{wait} \app x]
 \end{array}\]
@@ -798,7 +798,7 @@ variables. We extend this notion of dependency from single threads to configurat
 with the observation that in a larger configuration intermediate sessions may participate in the
 dependency.
 \[\begin{array}{rcl}
-  \depp(x,y,\Ex[M]) &\defiff& \blockedp(x,M) \land y \in \fv(\Ex) \\
+  \depp(x,y,\Ex[M]) &\defiff& \blockedp(x,M) \land y \in \fv(\Ex[M]) \\
   \depp(x,y,C) &\defiff& (C \equiv \Cx[M] \land \depp(x,y,M)) \lor \, (C \equiv \Cx[D \parallel D'] \\
   && \quad \land \, (\exists z. \depp(x,z,D) \land \depp(z,y,D')))
 \end{array}\]
