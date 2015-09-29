@@ -51,7 +51,7 @@ instance Functor Trans
     where fmap f (T g) = T (\e -> let (v, i) = g e in (f v, i))
 instance Monad Trans
     where return x = T (\(e, i) -> (x, i))
-          T f >>= g = T (\(e, i) -> 
+          T f >>= g = T (\(e, i) ->
                             let (v, j) = f (e, i) in
                                 runTrans (g v) (e, j))
           fail s = error s
@@ -68,7 +68,7 @@ fresh s = T (\(e, i) -> (s ++ '$' : show i, i+1))
 xUnroll :: Term -> Trans (Type, String -> Builder CP.Proc)
 xUnroll (Var x) = do ty <- consume x
                      case ty of
-                       Lift (Mu v s) -> return (Lift (instSession v (Mu v s) s), 
+                       Lift (Mu v s) -> return (Lift (instSession v (Mu v s) s),
                                                 \z -> rec x (link x z))
                        _ -> return (ty, \z -> link x z)
 xUnroll m       = xTerm m
@@ -76,7 +76,7 @@ xUnroll m       = xTerm m
 xTerm :: Term -> Trans (Type, String -> Builder CP.Proc)
 xTerm Unit = return (UnitType, \z -> replicate z (V "y") (emptyCase (V "y") []))
 xTerm (EInt n) =
-  return (Int, \z -> replicate z x 
+  return (Int, \z -> replicate z x
                     (nu y (CP.Bottom)
                         (sendTerm x (CP.EInt n) (link x y))
                         (emptyOut y)))
@@ -85,14 +85,14 @@ xTerm (EInt n) =
 xTerm (Var x) = do t <- consume x
                    return (t, \z -> link x z)
 xTerm (Link m n) =
-  do (Lift s, m') <- xTerm m 
+  do (Lift s, m') <- xTerm m
      (Lift s', n') <- xTerm n
      return (Lift OutTerm,
-             \z -> nu (V "x") (xSession s)                    
-                      (m' =<< reference (V "x"))              
-                      (nu (V "y") (xSession s')               
-                          (n' =<< reference (V "y"))          
-                          (emptyIn z (link (V "x") (V "y")))))  
+             \z -> nu (V "x") (xSession s)
+                      (m' =<< reference (V "x"))
+                      (nu (V "y") (xSession s')
+                          (n' =<< reference (V "y"))
+                          (emptyIn z (link (V "x") (V "y")))))
 xTerm (UnlLam x t m) =
   do (u, m') <- provide x t (xTerm m)
      return (UnlFun t u,
@@ -115,14 +115,14 @@ xTerm (App m n) =
 xTerm (Pair m n) =
   do (mty, m') <- xTerm m
      (nty, n') <- xTerm n
-     return (Tensor mty nty, 
+     return (Tensor mty nty,
              \z -> out z (V "y") (m' =<< reference (V "y")) (n' z))
 xTerm (Let (BindName x) m n) =
   do (t, m') <- xUnroll m
      if t == Lift InTerm && x `notElem` fv n
      then do (u, n') <- xTerm n
              return (u, \z -> nu x (xType t) (m' =<< reference x) (emptyIn x (n' z)))
-     else do (u, n') <- provide x t (xTerm n) 
+     else do (u, n') <- provide x t (xTerm n)
              return (u, \z -> nu x (xType t) (m' =<< reference x) (n' z))
 xTerm (Let (BindPair x y) m n) =
   do (mty@(Tensor xty yty), m') <- xTerm m
@@ -131,44 +131,44 @@ xTerm (Let (BindPair x y) m n) =
      (nty, n') <- provide x xty (provide y yty (xTerm n))
      return (nty, \z -> nu y (xType mty) (m' =<< reference y) (in_ y x (foldr emptyIn (n' z) weakened)))
 
-xTerm (LetRec (x,b) f ps c m n) =
-  do q <- fresh "Q"
-     ci <- fresh "ci"
-     (mty@(Lift OutTerm), _) <-
-       provide f (foldr UnlFun (Lift (SVar q) `UnlFun` Lift OutTerm) ts) $
-       provide c (Lift (instSession x (SVar q) b)) $
-       foldr (\(x, t) m -> provide x t m) (xTerm m) ps
-     (nty, _) <- provide f (foldr UnlFun (Lift (Nu x b) `UnlFun` Lift OutTerm) ts) (xTerm n)
-     cis <- mapM (const (fresh "ci")) vs
-     let m' = Let (BindName f)
-                  ((foldr (\(v, t) rest m -> UnlLam v t (rest (Send (Var v) m)))
-                          (UnlLam c (Lift (foldr Output OutTerm ts)))
-                          ps) (Var c))
-                  (foldr (\(v, ci1, ci2) m -> Let (BindPair v ci2) (Receive (Var ci1)) m)
-                         m
-                         (zip3 vs (ci:cis) cis))
-         n' = Let (BindName f)
-                  (foldr (\(v, t) m -> UnlLam v t m)
-                         (UnlLam c (Lift (Nu x b)) (Corec c ci ts
-                                                          (foldl (\m v -> Send (Var v) m) (Var ci) vs)
-                                                          m'))
-                         ps)
-                  n
-     (_, n'') <- xTerm n'
-     return (nty, n'')
-  where (vs, ts) = unzip ps
-xTerm (Corec c ci ts m n) =
-  do (cty@(Lift (Nu x b))) <- consume c
-     (mty@(Lift OutTerm), m') <- provide ci (Lift tsOut) (xTerm m)
-     (nty@(Lift OutTerm), n') <- provide ci (Lift tsIn) (provide c (Lift (instSession x tsOut b)) (xTerm n))
-     let mterm = nu (V "z") CP.One (emptyOut (V "z")) (m' =<< reference (V "z"))
-         ciWeakened = tsIn == InTerm || ci `notElem` fv n
-         nterm | ciWeakened = nu (V "z") CP.One (emptyOut (V "z")) (emptyIn ci (n' =<< reference (V "z")))
-               | otherwise = nu (V "z") CP.One (emptyOut (V "z")) (n' =<< reference (V "z"))
-     return (Lift OutTerm,
-             \z -> emptyIn z (corec c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
-  where tsOut = foldr Output OutTerm ts
-        tsIn  = foldr Input InTerm ts
+--xTerm (LetRec (x,b) f ps c m n) =
+--  do q <- fresh "Q"
+--     ci <- fresh "ci"
+--     (mty@(Lift OutTerm), _) <-
+--       provide f (foldr UnlFun (Lift (SVar q) `UnlFun` Lift OutTerm) ts) $
+--       provide c (Lift (instSession x (SVar q) b)) $
+--       foldr (\(x, t) m -> provide x t m) (xTerm m) ps
+--     (nty, _) <- provide f (foldr UnlFun (Lift (Nu x b) `UnlFun` Lift OutTerm) ts) (xTerm n)
+--     cis <- mapM (const (fresh "ci")) vs
+--     let m' = Let (BindName f)
+--                  ((foldr (\(v, t) rest m -> UnlLam v t (rest (Send (Var v) m)))
+--                          (UnlLam c (Lift (foldr Output OutTerm ts)))
+--                          ps) (Var c))
+--                  (foldr (\(v, ci1, ci2) m -> Let (BindPair v ci2) (Receive (Var ci1)) m)
+--                         m
+--                         (zip3 vs (ci:cis) cis))
+--         n' = Let (BindName f)
+--                  (foldr (\(v, t) m -> UnlLam v t m)
+--                         (UnlLam c (Lift (Nu x b)) (Corec c ci ts
+--                                                          (foldl (\m v -> Send (Var v) m) (Var ci) vs)
+--                                                          m'))
+--                         ps)
+--                  n
+--     (_, n'') <- xTerm n'
+--     return (nty, n'')
+--  where (vs, ts) = unzip ps
+--xTerm (Corec c ci ts m n) =
+--  do (cty@(Lift (Nu x b))) <- consume c
+--     (mty@(Lift OutTerm), m') <- provide ci (Lift tsOut) (xTerm m)
+--     (nty@(Lift OutTerm), n') <- provide ci (Lift tsIn) (provide c (Lift (instSession x tsOut b)) (xTerm n))
+--     let mterm = nu (V "z") CP.One (emptyOut (V "z")) (m' =<< reference (V "z"))
+--         ciWeakened = tsIn == InTerm || ci `notElem` fv n
+--         nterm | ciWeakened = nu (V "z") CP.One (emptyOut (V "z")) (emptyIn ci (n' =<< reference (V "z")))
+--               | otherwise = nu (V "z") CP.One (emptyOut (V "z")) (n' =<< reference (V "z"))
+--     return (Lift OutTerm,
+--             \z -> emptyIn z (corec c ci (foldr CP.Times CP.One (map xType ts)) mterm nterm))
+--  where tsOut = foldr Output OutTerm ts
+--        tsIn  = foldr Input InTerm ts
 
 xTerm (Send m n) =
   do (mty, m') <- xTerm m
@@ -187,9 +187,9 @@ xTerm (Select l m) =
                       (m' =<< reference (V "x"))
                       (inj (V "x") l (link (V "x") z)))
 xTerm (Case m bs@(_:_)) =
-  do (mty@(Lift (Choice cs)), m') <- xUnroll m 
+  do (mty@(Lift (Choice cs)), m') <- xUnroll m
      (t:_, bs') <- unzip `fmap` sequence (map (xBranch cs) bs)
-     return (t, 
+     return (t,
              \z -> nu (V "x") (xType mty)
                       (m' =<< reference (V "x"))
                       (case_ (V "x") (sequence [reference (V "x") >>= flip b' z | b' <- bs'])))

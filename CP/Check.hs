@@ -181,14 +181,14 @@ check' (Rec x p) =
        case c of
          Mu v a -> provide x (inst v (Mu v a) a) (check' p)
          _      -> unexpectedType x c (Rec x p)
-check' (CoRec x z a p q) =
-    addError (CoRec x z a p q) $
+check' (CoRec x z p) =
+    addError (CoRec x z p) $
     do c <- consume x
+       d <- consume z
        case c of
          Nu v b ->
-             do provide z a (check' p)
-                withOnly (const False) (provide z (dual a) (provide x (inst v a b) (check' q)))
-         _ -> unexpectedType x c (CoRec x z a p q)
+             withOnly (const False) (provide z d (provide x (inst v (dual d) b) (check' p)))
+         _ -> unexpectedType x c (CoRec x z p)
 check' (Replicate x y p) =
     addError (Replicate x y p) $
     do c <- consume x

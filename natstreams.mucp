@@ -4,14 +4,15 @@
 type NatSource = nu X.&{end:1, more: int * X}.
 type NatSink   = mu X.+{end:1, more: int || X}.
 
-def Zeros(y) = corec y [z:1] (z[].0, z().case y {end: y[].0; more: y*[0].y[].0}).
+def Zeros(y) = new [z:1] (z[].0 | corec y(z).z().case y {end: y[].0; more: y*[0].y[].0}).
 check Zeros(y) |- y:NatSource.
 
 new [x:NatSource] (Zeros(x) | rec x.x/more.x*(i).rec x.x/more.x*(j).rec x.x/end.x().a*[i].a*[j].a[].0)
  |- a: int * (int * 1).
 
-def Nats(y) = corec y [z:int * 1]
-                (z*[0].z[].0,
+def Nats(y) = new [z:int * 1]
+                (z*[0].z[].0 |
+                 corec y(z).
                  z*(i).z().case y { end: y[].0; more: y*[i].y*[i+1].y[].0 }).
 check Nats(y) |- y:NatSource.
 
@@ -31,28 +32,30 @@ def CInc(x,y) = y(A).y(s).y(z).
                 (a<->z | x[A].x[w].(w<->s | x[v].(v<->f | y<->x))).
 check CInc(x,y) |- x:~Church,y:Church.
 
-def CLiftInc(x,y) = corec y [z:Bang(Church)]
-                      (x<->z,
-                       case y { w: rec z.z/w.z().y[].0;
-                                d: rec z.z/d.CInc(z,y);
-                                c: rec z.z/c.z(w).y[x].(x<->w|y<->z) }).
+def CLiftInc(x,y) = corec y(x).
+                      case y { w: rec x.x/w.x().y[].0;
+                               d: rec x.x/d.CInc(x,y);
+                               c: rec x.x/c.x(w).y[x].(x<->w|y<->x) }.
 check CLiftInc(x,y) |- x:Quest(~Church),y:Bang(Church).
 
 
 type Source(A) = nu X.&{end:1, more: A * X}.
 type Sink(A)   = mu X.+{end:bot, more: ~A || X}.
 
-def CZeros(y) = corec y [z:1]
-                  (z[].0,
+def CZeros(y) = new [z:1]
+                  (z[].0 |
+                   corec y(z).
                    z().case y { end: y[].0; more: y[x].(CZero(x) | y[].0) }).
 check CZeros(y) |- y:Source(Church).
 
-def CNats(y) = corec y [z:Bang(Church)]
-                 (corec z [a:1]
-                    (a[].0,
+def CNats(y) = new [z:Bang(Church)]
+                 (new [a:1]
+                    (a[].0 |
+                     corec z(a).
                      a().case z { w: z[].0;
                                   c: z[w].(w[].0 | z[].0);
-                                  d: CZero(z) }),
+                                  d: CZero(z) }) |
+                  corec y(z).
                   case y { end: rec z.z/w.z().y[].0;
                            more: rec z.z/c.z(w).y[x].(rec w.w/d.x<->w | CLiftInc(z,y)) }).
 check CNats(y) |- y:Source(Church).
@@ -62,8 +65,9 @@ check CNats(y) |- y:Source(Church).
 
 def CCount(x,y) =
   x[int * 1].x[s].(
-    corec s [t:1]
-      (t[].0,
+    new [t:1]
+      (t[].0 |
+       corec s(t).
        t().case s { w: s[].0;
                     c: s[s1].(s1[].0 | s[].0);
                     d: s(s1).s1*(i).s*[i+1].s1().s[].0 }) |
@@ -98,28 +102,28 @@ def PInc(x,y) = rec y.y/succ.y<->x.
 check PInc(x,y) |- x:~Peano,y:Peano.
 
 def PCount(x,y) =
-  corec x [z:int || bot]
-   (y<->z,
-    case x { zero: x().z*[0].z[].0;
-             succ: x*(i).x().z*[i + 1].z[].0 }).
+  corec x(y).
+    case x { zero: x().y*[0].y[].0;
+             succ: x*(i).x().y*[i + 1].y[].0 }.
 check PCount(x,y) |- x:~Peano, y:int*1.
 
 def PTwo(x) = new [y:Peano] (new [z:Peano] (PZero(z) | PInc(z,y)) | PInc(y,x)).
 new [x:Peano] (PTwo(x) | PCount(x,y)) |- y:int*1.
 
 def PLiftInc(x,y) =
-  corec y [z:Bang(Peano)]
-    (z<->x,
-     case y { w: rec z.z/w.z().y[].0;
-              d: rec z.z/d.PInc(z,y);
-              c: rec z.z/c.z(z1).y[y1].(z1 <-> y1 | z <-> y) }).
+  corec y(x).
+     case y { w: rec x.x/w.x().y[].0;
+              d: rec x.x/d.PInc(x,y);
+              c: rec x.x/c.x(x1).y[y1].(x1 <-> y1 | x <-> y) }.
 check PLiftInc(x,y) |- x:~Bang(Peano),y:Bang(Peano).
 
 def PNats(x) =
-  corec x [y:Bang(Peano)]
-    (corec y [z:1]
-       (z[].0,
-        z().case y { w: y[].0; d: PZero(y); c: y[y1].(y1[].0 | y[].0) }),
+  new [y:Bang(Peano)]
+    (new [z:1]
+       (z[].0 |
+        corec y(z).
+        z().case y { w: y[].0; d: PZero(y); c: y[y1].(y1[].0 | y[].0) }) |
+     corec x(y).
      case x { end: rec y.y/w.y().x[].0;
               more: rec y.y/c.y(y1).x[x1].(rec y1.y1/d.y1<->x1 | PLiftInc(y,x)) }).
 check PNats(x) |- x:Source(Peano).
@@ -141,8 +145,9 @@ new [x:Source(Peano)] (PNats(x) |
 
 type Bool = +{t: 1, f: 1}.
 
-def Pad(x,y) = corec y [z:Bool*Source(Peano)]
-                 (z[zz].(zz/f.zz[].0 | z <-> x),
+def Pad(x,y) = new [z:Bool*Source(Peano)]
+                 (z[zz].(zz/f.zz[].0 | z <-> x) |
+                  corec y(z).
                   z(zz).case zz {
                     t: zz().case y {
                       end: rec z.z/end.z().y[].0;

@@ -19,9 +19,7 @@ binderClash p = descend [] p
           descend bs (Select _ _ p) = descend bs p
           descend bs (Case _ branches) = msum (map (descend bs . snd) branches)
           descend bs (Rec _ p) = descend bs p
-          descend bs (CoRec _ y _ p q)
-              | y `elem` bs = Just y
-              | otherwise = msum [descend (y:bs) p, descend (y:bs) q]
+          descend bs (CoRec _ _ p) = descend bs p
           descend bs (Replicate _ y p)
               | y `elem` bs = Just y
               | otherwise = descend (y:bs) p

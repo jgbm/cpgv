@@ -134,7 +134,7 @@ data Proc = ProcVar String [Arg]
           | Select String String Proc
           | Case String [(String, Proc)]
           | Rec String Proc
-          | CoRec String String Prop Proc Proc
+          | CoRec String String Proc
           | Replicate String String Proc
           | Derelict String String Proc
           | SendProp String Prop Proc
@@ -160,7 +160,7 @@ instance HasTyVars Proc
                     go (Select x l p) = Select x l (go p)
                     go (Case z bs) = Case z [(l,) (go p) | (l, p) <- bs]
                     go (Rec z p) = Rec z (go p)
-                    go (CoRec z w a p q) = CoRec z w (inst x b a) (go p) (go q)
+                    go (CoRec z w p) = CoRec z w (go p)
                     go (Replicate z y p) = Replicate z y (go p)
                     go (Derelict z y p) = Derelict z y (go p)
                     go (SendProp z a p) = SendProp z (inst x b a) (go p)
@@ -236,7 +236,7 @@ fn (In x y p)          = x : filter (y /=) (fn p)
 fn (Select x l p)      = x : fn p
 fn (Case x bs)         = x : concatMap (fn . snd) bs
 fn (Rec x p)           = x : fn p
-fn (CoRec x y a p q)   = x : filter (y /=) (fn p ++ fn q)
+fn (CoRec x w p)       = x : w : fn p
 fn (Replicate x y p)   = x : filter (y /=) (fn p)
 fn (Derelict x y p)    = x : filter (y /=) (fn p)
 fn (SendProp x a p)    = x : fn p
@@ -261,8 +261,8 @@ fln (Out x y p q)       = x : filter (y /=) (fln p) ++ fln q
 fln (In x y p)          = x : filter (y /=) (fln p)
 fln (Select x l p)      = x : fln p
 fln (Case x bs)         = x : concatMap (fln . snd) bs
-fln (Rec x p)           = x : fn p
-fln (CoRec x y a p q)   = x : filter (y /=) (fn p ++ fn q)
+fln (Rec x p)           = x : fln p
+fln (CoRec x w p)       = x : w : fln p
 fln (Replicate x y p)   = x : filter (y /=) (fln p)
 fln (Derelict x y p)    = filter (y /=) (fln p)
 fln (SendProp x a p)    = x : fln p
@@ -308,13 +308,7 @@ replace x y = replace'
           replace' (Select z l p) = liftM (Select (var z) l) (replace' p)
           replace' (Case z bs) = liftM (Case (var z)) (sequence [liftM (l,) (replace' p) | (l, p) <- bs])
           replace' (Rec z p) = liftM (Rec (var z)) (replace' p)
-          replace' (CoRec z w a p q)
-              | x == w || y == w =
-                  do w' <- fresh w
-                     p' <- replace w w' p
-                     q' <- replace w w' q
-                     liftM2 (CoRec (var z) w' a) (replace' p') (replace' q')
-              | otherwise = liftM2 (CoRec (var z) w a) (replace' p) (replace' q)
+          replace' (CoRec z w p) = liftM (CoRec (var z) (var w)) (replace' p)
           replace' (Replicate z w p)
               | x == w || y == w =
                   do w' <- fresh w

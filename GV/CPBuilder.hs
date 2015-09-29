@@ -38,8 +38,9 @@ in_ x y m = do x' <- reference x
 inj x l m = liftM3 Select (reference x) (return l) m
 case_ x bs = liftM2 Case (reference x) bs
 rec x m = liftM2 Rec (reference x) m
-corec x y a m n = binder y (\y' -> do x' <- reference x
-                                      liftM2 (CoRec x' y' a) m n)
+corec x y m = do x' <- reference x
+                 y' <- reference y
+                 liftM (CoRec x' y') m
 replicate x y m = do x' <- reference x
                      binder y (\y' -> liftM (Replicate x' y') m)
 derelict x y m = do x' <- reference x

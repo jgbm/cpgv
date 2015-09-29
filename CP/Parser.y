@@ -158,8 +158,8 @@ Proc         :: { Proc }
              | 'case' LIdent '{' sep(pair(LIdent, snd(':', Proc)), ';') '}'
                                               { Case $2 $4 }
              | 'rec' LIdent '.' Proc          { Rec $2 $4 }
-             | 'corec' LIdent '[' LIdent ':' Prop ']' '(' Proc ',' Proc ')'
-                                              { CoRec $2 $4 $6 $9 $11 }
+             | 'corec' LIdent '(' LIdent ')' '.' Proc
+                                              { CoRec $2 $4 $7 }
              | LIdent '[' Prop ']' '.' Proc   { SendProp $1 $3 $6 }
              | LIdent '(' UIdent ')' '.' Proc { ReceiveProp $1 $3 $6 }
              | LIdent '*' '[' FOTerm ']' '.' Proc

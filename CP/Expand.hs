@@ -38,9 +38,7 @@ expandP ds = ex
           ex (Select x l p)        = liftM (Select (exn x) l) (ex p)
           ex (Case x bs)           = liftM (Case (exn x)) (sequence [(l,) `fmap` ex p | (l, p) <- bs])
           ex (Rec x p)             = liftM (Rec (exn x)) (ex p)
-          ex (CoRec x y a p q)     = do y' <- fresh y
-                                        let ds' = addNameBinding ds y y'
-                                        liftM3 (CoRec (exn x) y') (expandT ds a) (expandP ds' p) (expandP ds' q)
+          ex (CoRec x w p)         = liftM (CoRec (exn x) (exn w)) (ex p)
           ex (Replicate x y p)     = liftM (Replicate (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
           ex (Derelict x y p)      = liftM (Derelict (exn x) y) (expandP (filterNameBindings (y /=) ds) p)
           ex (SendProp x a p)      = liftM2 (SendProp (exn x)) (expandT ds a) (ex p)
