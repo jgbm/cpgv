@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings, TypeSynonymInstances #-}
 module CP.Printer (Pretty(..), renderPretty, displayS, includeIndex) where
 
+import Prelude hiding ((<$>))
 import CP.Syntax
 import Text.PrettyPrint.Leijen
-
 import Data.IORef
 import GHC.Exts (IsString(..))
 import System.IO.Unsafe

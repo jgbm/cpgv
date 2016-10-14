@@ -1,6 +1,6 @@
-module CPI where
+{-# LANGUAGE FlexibleContexts #-}
 
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.Char (isSpace)
 import Data.IORef
 import Data.List (partition)

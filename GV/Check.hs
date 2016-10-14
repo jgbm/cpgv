@@ -3,7 +3,7 @@ module GV.Check where
 
 import Prelude hiding (replicate)
 
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.List hiding (replicate)
 import GV.Syntax
 import GV.Printer
@@ -22,6 +22,9 @@ instance Functor Check
     where fmap f (C g) = C (\e -> case g e of
                                     Left err -> Left err
                                     Right (v, e') -> Right (f v, e'))
+instance Applicative Check
+    where pure = return
+          (<*>) = ap
 instance Monad Check
     where return x = C (\e -> Right (x, e))
           C f >>= g = C (\e -> case f e of

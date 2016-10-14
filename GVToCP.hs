@@ -6,6 +6,7 @@ import Data.Maybe
 import Prelude hiding (replicate)
 import Data.List hiding (replicate, find)
 
+import Control.Monad (ap)
 import qualified CP.Syntax as CP
 import GV.Syntax
 import GV.Printer
@@ -49,6 +50,9 @@ find x env = case lookup x env of
 newtype Trans t = T { runTrans :: (TypeEnv, Int) -> (t, Int) }
 instance Functor Trans
     where fmap f (T g) = T (\e -> let (v, i) = g e in (f v, i))
+instance Applicative Trans
+    where pure = return
+          (<*>) = ap
 instance Monad Trans
     where return x = T (\(e, i) -> (x, i))
           T f >>= g = T (\(e, i) ->

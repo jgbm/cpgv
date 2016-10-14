@@ -9,6 +9,11 @@ newtype ScopeM t = Scope { runScope :: Environment -> Int -> (t, Int) }
 instance Functor ScopeM
     where fmap f (Scope g) = Scope (\e z -> let (r, z') = g e z
                                             in (f r, z'))
+
+instance Applicative ScopeM
+    where pure = return
+          (<*>) = ap
+
 instance Monad ScopeM
     where return v = Scope (\e z -> (v, z))
           Scope f >>= g = Scope (\e z -> let (r, z') = f e z
