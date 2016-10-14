@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 module GV.Printer (Pretty(..), displayS, renderPretty) where
 
+import Prelude hiding ((<$>))
 import GV.Syntax
 import Text.PrettyPrint.Leijen
-
 import GHC.Exts (IsString(..))
 
 instance IsString Doc

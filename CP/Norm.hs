@@ -1,11 +1,11 @@
 {-# LANGUAGE FlexibleInstances, TupleSections, PatternGuards #-}
 module CP.Norm where
 
-import Control.Monad.Error
+import Prelude hiding ((<$>))
+import Control.Monad.Except
 import CP.Check
 import CP.Expand (expandP)
-import Data.List (intercalate, nub, partition, tails)
-import Data.Maybe
+import Data.List (intercalate, tails)
 import CP.Syntax
 import CP.Printer
 import Text.PrettyPrint.Leijen

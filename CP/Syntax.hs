@@ -1,13 +1,12 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TupleSections, GeneralizedNewtypeDeriving #-}
 module CP.Syntax where
 
+import Control.Applicative
 import Control.Monad
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.State
 import Data.List (intercalate)
-import Data.Maybe (fromMaybe)
-
-import CP.Trace
 
 data Prop = Univ String Prop
           | Exist String Prop
@@ -218,7 +217,7 @@ data Assertion = Assert Proc [(String, Prop)] Bool
 
 -- Alpha-conversion (and errors, because we usually need them too) monad
 newtype M t = M { unM :: StateT Int (Either String) t }
-    deriving (Functor, Monad, MonadPlus, MonadState Int, MonadError String)
+    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadState Int, MonadError String)
 
 runM = flip evalStateT 0 . unM
 

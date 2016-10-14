@@ -4,7 +4,7 @@ import GV.Syntax
 import GV.Printer
 
 import Control.Monad
-import Control.Monad.Error
+import Control.Monad.Except
 import Data.Maybe
 
 data Value =
@@ -51,6 +51,13 @@ data Susp a =
  | SServeMore Chan (Chan -> Thread)
 
 type Thread = Susp Value
+
+instance Functor Susp where
+  fmap f x = pure f <*> x
+
+instance Applicative Susp where
+  pure = return
+  (<*>) = ap
 
 instance Monad Susp where
   return = Return

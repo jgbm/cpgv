@@ -1,5 +1,6 @@
 module CP.Check where
 
+import Prelude hiding ((<$>))
 import Control.Monad
 import Control.Monad.State (evalStateT)
 import Data.List
@@ -29,6 +30,9 @@ instance Functor Check
     where fmap f (Check g) = Check (\b -> case g b of
                                             (t, Left err) -> (t, Left err)
                                             (t, Right (v, b')) -> (t, Right (f v, b')))
+instance Applicative Check
+    where pure = return
+          (<*>) = ap
 
 instance Monad Check
     where return v = Check (\(b, e) -> ([], Right (v, b)))

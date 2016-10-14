@@ -9,6 +9,9 @@ newtype V = V String
 newtype Builder t = B{ runBuilder :: [(String, String)] -> Int -> (t, Int) }
 instance Functor Builder
     where fmap f (B g) = B (\m z -> let (v, z') = g m z in (f v, z'))
+instance Applicative Builder
+    where pure = return
+          (<*>) = ap
 instance Monad Builder
     where return v = B (\m z -> (v, z))
           B f >>= g = B (\m z -> let (v, z') = f m z
