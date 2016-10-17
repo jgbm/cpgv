@@ -383,7 +383,7 @@ instance HasGVTranslation Proc
           hasGVTranslation (EmptyIn _ p)       = hasGVTranslation p
           hasGVTranslation EmptyCase{}         = True
           hasGVTranslation Quote{}             = False
-          hasGVTranslation Unk{}               = True
+          hasGVTranslation Unk{}               = False
 
 ----------------------------------------------------------------------------------------------------
 -- First-order structure
