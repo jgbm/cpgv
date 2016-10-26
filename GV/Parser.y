@@ -1,4 +1,5 @@
 {
+{-# LANGUAGE FlexibleContexts #-}
 module GV.Parser where
 
 import Control.Monad.Error

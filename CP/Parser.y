@@ -1,4 +1,6 @@
 {
+{-# LANGUAGE FlexibleContexts #-}
+
 module CP.Parser where
 
 import Control.Monad.Error

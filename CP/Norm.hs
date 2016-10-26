@@ -169,14 +169,15 @@ fragment zs (Cut x a p q) = do x' <- fresh x
 fragment zs p             = return [Fragment (filter ((`elem` vs) . fst) zs) p]
     where vs = fn p
 
-unfragment :: [Fragment] -> Proc
-unfragment fs = case binderClash p of
-                  Nothing -> p
-                  Just b  -> trace ("Binder " ++ b ++ " not fresh!") p
-    where p = loop (filter (not . weaken) fs) []
+unfragment :: Behavior -> [Fragment] -> Proc
+unfragment b fs = case binderClash p of
+                    Nothing -> p
+                    Just b  -> trace ("Binder " ++ b ++ " not fresh!") p
+    where p = loop (filter (not . weaken b) fs) []
 
-          weaken (Fragment _ p@(Replicate x _ _)) = and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
-          weaken _                              = False
+          weaken b (Fragment _ p@(Replicate x _ _)) = x `notElem` map fst b &&
+                                                      and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
+          weaken _ _                                = False
 
           loop [Fragment [] p] [] = p
           loop (Fragment [(x,a)] p : rest) passed = trace ("Introducing cut on " ++ x) $
@@ -310,12 +311,12 @@ normalize p b =
        let is = [1..length fs]
            wl = makeWorkList is []
        fs' <- loop b wl (zip is fs) (length fs + 1)
-       executed <- commute b fs' (const (return . unfragment)) (const (return . unfragment))
-       simplified <- commute b fs' recurse (const (return . unfragment))
+       executed <- commute b fs' (const (return . unfragment b)) (const (return . unfragment b))
+       simplified <- commute b fs' recurse (const (return . unfragment b))
        return (executed, simplified)
     where recurse b fs = trace (unlines ("Recursing on" : map showCP fs)) $
                          do fs' <- loop b (makeWorkList is []) (zip is fs) (length fs + 1)
-                            commute b fs' recurse (const (return . unfragment))
+                            commute b fs' recurse (const (return . unfragment b))
               where is = [1..length fs]
 
           makeWorkList is js = [(i, i') | (i:is') <- tails is, i' <- is'] ++ [(i,j) | i <- is, j <- js]
@@ -336,7 +337,7 @@ normalize p b =
                                         [(i',j') | (i',j') <- wl, notIorJ i', notIorJ j']
                              in  trace (unlines (["Reduced fragments"] ++ map showCP [fi, fj] ++ ["to"] ++ map showCP fs')) $
                                  trace (replicate 120 '-' ++ '\n' :
-                                        showCP (unfragment (map snd ifs'))) $
+                                        showCP (unfragment b (map snd ifs'))) $
                                  if checkSteps
                                  then checkFragments b fi fj fs' $ loop b wl' ifs' k'
                                  else loop b wl' ifs' k'
