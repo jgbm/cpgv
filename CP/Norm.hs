@@ -5,6 +5,7 @@ import Prelude hiding ((<$>))
 import Control.Monad.Except
 import CP.Check
 import CP.Expand (expandP)
+import Data.Either (partitionEithers)
 import Data.List (intercalate, tails)
 import CP.Syntax
 import CP.Printer
@@ -61,14 +62,18 @@ traceCutReduction x a = trace ("Reducing cut on " ++ showCP x ++ " of type " ++ 
 
 stepPrincipal :: Behavior -> Fragment -> Fragment -> M [Fragment]
 stepPrincipal _ (Fragment zs (Link x y)) (Fragment zs' p)
-    | x `elem` map fst zs', Just a <- lookup x zs, not (isWhyNot a) =
+    | x `elem` map fst zs', Just a <- lookup x zs =
         traceCutReduction x a $
         do p' <- replace x y p
-           fragment (add y zs') p'
-    | y `elem` map fst zs', Just a <- lookup y zs, not (isWhyNot a) =
+           if isWhyNot a
+           then fragment (add y zs') p' <++> return [Fragment zs (Link x y)]
+           else fragment (add y zs') p'
+    | y `elem` map fst zs', Just a <- lookup y zs =
         traceCutReduction y a $
         do p' <- replace y x p
-           fragment (add x zs') p'
+           if isWhyNot a
+           then fragment (add x zs') p' <++> return [Fragment zs (Link x y)]
+           else fragment (add x zs') p'
     where isWhyNot WhyNot{} = True
           isWhyNot _        = False
           add z = case lookup z zs of
@@ -173,11 +178,25 @@ unfragment :: Behavior -> [Fragment] -> Proc
 unfragment b fs = case binderClash p of
                     Nothing -> p
                     Just b  -> trace ("Binder " ++ b ++ " not fresh!") p
-    where p = loop (filter (not . weaken b) fs) []
+    where p = loop (weaken b fs) []
 
-          weaken b (Fragment _ p@(Replicate x _ _)) = x `notElem` map fst b &&
-                                                      and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
-          weaken _ _                                = False
+          weaken b fs
+              | length fs == length fs' = fs
+              | otherwise               = weaken b fs'
+              where fs' = filter (not . weakenFragment b) fs
+
+                    canWeaken b x p =
+                        x `notElem` map fst b &&
+                        and [x `notElem` map fst zs' | Fragment zs' p' <- fs, p /= p']
+
+                    isWhyNot (WhyNot _) = True
+                    isWhyNot _          = False
+
+                    weakenFragment b (Fragment _ p@(Replicate x _ _)) = canWeaken b x p
+                    weakenFragment b (Fragment zs p@(Link x y))
+                        | Just a <- lookup x zs, isWhyNot a   = canWeaken b x p
+                        | Just a <- lookup y zs, isWhyNot a   = canWeaken b y p
+                    weakenFragment _ _                                = False
 
           loop [Fragment [] p] [] = p
           loop (Fragment [(x,a)] p : rest) passed = trace ("Introducing cut on " ++ x) $
